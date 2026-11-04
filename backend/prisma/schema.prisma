@@ -1,0 +1,393 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum LanguagePref {
+  en
+  he
+}
+
+enum HebrewLevel {
+  BEGINNER
+  ELEMENTARY
+  INTERMEDIATE
+  UPPER_INTERMEDIATE
+  ADVANCED
+  FLUENT
+}
+
+enum PackageStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  COMPLETED
+}
+
+enum SlotType {
+  REGULAR
+  ONE_TIME
+}
+
+enum LessonStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum HomeworkStatus {
+  PENDING
+  SUBMITTED
+  REVIEWED
+}
+
+enum GameType {
+  FLASHCARD
+  QUIZ
+  MATCHING
+  FILL_BLANK
+  PRONUNCIATION
+}
+
+enum PointsEventType {
+  LESSON_COMPLETED
+  GAME_PLAYED
+  HOMEWORK_SUBMITTED
+  STREAK_BONUS
+  MANUAL
+}
+
+model User {
+  id             String        @id @default(uuid())
+  email          String        @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           Role          @default(STUDENT)
+  languagePref   LanguagePref  @default(en)
+  avatarUrl      String?
+  isActive       Boolean       @default(true)
+  mustChangePw   Boolean       @default(true)
+  failedLogins   Int           @default(0)
+  lockedUntil    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  createdById    String?
+  createdBy      User?         @relation("CreatedUsers", fields: [createdById], references: [id])
+  createdUsers   User[]        @relation("CreatedUsers")
+
+  refreshTokens  RefreshToken[]
+  studentProfile Student?
+  teacherProfile Teacher?
+  assignedPackages StudentPackage[] @relation("AssignedPackages")
+  cancelledLessons Lesson[]         @relation("CancelledLessons")
+  createdGames   Game[]           @relation("CreatedGames")
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([tokenHash])
+}
+
+model Student {
+  id            String       @id @default(uuid())
+  userId        String       @unique
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  level         HebrewLevel  @default(BEGINNER)
+  totalPoints   Int          @default(0)
+  streakDays    Int          @default(0)
+  lastLessonAt  DateTime?
+  notes         String?
+  createdAt     DateTime     @default(now())
+
+  packages      StudentPackage[]
+  lessons       Lesson[]
+  homeworks     Homework[]
+  feedback      LessonFeedback[]
+  teacherSurveys TeacherSurvey[]
+  gameSessions  StudentGameSession[]
+  pointsLedger  PointsLedger[]
+
+  @@index([userId])
+  @@index([level])
+}
+
+model Teacher {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?
+  specialties String[] @default([])
+  ratingAvg   Float    @default(0.0)
+  ratingCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  timeSlots   TimeSlot[]
+  lessons     Lesson[]
+  homeworks   Homework[]
+  surveys     TeacherSurvey[]
+
+  @@index([userId])
+}
+
+model Package {
+  id            String   @id @default(uuid())
+  name          String
+  nameHe        String
+  description   String?
+  descriptionHe String?
+  totalLessons  Int
+  validityDays  Int
+  price         Decimal  @db.Decimal(10, 2)
+  currency      String   @default("USD")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  studentPackages StudentPackage[]
+}
+
+model StudentPackage {
+  id           String        @id @default(uuid())
+  studentId    String
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  packageId    String
+  package      Package       @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  assignedById String?
+  assignedBy   User?         @relation("AssignedPackages", fields: [assignedById], references: [id])
+  lessonsTotal Int
+  lessonsUsed  Int           @default(0)
+  startDate    DateTime
+  endDate      DateTime
+  status       PackageStatus @default(ACTIVE)
+  createdAt    DateTime      @default(now())
+
+  lessons      Lesson[]
+
+  @@index([studentId])
+  @@index([status])
+}
+
+model TimeSlot {
+  id          String    @id @default(uuid())
+  teacherId   String
+  teacher     Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  dayOfWeek   Int       // 0=Sun, 1=Mon, ..., 6=Sat
+  startTime   String    // HH:mm format e.g. "09:00"
+  endTime     String    // HH:mm format e.g. "09:30"
+  slotType    SlotType  @default(REGULAR)
+  isAvailable Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  lessons     Lesson[]
+
+  @@index([teacherId, dayOfWeek])
+}
+
+model Lesson {
+  id               String          @id @default(uuid())
+  studentId        String
+  student          Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId        String
+  teacher          Teacher         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  timeSlotId       String?
+  timeSlot         TimeSlot?       @relation(fields: [timeSlotId], references: [id], onDelete: SetNull)
+  studentPackageId String?
+  studentPackage   StudentPackage? @relation(fields: [studentPackageId], references: [id], onDelete: SetNull)
+  scheduledAt      DateTime
+  durationMinutes  Int             @default(25)
+  status           LessonStatus    @default(SCHEDULED)
+  lessonType       SlotType        @default(REGULAR)
+  zoomLink         String?
+  recordingUrl     String?
+  teacherNotes     String?
+  cancelledAt      DateTime?
+  cancelledById    String?
+  cancelledBy      User?           @relation("CancelledLessons", fields: [cancelledById], references: [id])
+  cancelReason     String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  homework         Homework[]
+  feedback         LessonFeedback?
+  games            Game[]
+
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model Homework {
+  id              String         @id @default(uuid())
+  lessonId        String?
+  lesson          Lesson?        @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  studentId       String
+  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId       String
+  teacher         Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  dueDate         DateTime?
+  status          HomeworkStatus @default(PENDING)
+  studentNote     String?
+  teacherFeedback String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([status])
+}
+
+model LessonFeedback {
+  id            String   @id @default(uuid())
+  lessonId      String   @unique
+  lesson        Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  qualityRating Int
+  difficulty    Int
+  paceRating    Int
+  comments      String?
+  submittedAt   DateTime @default(now())
+
+  @@index([studentId])
+}
+
+model TeacherSurvey {
+  id            String   @id @default(uuid())
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId     String
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  communication Int
+  knowledge     Int
+  punctuality   Int
+  overallRating Int
+  comments      String?
+  submittedAt   DateTime @default(now())
+
+  @@unique([studentId, teacherId])
+  @@index([teacherId])
+}
+
+model Game {
+  id           String       @id @default(uuid())
+  title        String
+  titleHe      String
+  description  String?
+  gameType     GameType
+  level        HebrewLevel
+  configJson   Json
+  pointsReward Int          @default(10)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+
+  lessonId     String?
+  lesson       Lesson?      @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  createdById  String?
+  createdBy    User?        @relation("CreatedGames", fields: [createdById], references: [id], onDelete: SetNull)
+
+  sessions     StudentGameSession[]
+
+  @@index([level])
+  @@index([gameType])
+  @@index([lessonId])
+  @@index([createdById])
+}
+
+model StudentGameSession {
+  id           String   @id @default(uuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  gameId       String
+  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  score        Int      @default(0)
+  pointsEarned Int      @default(0)
+  completed    Boolean  @default(false)
+  playedAt     DateTime @default(now())
+
+  @@index([studentId])
+  @@index([gameId])
+}
+
+model PointsLedger {
+  id          String          @id @default(uuid())
+  studentId   String
+  student     Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  eventType   PointsEventType
+  points      Int
+  referenceId String?
+  description String?
+  createdAt   DateTime        @default(now())
+
+  @@index([studentId])
+  @@index([eventType])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?
+  isRead    Boolean  @default(false)
+  metaJson  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String?
+  entityId   String?
+  metaJson   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  valueJson Json
+  updatedAt DateTime @updatedAt
+}
