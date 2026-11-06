@@ -1,6 +1,14 @@
 import React from 'react';
-import { LucideIcon, X } from 'lucide-react';
+import {
+  LucideIcon,
+  X,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSidebarStore } from '../../store/sidebarStore';
 
 export interface GlassNavItem {
   id: string;
@@ -47,6 +55,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
   className,
 }) => {
   const { language } = useTranslation();
+  const { isCollapsed, toggleCollapsed } = useSidebarStore();
 
   return (
     <>
@@ -60,19 +69,53 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
 
       {/* Fixed Left Sidebar */}
       <aside
-        className={`fixed top-16 sm:top-20 start-0 bottom-0 z-40 w-72 xl:w-80 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-e border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl flex flex-col justify-between transition-all duration-300 ${
+        className={`fixed top-16 sm:top-20 start-0 bottom-0 z-40 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-e border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl flex flex-col justify-between transition-all duration-300 ease-in-out ${
           isOpenMobile
-            ? 'flex z-50 !top-0 !h-screen shadow-2xl'
-            : 'hidden lg:flex'
+            ? 'flex z-50 !top-0 !h-screen w-72 shadow-2xl'
+            : isCollapsed
+            ? 'hidden lg:flex w-20'
+            : 'hidden lg:flex w-72 xl:w-80'
         } ${className || ''}`}
       >
         {/* Subtle Ambient Apple Aurora */}
         <div className="absolute top-0 start-0 w-48 h-48 bg-gradient-to-br from-brand-teal-400/10 to-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 end-0 w-48 h-48 bg-gradient-to-tl from-brand-olive-400/10 to-teal-400/10 rounded-full blur-3xl pointer-events-none" />
 
+        {/* Desktop Edge Tab Button (Sticky on outer border line) */}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="hidden lg:flex absolute -end-3 top-7 w-6 h-6 rounded-full bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-700 shadow-md items-center justify-center text-slate-500 hover:text-brand-teal-600 dark:text-slate-400 dark:hover:text-brand-teal-300 hover:scale-110 transition-all z-50 cursor-pointer"
+          title={
+            isCollapsed
+              ? language === 'he'
+                ? 'הרחב סרגל צד'
+                : 'Expand sidebar'
+              : language === 'he'
+              ? 'צמצם לסמלים בלבד'
+              : 'Collapse to icons only'
+          }
+          aria-label="Toggle sidebar collapse"
+        >
+          {language === 'he' ? (
+            isCollapsed ? (
+              <ChevronLeft className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5" />
+            )
+          ) : isCollapsed ? (
+            <ChevronRight className="w-3.5 h-3.5" />
+          ) : (
+            <ChevronLeft className="w-3.5 h-3.5" />
+          )}
+        </button>
+
         {/* Mobile Close Button (only when opened as mobile overlay) */}
         {isOpenMobile && onCloseMobile && (
-          <div className="lg:hidden px-4 py-3 border-b border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 flex items-center justify-end">
+          <div className="lg:hidden px-4 py-3 border-b border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {panelSubtitle}
+            </span>
             <button
               onClick={onCloseMobile}
               className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -82,10 +125,49 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
           </div>
         )}
 
+        {/* Top Control Bar on Desktop */}
+        <div className={`hidden lg:flex items-center shrink-0 px-3.5 pt-3 pb-1 border-b border-slate-100 dark:border-slate-800/60 relative z-10 ${
+          isCollapsed ? 'justify-center' : 'justify-between'
+        }`}>
+          {!isCollapsed && (
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
+              {language === 'he' ? 'ניווט מהיר' : 'Navigation'}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className={`p-1.5 rounded-xl text-slate-400 hover:text-slate-800 dark:text-slate-500 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
+              isCollapsed ? 'mx-auto' : ''
+            }`}
+            title={
+              isCollapsed
+                ? language === 'he'
+                  ? 'הרחב סרגל צד'
+                  : 'Expand sidebar'
+                : language === 'he'
+                ? 'צמצם לסמלים בלבד'
+                : 'Collapse to icons only'
+            }
+          >
+            {isCollapsed ? (
+              <PanelLeftOpen className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+
         {/* Middle Scrollable Navigation Section */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 lg:py-8 space-y-2 relative z-10 scrollbar-thin">
-          {/* Custom Slot (e.g. Balance or streak) */}
-          {customSlot && <div className="mb-3">{customSlot}</div>}
+        <div className={`flex-1 overflow-y-auto py-3 space-y-2 relative z-10 scrollbar-thin ${
+          isCollapsed ? 'px-2 overflow-x-hidden' : 'px-4'
+        }`}>
+          {/* Custom Slot (e.g. Student Balance) */}
+          {customSlot && (
+            <div className={`mb-3 ${isCollapsed ? 'flex justify-center' : ''}`}>
+              {customSlot}
+            </div>
+          )}
 
           {/* Navigation Items */}
           <nav className="space-y-1.5">
@@ -94,6 +176,54 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
               const isActive = activeTab === item.id;
               const label = language === 'he' && item.labelHe ? item.labelHe : item.label;
 
+              // Collapsed (Icons Only) Mode
+              if (isCollapsed) {
+                return (
+                  <div key={item.id} className="relative group flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onTabChange(item.id);
+                        if (onCloseMobile) onCloseMobile();
+                      }}
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all relative ${
+                        isActive
+                          ? 'bg-gradient-to-r from-brand-teal-950/90 via-slate-900/85 to-brand-teal-900/90 text-white shadow-[0_8px_20px_-3px_rgba(10,40,48,0.5),inset_0_1px_1px_rgba(255,255,255,0.25)] border border-white/20'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
+                      }`}
+                      title={label}
+                    >
+                      {/* Active Indicator Bar on Side */}
+                      {isActive && (
+                        <div className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.85)]" />
+                      )}
+
+                      <Icon className={`w-5 h-5 shrink-0 transition-transform group-hover:scale-110 ${
+                        isActive
+                          ? 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]'
+                          : 'group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300'
+                      }`} />
+
+                      {/* Mini Badge Dot if badge present */}
+                      {item.badge !== null && item.badge !== undefined && (
+                        <span className="absolute top-1.5 end-1.5 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)] animate-pulse" />
+                      )}
+                    </button>
+
+                    {/* Floating Tooltip Pill on Hover */}
+                    <div className="hidden lg:flex absolute start-[calc(100%+0.65rem)] top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 items-center gap-2">
+                      <span>{label}</span>
+                      {item.badge !== null && item.badge !== undefined && (
+                        <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px]">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
+              // Expanded Full Sidebar Mode
               if (isActive) {
                 return (
                   <button
@@ -155,50 +285,104 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
         </div>
 
         {/* Bottom Section: Action Button + User Profile */}
-        <div className="p-3.5 border-t border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 bg-slate-50/50 dark:bg-slate-950/60 space-y-3">
+        <div className={`border-t border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 bg-slate-50/50 dark:bg-slate-950/60 transition-all ${
+          isCollapsed ? 'p-2 space-y-2' : 'p-3.5 space-y-3'
+        }`}>
+          {/* Action Button */}
           {actionButton && (
-            <button
-              onClick={() => {
-                actionButton.onClick();
-                if (onCloseMobile) onCloseMobile();
-              }}
-              className="w-full py-2.5 px-3 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
-            >
-              {actionButton.icon && <actionButton.icon className="w-4 h-4" />}
-              <span>{actionButton.label}</span>
-            </button>
-          )}
-
-          {user && (
-            <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs backdrop-blur-md flex items-center justify-between gap-2.5 transition-colors">
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt={user.firstName || 'User'}
-                    className="w-9 h-9 rounded-xl object-cover ring-2 ring-brand-teal-200 dark:ring-brand-teal-800/80 shrink-0 shadow-xs"
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-olive-100 to-brand-olive-200 dark:from-brand-olive-950 dark:to-brand-olive-900 text-brand-olive-900 dark:text-brand-olive-300 font-black flex items-center justify-center text-xs shrink-0 border border-brand-olive-300/60 dark:border-brand-olive-800 shadow-xs">
-                    {user.firstName?.charAt(0) || 'U'}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate" title={`${user.firstName || ''} ${user.lastName || ''}`}>
-                    {user.firstName} {user.lastName}
-                  </p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate" title={user.email}>
-                    {user.email}
-                  </p>
+            isCollapsed ? (
+              <div className="relative group flex justify-center">
+                <button
+                  onClick={() => {
+                    actionButton.onClick();
+                    if (onCloseMobile) onCloseMobile();
+                  }}
+                  className="w-10 h-10 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 rounded-xl shadow-xs transition-colors flex items-center justify-center"
+                  title={actionButton.label}
+                >
+                  {actionButton.icon ? (
+                    <actionButton.icon className="w-4 h-4" />
+                  ) : (
+                    <span className="font-black text-xs">+</span>
+                  )}
+                </button>
+                <div className="hidden lg:block absolute start-[calc(100%+0.65rem)] top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                  {actionButton.label}
                 </div>
               </div>
+            ) : (
+              <button
+                onClick={() => {
+                  actionButton.onClick();
+                  if (onCloseMobile) onCloseMobile();
+                }}
+                className="w-full py-2.5 px-3 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
+              >
+                {actionButton.icon && <actionButton.icon className="w-4 h-4" />}
+                <span>{actionButton.label}</span>
+              </button>
+            )
+          )}
 
-              {user.role && (
-                <span className="text-[9px] font-black px-2.5 py-1 rounded-lg bg-brand-teal-50 dark:bg-brand-teal-950/80 text-brand-teal-900 dark:text-brand-teal-300 border border-brand-teal-200/80 dark:border-brand-teal-800 shrink-0 uppercase tracking-wider">
-                  {user.role === 'SUPER_ADMIN' ? 'Platform Owner' : user.role}
-                </span>
-              )}
-            </div>
+          {/* User Profile Card */}
+          {user && (
+            isCollapsed ? (
+              <div className="relative group flex justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-center cursor-pointer">
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.firstName || 'User'}
+                      className="w-8 h-8 rounded-xl object-cover ring-2 ring-brand-teal-300 dark:ring-brand-teal-700 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-olive-100 to-brand-olive-200 dark:from-brand-olive-950 dark:to-brand-olive-900 text-brand-olive-900 dark:text-brand-olive-300 font-black flex items-center justify-center text-xs shrink-0">
+                      {user.firstName?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                </div>
+                {/* User Tooltip */}
+                <div className="hidden lg:block absolute start-[calc(100%+0.65rem)] bottom-0 p-2.5 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 space-y-0.5">
+                  <p className="font-bold text-white">{user.firstName} {user.lastName}</p>
+                  <p className="text-[10px] text-slate-400 font-normal">{user.email}</p>
+                  {user.role && (
+                    <span className="inline-block text-[9px] font-extrabold px-1.5 py-0.2 rounded-md bg-brand-teal-900/80 text-brand-teal-300 border border-brand-teal-700/60 mt-1 uppercase">
+                      {user.role === 'SUPER_ADMIN' ? 'Platform Owner' : user.role}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs backdrop-blur-md flex items-center justify-between gap-2.5 transition-colors">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.firstName || 'User'}
+                      className="w-9 h-9 rounded-xl object-cover ring-2 ring-brand-teal-200 dark:ring-brand-teal-800/80 shrink-0 shadow-xs"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-olive-100 to-brand-olive-200 dark:from-brand-olive-950 dark:to-brand-olive-900 text-brand-olive-900 dark:text-brand-olive-300 font-black flex items-center justify-center text-xs shrink-0 border border-brand-olive-300/60 dark:border-brand-olive-800 shadow-xs">
+                      {user.firstName?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate" title={`${user.firstName || ''} ${user.lastName || ''}`}>
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate" title={user.email}>
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+
+                {user.role && (
+                  <span className="text-[9px] font-black px-2.5 py-1 rounded-lg bg-brand-teal-50 dark:bg-brand-teal-950/80 text-brand-teal-900 dark:text-brand-teal-300 border border-brand-teal-200/80 dark:border-brand-teal-800 shrink-0 uppercase tracking-wider">
+                    {user.role === 'SUPER_ADMIN' ? 'Platform Owner' : user.role}
+                  </span>
+                )}
+              </div>
+            )
           )}
         </div>
       </aside>

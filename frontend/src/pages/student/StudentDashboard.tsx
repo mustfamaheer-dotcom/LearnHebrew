@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSidebarStore } from '../../store/sidebarStore';
 import { toast } from '../../store/toastStore';
 import { FlashcardGame } from '../../components/games/FlashcardGame';
 import { QuizGame } from '../../components/games/QuizGame';
@@ -65,6 +66,7 @@ export const StudentDashboard: React.FC = () => {
   const { t, language } = useTranslation();
   const queryClient = useQueryClient();
   const location = useLocation();
+  const { isCollapsed } = useSidebarStore();
 
   const [activeTab, setActiveTab] = useState<
     'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'games' | 'leaderboard' | 'balance'
@@ -533,7 +535,11 @@ export const StudentDashboard: React.FC = () => {
         />
 
         {/* Main Content Area on the right */}
-        <main className="w-full lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)] p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8 pb-36 sm:pb-40 lg:pb-12">
+        <main className={`w-full transition-all duration-300 ${
+          isCollapsed
+            ? 'lg:ps-[calc(5rem+1.5rem)]'
+            : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
+        } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8 pb-36 sm:pb-40 lg:pb-12`}>
           {/* TAB 1: OVERVIEW & STATUS */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
