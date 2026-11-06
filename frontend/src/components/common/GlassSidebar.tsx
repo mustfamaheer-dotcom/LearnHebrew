@@ -2,8 +2,6 @@ import React from 'react';
 import {
   LucideIcon,
   X,
-  PanelLeftClose,
-  PanelLeftOpen,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -81,11 +79,11 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
         <div className="absolute top-0 start-0 w-48 h-48 bg-gradient-to-br from-brand-teal-400/10 to-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 end-0 w-48 h-48 bg-gradient-to-tl from-brand-olive-400/10 to-teal-400/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Desktop Edge Tab Button (Sticky on outer border line) */}
+        {/* Desktop Edge Arrow Toggle Button */}
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="hidden lg:flex absolute -end-3 top-7 w-6 h-6 rounded-full bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-700 shadow-md items-center justify-center text-slate-500 hover:text-brand-teal-600 dark:text-slate-400 dark:hover:text-brand-teal-300 hover:scale-110 transition-all z-50 cursor-pointer"
+          className="hidden lg:flex absolute -end-3.5 top-6 w-7 h-7 rounded-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 shadow-md items-center justify-center text-slate-600 hover:text-brand-teal-700 dark:text-slate-300 dark:hover:text-brand-teal-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:scale-110 active:scale-95 transition-all z-50 cursor-pointer group"
           title={
             isCollapsed
               ? language === 'he'
@@ -93,20 +91,20 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                 : 'Expand sidebar'
               : language === 'he'
               ? 'צמצם לסמלים בלבד'
-              : 'Collapse to icons only'
+              : 'Collapse sidebar'
           }
-          aria-label="Toggle sidebar collapse"
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           {language === 'he' ? (
             isCollapsed ? (
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
             ) : (
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             )
           ) : isCollapsed ? (
-            <ChevronRight className="w-3.5 h-3.5" />
+            <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
           ) : (
-            <ChevronLeft className="w-3.5 h-3.5" />
+            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           )}
         </button>
 
@@ -124,39 +122,6 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
             </button>
           </div>
         )}
-
-        {/* Top Control Bar on Desktop */}
-        <div className={`hidden lg:flex items-center shrink-0 px-3.5 pt-3 pb-1 border-b border-slate-100 dark:border-slate-800/60 relative z-10 ${
-          isCollapsed ? 'justify-center' : 'justify-between'
-        }`}>
-          {!isCollapsed && (
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
-              {language === 'he' ? 'ניווט מהיר' : 'Navigation'}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            className={`p-1.5 rounded-xl text-slate-400 hover:text-slate-800 dark:text-slate-500 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${
-              isCollapsed ? 'mx-auto' : ''
-            }`}
-            title={
-              isCollapsed
-                ? language === 'he'
-                  ? 'הרחב סרגל צד'
-                  : 'Expand sidebar'
-                : language === 'he'
-                ? 'צמצם לסמלים בלבד'
-                : 'Collapse to icons only'
-            }
-          >
-            {isCollapsed ? (
-              <PanelLeftOpen className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
-            ) : (
-              <PanelLeftClose className="w-4 h-4" />
-            )}
-          </button>
-        </div>
 
         {/* Middle Scrollable Navigation Section */}
         <div className={`flex-1 overflow-y-auto py-3 space-y-2 relative z-10 scrollbar-thin ${
