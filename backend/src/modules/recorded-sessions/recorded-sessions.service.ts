@@ -1,4 +1,5 @@
 import { prisma } from '../../config/database';
+import { notificationService } from '../notifications/notifications.service';
 
 export async function listRecordedSessions(params: {
   teacherId?: string;
@@ -93,7 +94,7 @@ export async function createRecordedSession(data: {
     if (student) studentId = student.id;
   }
 
-  return prisma.recordedSession.create({
+  const session = await prisma.recordedSession.create({
     data: {
       teacherId: teacher.id,
       studentId: studentId,
@@ -112,6 +113,17 @@ export async function createRecordedSession(data: {
       student: { include: { user: true } },
     },
   });
+
+  if (session.student) {
+    notificationService.notifyRecordingCreated({
+      id: session.id,
+      title: session.title,
+      student: session.student,
+      teacher: session.teacher,
+    }).catch((err) => console.error('[Notification Trigger Error - notifyRecordingCreated]', err));
+  }
+
+  return session;
 }
 
 export async function updateRecordedSession(

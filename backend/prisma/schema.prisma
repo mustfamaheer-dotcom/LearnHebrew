@@ -69,6 +69,22 @@ enum PointsEventType {
   MANUAL
 }
 
+enum NotificationCategory {
+  LESSON
+  REMINDER
+  HOMEWORK
+  RECORDING
+  GAMIFICATION
+  SYSTEM
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
 model User {
   id             String        @id @default(uuid())
   email          String        @unique
@@ -249,6 +265,7 @@ model Lesson {
   zoomLink         String?
   recordingUrl     String?
   teacherNotes     String?
+  reminderSentAt   DateTime?
   cancelledAt      DateTime?
   cancelledById    String?
   cancelledBy      User?           @relation("CancelledLessons", fields: [cancelledById], references: [id])
@@ -402,17 +419,27 @@ model PointsLedger {
 }
 
 model Notification {
-  id        String   @id @default(uuid())
+  id        String               @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  NotificationCategory @default(SYSTEM)
+  priority  NotificationPriority @default(NORMAL)
   type      String
-  title     String
+  title     String?
   body      String?
-  isRead    Boolean  @default(false)
+  titleEn   String?
+  titleHe   String?
+  bodyEn    String?
+  bodyHe    String?
+  actionUrl String?
+  isRead    Boolean              @default(false)
+  readAt    DateTime?
   metaJson  Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime             @default(now())
 
   @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([category])
 }
 
 model AuditLog {

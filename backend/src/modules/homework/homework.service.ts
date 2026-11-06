@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database';
 import { HomeworkStatus, PointsEventType } from '@prisma/client';
+import { notificationService } from '../notifications/notifications.service';
 
 export async function listHomework(params: {
   studentId?: string;
@@ -60,7 +61,7 @@ export async function createHomework(data: {
   });
   if (!teacher) throw { status: 404, message: 'Teacher not found' };
 
-  return prisma.homework.create({
+  const homework = await prisma.homework.create({
     data: {
       lessonId: data.lessonId,
       studentId: student.id,
@@ -77,14 +78,20 @@ export async function createHomework(data: {
       teacher: { include: { user: true } },
     },
   });
+
+  notificationService.notifyHomeworkAssigned(homework).catch((err) =>
+    console.error('[Notification Trigger Error - notifyHomeworkAssigned]', err)
+  );
+
+  return homework;
 }
 
 export async function submitHomework(id: string, studentNote: string) {
   const hw = await prisma.homework.findUnique({ where: { id } });
   if (!hw) throw { status: 404, message: 'Homework not found' };
 
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.homework.update({
+  const updated = await prisma.$transaction(async (tx) => {
+    const res = await tx.homework.update({
       where: { id },
       data: {
         status: HomeworkStatus.SUBMITTED,
@@ -112,12 +119,18 @@ export async function submitHomework(id: string, studentNote: string) {
       },
     });
 
-    return updated;
+    return res;
   });
+
+  notificationService.notifyHomeworkSubmitted(updated).catch((err) =>
+    console.error('[Notification Trigger Error - notifyHomeworkSubmitted]', err)
+  );
+
+  return updated;
 }
 
 export async function reviewHomework(id: string, teacherFeedback: string) {
-  return prisma.homework.update({
+  const reviewed = await prisma.homework.update({
     where: { id },
     data: {
       status: HomeworkStatus.REVIEWED,
@@ -128,5 +141,11 @@ export async function reviewHomework(id: string, teacherFeedback: string) {
       teacher: { include: { user: true } },
     },
   });
+
+  notificationService.notifyHomeworkReviewed(reviewed).catch((err) =>
+    console.error('[Notification Trigger Error - notifyHomeworkReviewed]', err)
+  );
+
+  return reviewed;
 }
 

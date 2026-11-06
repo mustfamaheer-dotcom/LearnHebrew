@@ -1,6 +1,7 @@
 import { prisma } from '../../config/database';
 import { SlotType, LessonStatus, PointsEventType } from '@prisma/client';
 import { logAuditEvent } from '../../utils/audit';
+import { notificationService } from '../notifications/notifications.service';
 
 export async function listLessons(filters: {
   studentId?: string;
@@ -237,6 +238,11 @@ export async function bookLesson(data: {
       },
     });
 
+    // Fire real-time notification dispatch to student & teacher
+    notificationService.notifyBookingCreated(lesson).catch((err) =>
+      console.error('[Notification Trigger Error - notifyBookingCreated]', err)
+    );
+
     return lesson;
   });
 }
@@ -327,6 +333,28 @@ export async function cancelLesson(id: string, cancelledById: string, cancelReas
         },
       });
     }
+
+    // Fire real-time notification dispatch to other party
+    prisma.lesson.findUnique({
+      where: { id },
+      include: {
+        student: { include: { user: true } },
+        teacher: { include: { user: true } },
+      },
+    }).then(async (l) => {
+      if (l) {
+        const canceller = await prisma.user.findUnique({ where: { id: cancelledById } });
+        const cancelledByName = canceller ? `${canceller.firstName} ${canceller.lastName}` : 'System Admin';
+        notificationService.notifyLessonCancelled({
+          id: l.id,
+          scheduledAt: l.scheduledAt,
+          cancelledByUserId: cancelledById,
+          cancelledByName,
+          student: l.student,
+          teacher: l.teacher,
+        }).catch((err) => console.error('[Notification Cancel Error]', err));
+      }
+    }).catch(() => {});
 
     return updated;
   });

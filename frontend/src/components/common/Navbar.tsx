@@ -9,6 +9,7 @@ import {
   Sun,
   Moon,
 } from 'lucide-react';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -77,6 +78,9 @@ export const Navbar: React.FC = () => {
               <span className="font-semibold hidden sm:inline">{language === 'en' ? 'עברית' : 'English'}</span>
               <span className="font-bold sm:hidden">{language === 'en' ? 'עב' : 'EN'}</span>
             </button>
+
+            {/* Real-time Notification Bell & Drawer */}
+            <NotificationBell />
 
             {user ? (
               <div className="flex items-center gap-1 sm:gap-2">

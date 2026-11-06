@@ -134,5 +134,48 @@ router.put(
   }
 );
 
+// GET Notification Config
+router.get('/notification-config', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: 'notification_config' },
+    });
+    res.json({
+      config: setting?.valueJson || {
+        lessonReminderMinutes: 30,
+        enableSoundChime: true,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// UPDATE Notification Config (Admin only)
+router.put(
+  '/notification-config',
+  authenticate,
+  requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const config = req.body.config || req.body;
+      const setting = await prisma.systemSetting.upsert({
+        where: { key: 'notification_config' },
+        update: { valueJson: config },
+        create: {
+          key: 'notification_config',
+          valueJson: config,
+        },
+      });
+      res.json({
+        message: 'Notification settings updated successfully!',
+        config: setting.valueJson,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;
 

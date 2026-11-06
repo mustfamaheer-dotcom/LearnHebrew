@@ -1,11 +1,15 @@
 import { app } from './app';
 import { env } from './config/env';
 import { prisma } from './config/database';
+import { startReminderJob } from './jobs/reminderJob';
 
 async function main() {
   try {
     await prisma.$connect();
     console.log('Connected to PostgreSQL successfully.');
+
+    // Start background pre-lesson reminder engine
+    startReminderJob();
 
     const PORT = parseInt(env.PORT, 10) || 5001;
     app.listen(PORT, () => {
