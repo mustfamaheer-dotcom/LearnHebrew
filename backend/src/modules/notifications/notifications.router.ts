@@ -102,6 +102,20 @@ router.patch('/read-all', async (req: AuthRequest, res: Response, next: NextFunc
 });
 
 /**
+ * Clear all read notifications for user
+ */
+router.delete('/clear/read', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const result = await prisma.notification.deleteMany({
+      where: { userId: req.user!.userId, isRead: true },
+    });
+    res.json({ message: 'Read notifications cleared', count: result.count });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * Delete a notification
  */
 router.delete('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {

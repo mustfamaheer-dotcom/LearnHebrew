@@ -130,6 +130,15 @@ export const NotificationBell: React.FC = () => {
     }
   };
 
+  const handleClearRead = async () => {
+    try {
+      await api.delete('/notifications/clear/read');
+      setNotifications((prev) => prev.filter((n) => !n.isRead));
+    } catch {
+      // Fail quietly
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -150,14 +159,17 @@ export const NotificationBell: React.FC = () => {
         )}
       </button>
 
-      {/* Slide-over Drawer */}
+      {/* Pop-up Modal Page */}
       <NotificationDrawer
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         notifications={notifications}
+        unreadCount={unreadCount}
         onMarkAsRead={handleMarkAsRead}
         onMarkAllAsRead={handleMarkAllAsRead}
         onDelete={handleDelete}
+        onClearRead={handleClearRead}
+        onRefresh={fetchNotifications}
         soundEnabled={soundEnabled}
         onToggleSound={toggleSound}
       />
