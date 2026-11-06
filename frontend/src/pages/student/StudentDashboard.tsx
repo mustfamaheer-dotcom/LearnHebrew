@@ -48,6 +48,7 @@ import {
   Filter,
   Search,
   Wallet,
+  Maximize2,
   MoreHorizontal,
 } from 'lucide-react';
 
@@ -1536,17 +1537,37 @@ export const StudentDashboard: React.FC = () => {
                 {/* LEFT SIDE (8 COLS): VIDEO PLAYER WINDOW */}
                 <div className="lg:col-span-8 space-y-4">
                   {activeRecording ? (
-                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-3.5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
                       {/* Video Player Window Container */}
-                      <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 shadow-xl border border-slate-200/50 dark:border-slate-800">
+                      <div className="relative aspect-[4/3] xs:aspect-[16/11] sm:aspect-video min-h-[250px] sm:min-h-0 w-full rounded-2xl overflow-hidden bg-slate-950 shadow-xl border border-slate-200/50 dark:border-slate-800 group">
                         {activeRecording.videoUrl ? (
-                          <iframe
-                            src={getVideoEmbedUrl(activeRecording.videoUrl)}
-                            className="w-full h-full border-0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                            title={activeRecording.title}
-                          />
+                          <>
+                            <iframe
+                              src={getVideoEmbedUrl(activeRecording.videoUrl)}
+                              className="w-full h-full border-0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                              title={activeRecording.title}
+                            />
+                            {/* Floating Fullscreen / Theater Overlay Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setViewerUrl(activeRecording.videoUrl);
+                                setViewerTitle(activeRecording.title);
+                                setViewerSubtitle(
+                                  activeRecording.category
+                                    ? `${activeRecording.category} • ${activeRecording.durationMinutes || 25}m`
+                                    : `${activeRecording.durationMinutes || 25}m`
+                                );
+                              }}
+                              className="absolute bottom-2.5 end-2.5 px-2.5 py-1.5 rounded-xl bg-slate-950/85 hover:bg-slate-900 text-white text-[11px] font-bold backdrop-blur-md border border-white/20 shadow-md flex items-center gap-1.5 transition-all opacity-85 hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                              title={language === 'he' ? 'פתח במסך מלא' : 'Open in Full Screen'}
+                            >
+                              <Maximize2 className="w-3.5 h-3.5 text-cyan-300" />
+                              <span>{language === 'he' ? 'מסך מלא' : 'Full Screen'}</span>
+                            </button>
+                          </>
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
                             <PlayCircle className="w-12 h-12 text-slate-600" />
@@ -1576,15 +1597,33 @@ export const StudentDashboard: React.FC = () => {
                           </div>
 
                           {activeRecording.videoUrl && (
-                            <a
-                              href={activeRecording.videoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-xs font-black text-brand-teal-800 dark:text-brand-teal-300 hover:text-brand-teal-950 dark:hover:text-white px-3 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200/80 dark:border-brand-teal-800 transition-colors shadow-2xs"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              <span>{language === 'he' ? 'פתח ב-Google Drive' : 'Open in Google Drive'}</span>
-                            </a>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setViewerUrl(activeRecording.videoUrl);
+                                  setViewerTitle(activeRecording.title);
+                                  setViewerSubtitle(
+                                    activeRecording.category
+                                      ? `${activeRecording.category} • ${activeRecording.durationMinutes || 25}m`
+                                      : `${activeRecording.durationMinutes || 25}m`
+                                  );
+                                }}
+                                className="inline-flex items-center gap-1.5 text-xs font-black text-brand-olive-950 dark:text-brand-olive-200 hover:text-brand-olive-950 dark:hover:text-white px-3 py-1.5 rounded-xl bg-brand-olive-100 dark:bg-brand-olive-950/70 border border-brand-olive-300 dark:border-brand-olive-700 transition-colors shadow-2xs"
+                              >
+                                <Maximize2 className="w-3.5 h-3.5 text-brand-olive-600 dark:text-brand-olive-300" />
+                                <span>{language === 'he' ? 'מסך מלא' : 'Full Screen'}</span>
+                              </button>
+                              <a
+                                href={activeRecording.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-black text-brand-teal-800 dark:text-brand-teal-300 hover:text-brand-teal-950 dark:hover:text-white px-3 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200/80 dark:border-brand-teal-800 transition-colors shadow-2xs"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>{language === 'he' ? 'Google Drive' : 'Drive Link'}</span>
+                              </a>
+                            </div>
                           )}
                         </div>
 
