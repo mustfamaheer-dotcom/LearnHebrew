@@ -88,6 +88,14 @@ export async function bookLesson(data: {
   });
   const isAdmin = booker?.role === 'ADMIN' || booker?.role === 'SUPER_ADMIN';
 
+  // Anti-IDOR: Prevent students from booking lessons on behalf of another student's account/wallet
+  if (!isAdmin && student.userId !== data.bookedById) {
+    throw {
+      status: 403,
+      message: 'Access denied: You cannot book lessons using another student profile or wallet.',
+    };
+  }
+
   // 1. Fetch Session Pricing configuration
   const pricingSetting = await prisma.systemSetting.findUnique({
     where: { key: 'session_pricing' },

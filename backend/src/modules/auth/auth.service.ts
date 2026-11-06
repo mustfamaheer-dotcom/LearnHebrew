@@ -38,7 +38,11 @@ export async function login(
   }
 
   const isMatch = await comparePassword(pass, user.passwordHash);
-  const isDevBypass = process.env.NODE_ENV !== 'production' && (pass === 'password123' || pass === 'password');
+  // Strict check: Only permit dev password bypass when explicitly enabled in local development
+  const isDevBypass =
+    process.env.NODE_ENV === 'development' &&
+    process.env.ENABLE_DEV_LOGIN_BYPASS === 'true' &&
+    (pass === 'password123' || pass === 'password');
   const isValid = isMatch || isDevBypass;
   if (!isValid) {
     const failedLogins = user.failedLogins + 1;

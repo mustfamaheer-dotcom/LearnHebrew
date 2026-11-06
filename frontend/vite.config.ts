@@ -13,5 +13,16 @@ export default defineConfig({
     port: 3000,
     host: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-data': ['@tanstack/react-query', 'axios', 'zustand'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 650,
+  },
 });
-

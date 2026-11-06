@@ -20,21 +20,29 @@ import settingsRouter from './modules/settings/settings.router';
 import recordedSessionsRouter from './modules/recorded-sessions/recorded-sessions.router';
 
 import { errorHandler } from './middleware/errorHandler';
+import { apiLimiter } from './middleware/rateLimiter';
 
 export const app = express();
 
-// Security Headers
+// Security Headers (OWASP Hardening)
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Let frontend handle CSP in SPA mode
+    contentSecurityPolicy: false, // SPA handles CSP
     crossOriginEmbedderPolicy: false,
+    frameguard: { action: 'sameorigin' }, // Anti-clickjacking
+    noSniff: true, // Prevent MIME sniffing
+    xssFilter: true, // Cross-site scripting filter
+    hsts:
+      process.env.NODE_ENV === 'production'
+        ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+        : false,
   })
 );
 
 // Compression
 app.use(compression());
 
-// CORS
+// CORS Whitelisting
 const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
@@ -45,29 +53,25 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Allow non-browser requests or verified origins
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
+      } else if (process.env.NODE_ENV !== 'production') {
+        callback(null, true); // Dev convenience only
       } else {
-        callback(null, true); // Dev convenience
+        callback(new Error('Cross-Origin Request Blocked by CORS Security Policy'));
       }
     },
     credentials: true,
   })
 );
 
-// Rate Limiter
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later.' },
-});
-app.use('/api/', limiter);
+// Global API Rate Limiter
+app.use('/api/', apiLimiter);
 
-// Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Parsers with strict anti-DoS payload size limits
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 
 // Health Check

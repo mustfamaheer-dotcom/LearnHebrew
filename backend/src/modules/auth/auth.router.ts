@@ -7,10 +7,11 @@ import {
   meHandler,
 } from './auth.controller';
 import { authenticate } from '../../middleware/auth';
+import { authLimiter } from '../../middleware/rateLimiter';
 
 const router = Router();
 
-router.post('/login', loginHandler);
+router.post('/login', authLimiter, loginHandler);
 router.post('/refresh', refreshHandler);
 router.post('/logout', authenticate, logoutHandler);
 router.post('/change-password', authenticate, changePasswordHandler);

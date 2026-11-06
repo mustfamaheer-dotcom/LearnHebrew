@@ -1,16 +1,29 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navbar } from './components/common/Navbar';
 import { ToastContainer } from './components/common/ToastContainer';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
-import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
-import { StudentDashboard } from './pages/student/StudentDashboard';
-import { TeacherDashboard } from './pages/teacher/TeacherDashboard';
-import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { PageLoader } from './components/common/PageLoader';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
+
+// Dynamic lazy-loaded route chunks for instant page delivery & performance
+const LandingPage = React.lazy(() =>
+  import('./pages/LandingPage').then((m) => ({ default: m.LandingPage }))
+);
+const LoginPage = React.lazy(() =>
+  import('./pages/LoginPage').then((m) => ({ default: m.LoginPage }))
+);
+const StudentDashboard = React.lazy(() =>
+  import('./pages/student/StudentDashboard').then((m) => ({ default: m.StudentDashboard }))
+);
+const TeacherDashboard = React.lazy(() =>
+  import('./pages/teacher/TeacherDashboard').then((m) => ({ default: m.TeacherDashboard }))
+);
+const AdminDashboard = React.lazy(() =>
+  import('./pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,33 +57,35 @@ export const App: React.FC = () => {
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
           <Navbar />
           <main className="flex-1">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
 
-              {/* Student Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
-                <Route path="/student" element={<StudentDashboard />} />
-                <Route path="/student/games" element={<StudentDashboard />} />
-                <Route path="/student/leaderboard" element={<StudentDashboard />} />
-              </Route>
+                {/* Student Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
+                  <Route path="/student" element={<StudentDashboard />} />
+                  <Route path="/student/games" element={<StudentDashboard />} />
+                  <Route path="/student/leaderboard" element={<StudentDashboard />} />
+                </Route>
 
-              {/* Teacher Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['TEACHER']} />}>
-                <Route path="/teacher" element={<TeacherDashboard />} />
-              </Route>
+                {/* Teacher Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['TEACHER']} />}>
+                  <Route path="/teacher" element={<TeacherDashboard />} />
+                </Route>
 
-              {/* Admin Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']} />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/users" element={<AdminDashboard />} />
-                <Route path="/admin/packages" element={<AdminDashboard />} />
-              </Route>
+                {/* Admin Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']} />}>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/users" element={<AdminDashboard />} />
+                  <Route path="/admin/packages" element={<AdminDashboard />} />
+                </Route>
 
-              {/* Catch all fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                {/* Catch all fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </main>
           <ToastContainer />
         </div>
@@ -79,4 +94,3 @@ export const App: React.FC = () => {
   );
 };
 export default App;
-

@@ -171,6 +171,8 @@ model BalanceTransaction {
 
   @@index([studentId])
   @@index([createdAt])
+  @@index([studentId, createdAt])
+  @@index([type, createdAt])
 }
 
 model Teacher {
@@ -282,6 +284,9 @@ model Lesson {
   @@index([teacherId])
   @@index([scheduledAt])
   @@index([status])
+  @@index([studentId, scheduledAt])
+  @@index([teacherId, scheduledAt])
+  @@index([status, scheduledAt])
 }
 
 model Homework {
@@ -439,6 +444,7 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
+  @@index([userId, isRead, createdAt])
   @@index([category])
 }
 
