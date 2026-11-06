@@ -477,7 +477,7 @@ export const StudentDashboard: React.FC = () => {
         />
 
         {/* Main Content Area on the right */}
-        <main className="lg:ps-72 xl:ps-80 w-full min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 pb-36 sm:pb-40 lg:pb-10">
+        <main className="lg:ps-72 xl:ps-80 w-full min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 pb-28 sm:pb-32 lg:pb-10">
           {/* TAB 1: OVERVIEW & STATUS */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -2470,8 +2470,8 @@ export const StudentDashboard: React.FC = () => {
       {/* iPhone-Style Floating Liquid Glass Bottom Navigation Bar (Mobile View) */}
       <nav
         aria-label="Mobile Navigation"
-        className="lg:hidden fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-50 pointer-events-auto"
-        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 4.5rem)' }}
+        className="lg:hidden fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-50 pointer-events-auto"
+        style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.85rem)' }}
       >
         <div className="relative rounded-full p-1.5 bg-slate-950/85 dark:bg-slate-950/90 backdrop-blur-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.1)_inset] grid grid-cols-5 items-center justify-around gap-1">
           {/* Top Edge Liquid Glass Sheen */}
