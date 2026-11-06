@@ -70,39 +70,17 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
         <div className="absolute top-0 start-0 w-48 h-48 bg-gradient-to-br from-brand-teal-400/10 to-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 end-0 w-48 h-48 bg-gradient-to-tl from-brand-olive-400/10 to-teal-400/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Header Section */}
-        <div className="px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 p-1 flex items-center justify-center shadow-xs shrink-0">
-              <img
-                src="/logo.png"
-                alt="Engrew"
-                className="w-full h-full object-contain drop-shadow-2xs"
-              />
-            </div>
-            <div className="overflow-hidden min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-base text-slate-900 dark:text-white tracking-tight">
-                  Engrew
-                </span>
-                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-              </div>
-              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                {panelSubtitle}
-              </p>
-            </div>
-          </div>
-
-          {/* Mobile Close Button */}
-          {onCloseMobile && (
+        {/* Mobile Close Button (only when opened as mobile overlay) */}
+        {isOpenMobile && onCloseMobile && (
+          <div className="lg:hidden px-4 py-3 border-b border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 flex items-center justify-end">
             <button
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Middle Scrollable Navigation Section */}
         <div className="flex-1 overflow-y-auto px-3.5 py-4 space-y-2 relative z-10 scrollbar-thin">
