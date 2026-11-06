@@ -747,31 +747,6 @@ export const AdminDashboard: React.FC = () => {
                         : 'Real-time financial telemetry, student wallet reserves, 25-minute lesson utilization, revenue reporting, and one-click administrator actions.'}
                     </p>
                   </div>
-
-                  {/* Primary Instant Actions in Header */}
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <button
-                      onClick={() => handleOpenBalanceModal()}
-                      className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      <Wallet className="w-4 h-4" />
-                      <span>{language === 'he' ? '+ הוסף יתרה לתלמיד' : '+ Add Student Balance'}</span>
-                    </button>
-                    <button
-                      onClick={() => setIsBookingLesson(true)}
-                      className="px-4 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-black text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      <Calendar className="w-4 h-4" />
-                      <span>{language === 'he' ? '+ קבע שיעור חי' : '+ Book Live Lesson'}</span>
-                    </button>
-                    <button
-                      onClick={() => setIsCreatingUser(true)}
-                      className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl backdrop-blur-md border border-white/20 transition-all flex items-center gap-2"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      <span>{t('admin.createUserBtn')}</span>
-                    </button>
-                  </div>
                 </div>
               </div>
 
