@@ -16,6 +16,7 @@ import { QuizGame } from '../../components/games/QuizGame';
 import { MatchingGame } from '../../components/games/MatchingGame';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
+import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { isGoogleDriveUrl, detectAttachmentType } from '../../lib/driveUtils';
 import {
   Calendar as CalendarIcon,
@@ -699,13 +700,7 @@ export const TeacherDashboard: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-sm font-semibold text-slate-500 animate-pulse">
-          {t('common.loading')}
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const lessons = calendarData?.lessons || [];

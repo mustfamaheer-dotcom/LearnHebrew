@@ -10,6 +10,7 @@ import { FlashcardGame } from '../../components/games/FlashcardGame';
 import { QuizGame } from '../../components/games/QuizGame';
 import { MatchingGame } from '../../components/games/MatchingGame';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
+import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
 import { isGoogleDriveUrl, getVideoEmbedUrl } from '../../lib/driveUtils';
 import {
@@ -284,13 +285,7 @@ export const StudentDashboard: React.FC = () => {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-sm font-semibold text-slate-500 animate-pulse">
-          {t('common.loading')}
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const student = dashboard?.student;

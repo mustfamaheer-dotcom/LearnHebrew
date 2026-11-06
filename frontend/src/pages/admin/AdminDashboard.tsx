@@ -6,6 +6,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { toast } from '../../store/toastStore';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
+import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import {
   formatSlotRange12Hour,
   formatIsraelDateTime,
@@ -554,14 +555,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   if (analyticsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-sm font-semibold text-slate-500 animate-pulse flex items-center gap-2">
-          <RefreshCw className="w-5 h-5 animate-spin text-brand-teal-800" />
-          {t('common.loading')}
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const studentsList = usersData?.filter((u: any) => u.role === 'STUDENT') || [];
