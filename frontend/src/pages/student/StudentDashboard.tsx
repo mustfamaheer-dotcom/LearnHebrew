@@ -49,6 +49,7 @@ import {
   Filter,
   Search,
   Wallet,
+  MoreHorizontal,
 } from 'lucide-react';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -69,6 +70,7 @@ export const StudentDashboard: React.FC = () => {
     return 'overview';
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
 
   useEffect(() => {
     if (location.pathname.includes('/games')) {
@@ -333,11 +335,15 @@ export const StudentDashboard: React.FC = () => {
     },
   ];
 
-  const mobileNavItems = [
+  const isSecondaryActive =
+    activeTab === 'recordings' || activeTab === 'homework' || activeTab === 'leaderboard';
+
+  const mobileTabs = [
     {
       id: 'overview',
       label: language === 'he' ? 'ראשי' : 'Home',
       icon: LayoutDashboard,
+      badge: null,
     },
     {
       id: 'booking',
@@ -352,28 +358,30 @@ export const StudentDashboard: React.FC = () => {
       badge: upcomingLessons.length > 0 ? `${upcomingLessons.length}` : null,
     },
     {
-      id: 'recordings',
-      label: language === 'he' ? 'הקלטות' : 'Video',
-      icon: PlayCircle,
-      badge: recordedSessions.length > 0 ? `${recordedSessions.length}` : null,
-    },
-    {
-      id: 'homework',
-      label: language === 'he' ? 'ש״ב' : 'HW',
-      icon: BookOpen,
-      badge: pendingHomeworkCount > 0 ? `${pendingHomeworkCount}` : null,
-    },
-    {
       id: 'games',
       label: language === 'he' ? 'משחקים' : 'Games',
       icon: Gamepad2,
       badge: null,
     },
     {
-      id: 'leaderboard',
-      label: language === 'he' ? 'דירוג' : 'Rank',
-      icon: Award,
-      badge: null,
+      id: isSecondaryActive ? activeTab : 'more',
+      label:
+        activeTab === 'recordings'
+          ? (language === 'he' ? 'הקלטות' : 'Video')
+          : activeTab === 'homework'
+          ? (language === 'he' ? 'ש״ב' : 'HW')
+          : activeTab === 'leaderboard'
+          ? (language === 'he' ? 'דירוג' : 'Rank')
+          : (language === 'he' ? 'עוד' : 'More'),
+      icon:
+        activeTab === 'recordings'
+          ? PlayCircle
+          : activeTab === 'homework'
+          ? BookOpen
+          : activeTab === 'leaderboard'
+          ? Award
+          : MoreHorizontal,
+      badge: pendingHomeworkCount > 0 ? `${pendingHomeworkCount}` : null,
     },
   ];
 
@@ -2476,31 +2484,35 @@ export const StudentDashboard: React.FC = () => {
       {/* iPhone-Style Floating Liquid Glass Bottom Navigation Bar (Mobile View) */}
       <nav
         aria-label="Mobile Navigation"
-        className="lg:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+4.75rem)] sm:bottom-6 inset-x-2.5 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 max-w-lg mx-auto"
+        className="lg:hidden fixed bottom-[max(calc(env(safe-area-inset-bottom,0px)+4.75rem),5.25rem)] sm:bottom-6 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 max-w-md mx-auto"
       >
-        <div className="relative rounded-full p-1.5 bg-slate-900/85 dark:bg-slate-950/90 backdrop-blur-2xl border border-white/20 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.08)_inset] flex items-center justify-between gap-1 overflow-x-auto scrollbar-none">
+        <div className="relative rounded-full p-1.5 bg-slate-950/85 dark:bg-slate-950/90 backdrop-blur-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.1)_inset] grid grid-cols-5 items-center justify-around gap-1">
           {/* Top Edge Liquid Glass Sheen */}
-          <div className="absolute inset-x-6 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-6 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
 
-          {mobileNavItems.map((item) => {
+          {mobileTabs.map((item) => {
             const Icon = item.icon;
-            const isActive = activeTab === item.id;
+            const isActive = activeTab === item.id || (item.id === 'more' && isSecondaryActive);
 
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => {
-                  setActiveTab(item.id as any);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  if (item.id === 'more') {
+                    setIsMobileMoreOpen(true);
+                  } else {
+                    setActiveTab(item.id as any);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
                 }}
-                className={`relative flex-1 min-w-[46px] py-1.5 px-1 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${
+                className={`relative py-1.5 px-1 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${
                   isActive
-                    ? 'bg-white/20 dark:bg-white/25 backdrop-blur-xl border border-white/35 dark:border-white/30 shadow-[0_4px_20px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.6)]'
+                    ? 'bg-white/20 dark:bg-white/25 backdrop-blur-xl border border-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.7)]'
                     : 'hover:bg-white/10 text-slate-300 dark:text-slate-400'
                 }`}
               >
-                {/* Active Lens Chromatic Glow */}
+                {/* Active Lens Chromatic Glow & Top Highlight */}
                 {isActive && (
                   <>
                     <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400/25 via-emerald-400/15 to-transparent pointer-events-none" />
@@ -2516,15 +2528,15 @@ export const StudentDashboard: React.FC = () => {
                 <Icon
                   className={`w-5 h-5 shrink-0 transition-transform duration-200 ${
                     isActive
-                      ? 'text-cyan-300 dark:text-cyan-300 scale-110 drop-shadow-[0_0_10px_rgba(34,211,238,0.85)]'
-                      : 'group-hover:scale-105'
+                      ? 'text-cyan-300 scale-110 drop-shadow-[0_0_10px_rgba(34,211,238,0.85)]'
+                      : 'text-white/80 group-hover:scale-105'
                   }`}
                 />
                 <span
                   className={`text-[10px] tracking-tight mt-0.5 leading-tight truncate max-w-full ${
                     isActive
-                      ? 'text-cyan-300 dark:text-cyan-300 font-black drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]'
-                      : 'text-slate-300 dark:text-slate-400 font-bold'
+                      ? 'text-cyan-300 font-black drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]'
+                      : 'text-white/75 font-bold'
                   }`}
                 >
                   {item.label}
@@ -2534,6 +2546,173 @@ export const StudentDashboard: React.FC = () => {
           })}
         </div>
       </nav>
+
+      {/* iOS Liquid Glass Mobile "More" Sheet */}
+      {isMobileMoreOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setIsMobileMoreOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-3xl rounded-t-3xl border-t border-x border-white/20 p-5 pb-32 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Grab Handle */}
+            <div className="w-12 h-1.5 bg-white/30 rounded-full mx-auto" />
+
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <h3 className="font-extrabold text-base text-white tracking-tight">
+                  {language === 'he' ? 'פעולות ותכנים נוספים' : 'More Learning Tools'}
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  {language === 'he' ? 'שיעורים מוקלטים, שיעורי בית, לוח דירוג ויתרה' : 'Recorded sessions, homework, rankings & balance'}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMobileMoreOpen(false)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-white bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              {/* Card 1: Recorded Sessions */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('recordings');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl border text-start transition-all flex flex-col justify-between space-y-2 ${
+                  activeTab === 'recordings'
+                    ? 'bg-white/20 border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-brand-teal-500/20 text-cyan-300">
+                    <PlayCircle className="w-5 h-5" />
+                  </div>
+                  {recordedSessions.length > 0 && (
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/30">
+                      {recordedSessions.length}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-bold text-xs text-white">
+                    {language === 'he' ? 'שיעורים מוקלטים' : 'Recorded Sessions'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {language === 'he' ? 'צפייה חוזרת בשיעורים' : 'Google Drive replays'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Card 2: Homework */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('homework');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl border text-start transition-all flex flex-col justify-between space-y-2 ${
+                  activeTab === 'homework'
+                    ? 'bg-white/20 border-brand-olive-400/50 shadow-[0_0_15px_rgba(163,230,53,0.3)]'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-brand-olive-500/20 text-brand-olive-300">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  {pendingHomeworkCount > 0 && (
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 animate-pulse">
+                      {pendingHomeworkCount} {language === 'he' ? 'לבדיקה' : 'pending'}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-bold text-xs text-white">
+                    {language === 'he' ? 'שיעורי בית' : 'Homework & Tasks'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {language === 'he' ? 'הגשות ומשוב מורים' : 'Submissions & feedback'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Card 3: Leaderboard */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('leaderboard');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl border text-start transition-all flex flex-col justify-between space-y-2 ${
+                  activeTab === 'leaderboard'
+                    ? 'bg-white/20 border-purple-400/50 shadow-[0_0_15px_rgba(192,132,252,0.3)]'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-400/20 text-purple-300 border border-purple-400/30">
+                    {student?.totalPoints || 0} pts
+                  </span>
+                </div>
+                <div>
+                  <p className="font-bold text-xs text-white">
+                    {language === 'he' ? 'לוח דירוג' : 'Leaderboard'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {language === 'he' ? 'ליגות ונקודות XP' : 'XP Points & Ranking'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Card 4: Balance & Top-up */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('booking');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl border text-start transition-all flex flex-col justify-between space-y-2 ${
+                  !hasEnoughBalance
+                    ? 'bg-rose-950/40 border-rose-500/50'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                    ${currentBalance.toFixed(2)}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-bold text-xs text-white">
+                    {language === 'he' ? 'יתרת חשבון' : 'Account Balance'}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    {language === 'he' ? 'תעריפי שיעורים והזמנות' : 'Session rates & booking'}
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
