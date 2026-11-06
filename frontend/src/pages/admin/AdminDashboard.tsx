@@ -43,7 +43,6 @@ import {
   Wallet,
   UserCheck,
   UserX,
-  Flame,
   ShieldCheck,
   Video,
   AlertTriangle,
@@ -112,7 +111,6 @@ export const AdminDashboard: React.FC = () => {
   const [editLevel, setEditLevel] = useState<string>('BEGINNER');
   const [editNotes, setEditNotes] = useState('');
   const [editTotalPoints, setEditTotalPoints] = useState(0);
-  const [editStreakDays, setEditStreakDays] = useState(0);
   const [editBio, setEditBio] = useState('');
   const [editSpecialties, setEditSpecialties] = useState('');
 
@@ -452,7 +450,6 @@ export const AdminDashboard: React.FC = () => {
     setEditLevel(u.studentProfile?.level || 'BEGINNER');
     setEditNotes(u.studentProfile?.notes || '');
     setEditTotalPoints(u.studentProfile?.totalPoints || 0);
-    setEditStreakDays(u.studentProfile?.streakDays || 0);
     setEditBio(u.teacherProfile?.bio || '');
     setEditSpecialties((u.teacherProfile?.specialties || []).join(', '));
     setIsEditingUser(true);
@@ -478,7 +475,6 @@ export const AdminDashboard: React.FC = () => {
           level: editLevel,
           notes: editNotes,
           totalPoints: Number(editTotalPoints) || 0,
-          streakDays: Number(editStreakDays) || 0,
         }),
         ...(editRole === 'TEACHER' && {
           bio: editBio,
@@ -2025,16 +2021,10 @@ export const AdminDashboard: React.FC = () => {
                               {/* Gamification / Activity */}
                               <td className="py-3.5 px-4">
                                 {isStudent && u.studentProfile ? (
-                                  <div className="flex items-center gap-3">
-                                    <span className="inline-flex items-center gap-1 font-bold text-brand-teal-800 dark:text-brand-teal-300">
-                                      <Award className="w-3.5 h-3.5 text-brand-olive-500" />
-                                      {u.studentProfile.totalPoints || 0} pts
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
-                                      <Flame className="w-3.5 h-3.5 text-amber-500" />
-                                      {u.studentProfile.streakDays || 0}d
-                                    </span>
-                                  </div>
+                                  <span className="inline-flex items-center gap-1 font-bold text-brand-teal-800 dark:text-brand-teal-300">
+                                    <Award className="w-3.5 h-3.5 text-brand-olive-500" />
+                                    {u.studentProfile.totalPoints || 0} pts
+                                  </span>
                                 ) : isTeacher && u.teacherProfile ? (
                                   <span className="inline-flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
                                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -3278,31 +3268,17 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        {language === 'he' ? 'סה״כ נקודות (XP)' : 'Total Points (XP)'}
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editTotalPoints}
-                        onChange={(e) => setEditTotalPoints(Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        {language === 'he' ? 'ימי רצף (Streak Days)' : 'Streak Days'}
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editStreakDays}
-                        onChange={(e) => setEditStreakDays(Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
-                      />
-                    </div>
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'סה״כ נקודות (XP)' : 'Total Points (XP)'}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editTotalPoints}
+                      onChange={(e) => setEditTotalPoints(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                    />
                   </div>
 
                   <div>

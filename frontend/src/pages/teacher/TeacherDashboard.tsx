@@ -44,7 +44,6 @@ import {
   FolderOpen,
   ArrowRight,
   Award,
-  Flame,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -1481,7 +1480,7 @@ export const TeacherDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Badges Bar: Level & Points & Streak */}
+                        {/* Badges Bar: Level & Points */}
                         <div className="h-10 flex items-center justify-between gap-2 text-xs px-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/80">
                           <span className="inline-flex items-center gap-1.5 font-bold text-brand-olive-800 dark:text-brand-olive-300 text-xs shrink-0">
                             <span className="w-2 h-2 rounded-full bg-brand-olive-500 shrink-0" />
@@ -1491,10 +1490,6 @@ export const TeacherDashboard: React.FC = () => {
                             <span className="flex items-center gap-1 text-brand-teal-800 dark:text-brand-teal-300">
                               <Award className="w-3.5 h-3.5 text-brand-olive-500 shrink-0" />
                               <span>{student.totalPoints || 0} {language === 'he' ? 'נקודות' : 'pts'}</span>
-                            </span>
-                            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                              <Flame className="w-3.5 h-3.5 shrink-0" />
-                              <span>{student.stats?.streakDays || 1}{language === 'he' ? ' ימים' : 'd streak'}</span>
                             </span>
                           </div>
                         </div>

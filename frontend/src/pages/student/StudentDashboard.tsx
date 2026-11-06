@@ -22,7 +22,6 @@ import {
   Calendar as CalendarIcon,
   Video,
   Award,
-  Flame,
   CheckCircle,
   CheckCircle2,
   Clock,
@@ -459,25 +458,14 @@ export const StudentDashboard: React.FC = () => {
                   ${currentBalance.toFixed(2)}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="text-center p-1">
-                  <div className="flex items-center justify-center gap-1 text-amber-500 font-extrabold text-xs">
-                    <Award className="w-3.5 h-3.5" />
-                    <span>{student?.totalPoints || 0}</span>
-                  </div>
-                  <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                    {language === 'he' ? 'נקודות' : 'Points'}
-                  </p>
+              <div className="text-center p-2 rounded-xl bg-slate-50/60 dark:bg-slate-800/40">
+                <div className="flex items-center justify-center gap-1.5 text-amber-500 font-extrabold text-xs">
+                  <Award className="w-3.5 h-3.5" />
+                  <span>{student?.totalPoints || 0}</span>
                 </div>
-                <div className="text-center p-1 border-s border-slate-200 dark:border-slate-700/80">
-                  <div className="flex items-center justify-center gap-1 text-orange-500 font-extrabold text-xs">
-                    <Flame className="w-3.5 h-3.5" />
-                    <span>{student?.streakDays || 0}</span>
-                  </div>
-                  <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                    {language === 'he' ? 'ימי רצף' : 'Streak'}
-                  </p>
-                </div>
+                <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                  {language === 'he' ? 'נקודות למידה' : 'Points Earned'}
+                </p>
               </div>
             </div>
           }
@@ -510,9 +498,9 @@ export const StudentDashboard: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Balance & Gamification Stats */}
+                  {/* Balance & Points Stats */}
                   <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[105px] border border-white/15">
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[110px] border border-white/15">
                       <div className="flex items-center justify-center gap-1 text-emerald-300 font-extrabold text-lg sm:text-xl">
                         <Wallet className="w-5 h-5 text-emerald-300 shrink-0" />
                         <span>${currentBalance.toFixed(2)}</span>
@@ -522,23 +510,13 @@ export const StudentDashboard: React.FC = () => {
                       </p>
                     </div>
 
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[95px] border border-white/15">
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[105px] border border-white/15">
                       <div className="flex items-center justify-center gap-1 text-amber-400 font-extrabold text-lg sm:text-xl">
                         <Award className="w-5 h-5 shrink-0" />
                         <span>{student?.totalPoints || 0}</span>
                       </div>
                       <p className="text-[10px] sm:text-[11px] font-semibold text-brand-teal-100 uppercase mt-0.5">
                         {t('dashboard.pointsEarned')}
-                      </p>
-                    </div>
-
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[95px] border border-white/15">
-                      <div className="flex items-center justify-center gap-1 text-orange-400 font-extrabold text-lg sm:text-xl">
-                        <Flame className="w-5 h-5 shrink-0" />
-                        <span>{student?.streakDays || 0}</span>
-                      </div>
-                      <p className="text-[10px] sm:text-[11px] font-semibold text-brand-teal-100 uppercase mt-0.5">
-                        {language === 'he' ? 'ימי רצף' : 'Day Streak'}
                       </p>
                     </div>
                   </div>
