@@ -126,6 +126,7 @@ export const AdminDashboard: React.FC = () => {
   const [bookTeacherId, setBookTeacherId] = useState('');
   const [bookDateTime, setBookDateTime] = useState('');
   const [bookDuration, setBookDuration] = useState<25 | 40 | 55>(25);
+  const [bookZoomLink, setBookZoomLink] = useState('https://zoom.us/j/engrew-live');
 
   // Session Pricing Management State (25, 40, 55 min)
   const { data: sessionPricing } = useQuery({
@@ -3505,6 +3506,20 @@ export const AdminDashboard: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
                 />
               </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'he' ? 'קישור לפגישת זום' : 'Zoom Meeting Link'}
+                </label>
+                <input
+                  type="url"
+                  value={bookZoomLink}
+                  onChange={(e) => setBookZoomLink(e.target.value)}
+                  placeholder="https://zoom.us/j/1234567890"
+                  dir="ltr"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1 font-mono text-xs"
+                />
+              </div>
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -3526,7 +3541,7 @@ export const AdminDashboard: React.FC = () => {
                     scheduledAt: new Date(bookDateTime).toISOString(),
                     lessonType: 'REGULAR',
                     durationMinutes: bookDuration,
-                    zoomLink: 'https://zoom.us/j/engrew-live',
+                    zoomLink: bookZoomLink.trim() || undefined,
                   });
                 }}
                 disabled={bookLessonMutation.isPending}

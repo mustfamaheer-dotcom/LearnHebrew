@@ -10,6 +10,8 @@ const addSlotSchema = z.object({
   endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Must be in HH:MM format').optional(),
   durationMinutes: z.number().int().optional(),
   slotType: z.nativeEnum(SlotType).optional(),
+  zoomLink: z.string().min(5, 'Zoom meeting link is required for availability slots'),
+  saveAsDefault: z.boolean().optional(),
 });
 
 export async function listTeachersHandler(req: AuthRequest, res: Response, next: NextFunction) {

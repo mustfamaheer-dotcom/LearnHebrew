@@ -163,9 +163,10 @@ model Teacher {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   bio         String?
   specialties String[] @default([])
-  ratingAvg   Float    @default(0.0)
-  ratingCount Int      @default(0)
-  createdAt   DateTime @default(now())
+  ratingAvg       Float    @default(0.0)
+  ratingCount     Int      @default(0)
+  defaultZoomLink String?
+  createdAt       DateTime @default(now())
 
   timeSlots   TimeSlot[]
   lessons     Lesson[]
@@ -223,6 +224,7 @@ model TimeSlot {
   endTime     String    // HH:mm format e.g. "09:30"
   slotType    SlotType  @default(REGULAR)
   isAvailable Boolean   @default(true)
+  zoomLink    String?
   createdAt   DateTime  @default(now())
 
   lessons     Lesson[]

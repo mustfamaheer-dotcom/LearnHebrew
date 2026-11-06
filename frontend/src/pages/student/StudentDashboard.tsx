@@ -178,6 +178,7 @@ export const StudentDashboard: React.FC = () => {
       scheduledAt: string;
       lessonType: string;
       durationMinutes?: number;
+      timeSlotId?: string;
       zoomLink?: string;
     }) => {
       return api.post('/lessons', payload);
@@ -410,16 +411,23 @@ export const StudentDashboard: React.FC = () => {
       toast.error(err);
       return;
     }
+    const chosenDay = new Date(bookingDate + 'T00:00:00').getDay();
+    const matchingSlot = (selectedTeacher?.timeSlots || []).find((s: any) => {
+      const dur = getSlotDurationMinutes(s.startTime, s.endTime);
+      return dur === selectedDuration && s.dayOfWeek === chosenDay && s.startTime === selectedSlotTime;
+    });
+
     const scheduledIso = new Date(
       `${bookingDate}T${selectedSlotTime}:00`
     ).toISOString();
     bookLessonMutation.mutate({
       studentId: student.id,
       teacherId: selectedTeacherId,
+      timeSlotId: matchingSlot?.id,
       scheduledAt: scheduledIso,
       lessonType: 'REGULAR',
       durationMinutes: selectedDuration,
-      zoomLink: 'https://zoom.us/j/engrew-live',
+      zoomLink: matchingSlot?.zoomLink || undefined,
     });
   };
 

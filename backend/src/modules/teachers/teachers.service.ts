@@ -78,7 +78,7 @@ export async function getTeacherCalendar(teacherIdOrUserId: string) {
     }),
   ]);
 
-  return { lessons, slots };
+  return { lessons, slots, defaultZoomLink: teacher.defaultZoomLink };
 }
 
 export async function getTeacherSlots(teacherIdOrUserId: string) {
@@ -97,6 +97,8 @@ export async function addSlot(
     endTime?: string;
     durationMinutes?: number;
     slotType?: SlotType;
+    zoomLink: string;
+    saveAsDefault?: boolean;
   }
 ) {
   const teacher = await getTeacherById(teacherIdOrUserId);
@@ -111,6 +113,16 @@ export async function addSlot(
     endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
   }
 
+  const zoomUrl = data.zoomLink.trim();
+
+  // If requested or if teacher has no default Zoom link, save as default
+  if (data.saveAsDefault || !teacher.defaultZoomLink) {
+    await prisma.teacher.update({
+      where: { id: teacher.id },
+      data: { defaultZoomLink: zoomUrl },
+    });
+  }
+
   return prisma.timeSlot.create({
     data: {
       teacherId: teacher.id,
@@ -119,6 +131,7 @@ export async function addSlot(
       endTime,
       slotType: data.slotType || SlotType.REGULAR,
       isAvailable: true,
+      zoomLink: zoomUrl,
     },
   });
 }

@@ -106,6 +106,19 @@ export const TeacherDashboard: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDay());
   const [selectedDuration, setSelectedDuration] = useState<SessionDuration>(25);
 
+  // Mandatory Slot Zoom Link Configuration Modal
+  const [isConfiguringSlot, setIsConfiguringSlot] = useState(false);
+  const [selectedSlotBlock, setSelectedSlotBlock] = useState<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    durationMinutes: number;
+    slotLabel: string;
+    formattedDate: string;
+  } | null>(null);
+  const [slotZoomLink, setSlotZoomLink] = useState('');
+  const [saveZoomAsDefault, setSaveZoomAsDefault] = useState(true);
+
   // Helper to compute dates of current week (Sunday to Saturday) based on selectedDate
   const getWeekDates = (baseDateStr: string) => {
     const base = new Date(baseDateStr + 'T00:00:00');
@@ -342,26 +355,98 @@ export const TeacherDashboard: React.FC = () => {
     },
   });
 
-  // Add slot mutation (supports 25, 40, and 55 minute sessions)
+  // Add slot mutation (supports 25, 40, and 55 minute sessions with Zoom meeting link)
   const addSlotMutation = useMutation({
     mutationFn: async (data: {
       dayOfWeek: number;
       startTime: string;
       endTime: string;
       durationMinutes?: number;
+      zoomLink: string;
+      saveAsDefault?: boolean;
     }) => {
       return api.post(`/teachers/${user?.id}/slots`, data);
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
+      setIsConfiguringSlot(false);
+      setSelectedSlotBlock(null);
       const dur = vars.durationMinutes || 25;
       toast.success(
         language === 'he'
-          ? `שעת הזמינות (${dur} דקות) נפתחה בהצלחה לתלמידים!`
-          : `${dur}-minute availability slot opened for students!`
+          ? `שעת הזמינות (${dur} דקות) עם קישור הזום נפתחה בהצלחה לתלמידים ולבעל הפלטפורמה!`
+          : `${dur}-minute availability slot with Zoom link opened for students & owner!`
+      );
+    },
+    onError: (err: any) => {
+      toast.error(
+        err.response?.data?.error ||
+          (language === 'he' ? 'שגיאה בפתיחת שעת הזמינות' : 'Failed to open availability slot')
       );
     },
   });
+
+  const handleOpenSlotModal = (block: { start: string; end: string }, slotLabel: string) => {
+    if (isSlotInPast(selectedDate, block.start)) {
+      toast.error(
+        language === 'he'
+          ? 'לא ניתן להוסיף שעת זמינות לתאריך או שעה שכבר עברו.'
+          : 'Cannot open a slot for a past date or time.'
+      );
+      return;
+    }
+    const defaultZoom =
+      calendarData?.defaultZoomLink ||
+      localStorage.getItem('engrew_teacher_zoom_link') ||
+      '';
+    setSlotZoomLink(defaultZoom);
+    setSelectedSlotBlock({
+      dayOfWeek: selectedDay,
+      startTime: block.start,
+      endTime: block.end,
+      durationMinutes: selectedDuration,
+      slotLabel,
+      formattedDate: new Date(selectedDate + 'T00:00:00').toLocaleDateString(
+        language === 'he' ? 'he-IL' : 'en-US',
+        { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }
+      ),
+    });
+    setIsConfiguringSlot(true);
+  };
+
+  const handleConfirmSlot = () => {
+    if (!selectedSlotBlock) return;
+    const trimmedZoom = slotZoomLink.trim();
+    if (!trimmedZoom) {
+      toast.warning(
+        language === 'he'
+          ? 'חובה להזין קישור לפגישת זום לפני פתיחת השעה'
+          : 'A Zoom meeting link is required before opening this slot'
+      );
+      return;
+    }
+    if (!trimmedZoom.startsWith('http://') && !trimmedZoom.startsWith('https://')) {
+      toast.warning(
+        language === 'he'
+          ? 'קישור הזום חייב להתחיל ב-https:// או http://'
+          : 'Zoom link must start with https:// or http://'
+      );
+      return;
+    }
+
+    if (saveZoomAsDefault) {
+      localStorage.setItem('engrew_teacher_zoom_link', trimmedZoom);
+    }
+
+    addSlotMutation.mutate({
+      dayOfWeek: selectedSlotBlock.dayOfWeek,
+      startTime: selectedSlotBlock.startTime,
+      endTime: selectedSlotBlock.endTime,
+      durationMinutes: selectedSlotBlock.durationMinutes,
+      zoomLink: trimmedZoom,
+      saveAsDefault: saveZoomAsDefault,
+    });
+  };
 
   // Delete slot mutation
   const deleteSlotMutation = useMutation({
@@ -1076,9 +1161,26 @@ export const TeacherDashboard: React.FC = () => {
                                 <span className="text-xs font-black block">
                                   {language === 'he' ? 'שעה פתוחה' : 'Available Slot'}
                                 </span>
-                                <span className="text-[10px] font-semibold opacity-90">
+                                <span className="text-[10px] font-semibold opacity-90 block">
                                   {slotDur} {language === 'he' ? 'דק׳ (שעון ישראל)' : 'min (Israel Time)'}
                                 </span>
+
+                                {existingSlot.zoomLink ? (
+                                  <a
+                                    href={existingSlot.zoomLink}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-[10px] font-black text-brand-teal-900 dark:text-brand-teal-200 mt-2 transition-colors max-w-full"
+                                    title={existingSlot.zoomLink}
+                                  >
+                                    <Video className="w-3.5 h-3.5 shrink-0 text-brand-teal-700 dark:text-brand-teal-400" />
+                                    <span className="truncate">Zoom Linked</span>
+                                  </a>
+                                ) : (
+                                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold block mt-1">
+                                    No Zoom Link
+                                  </span>
+                                )}
                               </div>
 
                               <button
@@ -1117,22 +1219,7 @@ export const TeacherDashboard: React.FC = () => {
                         return (
                           <button
                             key={block.start}
-                            onClick={() => {
-                              if (isSlotInPast(selectedDate, block.start)) {
-                                toast.error(
-                                  language === 'he'
-                                    ? 'לא ניתן להוסיף שעת זמינות לתאריך או שעה שכבר עברו.'
-                                    : 'Cannot open a slot for a past date or time.'
-                                );
-                                return;
-                              }
-                              addSlotMutation.mutate({
-                                dayOfWeek: selectedDay,
-                                startTime: block.start,
-                                endTime: block.end,
-                                durationMinutes: selectedDuration,
-                              });
-                            }}
+                            onClick={() => handleOpenSlotModal(block, slotLabel12h)}
                             className="p-3.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-teal-600 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/50 dark:hover:bg-brand-teal-950/30 text-slate-500 dark:text-slate-400 hover:text-brand-teal-900 dark:hover:text-brand-teal-200 transition-all flex flex-col justify-between min-h-[7rem] text-start group shadow-2xs"
                           >
                             <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300">
@@ -3236,6 +3323,139 @@ export const TeacherDashboard: React.FC = () => {
                     : language === 'he'
                     ? 'שמור ופרסם משחק'
                     : 'Save & Publish Game'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* CONFIGURE SLOT & ADD ZOOM LINK MODAL */}
+      {isConfiguringSlot && selectedSlotBlock && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-5 animate-fade-in">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-brand-teal-50 dark:bg-brand-teal-950/80 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center font-bold">
+                  <Video className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 dark:text-white text-base">
+                    {language === 'he' ? 'פתיחת שעת זמינות והגדרת זום' : 'Open Availability Slot & Add Zoom'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {language === 'he'
+                      ? 'חובה להזין קישור זום לחיבור ישיר בין התלמיד, המורה ובעל הפלטפורמה'
+                      : 'Zoom meeting link is required for seamless student, teacher & owner access'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsConfiguringSlot(false);
+                  setSelectedSlotBlock(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Slot Details Summary Card */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 dark:text-slate-400 font-medium">
+                  {language === 'he' ? 'תאריך ושעה:' : 'Date & Israel Time:'}
+                </span>
+                <span className="font-black text-slate-900 dark:text-white">
+                  {selectedSlotBlock.slotLabel} ({selectedSlotBlock.durationMinutes} min)
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold">
+                📅 {selectedSlotBlock.formattedDate}
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
+                <Clock className="w-3 h-3" />
+                <span>{selectedSlotBlock.durationMinutes}-Minute Slot Format</span>
+              </div>
+            </div>
+
+            {/* Zoom Link Input */}
+            <div className="space-y-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-black text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <Video className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
+                    <span>{language === 'he' ? 'קישור לפגישת זום (חובה)' : 'Zoom Meeting Link (Required)'}</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  {calendarData?.defaultZoomLink && (
+                    <button
+                      type="button"
+                      onClick={() => setSlotZoomLink(calendarData.defaultZoomLink)}
+                      className="text-[10px] font-bold text-brand-teal-800 dark:text-brand-teal-400 hover:underline"
+                    >
+                      {language === 'he' ? 'השתמש בקישור הקבוע שלי' : 'Use default link'}
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="url"
+                    value={slotZoomLink}
+                    onChange={(e) => setSlotZoomLink(e.target.value)}
+                    placeholder="https://zoom.us/j/1234567890"
+                    dir="ltr"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
+                    autoFocus
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+                  {language === 'he'
+                    ? 'קישור זה ישויך ישירות לשיעור בעת ההזמנה, ויוצג לתלמיד, למורה ובמרכז הבקרה של בעל הפלטפורמה.'
+                    : 'This Zoom link will be automatically attached to booked lessons and accessible to the student, instructor, and Platform Owner.'}
+                </p>
+              </div>
+
+              {/* Save as default checkbox */}
+              <label className="flex items-center gap-2 cursor-pointer pt-1 text-xs text-slate-700 dark:text-slate-300">
+                <input
+                  type="checkbox"
+                  checked={saveZoomAsDefault}
+                  onChange={(e) => setSaveZoomAsDefault(e.target.checked)}
+                  className="rounded border-slate-300 text-brand-teal-800 focus:ring-brand-teal-800 w-4 h-4"
+                />
+                <span className="font-semibold">
+                  {language === 'he'
+                    ? 'שמור קישור זה כברירת המחדל שלי לשיעורים הבאים'
+                    : 'Save as my default Zoom room for future slots'}
+                </span>
+              </label>
+            </div>
+
+            {/* Modal Buttons */}
+            <div className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsConfiguringSlot(false);
+                  setSelectedSlotBlock(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                {language === 'he' ? 'ביטול' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSlot}
+                disabled={addSlotMutation.isPending || !slotZoomLink.trim()}
+                className="flex-1 py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 disabled:opacity-50 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>
+                  {addSlotMutation.isPending
+                    ? (language === 'he' ? 'פותח שעה...' : 'Opening Slot...')
+                    : (language === 'he' ? 'אישור ופתיחת שעה' : 'Confirm & Open Slot')}
                 </span>
               </button>
             </div>

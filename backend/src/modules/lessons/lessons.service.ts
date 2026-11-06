@@ -156,6 +156,37 @@ export async function bookLesson(data: {
       },
     });
 
+    // Resolve Zoom Link: prioritize explicitly passed link, then slot zoom link, then teacher default zoom link
+    let resolvedZoomLink = data.zoomLink?.trim();
+    if (!resolvedZoomLink || resolvedZoomLink === 'https://zoom.us/j/engrew-live') {
+      if (data.timeSlotId) {
+        const slot = await tx.timeSlot.findUnique({ where: { id: data.timeSlotId } });
+        if (slot?.zoomLink) resolvedZoomLink = slot.zoomLink;
+      }
+      if (!resolvedZoomLink) {
+        const scheduled = new Date(data.scheduledAt);
+        const dayOfWeek = scheduled.getDay();
+        const h = String(scheduled.getHours()).padStart(2, '0');
+        const m = String(scheduled.getMinutes()).padStart(2, '0');
+        const timeStr = `${h}:${m}`;
+        const matchingSlot = await tx.timeSlot.findFirst({
+          where: {
+            teacherId: teacher.id,
+            dayOfWeek,
+            startTime: timeStr,
+            zoomLink: { not: null },
+          },
+        });
+        if (matchingSlot?.zoomLink) resolvedZoomLink = matchingSlot.zoomLink;
+      }
+      if (!resolvedZoomLink && teacher.defaultZoomLink) {
+        resolvedZoomLink = teacher.defaultZoomLink;
+      }
+      if (!resolvedZoomLink) {
+        resolvedZoomLink = 'https://zoom.us/j/engrew-live';
+      }
+    }
+
     const lesson = await tx.lesson.create({
       data: {
         studentId: student.id,
@@ -165,7 +196,7 @@ export async function bookLesson(data: {
         scheduledAt: data.scheduledAt,
         durationMinutes: duration,
         lessonType: data.lessonType || SlotType.REGULAR,
-        zoomLink: data.zoomLink || 'https://zoom.us/j/9876543210',
+        zoomLink: resolvedZoomLink,
         status: LessonStatus.SCHEDULED,
       },
       include: {
