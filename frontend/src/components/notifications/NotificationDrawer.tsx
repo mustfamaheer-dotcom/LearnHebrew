@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   CheckCheck,
@@ -137,8 +138,8 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
   const unreadHomeworkCount = notifications.filter((n) => !n.isRead && n.category === 'HOMEWORK').length;
   const unreadRecordingsCount = notifications.filter((n) => !n.isRead && n.category === 'RECORDING').length;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-md animate-fade-in">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-md animate-fade-in">
       {/* Click Backdrop to close */}
       <div className="fixed inset-0 -z-10" onClick={onClose} />
 
@@ -459,6 +460,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
