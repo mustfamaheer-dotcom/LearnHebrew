@@ -79,35 +79,6 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
         <div className="absolute top-0 start-0 w-48 h-48 bg-gradient-to-br from-brand-teal-400/10 to-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 end-0 w-48 h-48 bg-gradient-to-tl from-brand-olive-400/10 to-teal-400/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Desktop Edge Arrow Toggle Button */}
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          className="hidden lg:flex absolute -end-3.5 top-6 w-7 h-7 rounded-full bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 shadow-md items-center justify-center text-slate-600 hover:text-brand-teal-700 dark:text-slate-300 dark:hover:text-brand-teal-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:scale-110 active:scale-95 transition-all z-50 cursor-pointer group"
-          title={
-            isCollapsed
-              ? language === 'he'
-                ? 'הרחב סרגל צד'
-                : 'Expand sidebar'
-              : language === 'he'
-              ? 'צמצם לסמלים בלבד'
-              : 'Collapse sidebar'
-          }
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {language === 'he' ? (
-            isCollapsed ? (
-              <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-            ) : (
-              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            )
-          ) : isCollapsed ? (
-            <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          ) : (
-            <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-          )}
-        </button>
-
         {/* Mobile Close Button (only when opened as mobile overlay) */}
         {isOpenMobile && onCloseMobile && (
           <div className="lg:hidden px-4 py-3 border-b border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 flex items-center justify-between">
@@ -122,6 +93,45 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
             </button>
           </div>
         )}
+
+        {/* Desktop Inner Arrow Toggle Bar (Fully inside the sidebar) */}
+        <div className={`hidden lg:flex items-center shrink-0 pt-3 pb-1 relative z-10 transition-all ${
+          isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
+        }`}>
+          {!isCollapsed && (
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 select-none">
+              {panelSubtitle || (language === 'he' ? 'ניווט' : 'Navigation')}
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="w-7 h-7 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 hover:bg-brand-teal-50 dark:hover:bg-brand-teal-950/70 text-slate-600 dark:text-slate-300 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 border border-slate-200/70 dark:border-slate-700/70 hover:border-brand-teal-300 dark:hover:border-brand-teal-800 flex items-center justify-center transition-all shadow-2xs cursor-pointer group"
+            title={
+              isCollapsed
+                ? language === 'he'
+                  ? 'הרחב סרגל צד'
+                  : 'Expand sidebar'
+                : language === 'he'
+                ? 'צמצם לסמלים בלבד'
+                : 'Collapse sidebar'
+            }
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {language === 'he' ? (
+              isCollapsed ? (
+                <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+              ) : (
+                <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              )
+            ) : isCollapsed ? (
+              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            ) : (
+              <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+            )}
+          </button>
+        </div>
 
         {/* Middle Scrollable Navigation Section */}
         <div className={`flex-1 overflow-y-auto py-3 space-y-2 relative z-10 scrollbar-thin ${
