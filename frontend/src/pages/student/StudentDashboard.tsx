@@ -333,6 +333,50 @@ export const StudentDashboard: React.FC = () => {
     },
   ];
 
+  const mobileNavItems = [
+    {
+      id: 'overview',
+      label: language === 'he' ? 'ראשי' : 'Home',
+      icon: LayoutDashboard,
+    },
+    {
+      id: 'booking',
+      label: language === 'he' ? 'הזמנה' : 'Book',
+      icon: Clock,
+      badge: remainingLessons > 0 ? `${remainingLessons}` : null,
+    },
+    {
+      id: 'lessons',
+      label: language === 'he' ? 'שיעורים' : 'Live',
+      icon: Video,
+      badge: upcomingLessons.length > 0 ? `${upcomingLessons.length}` : null,
+    },
+    {
+      id: 'recordings',
+      label: language === 'he' ? 'הקלטות' : 'Video',
+      icon: PlayCircle,
+      badge: recordedSessions.length > 0 ? `${recordedSessions.length}` : null,
+    },
+    {
+      id: 'homework',
+      label: language === 'he' ? 'ש״ב' : 'HW',
+      icon: BookOpen,
+      badge: pendingHomeworkCount > 0 ? `${pendingHomeworkCount}` : null,
+    },
+    {
+      id: 'games',
+      label: language === 'he' ? 'משחקים' : 'Games',
+      icon: Gamepad2,
+      badge: null,
+    },
+    {
+      id: 'leaderboard',
+      label: language === 'he' ? 'דירוג' : 'Rank',
+      icon: Award,
+      badge: null,
+    },
+  ];
+
   const handleBookingSubmit = () => {
     if (remainingLessons <= 0) {
       const err =
@@ -373,35 +417,8 @@ export const StudentDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full relative">
-      {/* Mobile Sidebar Toggle Header (visible only on lg:hidden) */}
-      <div className="lg:hidden flex items-center justify-between p-3 sm:p-4 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 px-4 py-3 sticky top-16 z-20 shadow-xs mb-4">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center p-1 shadow-2xs shrink-0">
-            <img src="/logo.png" alt="Engrew" className="w-full h-full object-contain drop-shadow-2xs" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-extrabold text-slate-900 dark:text-white truncate">
-              {language === 'he' ? 'פורטל תלמידים' : 'Student Portal'}
-            </div>
-            <div className="text-[11px] font-bold text-brand-teal-700 dark:text-brand-teal-400 truncate">
-              {language === 'he'
-                ? navItems.find((n) => n.id === activeTab)?.labelHe
-                : navItems.find((n) => n.id === activeTab)?.label}
-            </div>
-          </div>
-        </div>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs shadow-xs transition-colors shrink-0"
-          aria-label="Toggle Navigation"
-        >
-          {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          <span>{mobileMenuOpen ? (language === 'he' ? 'סגור' : 'Close') : (language === 'he' ? 'תפריט' : 'Menu')}</span>
-        </button>
-      </div>
-
       <div className="w-full">
-        {/* Apple-style Glassy Left Sidebar */}
+        {/* Apple-style Glassy Left Sidebar (Desktop View) */}
         <GlassSidebar
           navItems={navItems}
           activeTab={activeTab}
@@ -456,7 +473,7 @@ export const StudentDashboard: React.FC = () => {
         />
 
         {/* Main Content Area on the right */}
-        <main className="lg:ps-72 xl:ps-80 w-full min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8">
+        <main className="lg:ps-72 xl:ps-80 w-full min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 pb-28 sm:pb-32 lg:pb-10">
           {/* TAB 1: OVERVIEW & STATUS */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -2455,6 +2472,68 @@ export const StudentDashboard: React.FC = () => {
         title={viewerTitle}
         subtitle={viewerSubtitle}
       />
+
+      {/* iPhone-Style Floating Liquid Glass Bottom Navigation Bar (Mobile View) */}
+      <nav
+        aria-label="Mobile Navigation"
+        className="lg:hidden fixed bottom-3 sm:bottom-4 inset-x-2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-40 max-w-lg mx-auto"
+      >
+        <div className="relative rounded-full p-1.5 bg-slate-900/85 dark:bg-slate-950/90 backdrop-blur-2xl border border-white/20 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.08)_inset] flex items-center justify-between gap-1 overflow-x-auto scrollbar-none">
+          {/* Top Edge Liquid Glass Sheen */}
+          <div className="absolute inset-x-6 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+
+          {mobileNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(item.id as any);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`relative flex-1 min-w-[46px] py-1.5 px-1 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${
+                  isActive
+                    ? 'bg-white/20 dark:bg-white/25 backdrop-blur-xl border border-white/35 dark:border-white/30 shadow-[0_4px_20px_rgba(0,0,0,0.3),inset_0_1px_2px_rgba(255,255,255,0.6)]'
+                    : 'hover:bg-white/10 text-slate-300 dark:text-slate-400'
+                }`}
+              >
+                {/* Active Lens Chromatic Glow */}
+                {isActive && (
+                  <>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400/25 via-emerald-400/15 to-transparent pointer-events-none" />
+                    <div className="absolute inset-x-2 top-0.5 h-[1px] bg-white/70 rounded-full pointer-events-none" />
+                  </>
+                )}
+
+                {/* Notification Badge Dot */}
+                {item.badge && (
+                  <span className="absolute top-1 end-2 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" />
+                )}
+
+                <Icon
+                  className={`w-5 h-5 shrink-0 transition-transform duration-200 ${
+                    isActive
+                      ? 'text-cyan-300 dark:text-cyan-300 scale-110 drop-shadow-[0_0_10px_rgba(34,211,238,0.85)]'
+                      : 'group-hover:scale-105'
+                  }`}
+                />
+                <span
+                  className={`text-[10px] tracking-tight mt-0.5 leading-tight truncate max-w-full ${
+                    isActive
+                      ? 'text-cyan-300 dark:text-cyan-300 font-black drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]'
+                      : 'text-slate-300 dark:text-slate-400 font-bold'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 };
