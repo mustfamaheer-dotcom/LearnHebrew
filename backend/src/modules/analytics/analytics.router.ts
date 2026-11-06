@@ -38,6 +38,10 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       lowCreditPackages,
       recentLessons,
       recentPackages,
+      studentBalanceAgg,
+      durationGroups,
+      recentBalanceTransactions,
+      lowBalanceStudents,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.student.count(),
@@ -129,6 +133,37 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
         include: {
           student: { include: { user: { select: { firstName: true, lastName: true } } } },
           package: { select: { name: true, price: true } },
+        },
+      }),
+      // Total student wallet balances aggregated
+      prisma.student.aggregate({
+        _sum: { balance: true },
+        _avg: { balance: true },
+      }),
+      // Duration breakdown (25m / 40m / 55m)
+      prisma.lesson.groupBy({
+        by: ['durationMinutes'],
+        _count: { id: true },
+      }),
+      // Recent balance transactions
+      prisma.balanceTransaction.findMany({
+        take: 6,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          student: {
+            include: {
+              user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true } },
+            },
+          },
+        },
+      }),
+      // Students with low balance (< $25, unable to book a 25-min session)
+      prisma.student.findMany({
+        where: { balance: { lt: 25 } },
+        take: 8,
+        orderBy: { balance: 'asc' },
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true } },
         },
       }),
     ]);
@@ -259,6 +294,21 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       })),
     ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
 
+    // Duration breakdown
+    const durationBreakdown: Record<number, number> = { 25: 0, 40: 0, 55: 0 };
+    durationGroups.forEach((g) => {
+      durationBreakdown[g.durationMinutes] = g._count.id;
+    });
+
+    // Low balance alert for students unable to book $25 lessons
+    if (lowBalanceStudents.length > 0) {
+      alerts.unshift({
+        type: 'warning',
+        title: `${lowBalanceStudents.length} Students Have Low Balance (<$25)`,
+        desc: `${lowBalanceStudents.length} student(s) have less than $25 balance and need a top-up to book their next session.`,
+      });
+    }
+
     res.json({
       kpis: {
         totalRevenue: totalRevenue || 1420,
@@ -275,7 +325,28 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
         avgSatisfaction,
         lessonUtilization,
         homeworkCompletionRate,
+        totalStudentBalance: Number(studentBalanceAgg._sum?.balance || 0),
+        avgStudentBalance: Number((studentBalanceAgg._avg?.balance || 0).toFixed(2)),
       },
+      durationBreakdown,
+      lowBalanceStudents: lowBalanceStudents.map((s) => ({
+        studentId: s.id,
+        userId: s.userId,
+        name: `${s.user.firstName} ${s.user.lastName}`,
+        email: s.user.email,
+        avatarUrl: s.user.avatarUrl,
+        balance: Number(s.balance || 0),
+      })),
+      recentBalanceTransactions: recentBalanceTransactions.map((tx) => ({
+        id: tx.id,
+        studentName: `${tx.student.user.firstName} ${tx.student.user.lastName}`,
+        studentEmail: tx.student.user.email,
+        amount: Number(tx.amount),
+        balanceAfter: Number(tx.balanceAfter),
+        type: tx.type,
+        description: tx.description,
+        createdAt: tx.createdAt,
+      })),
       monthlyTrends,
       topStudents,
       topTeachers,
