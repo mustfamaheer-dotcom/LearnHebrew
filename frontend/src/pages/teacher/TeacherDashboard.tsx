@@ -796,7 +796,7 @@ export const TeacherDashboard: React.FC = () => {
         />
 
         {/* Main Content Area */}
-        <main className="lg:ps-72 xl:ps-80 w-full min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8 xl:p-10 space-y-6 sm:space-y-8 min-w-0">
+        <main className="w-full lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)] p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-6 sm:space-y-8 min-w-0">
           {/* Top Banner */}
           <div className="bg-gradient-to-r from-brand-teal-900 to-brand-teal-950 rounded-3xl p-5 sm:p-8 text-white shadow-md relative overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 relative z-10">

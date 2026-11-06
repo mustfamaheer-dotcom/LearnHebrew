@@ -718,7 +718,7 @@ export const AdminDashboard: React.FC = () => {
         />
 
         {/* Main Content Area on the right */}
-        <main className="lg:ps-72 xl:ps-80 w-full min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8">
+        <main className="w-full lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)] p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8">
           {/* TAB 1: OVERVIEW & KPIS */}
           {activeTab === 'overview' && (
             <div className="space-y-8 animate-fade-in">

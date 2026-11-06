@@ -83,7 +83,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
         )}
 
         {/* Middle Scrollable Navigation Section */}
-        <div className="flex-1 overflow-y-auto px-3.5 py-4 space-y-2 relative z-10 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto px-4 py-4 lg:py-8 space-y-2 relative z-10 scrollbar-thin">
           {/* Custom Slot (e.g. Balance or streak) */}
           {customSlot && <div className="mb-3">{customSlot}</div>}
 
