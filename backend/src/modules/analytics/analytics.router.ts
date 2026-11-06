@@ -229,7 +229,7 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       const remaining = Math.max(0, p.lessonsTotal - p.lessonsUsed);
       alerts.push({
         type: 'info',
-        title: 'Low Lesson Credits',
+        title: 'Low Package Lessons Remaining',
         desc: `${p.student.user.firstName} ${p.student.user.lastName} has ${remaining} lesson(s) remaining (${p.package.name}). Ready for renewal.`,
       });
     });

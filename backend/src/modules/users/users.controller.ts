@@ -19,10 +19,14 @@ const createUserSchema = z.object({
 const updateUserSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
+  email: z.string().email().optional(),
   role: z.nativeEnum(Role).optional(),
   isActive: z.boolean().optional(),
   languagePref: z.enum(['en', 'he']).optional(),
   level: z.nativeEnum(HebrewLevel).optional(),
+  notes: z.string().optional(),
+  totalPoints: z.number().int().min(0).optional(),
+  streakDays: z.number().int().min(0).optional(),
   bio: z.string().optional(),
   specialties: z.array(z.string()).optional(),
 });

@@ -41,6 +41,18 @@ import {
   MessageSquare,
   Coins,
   Wallet,
+  UserCheck,
+  UserX,
+  Flame,
+  ShieldCheck,
+  Video,
+  AlertTriangle,
+  XCircle,
+  Info,
+  Settings,
+  DollarSign,
+  CheckCircle2,
+  PlayCircle,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -76,13 +88,28 @@ export const AdminDashboard: React.FC = () => {
   const [isAssigningPkg, setIsAssigningPkg] = useState(false);
   const [assignPkgId, setAssignPkgId] = useState('');
   const [assignStudentId, setAssignStudentId] = useState('');
-  const [assignCustomCredits, setAssignCustomCredits] = useState('');
 
-  // Superadmin Grant Credits State
-  const [isGrantingCredits, setIsGrantingCredits] = useState(false);
-  const [grantStudentId, setGrantStudentId] = useState('');
-  const [grantCreditsAmount, setGrantCreditsAmount] = useState(5);
-  const [grantReason, setGrantReason] = useState('Superadmin grant');
+  // Detailed User Accounts & Roles Management State
+  const [userStatusFilter, setUserStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<any>(null);
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editRole, setEditRole] = useState<'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN'>('STUDENT');
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [editLanguagePref, setEditLanguagePref] = useState<'en' | 'he'>('en');
+  const [editLevel, setEditLevel] = useState<string>('BEGINNER');
+  const [editNotes, setEditNotes] = useState('');
+  const [editTotalPoints, setEditTotalPoints] = useState(0);
+  const [editStreakDays, setEditStreakDays] = useState(0);
+  const [editBio, setEditBio] = useState('');
+  const [editSpecialties, setEditSpecialties] = useState('');
+
+  // Scheduled Lessons Filters
+  const [lessonSearchTerm, setLessonSearchTerm] = useState('');
+  const [lessonStatusFilter, setLessonStatusFilter] = useState('ALL');
+  const [lessonDurationFilter, setLessonDurationFilter] = useState('ALL');
 
   const [isBookingLesson, setIsBookingLesson] = useState(false);
   const [bookStudentId, setBookStudentId] = useState('');
@@ -316,19 +343,16 @@ export const AdminDashboard: React.FC = () => {
     mutationFn: async ({
       pkgId,
       studentId,
-      customCredits,
     }: {
       pkgId: string;
       studentId: string;
-      customCredits?: number;
     }) => {
-      return api.post(`/packages/${pkgId}/assign`, { studentId, customCredits });
+      return api.post(`/packages/${pkgId}/assign`, { studentId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       setIsAssigningPkg(false);
-      setAssignCustomCredits('');
       setAssignStudentId('');
       setAssignPkgId('');
       toast.success(
@@ -342,24 +366,43 @@ export const AdminDashboard: React.FC = () => {
     },
   });
 
-  const grantCreditsMutation = useMutation({
-    mutationFn: async (data: { studentId: string; credits: number; reason?: string }) => {
-      return api.post('/packages/grant-credits', data);
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return api.patch(`/users/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
-      setIsGrantingCredits(false);
-      setGrantCreditsAmount(5);
-      setGrantReason('Superadmin grant');
-      setGrantStudentId('');
+      setIsEditingUser(false);
+      setSelectedUserForEdit(null);
       toast.success(
-        language === 'he' ? 'נקודות השיעורים הוענקו לתלמיד בהצלחה!' : 'Session credits granted to student successfully!'
+        language === 'he' ? 'פרטי המשתמש עודכנו בהצלחה!' : 'User account updated successfully!'
       );
     },
     onError: (err: any) => {
       toast.error(
-        err.response?.data?.error || (language === 'he' ? 'שגיאה בהענקת נקודות' : 'Failed to grant credits')
+        err.response?.data?.error || (language === 'he' ? 'שגיאה בעדכון פרטי המשתמש' : 'Failed to update user')
+      );
+    },
+  });
+
+  const cancelLessonMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      return api.delete(`/lessons/${id}`, { data: { reason: reason || 'Cancelled by Admin' } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminLessons'] });
+      queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+      toast.info(
+        language === 'he'
+          ? 'השיעור בוטל והתשלום הוחזר במלואו ליתרת התלמיד.'
+          : 'Lesson cancelled successfully and full session fee refunded to student balance.'
+      );
+    },
+    onError: (err: any) => {
+      toast.error(
+        err.response?.data?.error || (language === 'he' ? 'שגיאה בביטול השיעור' : 'Failed to cancel lesson')
       );
     },
   });
@@ -386,6 +429,53 @@ export const AdminDashboard: React.FC = () => {
     },
   });
 
+  const handleOpenEditUser = (u: any) => {
+    setSelectedUserForEdit(u);
+    setEditFirstName(u.firstName || '');
+    setEditLastName(u.lastName || '');
+    setEditEmail(u.email || '');
+    setEditRole(u.role || 'STUDENT');
+    setEditIsActive(u.isActive !== false);
+    setEditLanguagePref(u.languagePref || 'en');
+    setEditLevel(u.studentProfile?.level || 'BEGINNER');
+    setEditNotes(u.studentProfile?.notes || '');
+    setEditTotalPoints(u.studentProfile?.totalPoints || 0);
+    setEditStreakDays(u.studentProfile?.streakDays || 0);
+    setEditBio(u.teacherProfile?.bio || '');
+    setEditSpecialties((u.teacherProfile?.specialties || []).join(', '));
+    setIsEditingUser(true);
+  };
+
+  const handleSaveEditUser = () => {
+    if (!selectedUserForEdit) return;
+    const specialtiesArray = editSpecialties
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    updateUserMutation.mutate({
+      id: selectedUserForEdit.id,
+      data: {
+        firstName: editFirstName,
+        lastName: editLastName,
+        email: editEmail,
+        role: editRole,
+        isActive: editIsActive,
+        languagePref: editLanguagePref,
+        ...(editRole === 'STUDENT' && {
+          level: editLevel,
+          notes: editNotes,
+          totalPoints: Number(editTotalPoints) || 0,
+          streakDays: Number(editStreakDays) || 0,
+        }),
+        ...(editRole === 'TEACHER' && {
+          bio: editBio,
+          specialties: specialtiesArray,
+        }),
+      },
+    });
+  };
+
   if (analyticsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -402,12 +492,43 @@ export const AdminDashboard: React.FC = () => {
 
   const filteredUsers = (usersData || []).filter((u: any) => {
     const matchesRole = userRoleFilter === 'ALL' || u.role === userRoleFilter;
+    const matchesStatus =
+      userStatusFilter === 'ALL' ||
+      (userStatusFilter === 'ACTIVE' && u.isActive !== false) ||
+      (userStatusFilter === 'INACTIVE' && u.isActive === false);
     const matchesSearch =
       u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
       u.firstName.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-      u.lastName.toLowerCase().includes(userSearchTerm.toLowerCase());
-    return matchesRole && matchesSearch;
+      u.lastName.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      (u.id && u.id.toLowerCase().includes(userSearchTerm.toLowerCase()));
+    return matchesRole && matchesStatus && matchesSearch;
   });
+
+  const totalPlatformBalance = (usersData || [])
+    .filter((u: any) => u.role === 'STUDENT' && u.studentProfile)
+    .reduce((sum: number, u: any) => sum + Number(u.studentProfile?.balance || 0), 0);
+  const activeStudentsCount = (usersData || []).filter((u: any) => u.role === 'STUDENT' && u.isActive !== false).length;
+  const certifiedTeachersCount = (usersData || []).filter((u: any) => u.role === 'TEACHER').length;
+  const platformOwnersCount = (usersData || []).filter((u: any) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN').length;
+
+  const filteredLessons = (lessonsData || []).filter((l: any) => {
+    const matchesStatus = lessonStatusFilter === 'ALL' || l.status === lessonStatusFilter;
+    const dur = l.durationMinutes || 25;
+    const matchesDuration = lessonDurationFilter === 'ALL' || String(dur) === lessonDurationFilter;
+    const searchLower = lessonSearchTerm.toLowerCase();
+    const studentName = `${l.student?.user?.firstName || ''} ${l.student?.user?.lastName || ''} ${l.student?.user?.email || ''}`.toLowerCase();
+    const teacherName = `${l.teacher?.user?.firstName || ''} ${l.teacher?.user?.lastName || ''} ${l.teacher?.user?.email || ''}`.toLowerCase();
+    const matchesSearch = !lessonSearchTerm || studentName.includes(searchLower) || teacherName.includes(searchLower);
+    return matchesStatus && matchesDuration && matchesSearch;
+  });
+
+  const totalLessonsCount = (lessonsData || []).length;
+  const scheduledLessonsCount = (lessonsData || []).filter((l: any) => l.status === 'SCHEDULED').length;
+  const completedLessonsCount = (lessonsData || []).filter((l: any) => l.status === 'COMPLETED').length;
+  const cancelledLessonsCount = (lessonsData || []).filter((l: any) => l.status === 'CANCELLED').length;
+  const totalMinutesDelivered = (lessonsData || [])
+    .filter((l: any) => l.status === 'COMPLETED')
+    .reduce((sum: number, l: any) => sum + (l.durationMinutes || 25), 0);
 
   const navItems = [
     {
@@ -470,7 +591,7 @@ export const AdminDashboard: React.FC = () => {
             <img src="/logo.png" alt="Engrew" className="w-full h-full object-contain drop-shadow-2xs" />
           </div>
           <span className="font-extrabold text-brand-teal-900 dark:text-white text-xs">
-            {language === 'he' ? 'מרכז ניהול ראשי' : 'Super Admin Hub'}
+            {language === 'he' ? 'מרכז בעל הפלטפורמה' : 'Platform Owner Hub'}
           </span>
         </div>
         <button
@@ -495,9 +616,9 @@ export const AdminDashboard: React.FC = () => {
             lastName: currentUser?.lastName,
             email: currentUser?.email,
             avatarUrl: currentUser?.avatarUrl,
-            role: currentUser?.role || 'SUPER_ADMIN',
+            role: currentUser?.role === 'SUPER_ADMIN' ? 'Platform Owner' : (currentUser?.role || 'Platform Owner'),
           }}
-          panelSubtitle={language === 'he' ? 'מרכז ניהול ראשי' : 'Super Admin Hub'}
+          panelSubtitle={language === 'he' ? 'מרכז בעל הפלטפורמה' : 'Platform Owner Hub'}
           isOpenMobile={mobileMenuOpen}
           onCloseMobile={() => setMobileMenuOpen(false)}
         />
@@ -989,13 +1110,20 @@ export const AdminDashboard: React.FC = () => {
           {/* TAB 3: USER MANAGEMENT */}
           {activeTab === 'users' && (
             <div className="space-y-6">
+              {/* Header Banner */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
                 <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 text-xs font-bold text-brand-teal-900 dark:text-brand-teal-300 mb-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-brand-olive-500" />
+                    <span>{language === 'he' ? 'ניהול משתמשים והרשאות' : 'Master User & Role Governance'}</span>
+                  </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                    User Accounts & Roles
+                    {language === 'he' ? 'חשבונות משתמשים והרשאות מערכת' : 'User Accounts & Roles'}
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Manage students, certified teachers, and administrative privileges.
+                    {language === 'he'
+                      ? 'ניהול מלא של תלמידים, מורים מוסמכים והרשאות פלטפורמה, יתרות כספיות, הגדרות רמה ואיפוס סיסמאות.'
+                      : 'Comprehensive access control to inspect, edit, adjust balances, configure Hebrew levels, and manage all accounts.'}
                   </p>
                 </div>
                 <button
@@ -1007,34 +1135,124 @@ export const AdminDashboard: React.FC = () => {
                 </button>
               </div>
 
-              {/* Filters & Search */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
-                <div className="relative w-full sm:w-80">
+              {/* KPI Summary Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      {language === 'he' ? 'סה״כ חשבונות' : 'Total Accounts'}
+                    </span>
+                    <Users className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
+                  </div>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-2">
+                    {usersData?.length || 0}
+                  </p>
+                </div>
+
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      {language === 'he' ? 'תלמידים פעילים' : 'Active Students'}
+                    </span>
+                    <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <p className="text-2xl font-black text-slate-900 dark:text-white">
+                      {activeStudentsCount}
+                    </p>
+                    <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                      (${totalPlatformBalance.toFixed(2)} {language === 'he' ? 'ביתרות' : 'funds'})
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      {language === 'he' ? 'מורים מוסמכים' : 'Certified Teachers'}
+                    </span>
+                    <GraduationCap className="w-4 h-4 text-brand-olive-600 dark:text-brand-olive-400" />
+                  </div>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-2">
+                    {certifiedTeachersCount}
+                  </p>
+                </div>
+
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      {language === 'he' ? 'בעלי פלטפורמה / מנהלים' : 'Platform Owners / Admins'}
+                    </span>
+                    <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-2">
+                    {platformOwnersCount}
+                  </p>
+                </div>
+              </div>
+
+              {/* Filters & Search Toolbar */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 transition-colors">
+                <div className="relative flex-1 max-w-md">
                   <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute start-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Search by name or email..."
+                    placeholder={language === 'he' ? 'חיפוש לפי שם, אימייל או מזהה...' : 'Search by name, email, or user ID...'}
                     value={userSearchTerm}
                     onChange={(e) => setUserSearchTerm(e.target.value)}
                     className="w-full ps-9 pe-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-teal-800"
                   />
+                  {userSearchTerm && (
+                    <button
+                      onClick={() => setUserSearchTerm('')}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Filter:</span>
-                  {['ALL', 'STUDENT', 'TEACHER', 'SUPER_ADMIN'].map((role) => (
-                    <button
-                      key={role}
-                      onClick={() => setUserRoleFilter(role)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        userRoleFilter === role
-                          ? 'bg-brand-teal-800 text-white shadow-xs'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      {role}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700">
+                    {[
+                      { id: 'ALL', labelEn: 'All Roles', labelHe: 'כל התפקידים' },
+                      { id: 'STUDENT', labelEn: 'Students', labelHe: 'תלמידים' },
+                      { id: 'TEACHER', labelEn: 'Teachers', labelHe: 'מורים' },
+                      { id: 'SUPER_ADMIN', labelEn: 'Platform Owner', labelHe: 'בעל פלטפורמה' },
+                    ].map((rf) => (
+                      <button
+                        key={rf.id}
+                        onClick={() => setUserRoleFilter(rf.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          userRoleFilter === rf.id
+                            ? 'bg-brand-teal-800 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {language === 'he' ? rf.labelHe : rf.labelEn}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700">
+                    {[
+                      { id: 'ALL', labelEn: 'All Status', labelHe: 'הכל' },
+                      { id: 'ACTIVE', labelEn: 'Active', labelHe: 'פעיל' },
+                      { id: 'INACTIVE', labelEn: 'Suspended', labelHe: 'מושעה' },
+                    ].map((st) => (
+                      <button
+                        key={st.id}
+                        onClick={() => setUserStatusFilter(st.id as any)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          userStatusFilter === st.id
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                        }`}
+                      >
+                        {language === 'he' ? st.labelHe : st.labelEn}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1042,149 +1260,198 @@ export const AdminDashboard: React.FC = () => {
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
-                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
+                    <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700 text-[11px]">
                       <tr>
-                        <th className="py-3 px-4">User</th>
-                        <th className="py-3 px-4">Role</th>
-                        <th className="py-3 px-4">Hebrew Level</th>
-                        <th className="py-3 px-4">Account Balance</th>
-                        <th className="py-3 px-4">Session Credits</th>
-                        <th className="py-3 px-4">Language</th>
-                        <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4 text-right">Actions</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'משתמש' : 'User'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'תפקיד' : 'Role'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'רמה / התמחות' : 'Hebrew Level / Specialty'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'יתרת חשבון' : 'Account Balance'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'הישגים ופעילות' : 'Gamification / Stats'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'שפה' : 'Lang'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'סטטוס' : 'Status'}</th>
+                        <th className="py-3.5 px-4 text-right">{language === 'he' ? 'פעולות ניהול' : 'Actions'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                      {filteredUsers.map((u: any) => {
-                        const activePkgs = u.studentProfile?.packages || [];
-                        const totalRemaining = activePkgs.reduce(
-                          (sum: number, p: any) => sum + Math.max(0, p.lessonsTotal - p.lessonsUsed),
-                          0
-                        );
+                      {filteredUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                            <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="font-bold">{language === 'he' ? 'לא נמצאו משתמשים התואמים לחיפוש' : 'No users match your filters'}</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredUsers.map((u: any) => {
+                          const isStudent = u.role === 'STUDENT';
+                          const isTeacher = u.role === 'TEACHER';
+                          const isOwner = u.role === 'SUPER_ADMIN';
 
-                        return (
-                          <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                            <td className="py-3.5 px-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 font-bold flex items-center justify-center text-xs">
-                                  {u.firstName?.charAt(0) || 'U'}
+                          return (
+                            <tr key={u.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors">
+                              {/* User Info */}
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-teal-100 to-brand-olive-100 dark:from-brand-teal-950 dark:to-brand-olive-950 text-brand-teal-900 dark:text-brand-teal-200 font-extrabold flex items-center justify-center text-xs shrink-0 border border-brand-teal-200/50 dark:border-brand-teal-800 shadow-2xs">
+                                    {u.firstName?.charAt(0) || 'U'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-slate-900 dark:text-white truncate">
+                                      {u.firstName} {u.lastName}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate" title={u.email}>
+                                      {u.email}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="font-bold text-slate-900 dark:text-white">
-                                    {u.firstName} {u.lastName}
-                                  </p>
-                                  <p className="text-[11px] text-slate-400 dark:text-slate-500">{u.email}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
-                                  u.role === 'SUPER_ADMIN'
-                                    ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300'
-                                    : u.role === 'TEACHER'
-                                    ? 'bg-brand-olive-100 dark:bg-brand-olive-950/60 text-brand-olive-900 dark:text-brand-olive-300'
-                                    : 'bg-brand-teal-100 dark:bg-brand-teal-950/60 text-brand-teal-900 dark:text-brand-teal-300'
-                                }`}
-                              >
-                                {u.role}
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span className="font-semibold text-slate-700 dark:text-slate-300">
-                                {u.studentProfile?.level || (u.role === 'TEACHER' ? 'Native Instructor' : '—')}
-                              </span>
-                            </td>
-                            {/* Account Balance */}
-                            <td className="py-3.5 px-4">
-                              {u.role === 'STUDENT' ? (
-                                u.studentProfile ? (
-                                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
-                                    ${Number(u.studentProfile.balance || 0).toFixed(2)}
+                              </td>
+
+                              {/* Role */}
+                              <td className="py-3.5 px-4">
+                                <span
+                                  className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase inline-flex items-center gap-1 ${
+                                    isOwner
+                                      ? 'bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                                      : isTeacher
+                                      ? 'bg-brand-olive-100 dark:bg-brand-olive-950/70 text-brand-olive-900 dark:text-brand-olive-300 border border-brand-olive-200 dark:border-brand-olive-800'
+                                      : u.role === 'ADMIN'
+                                      ? 'bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                      : 'bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-900 dark:text-brand-teal-300 border border-brand-teal-200 dark:border-brand-teal-800'
+                                  }`}
+                                >
+                                  {isOwner && <Award className="w-3 h-3 text-purple-600 dark:text-purple-400" />}
+                                  {isOwner ? (language === 'he' ? 'בעל פלטפורמה' : 'Platform Owner') : u.role}
+                                </span>
+                              </td>
+
+                              {/* Level / Specialty */}
+                              <td className="py-3.5 px-4">
+                                {isStudent ? (
+                                  <span className="font-bold text-slate-700 dark:text-slate-300">
+                                    {u.studentProfile?.level ? t(`levels.${u.studentProfile.level}`) : 'BEGINNER'}
                                   </span>
-                                ) : (
-                                  <span className="text-slate-400 dark:text-slate-500 italic">—</span>
-                                )
-                              ) : (
-                                <span className="text-slate-400 dark:text-slate-500">—</span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {u.role === 'STUDENT' ? (
-                                u.studentProfile ? (
-                                  <div>
-                                    <span className="font-extrabold text-brand-teal-800 dark:text-brand-teal-300 block">
-                                      {totalRemaining} {language === 'he' ? 'נק׳ שיעור' : 'credits'}
+                                ) : isTeacher ? (
+                                  <div className="space-y-0.5">
+                                    <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                                      {language === 'he' ? 'מורה מוסמך' : 'Native Instructor'}
                                     </span>
-                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                      {activePkgs[0]?.package?.nameEn || (language === 'he' ? 'חבילה פעילה' : 'Active')}
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 block truncate max-w-[150px]">
+                                      {(u.teacherProfile?.specialties || []).slice(0, 2).join(', ') || 'Modern Hebrew'}
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="text-slate-400 dark:text-slate-500 italic">No profile</span>
-                                )
-                              ) : (
-                                <span className="text-slate-400 dark:text-slate-500">—</span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4 uppercase text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                              {u.languagePref}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Active
-                              </span>
-                            </td>
-                            <td className="py-3.5 px-4 text-right">
-                              <div className="inline-flex items-center gap-2">
-                                {u.studentProfile && (
-                                  <>
+                                  <span className="text-slate-400 dark:text-slate-500 italic">—</span>
+                                )}
+                              </td>
+
+                              {/* Account Balance */}
+                              <td className="py-3.5 px-4">
+                                {isStudent && u.studentProfile ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
+                                      ${Number(u.studentProfile.balance || 0).toFixed(2)}
+                                    </span>
                                     <button
                                       onClick={() => {
                                         setAdjustStudent(u);
                                         setAdjustAmount(50);
                                         setAdjustMode('add');
-                                        setAdjustReason('Admin balance top-up');
+                                        setAdjustReason('Admin balance adjustment');
                                         setIsAdjustingBalance(true);
                                       }}
-                                      title="Adjust Account Balance"
-                                      className="p-1.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 rounded-lg transition-colors flex items-center gap-1 font-bold text-[11px]"
+                                      title={language === 'he' ? 'התאם יתרה' : 'Quick Adjust Balance'}
+                                      className="p-1 rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60"
                                     >
-                                      <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                      <span className="hidden sm:inline">+ Balance</span>
+                                      <Wallet className="w-3.5 h-3.5" />
                                     </button>
-                                    <button
-                                      onClick={() => {
-                                        setGrantStudentId(u.studentProfile.id);
-                                        setIsGrantingCredits(true);
-                                      }}
-                                      title="Grant Session Credits"
-                                      className="p-1.5 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 rounded-lg transition-colors flex items-center gap-1 font-bold text-[11px]"
-                                    >
-                                      <Coins className="w-4 h-4 text-amber-500" />
-                                      <span className="hidden sm:inline">+ Credit</span>
-                                    </button>
-                                  </>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 dark:text-slate-500 italic">—</span>
                                 )}
-                                <button
-                                  onClick={() => resetPasswordMutation.mutate(u.id)}
-                                  title="Reset Password"
-                                  className="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-colors"
-                                >
-                                  <KeyRound className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => deleteUserMutation.mutate(u.id)}
-                                  title="Delete User"
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                              </td>
+
+                              {/* Gamification / Activity */}
+                              <td className="py-3.5 px-4">
+                                {isStudent && u.studentProfile ? (
+                                  <div className="flex items-center gap-3">
+                                    <span className="inline-flex items-center gap-1 font-bold text-brand-teal-800 dark:text-brand-teal-300">
+                                      <Award className="w-3.5 h-3.5 text-brand-olive-500" />
+                                      {u.studentProfile.totalPoints || 0} pts
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
+                                      <Flame className="w-3.5 h-3.5 text-amber-500" />
+                                      {u.studentProfile.streakDays || 0}d
+                                    </span>
+                                  </div>
+                                ) : isTeacher && u.teacherProfile ? (
+                                  <span className="inline-flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
+                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                    {u.teacherProfile.ratingAvg ? Number(u.teacherProfile.ratingAvg).toFixed(1) : '5.0'}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 dark:text-slate-500 italic">—</span>
+                                )}
+                              </td>
+
+                              {/* Language */}
+                              <td className="py-3.5 px-4 uppercase text-[11px] font-black text-slate-600 dark:text-slate-400">
+                                {u.languagePref || 'en'}
+                              </td>
+
+                              {/* Status */}
+                              <td className="py-3.5 px-4">
+                                {u.isActive !== false ? (
+                                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    {language === 'he' ? 'פעיל' : 'Active'}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                    {language === 'he' ? 'מושעה' : 'Suspended'}
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Actions */}
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="inline-flex items-center gap-1.5">
+                                  {/* Deep User Management Button */}
+                                  <button
+                                    onClick={() => handleOpenEditUser(u)}
+                                    title={language === 'he' ? 'ניהול מלא ועריכת משתמש' : 'Full User Governance & Edit'}
+                                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-200/80 dark:border-slate-700"
+                                  >
+                                    <Sliders className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
+                                    <span className="hidden sm:inline">{language === 'he' ? 'ניהול' : 'Manage'}</span>
+                                  </button>
+
+                                  {/* Quick Reset Password */}
+                                  <button
+                                    onClick={() => resetPasswordMutation.mutate(u.id)}
+                                    title={language === 'he' ? 'איפוס סיסמה' : 'Reset Password'}
+                                    className="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
+                                  >
+                                    <KeyRound className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* Deactivate / Delete */}
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm(language === 'he' ? `האם למחוק את ${u.firstName} ${u.lastName}?` : `Permanently delete ${u.firstName} ${u.lastName}?`)) {
+                                        deleteUserMutation.mutate(u.id);
+                                      }
+                                    }}
+                                    title={language === 'he' ? 'מחיקת משתמש' : 'Delete User'}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1278,10 +1545,12 @@ export const AdminDashboard: React.FC = () => {
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
                 <div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                    Lesson Packages & Student Allocations
+                    {language === 'he' ? 'חבילות שיעורים ותוכניות לימוד' : 'Lesson Packages & Student Allocations'}
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Packages govern student credits for 25-minute private sessions.
+                    {language === 'he'
+                      ? 'חבילות לימוד ומסלולים מובנים להוראת עברית בהתאמה אישית.'
+                      : 'Curriculum bundles and lesson packages for structured Hebrew learning paths.'}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -1474,97 +1743,351 @@ export const AdminDashboard: React.FC = () => {
           {/* TAB 6: BOOKINGS & LESSONS */}
           {activeTab === 'bookings' && (
             <div className="space-y-6">
+              {/* Header Banner */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
                 <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 text-xs font-bold text-brand-teal-900 dark:text-brand-teal-300 mb-2">
+                    <Calendar className="w-3.5 h-3.5 text-brand-olive-500" />
+                    <span>{language === 'he' ? 'יומן שיעורים אינטראקטיבי' : 'Multi-Duration Live Session Command Center'}</span>
+                  </div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                    All Scheduled Lessons (25 / 40 / 55 Min)
+                    {language === 'he' ? 'כל השיעורים המתוזמנים (25 / 40 / 55 דק׳)' : 'All Scheduled Lessons (25 / 40 / 55 Min)'}
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Book, reschedule, or review recordings and notes for private sessions. All times shown in <strong>{ISRAEL_TZ_LABEL} (12-Hour AM/PM)</strong>.
+                    {language === 'he'
+                      ? 'ניהול, מעקב וביטול שיעורים עם החזר כספי אוטומטי ליתרת התלמיד. כל הזמנים מוצגים לפי שעון ישראל (פורמט 12 שעות AM/PM).'
+                      : 'Live schedule monitoring, Zoom classroom links, and instant cancellations with automated student balance refunds. All times formatted in Israel Time (12-Hour AM/PM).'}
                   </p>
                 </div>
                 <button
                   onClick={() => setIsBookingLesson(true)}
-                  className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5"
+                  className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-colors"
                 >
                   <Plus className="w-4 h-4 text-brand-olive-300" />
-                  <span>Book Live Session</span>
+                  <span>{language === 'he' ? 'קביעת שיעור חי' : 'Book Live Session'}</span>
                 </button>
               </div>
 
+              {/* KPI Metrics Summary Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                    {language === 'he' ? 'סה״כ מפגשים' : 'Total Sessions'}
+                  </span>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+                    {totalLessonsCount}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    {language === 'he' ? 'מתוזמנים / קרובים' : 'Confirmed / Upcoming'}
+                  </span>
+                  <p className="text-2xl font-black text-blue-700 dark:text-blue-300 mt-1">
+                    {scheduledLessonsCount}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    {language === 'he' ? 'הושלמו בהצלחה' : 'Completed'}
+                  </span>
+                  <p className="text-2xl font-black text-emerald-700 dark:text-emerald-300 mt-1">
+                    {completedLessonsCount}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                    <XCircle className="w-3.5 h-3.5" />
+                    {language === 'he' ? 'בוטלו / הוחזרו' : 'Cancelled / Refunded'}
+                  </span>
+                  <p className="text-2xl font-black text-rose-700 dark:text-rose-300 mt-1">
+                    {cancelledLessonsCount}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs col-span-2 sm:col-span-1">
+                  <span className="text-[11px] font-bold text-brand-teal-700 dark:text-brand-teal-300 block">
+                    {language === 'he' ? 'דקות לימוד שהועברו' : 'Class Minutes Delivered'}
+                  </span>
+                  <p className="text-2xl font-black text-brand-teal-900 dark:text-brand-teal-200 mt-1">
+                    {totalMinutesDelivered} min
+                  </p>
+                </div>
+              </div>
+
+              {/* Filters Toolbar */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 transition-colors">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute start-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder={language === 'he' ? 'חיפוש לפי שם תלמיד, מורה או אימייל...' : 'Search by student name, teacher, or email...'}
+                    value={lessonSearchTerm}
+                    onChange={(e) => setLessonSearchTerm(e.target.value)}
+                    className="w-full ps-9 pe-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-brand-teal-800"
+                  />
+                  {lessonSearchTerm && (
+                    <button
+                      onClick={() => setLessonSearchTerm('')}
+                      className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Duration Filter */}
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700">
+                    {[
+                      { id: 'ALL', labelEn: 'All Durations', labelHe: 'כל האורכים' },
+                      { id: '25', labelEn: '25 Min ($25)', labelHe: '25 דק׳ ($25)' },
+                      { id: '40', labelEn: '40 Min ($40)', labelHe: '40 דק׳ ($40)' },
+                      { id: '55', labelEn: '55 Min ($55)', labelHe: '55 דק׳ ($55)' },
+                    ].map((df) => (
+                      <button
+                        key={df.id}
+                        onClick={() => setLessonDurationFilter(df.id)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          lessonDurationFilter === df.id
+                            ? 'bg-brand-teal-800 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {language === 'he' ? df.labelHe : df.labelEn}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700">
+                    {[
+                      { id: 'ALL', labelEn: 'All Status', labelHe: 'כל הסטטוסים' },
+                      { id: 'SCHEDULED', labelEn: 'Scheduled', labelHe: 'מתוזמן' },
+                      { id: 'COMPLETED', labelEn: 'Completed', labelHe: 'הושלם' },
+                      { id: 'CANCELLED', labelEn: 'Cancelled', labelHe: 'בוטל' },
+                    ].map((st) => (
+                      <button
+                        key={st.id}
+                        onClick={() => setLessonStatusFilter(st.id)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                          lessonStatusFilter === st.id
+                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                        }`}
+                      >
+                        {language === 'he' ? st.labelHe : st.labelEn}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modern Lessons Table */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
-                    <thead className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
+                    <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700 text-[11px]">
                       <tr>
-                        <th className="py-3 px-4">Student</th>
-                        <th className="py-3 px-4">Teacher</th>
-                        <th className="py-3 px-4">Scheduled Time</th>
-                        <th className="py-3 px-4">Duration</th>
-                        <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4">Meeting / Recording</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'תלמיד' : 'Student'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'מורה' : 'Teacher'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'מועד השיעור (שעון ישראל)' : 'Israel Time & Date'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'משך ותעריף' : 'Duration & Rate'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'סטטוס' : 'Status'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'כיתת Zoom / הקלטה' : 'Classroom & Video'}</th>
+                        <th className="py-3.5 px-4 text-right">{language === 'he' ? 'פעולות' : 'Actions'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                      {(lessonsData || []).map((l: any) => {
-                        const dur = l.durationMinutes || 25;
-                        return (
-                          <tr key={l.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
-                            <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                              {l.student?.user?.firstName} {l.student?.user?.lastName}
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
-                              {l.teacher?.user?.firstName} {l.teacher?.user?.lastName}
-                            </td>
-                            <td className="py-3.5 px-4 font-semibold text-slate-800 dark:text-slate-200">
-                              {formatIsraelDateTime(l.scheduledAt, {
-                                includeWeekday: true,
-                                locale: language === 'he' ? 'he-IL' : 'en-US',
-                              })}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span
-                                className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
-                                  dur === 55
-                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300'
-                                    : dur === 40
-                                    ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300'
-                                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                                }`}
-                              >
-                                {dur} min
-                              </span>
-                            </td>
-                          <td className="py-3.5 px-4">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                l.status === 'SCHEDULED'
-                                  ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300'
-                                  : l.status === 'COMPLETED'
-                                  ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300'
-                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                              }`}
-                            >
-                              {l.status}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            {l.zoomLink ? (
-                              <a
-                                href={l.zoomLink}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline font-bold"
-                              >
-                                Join Zoom <ExternalLink className="w-3 h-3" />
-                              </a>
-                            ) : (
-                              <span className="text-slate-400 dark:text-slate-500 italic">None</span>
-                            )}
+                      {filteredLessons.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                            <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                            <p className="font-bold">{language === 'he' ? 'לא נמצאו שיעורים התואמים את הסינון' : 'No scheduled lessons found matching your filters'}</p>
                           </td>
                         </tr>
-                      );
-                    })}
+                      ) : (
+                        filteredLessons.map((l: any) => {
+                          const dur = l.durationMinutes || 25;
+                          const rate = sessionPricing?.[String(dur)] ?? (dur === 55 ? 55 : dur === 40 ? 40 : 25);
+                          const isScheduled = l.status === 'SCHEDULED';
+                          const isCompleted = l.status === 'COMPLETED';
+                          const isCancelled = l.status === 'CANCELLED';
+
+                          const scheduledDate = new Date(l.scheduledAt);
+                          const isPast = scheduledDate.getTime() < Date.now();
+
+                          return (
+                            <tr key={l.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/50 transition-colors">
+                              {/* Student Info */}
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-teal-700 to-brand-teal-900 text-white font-extrabold flex items-center justify-center text-xs shrink-0 shadow-2xs">
+                                    {l.student?.user?.firstName?.charAt(0) || 'S'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-slate-900 dark:text-white truncate">
+                                      {l.student?.user?.firstName} {l.student?.user?.lastName}
+                                    </p>
+                                    <span className="text-[10px] font-semibold text-brand-olive-700 dark:text-brand-olive-300 block truncate">
+                                      {l.student?.level ? t(`levels.${l.student.level}`) : 'Beginner'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Teacher Info */}
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-lg bg-brand-olive-100 dark:bg-brand-olive-950/70 text-brand-olive-900 dark:text-brand-olive-300 font-extrabold flex items-center justify-center text-xs shrink-0 border border-brand-olive-200 dark:border-brand-olive-800">
+                                    {l.teacher?.user?.firstName?.charAt(0) || 'T'}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                                      {l.teacher?.user?.firstName} {l.teacher?.user?.lastName}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                                      {l.teacher?.user?.email}
+                                    </p>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Scheduled Time */}
+                              <td className="py-3.5 px-4">
+                                <div className="space-y-0.5">
+                                  <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
+                                    <span>
+                                      {formatIsraelDateTime(l.scheduledAt, {
+                                        includeWeekday: true,
+                                        locale: language === 'he' ? 'he-IL' : 'en-US',
+                                      })}
+                                    </span>
+                                  </p>
+                                  <span
+                                    className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                      isCancelled
+                                        ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400'
+                                        : isPast
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                                        : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
+                                    }`}
+                                  >
+                                    {isCancelled
+                                      ? (language === 'he' ? 'בוטל' : 'Cancelled')
+                                      : isPast
+                                      ? (language === 'he' ? 'עבר' : 'Past Session')
+                                      : (language === 'he' ? 'מפגש עתידי' : 'Upcoming Session')}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Duration & Price Badge */}
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`px-2.5 py-1 rounded-full font-black text-xs inline-flex items-center gap-1 shadow-2xs ${
+                                      dur === 55
+                                        ? 'bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                                        : dur === 40
+                                        ? 'bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800'
+                                        : 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                    }`}
+                                  >
+                                    <span>{dur} min</span>
+                                    <span className="opacity-60">•</span>
+                                    <span>${rate}</span>
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Status Badge */}
+                              <td className="py-3.5 px-4">
+                                <span
+                                  className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase inline-flex items-center gap-1.5 ${
+                                    isScheduled
+                                      ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                                      : isCompleted
+                                      ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                      : 'bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                  }`}
+                                >
+                                  {isScheduled && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
+                                  {isCompleted && <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />}
+                                  {isCancelled && <XCircle className="w-3 h-3 text-rose-500" />}
+                                  <span>{l.status}</span>
+                                </span>
+                              </td>
+
+                              {/* Meeting & Recording Link */}
+                              <td className="py-3.5 px-4">
+                                <div className="space-y-1">
+                                  {l.zoomLink ? (
+                                    <a
+                                      href={l.zoomLink}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold text-xs transition-colors border border-blue-200/80 dark:border-blue-800"
+                                    >
+                                      <Video className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                      <span>Launch Zoom</span>
+                                      <ExternalLink className="w-3 h-3 opacity-70" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">No Zoom Link</span>
+                                  )}
+
+                                  {l.recordedSession?.driveLink && (
+                                    <a
+                                      href={l.recordedSession.driveLink}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-teal-700 dark:text-brand-teal-400 hover:underline block"
+                                    >
+                                      <PlayCircle className="w-3 h-3" />
+                                      <span>Watch Recording</span>
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Management Actions */}
+                              <td className="py-3.5 px-4 text-right">
+                                {isScheduled ? (
+                                  <button
+                                    onClick={() => {
+                                      const confirmMsg =
+                                        language === 'he'
+                                          ? `האם לבטל שיעור זה? תעריף המפגש ($${rate}) יוחזר אוטומטית ליתרת התלמיד.`
+                                          : `Cancel this scheduled lesson? The full session fee ($${rate}) will be refunded immediately to the student balance.`;
+                                      if (window.confirm(confirmMsg)) {
+                                        cancelLessonMutation.mutate({
+                                          id: l.id,
+                                          reason: 'Admin cancelled session via command center',
+                                        });
+                                      }
+                                    }}
+                                    disabled={cancelLessonMutation.isPending}
+                                    className="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 font-bold text-xs border border-rose-200 dark:border-rose-800 transition-colors inline-flex items-center gap-1.5"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                                    <span>{language === 'he' ? 'ביטול והחזר' : 'Cancel & Refund'}</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-400 dark:text-slate-500 text-[11px] italic">
+                                    {isCompleted ? 'Finished' : 'Archived'}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1876,20 +2399,6 @@ export const AdminDashboard: React.FC = () => {
                   ))}
                 </select>
               </div>
-
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'התאמת מספר נקודות אישית (אופציונלי)' : 'Custom Credits Override (Optional)'}
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  placeholder={language === 'he' ? 'ברירת מחדל לפי הגדרת החבילה' : 'Default from package count'}
-                  value={assignCustomCredits}
-                  onChange={(e) => setAssignCustomCredits(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
-                />
-              </div>
             </div>
 
             <div className="flex gap-2 pt-2">
@@ -1908,7 +2417,6 @@ export const AdminDashboard: React.FC = () => {
                   assignPackageMutation.mutate({
                     pkgId: assignPkgId,
                     studentId: assignStudentId,
-                    customCredits: assignCustomCredits ? Number(assignCustomCredits) : undefined,
                   });
                 }}
                 disabled={assignPackageMutation.isPending}
@@ -1921,118 +2429,333 @@ export const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* SUPERADMIN DIRECT GRANT CREDITS MODAL */}
-      {isGrantingCredits && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-transparent dark:border-slate-800 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-amber-500" />
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {language === 'he' ? 'הענקת נקודות שיעור לתלמיד' : 'Grant Student Session Credits'}
-                </h2>
+      {/* COMPREHENSIVE USER ACCOUNTS & ROLES GOVERNANCE MODAL */}
+      {isEditingUser && selectedUserForEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 my-8 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-teal-700 to-brand-olive-700 text-white font-black text-lg flex items-center justify-center shadow-xs">
+                  {editFirstName?.[0] || 'U'}
+                </div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>{editFirstName} {editLastName}</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 border border-brand-teal-200 dark:border-brand-teal-800">
+                      {editRole === 'SUPER_ADMIN' ? 'Platform Owner' : editRole}
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                    User ID: {selectedUserForEdit.id}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => {
-                  setIsGrantingCredits(false);
-                  setGrantStudentId('');
+                  setIsEditingUser(false);
+                  setSelectedUserForEdit(null);
                 }}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'בחר תלמיד' : 'Select Student'}
-                </label>
-                <select
-                  value={grantStudentId}
-                  onChange={(e) => setGrantStudentId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
-                >
-                  <option value="">-- {language === 'he' ? 'בחר תלמיד' : 'Choose a Student'} --</option>
-                  {studentsList.map((s: any) => (
-                    <option key={s.id} value={s.id}>
-                      {s.firstName} {s.lastName} ({s.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* Form Sections */}
+            <div className="space-y-5 text-xs">
+              {/* SECTION 1: Identity & Credentials */}
+              <div className="space-y-3 p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/70">
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
+                  <span>{language === 'he' ? 'פרטי חשבון והרשאה' : 'Account Identity & Authority'}</span>
+                </h3>
 
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'כמות נקודות שיעור להענקה' : 'Number of Credits to Grant'}
-                </label>
-                <div className="flex gap-2 mt-1">
-                  {[1, 2, 5, 10, 20].map((amt) => (
-                    <button
-                      key={amt}
-                      type="button"
-                      onClick={() => setGrantCreditsAmount(amt)}
-                      className={`flex-1 py-1.5 rounded-lg font-bold text-xs border transition-all ${
-                        grantCreditsAmount === amt
-                          ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-2xs'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      +{amt}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'שם פרטי' : 'First Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'שם משפחה' : 'Last Name'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                    />
+                  </div>
                 </div>
-                <input
-                  type="number"
-                  min="1"
-                  value={grantCreditsAmount}
-                  onChange={(e) => setGrantCreditsAmount(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-2"
-                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'כתובת אימייל' : 'Email Address'}
+                    </label>
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'העדפת שפה' : 'Language Preference'}
+                    </label>
+                    <select
+                      value={editLanguagePref}
+                      onChange={(e) => setEditLanguagePref(e.target.value as any)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                    >
+                      <option value="en">English (en)</option>
+                      <option value="he">Hebrew / עברית (he)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'תפקיד במערכת' : 'System Role'}
+                    </label>
+                    <select
+                      value={editRole}
+                      onChange={(e) => setEditRole(e.target.value as any)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs"
+                    >
+                      <option value="STUDENT">Student (Hebrew Learner)</option>
+                      <option value="TEACHER">Teacher (Certified Native Instructor)</option>
+                      <option value="ADMIN">Admin (Staff Administrator)</option>
+                      <option value="SUPER_ADMIN">Platform Owner (Full Superadmin Governance)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'סטטוס החשבון' : 'Account Status'}
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditIsActive(true)}
+                        className={`flex-1 py-2 rounded-xl font-bold border transition-all ${
+                          editIsActive
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        {language === 'he' ? 'פעיל' : 'Active'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditIsActive(false)}
+                        className={`flex-1 py-2 rounded-xl font-bold border transition-all ${
+                          !editIsActive
+                            ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        {language === 'he' ? 'מושעה' : 'Suspended'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'סיבת ההענקה / הערות' : 'Reason / Note'}
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Superadmin allocation, package purchase, promotional bonus"
-                  value={grantReason}
-                  onChange={(e) => setGrantReason(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
-                />
+              {/* SECTION 2: Role-Specific Configurations */}
+              {editRole === 'STUDENT' && (
+                <div className="space-y-3 p-4 rounded-2xl bg-brand-teal-50/50 dark:bg-brand-teal-950/30 border border-brand-teal-200/70 dark:border-brand-teal-900/60">
+                  <h3 className="font-extrabold text-sm text-brand-teal-900 dark:text-brand-teal-200 flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-300" />
+                    <span>{language === 'he' ? 'פרופיל תלמיד ויתרה כספית' : 'Student Academic Profile & Balance'}</span>
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                        {language === 'he' ? 'רמת עברית' : 'Hebrew Proficiency Level'}
+                      </label>
+                      <select
+                        value={editLevel}
+                        onChange={(e) => setEditLevel(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                      >
+                        <option value="BEGINNER">Beginner (מתחילים - רמה א׳)</option>
+                        <option value="ELEMENTARY">Elementary (בסיסי)</option>
+                        <option value="INTERMEDIATE">Intermediate (בינוני - רמה ב׳)</option>
+                        <option value="UPPER_INTERMEDIATE">Upper Intermediate (מתקדם קל)</option>
+                        <option value="ADVANCED">Advanced (מתקדם - רמה ג׳)</option>
+                        <option value="FLUENT">Fluent (שוטף)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                        {language === 'he' ? 'יתרת חשבון נוכחית' : 'Current Account Balance'}
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 font-black text-sm">
+                          ${Number(selectedUserForEdit.studentProfile?.balance || 0).toFixed(2)} USD
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdjustStudent(selectedUserForEdit);
+                            setAdjustAmount(50);
+                            setAdjustMode('add');
+                            setAdjustReason('Admin balance adjustment');
+                            setIsAdjustingBalance(true);
+                          }}
+                          className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs"
+                        >
+                          <Wallet className="w-3.5 h-3.5" />
+                          <span>{language === 'he' ? 'התאם יתרה' : 'Top Up / Adjust'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                        {language === 'he' ? 'סה״כ נקודות (XP)' : 'Total Points (XP)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editTotalPoints}
+                        onChange={(e) => setEditTotalPoints(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                        {language === 'he' ? 'ימי רצף (Streak Days)' : 'Streak Days'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editStreakDays}
+                        onChange={(e) => setEditStreakDays(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'הערות מנהל פנימיות על התלמיד' : 'Private Admin Notes & Observations'}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      placeholder={language === 'he' ? 'רשום הערות פדגוגיות או התאמות אישיות...' : 'Enter pedagogical or administrative notes...'}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {editRole === 'TEACHER' && (
+                <div className="space-y-3 p-4 rounded-2xl bg-brand-olive-50/50 dark:bg-brand-olive-950/30 border border-brand-olive-200/70 dark:border-brand-olive-900/60">
+                  <h3 className="font-extrabold text-sm text-brand-olive-950 dark:text-brand-olive-200 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-brand-olive-600 dark:text-brand-olive-400" />
+                    <span>{language === 'he' ? 'פרופיל מורה והתמחויות' : 'Instructor Profile & Teaching Specialties'}</span>
+                  </h3>
+
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'תחומי התמחות (מופרדים בפסיקים)' : 'Specialties (Comma separated)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editSpecialties}
+                      onChange={(e) => setEditSpecialties(e.target.value)}
+                      placeholder="Modern Hebrew, Biblical Hebrew, Conversation, Grammar"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'תיאור ביוגרפי' : 'Instructor Bio'}
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editBio}
+                      onChange={(e) => setEditBio(e.target.value)}
+                      placeholder="Native Hebrew educator with 8+ years experience..."
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION 3: Quick Security & Danger Actions */}
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => resetPasswordMutation.mutate(selectedUserForEdit.id)}
+                    className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>{language === 'he' ? 'איפוס סיסמה ל-LearnHebrew@2026' : 'Reset Password to Default'}</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(language === 'he' ? 'האם למחוק משתמש זה לצמיתות?' : 'Permanently delete this user account?')) {
+                      deleteUserMutation.mutate(selectedUserForEdit.id);
+                      setIsEditingUser(false);
+                      setSelectedUserForEdit(null);
+                    }
+                  }}
+                  className="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 font-bold text-xs flex items-center gap-1.5 border border-rose-200 dark:border-rose-800 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                  <span>{language === 'he' ? 'מחק משתמש' : 'Delete Account'}</span>
+                </button>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            {/* Modal Actions */}
+            <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
+                type="button"
                 onClick={() => {
-                  setIsGrantingCredits(false);
-                  setGrantStudentId('');
+                  setIsEditingUser(false);
+                  setSelectedUserForEdit(null);
                 }}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 {language === 'he' ? 'ביטול' : 'Cancel'}
               </button>
               <button
-                onClick={() => {
-                  if (!grantStudentId) {
-                    toast.warning(language === 'he' ? 'אנא בחר תלמיד' : 'Please select a student');
-                    return;
-                  }
-                  grantCreditsMutation.mutate({
-                    studentId: grantStudentId,
-                    credits: grantCreditsAmount,
-                    reason: grantReason,
-                  });
-                }}
-                disabled={grantCreditsMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-600 shadow-sm"
+                type="button"
+                onClick={handleSaveEditUser}
+                disabled={updateUserMutation.isPending}
+                className="flex-1 py-3 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white text-xs font-bold shadow-md transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {grantCreditsMutation.isPending
-                  ? (language === 'he' ? 'מעניק...' : 'Granting...')
-                  : (language === 'he' ? `הענק +${grantCreditsAmount} נקודות` : `Grant +${grantCreditsAmount} Credits`)}
+                <Save className="w-4 h-4 text-brand-olive-300" />
+                <span>
+                  {updateUserMutation.isPending
+                    ? (language === 'he' ? 'שומר שינויים...' : 'Saving Changes...')
+                    : (language === 'he' ? 'שמור שינויים בחשבון' : 'Save User Account')}
+                </span>
               </button>
             </div>
           </div>

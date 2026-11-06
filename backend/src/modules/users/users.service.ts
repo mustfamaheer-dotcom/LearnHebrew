@@ -158,25 +158,54 @@ export async function getUserById(id: string) {
 }
 
 export async function updateUser(id: string, data: any) {
-  const { level, bio, specialties, ...userData } = data;
+  const { level, notes, totalPoints, streakDays, bio, specialties, ...userData } = data;
+
+  const existing = await prisma.user.findUnique({
+    where: { id },
+    include: { studentProfile: true, teacherProfile: true },
+  });
+  if (!existing) throw { status: 404, message: 'User not found' };
+
+  const hasStudentUpdates =
+    level !== undefined || notes !== undefined || totalPoints !== undefined || streakDays !== undefined;
+  const hasTeacherUpdates = bio !== undefined || specialties !== undefined;
 
   const user = await prisma.user.update({
     where: { id },
     data: {
       ...userData,
-      studentProfile: level
-        ? {
-            update: { level },
-          }
-        : undefined,
-      teacherProfile: bio || specialties
-        ? {
-            update: {
-              ...(bio && { bio }),
-              ...(specialties && { specialties }),
+      ...(hasStudentUpdates && {
+        studentProfile: {
+          upsert: {
+            create: {
+              level: level || 'BEGINNER',
+              notes: notes || '',
+              totalPoints: totalPoints || 0,
+              streakDays: streakDays || 0,
             },
-          }
-        : undefined,
+            update: {
+              ...(level !== undefined && { level }),
+              ...(notes !== undefined && { notes }),
+              ...(totalPoints !== undefined && { totalPoints }),
+              ...(streakDays !== undefined && { streakDays }),
+            },
+          },
+        },
+      }),
+      ...(hasTeacherUpdates && {
+        teacherProfile: {
+          upsert: {
+            create: {
+              bio: bio || '',
+              specialties: specialties || [],
+            },
+            update: {
+              ...(bio !== undefined && { bio }),
+              ...(specialties !== undefined && { specialties }),
+            },
+          },
+        },
+      }),
     },
     include: {
       studentProfile: true,

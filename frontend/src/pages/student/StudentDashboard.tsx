@@ -294,7 +294,7 @@ export const StudentDashboard: React.FC = () => {
       label: 'Book Session',
       labelHe: 'הזמנת שיעור',
       icon: Clock,
-      badge: remainingLessons > 0 ? (language === 'he' ? `${remainingLessons} נק׳` : `${remainingLessons} left`) : '0',
+      badge: hasEnoughBalance ? (language === 'he' ? `$${currentBalance.toFixed(0)} זמין` : `$${currentBalance.toFixed(0)} ok`) : (language === 'he' ? 'יתרה נמוכה' : 'Low balance'),
     },
     {
       id: 'lessons',
@@ -343,7 +343,7 @@ export const StudentDashboard: React.FC = () => {
       id: 'booking',
       label: language === 'he' ? 'הזמנה' : 'Book',
       icon: Clock,
-      badge: remainingLessons > 0 ? `${remainingLessons}` : null,
+      badge: !hasEnoughBalance ? '!' : null,
     },
     {
       id: 'lessons',
@@ -378,11 +378,11 @@ export const StudentDashboard: React.FC = () => {
   ];
 
   const handleBookingSubmit = () => {
-    if (remainingLessons <= 0) {
+    if (!hasEnoughBalance) {
       const err =
         language === 'he'
-          ? 'אין לך נקודות שיעור זמינות. פנה למנהל Engrew לקבלת נקודות או הקצאת חבילה.'
-          : 'You do not have enough session credits. Please contact Engrew admin to grant credits.';
+          ? `יתרתך ($${currentBalance.toFixed(2)}) אינה מספיקה לשיעור זה ($${currentDurationPrice.toFixed(2)}). אנא פנה למנהל להטענת יתרה.`
+          : `Your balance ($${currentBalance.toFixed(2)}) is insufficient for this lesson ($${currentDurationPrice.toFixed(2)}). Please contact Engrew admin to top up your balance.`;
       setBookingError(err);
       toast.warning(err);
       return;
@@ -609,7 +609,7 @@ export const StudentDashboard: React.FC = () => {
                             {language === 'he' ? 'אין חבילה פעילה' : 'No active package'}
                           </p>
                           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                            {language === 'he' ? 'פנה למנהל להקצאת נקודות' : 'Contact admin to grant credits'}
+                            {language === 'he' ? 'פנה למנהל להטענת יתרה' : 'Contact admin to top up account balance'}
                           </p>
                         </div>
                       </div>

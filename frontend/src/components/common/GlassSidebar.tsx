@@ -217,7 +217,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
 
               {user.role && (
                 <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-brand-teal-50 dark:bg-brand-teal-950/80 text-brand-teal-900 dark:text-brand-teal-200 border border-brand-teal-200/80 dark:border-brand-teal-800 shrink-0 uppercase tracking-wider">
-                  {user.role}
+                  {user.role === 'SUPER_ADMIN' ? 'Platform Owner' : user.role}
                 </span>
               )}
             </div>

@@ -98,11 +98,15 @@ export const Navbar: React.FC = () => {
                     </p>
                     <span className="text-[10px] font-extrabold text-brand-olive-600 dark:text-brand-olive-400 uppercase tracking-wider block">
                       {language === 'he'
-                        ? user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'
+                        ? user.role === 'SUPER_ADMIN'
+                          ? 'בעלים ומנהל ראשי'
+                          : user.role === 'ADMIN'
                           ? 'מנהל מערכת'
                           : user.role === 'TEACHER'
                           ? 'מורה'
                           : 'תלמיד'
+                        : user.role === 'SUPER_ADMIN'
+                        ? 'Platform Owner'
                         : user.role}
                     </span>
                   </div>

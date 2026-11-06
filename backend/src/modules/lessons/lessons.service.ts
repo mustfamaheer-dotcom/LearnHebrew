@@ -260,7 +260,7 @@ export async function cancelLesson(id: string, cancelledById: string, cancelReas
       });
     }
 
-    // Refund credit to student package if previously scheduled
+    // Restore session count to student package if previously scheduled
     if (lesson.studentPackageId && lesson.status === LessonStatus.SCHEDULED) {
       await tx.studentPackage.update({
         where: { id: lesson.studentPackageId },
