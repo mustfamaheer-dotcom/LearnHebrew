@@ -40,7 +40,7 @@ export const ToastContainer: React.FC = () => {
   return (
     <div
       aria-live="polite"
-      className="fixed bottom-5 end-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"
+      className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+9.5rem)] sm:bottom-5 end-4 sm:end-5 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"
     >
       {toasts.map((item: ToastItem) => {
         const Icon = icons[item.type] || Info;
