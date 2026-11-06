@@ -155,7 +155,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
         </div>
 
         {/* Bottom Section: Action Button + User Profile */}
-        <div className="p-3.5 border-t border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 bg-slate-50/50 dark:bg-slate-950/40 space-y-3">
+        <div className="p-3.5 border-t border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 bg-slate-50/50 dark:bg-slate-950/60 space-y-3">
           {actionButton && (
             <button
               onClick={() => {
@@ -170,13 +170,13 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
           )}
 
           {user && (
-            <div className="bg-white/80 dark:bg-slate-850/80 p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/70 backdrop-blur-md flex items-center justify-between gap-2.5">
+            <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs backdrop-blur-md flex items-center justify-between gap-2.5 transition-colors">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
                     alt={user.firstName || 'User'}
-                    className="w-9 h-9 rounded-xl object-cover ring-2 ring-brand-teal-100 dark:ring-brand-teal-900 shrink-0 shadow-xs"
+                    className="w-9 h-9 rounded-xl object-cover ring-2 ring-brand-teal-200 dark:ring-brand-teal-800/80 shrink-0 shadow-xs"
                   />
                 ) : (
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-olive-100 to-brand-olive-200 dark:from-brand-olive-950 dark:to-brand-olive-900 text-brand-olive-900 dark:text-brand-olive-300 font-black flex items-center justify-center text-xs shrink-0 border border-brand-olive-300/60 dark:border-brand-olive-800 shadow-xs">
@@ -194,7 +194,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
               </div>
 
               {user.role && (
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-lg bg-brand-teal-50 dark:bg-brand-teal-950/80 text-brand-teal-900 dark:text-brand-teal-200 border border-brand-teal-200/80 dark:border-brand-teal-800 shrink-0 uppercase tracking-wider">
+                <span className="text-[9px] font-black px-2.5 py-1 rounded-lg bg-brand-teal-50 dark:bg-brand-teal-950/80 text-brand-teal-900 dark:text-brand-teal-300 border border-brand-teal-200/80 dark:border-brand-teal-800 shrink-0 uppercase tracking-wider">
                   {user.role === 'SUPER_ADMIN' ? 'Platform Owner' : user.role}
                 </span>
               )}

@@ -59,6 +59,10 @@ export default {
           900: '#3c491e',
           950: '#1f270d',
         },
+        slate: {
+          750: '#263346',
+          850: '#141e30',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
