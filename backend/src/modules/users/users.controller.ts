@@ -91,3 +91,22 @@ export async function resetPasswordHandler(req: AuthRequest, res: Response, next
   }
 }
 
+export async function adjustStudentBalanceHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { amount, mode, reason } = req.body;
+    if (amount === undefined || isNaN(Number(amount))) {
+      return res.status(400).json({ error: 'Valid numeric amount is required' });
+    }
+    const student = await usersService.adjustStudentBalance(
+      req.params.id,
+      Number(amount),
+      mode || 'add',
+      reason,
+      req.user!.userId
+    );
+    res.json({ message: 'Student balance updated successfully', student });
+  } catch (error) {
+    next(error);
+  }
+}
+

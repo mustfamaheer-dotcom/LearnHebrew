@@ -15,6 +15,17 @@ export async function listTeachers() {
         },
       },
       timeSlots: true,
+      lessons: {
+        where: {
+          status: 'SCHEDULED',
+          scheduledAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        },
+        select: {
+          id: true,
+          scheduledAt: true,
+          durationMinutes: true,
+        },
+      },
       _count: {
         select: { lessons: true },
       },
@@ -121,21 +132,118 @@ export async function deleteSlot(slotId: string) {
 export async function getTeacherStudents(teacherIdOrUserId: string) {
   const teacher = await getTeacherById(teacherIdOrUserId);
 
-  const lessons = await prisma.lesson.findMany({
-    where: { teacherId: teacher.id },
-    select: {
-      student: {
-        include: {
-          user: {
-            select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true },
-          },
-          packages: { where: { status: 'ACTIVE' }, include: { package: true } },
-        },
+  // Get all students enrolled in the system
+  const allStudents = await prisma.student.findMany({
+    include: {
+      user: {
+        select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true, createdAt: true },
+      },
+      packages: {
+        where: { status: 'ACTIVE' },
+        include: { package: true },
+        orderBy: { createdAt: 'desc' },
+      },
+      lessons: {
+        where: { teacherId: teacher.id },
+        orderBy: { scheduledAt: 'desc' },
+      },
+      homeworks: {
+        where: { teacherId: teacher.id },
+        orderBy: { createdAt: 'desc' },
+      },
+      gameSessions: {
+        take: 5,
+        orderBy: { playedAt: 'desc' },
+        include: { game: { select: { title: true, gameType: true } } },
+      },
+      feedback: {
+        take: 3,
+        orderBy: { submittedAt: 'desc' },
       },
     },
-    distinct: ['studentId'],
+    orderBy: { createdAt: 'desc' },
   });
 
-  return lessons.map((l) => l.student);
+  const now = new Date();
+
+  return allStudents.map((s) => {
+    const teacherLessons = s.lessons || [];
+    const completedLessons = teacherLessons.filter((l) => l.status === 'COMPLETED');
+    const scheduledLessons = teacherLessons.filter(
+      (l) => l.status === 'SCHEDULED' && new Date(l.scheduledAt) >= now
+    );
+    const pastLessons = teacherLessons.filter(
+      (l) => l.status === 'COMPLETED' || new Date(l.scheduledAt) < now
+    );
+
+    const nextLesson = scheduledLessons.sort(
+      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+    )[0] || null;
+
+    const lastLesson = pastLessons[0] || null;
+
+    const hw = s.homeworks || [];
+    const pendingHw = hw.filter((h) => h.status === 'PENDING').length;
+    const submittedHw = hw.filter((h) => h.status === 'SUBMITTED').length;
+    const reviewedHw = hw.filter((h) => h.status === 'REVIEWED').length;
+
+    // Remaining lessons calculation
+    const activePkg = s.packages[0];
+    const lessonsRemaining = activePkg
+      ? Math.max(0, activePkg.lessonsTotal - activePkg.lessonsUsed)
+      : 0;
+
+    return {
+      id: s.id,
+      userId: s.userId,
+      user: s.user,
+      level: s.level,
+      totalPoints: s.totalPoints,
+      streakDays: s.streakDays,
+      createdAt: s.createdAt,
+      stats: {
+        completedLessonsCount: completedLessons.length,
+        scheduledLessonsCount: scheduledLessons.length,
+        totalLessonsWithTeacher: teacherLessons.length,
+        lessonsRemaining,
+        homework: {
+          total: hw.length,
+          pending: pendingHw,
+          submitted: submittedHw,
+          reviewed: reviewedHw,
+        },
+        gamesPlayed: s.gameSessions?.length || 0,
+      },
+      nextLesson: nextLesson
+        ? {
+            id: nextLesson.id,
+            scheduledAt: nextLesson.scheduledAt,
+            durationMinutes: nextLesson.durationMinutes,
+            status: nextLesson.status,
+          }
+        : null,
+      lastLesson: lastLesson
+        ? {
+            id: lastLesson.id,
+            scheduledAt: lastLesson.scheduledAt,
+            durationMinutes: lastLesson.durationMinutes,
+            status: lastLesson.status,
+            teacherNotes: lastLesson.teacherNotes,
+          }
+        : null,
+      activePackage: activePkg
+        ? {
+            id: activePkg.id,
+            name: activePkg.package.name,
+            nameHe: activePkg.package.nameHe,
+            lessonsTotal: activePkg.lessonsTotal,
+            lessonsUsed: activePkg.lessonsUsed,
+            endDate: activePkg.endDate,
+          }
+        : null,
+      recentHomework: hw.slice(0, 3),
+      recentFeedback: s.feedback,
+    };
+  });
 }
 

@@ -6,6 +6,7 @@ import {
   updateUserHandler,
   deleteUserHandler,
   resetPasswordHandler,
+  adjustStudentBalanceHandler,
 } from './users.controller';
 import { authenticate, requireRoles } from '../../middleware/auth';
 import { Role } from '@prisma/client';
@@ -20,6 +21,7 @@ router.get('/:id', getUserHandler);
 router.patch('/:id', updateUserHandler);
 router.delete('/:id', deleteUserHandler);
 router.post('/:id/reset-password', resetPasswordHandler);
+router.post('/:id/balance', adjustStudentBalanceHandler);
 
 export default router;
 

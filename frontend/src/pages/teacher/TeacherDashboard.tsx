@@ -13,6 +13,9 @@ import {
 import { FlashcardGame } from '../../components/games/FlashcardGame';
 import { QuizGame } from '../../components/games/QuizGame';
 import { MatchingGame } from '../../components/games/MatchingGame';
+import { DriveViewerModal } from '../../components/common/DriveViewerModal';
+import { GlassSidebar } from '../../components/common/GlassSidebar';
+import { isGoogleDriveUrl, detectAttachmentType } from '../../lib/driveUtils';
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -36,6 +39,15 @@ import {
   Check,
   AlertCircle,
   Eye,
+  FileText,
+  PlayCircle,
+  FolderOpen,
+  ArrowRight,
+  Award,
+  Flame,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -88,10 +100,60 @@ export const TeacherDashboard: React.FC = () => {
   const { t, language } = useTranslation();
   const queryClient = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<'calendar' | 'lessons' | 'students' | 'homework' | 'games'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'lessons' | 'students' | 'homework' | 'recordings' | 'games'>('calendar');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(1); // Monday default
+  const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDay());
   const [selectedDuration, setSelectedDuration] = useState<SessionDuration>(25);
+
+  // Helper to compute dates of current week (Sunday to Saturday) based on selectedDate
+  const getWeekDates = (baseDateStr: string) => {
+    const base = new Date(baseDateStr + 'T00:00:00');
+    const day = base.getDay();
+    const sunday = new Date(base);
+    sunday.setDate(base.getDate() - day);
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + i);
+      return d.toISOString().split('T')[0];
+    });
+  };
+
+  const handleDateChange = (newDateStr: string) => {
+    setSelectedDate(newDateStr);
+    const day = new Date(newDateStr + 'T00:00:00').getDay();
+    setSelectedDay(day);
+  };
+
+  const handleDaySelect = (dayIndex: number) => {
+    setSelectedDay(dayIndex);
+    const currentWeek = getWeekDates(selectedDate);
+    setSelectedDate(currentWeek[dayIndex]);
+  };
+
+  const shiftWeek = (weeks: number) => {
+    const base = new Date(selectedDate + 'T00:00:00');
+    base.setDate(base.getDate() + weeks * 7);
+    handleDateChange(base.toISOString().split('T')[0]);
+  };
+
+  // Check if a specific slot time on a given date is in the past
+  const isSlotInPast = (dateStr: string, startTime: string) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (dateStr < todayStr) return true;
+    if (dateStr === todayStr) {
+      const now = new Date();
+      const nowTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      return startTime <= nowTime;
+    }
+    return false;
+  };
+
+  const isDateInPast = (dateStr: string) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return dateStr < todayStr;
+  };
   const [recordingLessonId, setRecordingLessonId] = useState<string | null>(null);
   const [recordingUrl, setRecordingUrl] = useState('');
   const [sessionNotes, setSessionNotes] = useState('');
@@ -101,10 +163,31 @@ export const TeacherDashboard: React.FC = () => {
   const [hwStudentId, setHwStudentId] = useState('');
   const [hwTitle, setHwTitle] = useState('');
   const [hwDesc, setHwDesc] = useState('');
+  const [hwAttachmentUrl, setHwAttachmentUrl] = useState('');
+  const [hwDueDate, setHwDueDate] = useState('');
 
   // Homework review state
   const [reviewHwId, setReviewHwId] = useState<string | null>(null);
   const [reviewFeedback, setReviewFeedback] = useState('');
+
+  // Drive viewer modal state
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [viewerTitle, setViewerTitle] = useState<string>('');
+  const [viewerSubtitle, setViewerSubtitle] = useState<string>('');
+
+  // Student progress details modal state
+  const [selectedStudentDetail, setSelectedStudentDetail] = useState<any | null>(null);
+
+  // Recorded Sessions state
+  const [isCreatingRecording, setIsCreatingRecording] = useState(false);
+  const [recStudentId, setRecStudentId] = useState('');
+  const [recTitle, setRecTitle] = useState('');
+  const [recTitleHe, setRecTitleHe] = useState('');
+  const [recCategory, setRecCategory] = useState('Grammar / דקדוק');
+  const [recSessionNumber, setRecSessionNumber] = useState(1);
+  const [recVideoUrl, setRecVideoUrl] = useState('');
+  const [recDesc, setRecDesc] = useState('');
+  const [recDuration, setRecDuration] = useState(25);
 
   // Custom Games Manager state
   const [gameFilterLevel, setGameFilterLevel] = useState<string>('ALL');
@@ -185,6 +268,48 @@ export const TeacherDashboard: React.FC = () => {
     },
   });
 
+  // 4. Fetch Recorded Sessions for this Teacher
+  const { data: recordedSessionsData } = useQuery({
+    queryKey: ['teacherRecordedSessions', user?.id],
+    queryFn: async () => {
+      const res = await api.get('/recorded-sessions');
+      return res.data.sessions;
+    },
+  });
+
+  const createRecordedSessionMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      return api.post('/recorded-sessions', payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacherRecordedSessions'] });
+      setIsCreatingRecording(false);
+      setRecTitle('');
+      setRecTitleHe('');
+      setRecVideoUrl('');
+      setRecDesc('');
+      toast.success(
+        language === 'he' ? 'השיעור המוקלט נוסף בהצלחה לתלמידים!' : 'Recorded session added successfully!'
+      );
+    },
+    onError: (err: any) => {
+      toast.error(
+        err.response?.data?.error ||
+          (language === 'he' ? 'שגיאה בהוספת שיעור מוקלט' : 'Failed to add recorded session')
+      );
+    },
+  });
+
+  const deleteRecordedSessionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return api.delete(`/recorded-sessions/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacherRecordedSessions'] });
+      toast.info(language === 'he' ? 'השיעור המוקלט הוסר.' : 'Recorded session removed.');
+    },
+  });
+
   // Complete lesson mutation
   const completeLessonMutation = useMutation({
     mutationFn: async (lessonId: string) => {
@@ -259,6 +384,8 @@ export const TeacherDashboard: React.FC = () => {
       setIsAssigningHw(false);
       setHwTitle('');
       setHwDesc('');
+      setHwAttachmentUrl('');
+      setHwDueDate('');
       toast.success(
         language === 'he' ? 'שיעורי הבית הוקצו בהצלחה לתלמיד!' : 'Homework assigned successfully!'
       );
@@ -515,17 +642,24 @@ export const TeacherDashboard: React.FC = () => {
     },
     {
       id: 'students',
-      label: 'My Students',
-      labelHe: 'התלמידים שלי',
+      label: 'Student Profiles',
+      labelHe: 'פרופיל והתקדמות תלמידים',
       icon: Users,
       badge: studentsData?.length || 0,
     },
     {
       id: 'homework',
-      label: 'Homework Reviews',
-      labelHe: 'בדיקת שיעורי בית',
+      label: 'Assign Homework & PDFs',
+      labelHe: 'שיעורי בית וקובצי PDF',
       icon: BookOpen,
       badge: homeworkData?.length || 0,
+    },
+    {
+      id: 'recordings',
+      label: 'Recorded Sessions',
+      labelHe: 'שיעורים מוקלטים (Drive)',
+      icon: PlayCircle,
+      badge: recordedSessionsData?.length || 0,
     },
     {
       id: 'games',
@@ -537,160 +671,76 @@ export const TeacherDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Mobile Top Navigation bar with toggle */}
-      <div className="lg:hidden flex items-center justify-between p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div className="flex items-center gap-2.5">
-          <GraduationCap className="w-5 h-5 text-brand-teal-800 dark:text-brand-teal-400" />
-          <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-            {language === 'he' ? 'פורטל מורים מוסמכים' : 'Instructor Portal'}
-          </span>
+    <div className="min-h-screen w-full relative">
+      {/* Mobile Top Navigation bar with toggle & active section pill */}
+      <div className="lg:hidden flex items-center justify-between p-3 sm:p-4 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 px-4 py-3 sticky top-16 z-20 shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center p-1 shadow-2xs shrink-0">
+            <img src="/logo.png" alt="Engrew" className="w-full h-full object-contain drop-shadow-2xs" />
+          </div>
+          <div className="min-w-0">
+            <span className="font-extrabold text-xs text-slate-900 dark:text-white block truncate">
+              {language === 'he' ? 'פורטל מורים מוסמכים' : 'Teacher Portal'}
+            </span>
+            <span className="text-[11px] font-bold text-brand-teal-700 dark:text-brand-teal-400 block truncate">
+              {navItems.find((item) => item.id === activeTab)?.label || activeTab}
+            </span>
+          </div>
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs shadow-xs transition-colors shrink-0"
         >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          <span>{mobileMenuOpen ? (language === 'he' ? 'סגור' : 'Close') : (language === 'he' ? 'תפריט' : 'Menu')}</span>
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
+      <div className="w-full">
         {/* Apple-Style Glassy Left Sidebar */}
-        <aside
-          className={`lg:w-72 w-full lg:sticky lg:top-24 z-20 transition-all ${
-            mobileMenuOpen ? 'block' : 'hidden lg:block'
-          }`}
-        >
-          <div className="relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-slate-200/60 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-slate-900/5 dark:ring-white/5">
-            {/* Subtle glow */}
-            <div className="absolute -top-16 -left-16 w-40 h-40 bg-brand-teal-400/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-16 -right-16 w-40 h-40 bg-brand-olive-400/10 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Sidebar Header */}
-            <div className="flex items-center gap-3 px-3 py-3 mb-4 border-b border-slate-200/50 dark:border-slate-800">
-              <div className="w-10 h-10 rounded-2xl bg-brand-teal-800 text-white flex items-center justify-center font-black shadow-md shadow-brand-teal-900/20">
-                <img src="/logo.png" alt="Engrew" className="w-6 h-6 object-contain brightness-0 invert" />
-              </div>
-              <div className="overflow-hidden">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">Engrew</span>
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                </div>
-                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
-                  {language === 'he' ? 'פורטל מורים מוסמכים' : 'Teacher Portal'}
-                </p>
-              </div>
-            </div>
-
-            {/* Nav Menu */}
-            <nav className="space-y-1.5">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                const label = language === 'he' ? item.labelHe : item.label;
-
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id as any);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold transition-all group ${
-                      isActive
-                        ? 'bg-brand-teal-800 text-white shadow-md shadow-brand-teal-900/20'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70 hover:backdrop-blur-sm'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon
-                        className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                          isActive ? 'text-brand-olive-300' : 'text-slate-500 dark:text-slate-400 group-hover:text-brand-teal-800 dark:group-hover:text-brand-teal-400'
-                        }`}
-                      />
-                      <span>{label}</span>
-                    </div>
-
-                    {item.badge !== null && (
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${
-                          isActive
-                            ? 'bg-brand-teal-900 text-brand-olive-300'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 group-hover:bg-slate-200 dark:group-hover:bg-slate-700'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Quick Action Button in Sidebar */}
-            <div className="pt-4 mt-4 border-t border-slate-200/50 dark:border-slate-800">
-              <button
-                onClick={() => {
-                  setIsAssigningHw(true);
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full py-2.5 px-3 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>{language === 'he' ? 'הקצאת שיעורי בית' : 'Assign Homework'}</span>
-              </button>
-            </div>
-
-            {/* User Profile Pill at bottom */}
-            <div className="mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-800 flex items-center justify-between px-2">
-              <div className="flex items-center gap-2.5 truncate">
-                <div className="w-8 h-8 rounded-full bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 font-bold flex items-center justify-center text-xs">
-                  {user?.firstName?.charAt(0) || 'T'}
-                </div>
-                <div className="truncate">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {user?.firstName} {user?.lastName}
-                  </p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
-                </div>
-              </div>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-olive-50 dark:bg-brand-olive-950/70 text-brand-olive-700 dark:text-brand-olive-300 border border-brand-olive-200 dark:border-brand-olive-800">
-                {language === 'he' ? 'מורה מוסמך' : 'TEACHER'}
-              </span>
-            </div>
-          </div>
-        </aside>
+        <GlassSidebar
+          navItems={navItems}
+          activeTab={activeTab}
+          onTabChange={(tabId) => {
+            setActiveTab(tabId as any);
+            setMobileMenuOpen(false);
+          }}
+          user={user}
+          panelSubtitle="Certified Teacher Portal"
+          isOpenMobile={mobileMenuOpen}
+          onCloseMobile={() => setMobileMenuOpen(false)}
+        />
 
         {/* Main Content Area */}
-        <main className="flex-1 w-full space-y-8">
+        <main className="lg:ps-72 xl:ps-80 w-full min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8 xl:p-10 space-y-6 sm:space-y-8 min-w-0">
           {/* Top Banner */}
-          <div className="bg-gradient-to-r from-brand-teal-900 to-brand-teal-950 rounded-3xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-              <div>
-                <span className="inline-block px-3 py-1 bg-white/10 text-brand-olive-300 text-xs font-bold rounded-full mb-3 backdrop-blur-xs">
+          <div className="bg-gradient-to-r from-brand-teal-900 to-brand-teal-950 rounded-3xl p-5 sm:p-8 text-white shadow-md relative overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 relative z-10">
+              <div className="space-y-1.5 min-w-0">
+                <span className="inline-block px-3 py-1 bg-white/10 text-brand-olive-300 text-xs font-bold rounded-full mb-1 backdrop-blur-xs max-w-full truncate">
                   {language === 'he' ? 'לוח מורה • מערך שיעורים רב-מתכונתי (25 / 40 / 55 דקות)' : 'Instructor Dashboard • Multi-Duration Session System (25 / 40 / 55 Min)'}
                 </span>
-                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+                <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
                   {language === 'he' ? `שלום, ${user?.firstName}!` : `Welcome, ${user?.firstName}!`}
                 </h1>
-                <p className="text-brand-teal-100/80 text-xs sm:text-sm mt-1 max-w-xl">
+                <p className="text-brand-teal-100/90 text-xs sm:text-sm max-w-xl leading-relaxed">
                   {language === 'he'
                     ? 'נהל את לוח הזמינות השבועי לפי 3 סוגי שיעורים (25, 40 ו-55 דקות), בדוק שיעורי בית, התחל שיעורי זום והעלה סיכומי שיעור.'
                     : 'Customize your weekly availability for 3 session durations (25, 40, and 55 minutes), review student homework, launch live Zoom classes, and link lesson recordings.'}
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
                 <button
                   onClick={() => openNewGameModal('FLASHCARD')}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-bold text-xs shadow-xs transition-colors border border-brand-teal-700"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-bold text-xs shadow-xs transition-colors border border-brand-teal-700 text-center"
                 >
                   <Gamepad2 className="w-4 h-4 text-brand-olive-300" />
                   <span>{language === 'he' ? 'יצירת משחק מותאם' : 'Create Custom Game'}</span>
                 </button>
                 <button
                   onClick={() => setIsAssigningHw(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-bold text-xs shadow-xs transition-colors"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-bold text-xs shadow-xs transition-colors text-center"
                 >
                   <Plus className="w-4 h-4" />
                   <span>{language === 'he' ? 'הקצאת שיעורי בית' : 'Assign Homework'}</span>
@@ -791,43 +841,153 @@ export const TeacherDashboard: React.FC = () => {
                 </span>
               </div>
 
-              {/* Day Selector Pills */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-                {DAYS.map((dayName, dayIndex) => {
-                  const daySlotsCount = slots.filter((s: any) => s.dayOfWeek === dayIndex).length;
-                  const isSelected = selectedDay === dayIndex;
+              {/* Target Date Picker & Week Navigation Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-brand-teal-100 dark:bg-brand-teal-950/80 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center shrink-0 border border-brand-teal-200 dark:border-brand-teal-800">
+                    <CalendarIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                      {language === 'he' ? 'תאריך יעד לניהול זמינות ושיעורים' : 'Target Schedule Date'}
+                    </span>
+                    <p className="text-sm font-black text-slate-900 dark:text-white">
+                      {new Date(selectedDate + 'T00:00:00').toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                </div>
 
-                  return (
-                    <button
-                      key={dayIndex}
-                      onClick={() => setSelectedDay(dayIndex)}
-                      className={`p-3 rounded-2xl border text-center transition-all ${
-                        isSelected
-                          ? 'bg-brand-teal-800 text-white border-brand-teal-800 shadow-xs ring-2 ring-brand-teal-500'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/70 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80'
-                      }`}
-                    >
-                      <span className="text-[11px] font-bold block uppercase tracking-wider">
-                        {language === 'he' ? DAYS_HE[dayIndex] : dayName.slice(0, 3)}
-                      </span>
-                      <span className={`text-[10px] font-semibold mt-1 block ${isSelected ? 'text-brand-olive-300' : 'text-slate-400 dark:text-slate-500'}`}>
-                        {daySlotsCount} {language === 'he' ? 'שעות' : 'slots'}
-                      </span>
-                    </button>
-                  );
-                })}
+                <div className="flex flex-wrap items-center gap-2">
+                  {isDateInPast(selectedDate) && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-bold shadow-2xs">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span>{language === 'he' ? 'תאריך שעבר • מצב צפייה בלבד' : 'Past Date • Read-Only View'}</span>
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => shiftWeek(-1)}
+                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700 text-xs font-bold transition-colors flex items-center gap-1"
+                    title={language === 'he' ? 'שבוע קודם' : 'Previous Week'}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="hidden md:inline">{language === 'he' ? 'שבוע קודם' : 'Prev Week'}</span>
+                  </button>
+
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-bold shadow-2xs focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => handleDateChange(new Date().toISOString().split('T')[0])}
+                    className="px-3 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 text-brand-teal-900 dark:text-brand-teal-200 text-xs font-bold hover:bg-brand-teal-100 transition-colors"
+                  >
+                    {language === 'he' ? 'היום' : 'Today'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => shiftWeek(1)}
+                    className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700 text-xs font-bold transition-colors flex items-center gap-1"
+                    title={language === 'he' ? 'שבוע הבא' : 'Next Week'}
+                  >
+                    <span className="hidden md:inline">{language === 'he' ? 'שבוע הבא' : 'Next Week'}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
+
+              {/* Day Selector Pills with Linked Dates */}
+              {(() => {
+                const weekDates = getWeekDates(selectedDate);
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                    {DAYS.map((dayName, dayIndex) => {
+                      const daySlotsCount = slots.filter((s: any) => s.dayOfWeek === dayIndex).length;
+                      const isSelected = selectedDay === dayIndex;
+                      const weekDate = weekDates[dayIndex];
+                      const dateObj = new Date(weekDate + 'T00:00:00');
+                      const dateFormatted = dateObj.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      });
+
+                      const bookedCount = lessons.filter((l: any) => {
+                        const lDateStr = new Date(l.scheduledAt).toISOString().split('T')[0];
+                        return lDateStr === weekDate && l.status === 'SCHEDULED';
+                      }).length;
+
+                      const isPastDay = isDateInPast(weekDate);
+
+                      return (
+                        <button
+                          key={dayIndex}
+                          onClick={() => handleDaySelect(dayIndex)}
+                          className={`p-3 rounded-2xl border text-center transition-all ${
+                            isSelected
+                              ? 'bg-brand-teal-800 text-white border-brand-teal-800 shadow-xs ring-2 ring-brand-teal-500'
+                              : isPastDay
+                              ? 'bg-slate-100/60 dark:bg-slate-850/40 text-slate-500 dark:text-slate-400 border-slate-200/50 dark:border-slate-800 opacity-70 hover:opacity-100'
+                              : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/70 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/80'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <span className="text-[11px] font-bold block uppercase tracking-wider">
+                              {language === 'he' ? DAYS_HE[dayIndex] : dayName.slice(0, 3)}
+                            </span>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+                              isSelected
+                                ? 'bg-brand-teal-900 text-brand-olive-300'
+                                : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                            }`}>
+                              {dateFormatted}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-center gap-1 mt-1">
+                            <span className={`text-[10px] font-semibold block ${isSelected ? 'text-brand-olive-200' : 'text-slate-500 dark:text-slate-400'}`}>
+                              {isPastDay ? (language === 'he' ? 'עבר' : 'Past') : `${daySlotsCount} ${language === 'he' ? 'פתוחים' : 'slots'}`}
+                            </span>
+                            {bookedCount > 0 && (
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-black bg-amber-400 text-slate-950">
+                                {bookedCount} {language === 'he' ? 'מוזמנים' : 'booked'}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Time Slot Matrix for Selected Day and Duration */}
               <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                    {language === 'he'
-                      ? `שעות זמינות ליום ${DAYS_HE[selectedDay]} (שיעורי ${selectedDuration} דקות בשעון ישראל)`
-                      : `Slots for ${DAYS[selectedDay]} (${selectedDuration}-minute slots in 12-Hour IST)`}
-                  </h3>
-                  <span className="text-xs text-brand-teal-700 dark:text-brand-teal-400 font-bold">
-                    {language === 'he' ? 'סה״כ הוגדרו ליום זה: ' : 'Configured for day: '}
+                  <div>
+                    <h3 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base">
+                      {language === 'he'
+                        ? `שעות זמינות ליום ${DAYS_HE[selectedDay]} (${new Date(selectedDate + 'T00:00:00').toLocaleDateString('he-IL', { month: 'short', day: 'numeric', year: 'numeric' })}) • שיעורי ${selectedDuration} דקות`
+                        : `Slots for ${DAYS[selectedDay]}, ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} (${selectedDuration}-Min Slots in 12h IST)`}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {language === 'he'
+                        ? 'שעות שייפתחו כאן יהיו זמינות לבחירה ישירה עבור התלמידים בהזמנת שיעור.'
+                        : 'Slots opened here are linked directly to student booking for this date and weekday.'}
+                    </p>
+                  </div>
+                  <span className="text-xs text-brand-teal-800 dark:text-brand-teal-300 font-bold bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 px-3 py-1 rounded-xl shrink-0">
+                    {language === 'he' ? 'מוגדרים ליום זה: ' : 'Configured: '}
                     {slots.filter((s: any) => s.dayOfWeek === selectedDay).length}{' '}
                     {language === 'he' ? 'שעות' : 'slots'}
                   </span>
@@ -854,10 +1014,10 @@ export const TeacherDashboard: React.FC = () => {
                         const slotLabel12h = formatSlotRange12Hour(block.start, block.end);
 
                         const bookedLesson = lessons.find((l: any) => {
+                          const lDateStr = new Date(l.scheduledAt).toISOString().split('T')[0];
                           const lDate = new Date(l.scheduledAt);
-                          const lDay = lDate.getDay();
                           const lTime = lDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-                          return lDay === selectedDay && lTime === block.start && l.status === 'SCHEDULED';
+                          return lDateStr === selectedDate && lTime === block.start && l.status === 'SCHEDULED';
                         });
 
                         if (bookedLesson) {
@@ -934,24 +1094,52 @@ export const TeacherDashboard: React.FC = () => {
                         }
 
                         // Unconfigured / empty slot
+                        const slotIsPast = isSlotInPast(selectedDate, block.start);
+
+                        if (slotIsPast) {
+                          return (
+                            <div
+                              key={block.start}
+                              className="p-3.5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 text-slate-400 dark:text-slate-600 flex flex-col justify-between min-h-[7rem] text-start select-none cursor-not-allowed opacity-60"
+                              title={language === 'he' ? 'תאריך או שעה שכבר עברו - לא ניתן להוסיף שעת זמינות' : 'Past date or time - cannot open slot'}
+                            >
+                              <span className="text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500 line-through">
+                                {slotLabel12h}
+                              </span>
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500 pt-2">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>{language === 'he' ? 'זמן שעבר' : 'Past Slot'}</span>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         return (
                           <button
                             key={block.start}
-                            onClick={() =>
+                            onClick={() => {
+                              if (isSlotInPast(selectedDate, block.start)) {
+                                toast.error(
+                                  language === 'he'
+                                    ? 'לא ניתן להוסיף שעת זמינות לתאריך או שעה שכבר עברו.'
+                                    : 'Cannot open a slot for a past date or time.'
+                                );
+                                return;
+                              }
                               addSlotMutation.mutate({
                                 dayOfWeek: selectedDay,
                                 startTime: block.start,
                                 endTime: block.end,
                                 durationMinutes: selectedDuration,
-                              })
-                            }
-                            className="p-3.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-teal-600 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/50 dark:hover:bg-brand-teal-950/30 text-slate-500 dark:text-slate-400 hover:text-brand-teal-900 dark:hover:text-brand-teal-200 transition-all flex flex-col justify-between min-h-[7rem] text-start group"
+                              });
+                            }}
+                            className="p-3.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-teal-600 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/50 dark:hover:bg-brand-teal-950/30 text-slate-500 dark:text-slate-400 hover:text-brand-teal-900 dark:hover:text-brand-teal-200 transition-all flex flex-col justify-between min-h-[7rem] text-start group shadow-2xs"
                           >
                             <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300">
                               {slotLabel12h}
                             </span>
-                            <div className="flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-300 group-hover:text-brand-teal-900 dark:group-hover:text-brand-teal-100 pt-2">
-                              <Plus className="w-3.5 h-3.5" />
+                            <div className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-brand-teal-900 dark:group-hover:text-brand-teal-100 pt-2">
+                              <Plus className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400" />
                               <span>
                                 {language === 'he'
                                   ? `פתח שעה (${selectedDuration} דק׳)`
@@ -1150,38 +1338,167 @@ export const TeacherDashboard: React.FC = () => {
 
           {/* TAB 3: MY STUDENTS */}
           {activeTab === 'students' && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                {language === 'he' ? 'התלמידים המשובצים שלי' : 'My Assigned Students'}
-              </h2>
-              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {studentsData?.map((student: any) => (
-                  <div key={student.id} className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-900 dark:text-brand-teal-300 flex items-center justify-center font-bold text-sm">
-                        {student.user.firstName[0]}
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6 transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <Users className="w-5 h-5 text-brand-teal-700 dark:text-brand-teal-400" />
+                    <span>{language === 'he' ? 'פרופילי תלמידים ומעקב התקדמות' : 'Student Profiles & Progress Tracking'}</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {language === 'he'
+                      ? 'עקוב אחר התקדמות כל תלמיד, יתרת שיעורים, שיעורי בית ומפגשים מוקלטים.'
+                      : 'Track each student\'s learning progress, lesson packages, homework submissions, and assignments.'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 border border-brand-teal-200 dark:border-brand-teal-800 text-xs font-bold text-brand-teal-800 dark:text-brand-teal-300">
+                    {studentsData?.length || 0} {language === 'he' ? 'תלמידים משובצים' : 'Enrolled Students'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
+                {studentsData?.map((student: any) => {
+                  const completedLessons = student.stats?.completedLessons || 0;
+                  const remainingLessons = student.stats?.packageRemainingLessons || 0;
+                  const totalLessons = student.stats?.packageTotalLessons || (completedLessons + remainingLessons);
+                  const progressPct = totalLessons > 0 ? Math.min(100, Math.round((completedLessons / totalLessons) * 100)) : 0;
+                  const pendingHw = student.stats?.pendingHomework || 0;
+
+                  return (
+                    <div
+                      key={student.id}
+                      className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-lg hover:border-brand-teal-500/30 transition-all flex flex-col justify-between space-y-4 overflow-hidden relative group"
+                    >
+                      {/* Top Header */}
+                      <div className="space-y-3.5">
+                        {/* Student Identity Row: Avatar + Full Name + Email */}
+                        <div className="flex items-center gap-3.5 min-w-0 min-h-[52px]">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-teal-700 to-brand-teal-900 text-white font-black text-base flex items-center justify-center shadow-xs shrink-0 ring-2 ring-brand-teal-100 dark:ring-brand-teal-950">
+                            {student.user.firstName?.[0] || 'S'}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4
+                              className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-snug break-words"
+                              title={`${student.user.firstName} ${student.user.lastName}`}
+                            >
+                              {student.user.firstName} {student.user.lastName}
+                            </h4>
+                            <span
+                              className="text-xs text-slate-500 dark:text-slate-400 block truncate mt-0.5"
+                              title={student.user.email}
+                            >
+                              {student.user.email}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Badges Bar: Level & Points & Streak */}
+                        <div className="h-10 flex items-center justify-between gap-2 text-xs px-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/80">
+                          <span className="inline-flex items-center gap-1.5 font-bold text-brand-olive-800 dark:text-brand-olive-300 text-xs shrink-0">
+                            <span className="w-2 h-2 rounded-full bg-brand-olive-500 shrink-0" />
+                            {t(`levels.${student.level || 'BEGINNER'}`)}
+                          </span>
+                          <div className="flex items-center gap-2.5 font-bold shrink-0">
+                            <span className="flex items-center gap-1 text-brand-teal-800 dark:text-brand-teal-300">
+                              <Award className="w-3.5 h-3.5 text-brand-olive-500 shrink-0" />
+                              <span>{student.totalPoints || 0} {language === 'he' ? 'נקודות' : 'pts'}</span>
+                            </span>
+                            <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                              <Flame className="w-3.5 h-3.5 shrink-0" />
+                              <span>{student.stats?.streakDays || 1}{language === 'he' ? ' ימים' : 'd streak'}</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Progress Bar for Package */}
+                        <div className="h-12 flex flex-col justify-center space-y-1.5">
+                          <div className="flex justify-between items-center text-xs text-slate-600 dark:text-slate-400">
+                            <span className="font-medium">{language === 'he' ? 'התקדמות חבילה' : 'Package Progress'}</span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {completedLessons} / {totalLessons} {language === 'he' ? 'שיעורים' : 'lessons'} ({progressPct}%)
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-brand-teal-600 dark:bg-brand-teal-500 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Last & Next Lesson */}
+                        <div className="h-14 text-xs space-y-1 text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex flex-col justify-center">
+                          {student.stats?.lastLessonDate && (
+                            <div className="flex items-center justify-between">
+                              <span>{language === 'he' ? 'שיעור אחרון:' : 'Last lesson:'}</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                {new Date(student.stats.lastLessonDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                          {student.stats?.nextLessonDate && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-brand-teal-700 dark:text-brand-teal-400 font-semibold">
+                                {language === 'he' ? 'שיעור הבא:' : 'Next session:'}
+                              </span>
+                              <span className="font-bold text-brand-teal-800 dark:text-brand-teal-300">
+                                {new Date(student.stats.nextLessonDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                          {pendingHw > 0 && !student.stats?.nextLessonDate && (
+                            <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 font-bold">
+                              <span>{language === 'he' ? 'ש״ב ממתינים לבדיקה:' : 'Pending HW review:'}</span>
+                              <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800">{pendingHw}</span>
+                            </div>
+                          )}
+                          {!student.stats?.lastLessonDate && !student.stats?.nextLessonDate && pendingHw === 0 && (
+                            <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
+                              <span>{language === 'he' ? 'סטטוס מפגשים:' : 'Session status:'}</span>
+                              <span className="italic font-medium">{language === 'he' ? 'אין שיעורים קרובים' : 'No upcoming sessions'}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">
-                          {student.user.firstName} {student.user.lastName}
-                        </h4>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400">{student.user.email}</span>
+
+                      {/* Action Buttons */}
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => {
+                            setHwStudentId(student.id);
+                            setIsAssigningHw(true);
+                          }}
+                          className="py-2 px-2 bg-brand-teal-50 dark:bg-brand-teal-950/60 hover:bg-brand-teal-100 dark:hover:bg-brand-teal-900/60 text-brand-teal-800 dark:text-brand-teal-300 font-bold text-xs rounded-xl transition-colors text-center shadow-2xs"
+                          title={language === 'he' ? 'הקצאת שיעורי בית' : 'Assign HW'}
+                        >
+                          + {language === 'he' ? 'ש״ב' : 'HW'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRecStudentId(student.id);
+                            setIsCreatingRecording(true);
+                          }}
+                          className="py-2 px-2 bg-brand-olive-50 dark:bg-brand-olive-950/60 hover:bg-brand-olive-100 dark:hover:bg-brand-olive-900/60 text-brand-olive-800 dark:text-brand-olive-300 font-bold text-xs rounded-xl transition-colors text-center shadow-2xs"
+                          title={language === 'he' ? 'הוספת שיעור מוקלט' : 'Add Recording'}
+                        >
+                          + {language === 'he' ? 'הקלטה' : 'Video'}
+                        </button>
+                        <button
+                          onClick={() => setSelectedStudentDetail(student)}
+                          className="py-2 px-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors text-center flex items-center justify-center gap-1.5 shadow-2xs"
+                        >
+                          <Eye className="w-3.5 h-3.5 shrink-0" />
+                          <span>{language === 'he' ? 'פרופיל' : 'View'}</span>
+                        </button>
                       </div>
                     </div>
-                    <div className="pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 flex justify-between">
-                      <span>
-                        {language === 'he' ? 'רמה:' : 'Level:'}{' '}
-                        <strong>{t(`levels.${student.level || 'BEGINNER'}`)}</strong>
-                      </span>
-                      <span className="text-brand-olive-700 dark:text-brand-olive-400 font-bold">
-                        {student.totalPoints} {language === 'he' ? 'נק׳' : 'pts'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {(!studentsData || studentsData.length === 0) && (
-                  <p className="text-xs text-slate-400 py-6 text-center col-span-3">
+                  <p className="text-xs text-slate-400 py-12 text-center col-span-3">
                     {language === 'he' ? 'אין תלמידים משובצים כרגע.' : 'No students assigned yet.'}
                   </p>
                 )}
@@ -1191,53 +1508,133 @@ export const TeacherDashboard: React.FC = () => {
 
           {/* TAB 4: HOMEWORK REVIEWS */}
           {activeTab === 'homework' && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                {language === 'he' ? 'הגשות שיעורי בית מתלמידים' : 'Student Homework Submissions'}
-              </h2>
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6 transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-brand-teal-700 dark:text-brand-teal-400" />
+                    <span>{language === 'he' ? 'הגשות שיעורי בית ומטלות' : 'Student Homework & Material Submissions'}</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {language === 'he'
+                      ? 'בדוק שיעורי בית שהוגשו, ספק משוב, וצפה בחומרי PDF המקושרים ישירות במערכת.'
+                      : 'Review submitted assignments, grade them, and view attached Google Drive PDFs directly.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsAssigningHw(true)}
+                  className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4 text-brand-olive-300" />
+                  <span>{language === 'he' ? 'הקצאת שיעורי בית' : 'Assign New Homework'}</span>
+                </button>
+              </div>
+
               <div className="grid md:grid-cols-2 gap-4">
                 {homeworkData?.map((hw: any) => (
-                  <div key={hw.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 space-y-2.5">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">{hw.title}</h4>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {language === 'he' ? 'תלמיד:' : 'Student:'} {hw.student?.user?.firstName} {hw.student?.user?.lastName}
+                  <div
+                    key={hw.id}
+                    className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-750 shadow-xs space-y-3 flex flex-col justify-between"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-start gap-2">
+                        <div>
+                          <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">{hw.title}</h4>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {language === 'he' ? 'תלמיד:' : 'Student:'} {hw.student?.user?.firstName} {hw.student?.user?.lastName}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
+                            hw.status === 'GRADED'
+                              ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                              : hw.status === 'SUBMITTED'
+                              ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          {language === 'he'
+                            ? hw.status === 'GRADED'
+                              ? 'נבדק'
+                              : hw.status === 'SUBMITTED'
+                              ? 'הוגש לבדיקה'
+                              : 'הוקצה'
+                            : hw.status}
                         </span>
                       </div>
-                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
-                        {language === 'he'
-                          ? hw.status === 'GRADED'
-                            ? 'נבדק'
-                            : hw.status === 'SUBMITTED'
-                            ? 'הוגש'
-                            : 'הוקצה'
-                          : hw.status}
-                      </span>
+
+                      {hw.description && (
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          {hw.description}
+                        </p>
+                      )}
+
+                      {/* Attached PDF / External resource if present */}
+                      {hw.attachmentUrl && (
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 truncate">
+                            <FileText className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 shrink-0" />
+                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                              {isGoogleDriveUrl(hw.attachmentUrl)
+                                ? language === 'he'
+                                  ? 'מסמך PDF מ-Google Drive'
+                                  : 'Google Drive PDF Material'
+                                : language === 'he'
+                                ? 'קישור לחומר חיצוני'
+                                : 'External Resource'}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setViewerUrl(hw.attachmentUrl);
+                              setViewerTitle(hw.title);
+                              setViewerSubtitle(
+                                language === 'he'
+                                  ? `חומר שיעורי בית: ${hw.student?.user?.firstName || ''}`
+                                  : `Homework Resource for ${hw.student?.user?.firstName || 'Student'}`
+                              );
+                            }}
+                            className="px-2.5 py-1 text-[11px] font-bold bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-lg transition-colors shrink-0 flex items-center gap-1 shadow-2xs"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>{language === 'he' ? 'פתח במערכת' : 'Open In-App'}</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {hw.dueDate && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>
+                            {language === 'he' ? 'מועד הגשה:' : 'Due date:'}{' '}
+                            {new Date(hw.dueDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+
+                      {hw.studentNote && (
+                        <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300">
+                          <span className="font-bold block mb-0.5 text-brand-teal-900 dark:text-brand-teal-300">
+                            {language === 'he' ? 'התשובה שהוגשה על ידי התלמיד:' : 'Student Submission Notes:'}
+                          </span>
+                          {hw.studentNote}
+                        </div>
+                      )}
+
+                      {hw.teacherFeedback && (
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300">
+                          <span className="font-bold block mb-0.5">
+                            {language === 'he' ? 'המשוב שלך:' : 'Your Feedback:'}
+                          </span>
+                          {hw.teacherFeedback}
+                        </div>
+                      )}
                     </div>
 
-                    {hw.studentNote && (
-                      <div className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300">
-                        <span className="font-bold block mb-0.5">
-                          {language === 'he' ? 'התשובה שהוגשה:' : 'Student Submission:'}
-                        </span>
-                        {hw.studentNote}
-                      </div>
-                    )}
-
-                    {hw.teacherFeedback && (
-                      <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300">
-                        <span className="font-bold block mb-0.5">
-                          {language === 'he' ? 'המשוב שלך:' : 'Your Feedback:'}
-                        </span>
-                        {hw.teacherFeedback}
-                      </div>
-                    )}
-
                     {hw.status === 'SUBMITTED' && (
-                      <div>
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
                         {reviewHwId === hw.id ? (
-                          <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                          <div className="space-y-2">
                             <textarea
                               value={reviewFeedback}
                               onChange={(e) => setReviewFeedback(e.target.value)}
@@ -1247,7 +1644,7 @@ export const TeacherDashboard: React.FC = () => {
                                   : 'Write feedback, corrections, or praise for the student...'
                               }
                               rows={2}
-                              className="w-full text-xs p-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg"
+                              className="w-full text-xs p-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:border-brand-teal-600"
                             />
                             <div className="flex justify-end gap-2">
                               <button
@@ -1263,7 +1660,7 @@ export const TeacherDashboard: React.FC = () => {
                                     feedback: reviewFeedback,
                                   })
                                 }
-                                className="px-4 py-1 text-xs bg-brand-teal-800 text-white font-bold rounded-lg shadow-2xs"
+                                className="px-4 py-1.5 text-xs bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold rounded-xl shadow-2xs"
                               >
                                 {language === 'he' ? 'שלח משוב' : 'Send Feedback'}
                               </button>
@@ -1275,9 +1672,10 @@ export const TeacherDashboard: React.FC = () => {
                               setReviewHwId(hw.id);
                               setReviewFeedback('');
                             }}
-                            className="text-xs font-bold text-brand-teal-700 dark:text-brand-teal-400 hover:text-brand-teal-900 dark:hover:text-brand-teal-300"
+                            className="text-xs font-bold text-brand-teal-700 dark:text-brand-teal-400 hover:text-brand-teal-900 dark:hover:text-brand-teal-300 flex items-center gap-1.5"
                           >
-                            {language === 'he' ? '+ בדיקה ומתן משוב' : '+ Review & Give Feedback'}
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{language === 'he' ? 'בדוק והזן משוב' : 'Review & Provide Feedback'}</span>
                           </button>
                         )}
                       </div>
@@ -1286,9 +1684,118 @@ export const TeacherDashboard: React.FC = () => {
                 ))}
 
                 {(!homeworkData || homeworkData.length === 0) && (
-                  <p className="text-xs text-slate-400 py-6 text-center col-span-2">
+                  <p className="text-xs text-slate-400 py-12 text-center col-span-2">
                     {language === 'he' ? 'כל שיעורי הבית נבדקו.' : 'All homework caught up.'}
                   </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: RECORDED SESSIONS (TEACHER VIEW) */}
+          {activeTab === 'recordings' && (
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6 transition-colors">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <PlayCircle className="w-5 h-5 text-brand-teal-700 dark:text-brand-teal-400" />
+                    <span>{language === 'he' ? 'שיעורים מוקלטים ומאגר וידאו' : 'Recorded Sessions & Video Library'}</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {language === 'he'
+                      ? 'הוסף שיעורי וידאו מ-Google Drive לפי נושא או מספר שיעור שיוצגו לתלמידים בחלון הנגן המובנה.'
+                      : 'Add Google Drive session recordings organized by topic or session number for students to watch in-app.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsCreatingRecording(true)}
+                  className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4 text-brand-olive-300" />
+                  <span>{language === 'he' ? 'הוסף שיעור מוקלט חדש' : 'Add Recorded Session'}</span>
+                </button>
+              </div>
+
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {recordedSessionsData?.map((session: any) => (
+                  <div
+                    key={session.id}
+                    className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:shadow-lg hover:border-brand-teal-500/30 transition-all flex flex-col justify-between space-y-4"
+                  >
+                    <div className="space-y-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="px-3 py-1 rounded-xl bg-brand-teal-100/80 dark:bg-brand-teal-950/80 border border-brand-teal-300/80 dark:border-brand-teal-800 text-xs font-black text-brand-teal-950 dark:text-brand-teal-200 shadow-2xs">
+                          {language === 'he' ? `שיעור #${session.sessionNumber}` : `Session #${session.sessionNumber}`}
+                        </span>
+                        <span className="px-3 py-1 rounded-xl bg-brand-olive-100 dark:bg-brand-olive-950/80 text-xs font-extrabold text-brand-olive-950 dark:text-brand-olive-200 border border-brand-olive-300 dark:border-brand-olive-700 shadow-2xs">
+                          {session.category || 'General'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="font-black text-slate-900 dark:text-white text-base line-clamp-1 tracking-tight">
+                          {language === 'he' && session.titleHe ? session.titleHe : session.title}
+                        </h4>
+                        {session.description && (
+                          <p className="text-xs text-slate-700 dark:text-slate-300 mt-1.5 line-clamp-2 leading-relaxed">
+                            {session.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 pt-2 border-t border-slate-100 dark:border-slate-800/80 font-semibold">
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
+                          {session.durationMinutes} {language === 'he' ? 'דק׳' : 'min'}
+                        </span>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg">
+                          {session.student
+                            ? `${session.student.user?.firstName || 'Student'}`
+                            : language === 'he'
+                            ? 'כל התלמידים'
+                            : 'All Students'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => {
+                          setViewerUrl(session.videoUrl);
+                          setViewerTitle(session.title);
+                          setViewerSubtitle(
+                            session.category
+                              ? `${session.category} • ${session.durationMinutes}m`
+                              : `${session.durationMinutes}m`
+                          );
+                        }}
+                        className="flex-1 py-2.5 px-3 bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-extrabold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 shadow-2xs"
+                      >
+                        <PlayCircle className="w-4 h-4 text-brand-olive-300" />
+                        <span>{language === 'he' ? 'צפה בווידאו' : 'Watch Video'}</span>
+                      </button>
+                      <button
+                        onClick={() => deleteRecordedSessionMutation.mutate(session.id)}
+                        className="p-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors"
+                        title={language === 'he' ? 'מחק שיעור' : 'Delete Session'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {(!recordedSessionsData || recordedSessionsData.length === 0) && (
+                  <div className="col-span-3 text-center py-12 space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-700 dark:text-brand-teal-300 mx-auto flex items-center justify-center">
+                      <PlayCircle className="w-6 h-6" />
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {language === 'he'
+                        ? 'לא נוספו עדיין שיעורים מוקלטים. לחץ על הוסף כדי להעלות קישור לסרטון מ-Google Drive.'
+                        : 'No recorded sessions added yet. Click "+ Add Recorded Session" to attach a Google Drive video.'}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -1298,43 +1805,47 @@ export const TeacherDashboard: React.FC = () => {
           {activeTab === 'games' && (
             <div className="space-y-6">
               {/* Header Banner */}
-              <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-r from-brand-teal-900 to-brand-teal-800 text-white shadow-md relative overflow-hidden">
+              <div className="p-6 sm:p-8 rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden transition-colors">
+                {/* Frosted ambient glow */}
+                <div className="absolute -top-12 -end-12 w-44 h-44 bg-brand-teal-500/10 dark:bg-brand-teal-500/15 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-12 -start-12 w-44 h-44 bg-brand-olive-400/10 dark:bg-brand-olive-400/15 rounded-full blur-3xl pointer-events-none" />
+
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1.5">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-brand-olive-300">
-                      <Sparkles className="w-3.5 h-3.5" />
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-olive-100/80 dark:bg-brand-olive-950/70 border border-brand-olive-300/70 dark:border-brand-olive-800 text-xs font-bold text-brand-olive-900 dark:text-brand-olive-300 shadow-2xs">
+                      <Sparkles className="w-3.5 h-3.5 text-brand-olive-600 dark:text-brand-olive-400" />
                       <span>{language === 'he' ? 'משחקים מותאמים אישית' : 'Interactive Hebrew Learning Games'}</span>
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-black">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                       {language === 'he' ? 'ניהול משחקים ותרגילים אינטראקטיביים' : 'Custom Games & Exercises Manager'}
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-200 max-w-2xl leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
                       {language === 'he'
                         ? 'צור והתאם כרטיסיות מילים, משחקי התאמה וחידונים לפי רמת התלמיד או קשר אותם ישירות לשיעור ספציפי.'
                         : 'Design and customize flashcards, word matching, and timed quizzes tailored by Hebrew proficiency level and linked directly to specific student lessons.'}
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2.5">
                     <button
                       onClick={() => openNewGameModal('FLASHCARD')}
-                      className="px-4 py-2.5 bg-white text-brand-teal-950 font-bold text-xs rounded-xl shadow-xs hover:bg-slate-100 transition-colors flex items-center gap-2"
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-bold text-xs rounded-xl shadow-2xs border border-slate-200/80 dark:border-slate-700 transition-colors flex items-center gap-2"
                     >
-                      <Plus className="w-4 h-4 text-brand-teal-700" />
-                      <span>{language === 'he' ? '+ כרטיסיות מילים' : '+ Flashcards'}</span>
+                      <Plus className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
+                      <span>{language === 'he' ? 'כרטיסיות מילים' : 'Flashcards'}</span>
                     </button>
                     <button
                       onClick={() => openNewGameModal('MATCHING')}
-                      className="px-4 py-2.5 bg-brand-olive-400 text-brand-teal-950 font-bold text-xs rounded-xl shadow-xs hover:bg-brand-olive-300 transition-colors flex items-center gap-2"
+                      className="px-4 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2"
                     >
-                      <Plus className="w-4 h-4 text-brand-teal-900" />
-                      <span>{language === 'he' ? '+ התאמת מילים' : '+ Word Match'}</span>
+                      <Plus className="w-4 h-4 text-slate-950" />
+                      <span>{language === 'he' ? 'התאמת מילים' : 'Word Match'}</span>
                     </button>
                     <button
                       onClick={() => openNewGameModal('QUIZ')}
-                      className="px-4 py-2.5 bg-brand-teal-700 text-white font-bold text-xs rounded-xl shadow-xs hover:bg-brand-teal-600 transition-colors border border-white/20 flex items-center gap-2"
+                      className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2"
                     >
                       <Plus className="w-4 h-4 text-brand-olive-300" />
-                      <span>{language === 'he' ? '+ חידון אמריקאי' : '+ Timed Quiz'}</span>
+                      <span>{language === 'he' ? 'חידון אמריקאי' : 'Timed Quiz'}</span>
                     </button>
                   </div>
                 </div>
@@ -1609,11 +2120,18 @@ export const TeacherDashboard: React.FC = () => {
       {/* Assign Homework Modal */}
       {isAssigningHw && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md w-full space-y-4">
+          <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-lg w-full space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">
-                {language === 'he' ? 'הקצאת שיעורי בית חדשים' : 'Assign New Homework'}
-              </h3>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                  {language === 'he' ? 'הקצאת שיעורי בית חדשים' : 'Assign New Homework'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {language === 'he'
+                    ? 'הקצה מטלה, הוסף קישור לקובץ PDF מ-Google Drive ותאריך יעד.'
+                    : 'Assign a task, attach Google Drive PDF materials, and set an optional due date.'}
+                </p>
+              </div>
               <button
                 onClick={() => setIsAssigningHw(false)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
@@ -1671,6 +2189,43 @@ export const TeacherDashboard: React.FC = () => {
               />
             </div>
 
+            {/* Google Drive / External PDF Link */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {language === 'he' ? 'קישור לחומר / PDF (מ-Google Drive או חיצוני)' : 'Attachment Link / PDF (Google Drive or External)'}
+              </label>
+              <input
+                type="url"
+                value={hwAttachmentUrl}
+                onChange={(e) => setHwAttachmentUrl(e.target.value)}
+                placeholder="https://drive.google.com/file/d/.../view or https://..."
+                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+              />
+              {hwAttachmentUrl && (
+                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-brand-teal-700 dark:text-brand-teal-400">
+                  <Check className="w-3 h-3" />
+                  <span>
+                    {isGoogleDriveUrl(hwAttachmentUrl)
+                      ? (language === 'he' ? 'זוהה קובץ Google Drive - ייפתח בנגן המובנה של המערכת!' : 'Google Drive file detected - will open directly inside in-app viewer!')
+                      : (language === 'he' ? 'קישור לחומר חיצוני' : 'External link')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Due Date */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {language === 'he' ? 'מועד הגשה רצוי (אופציונלי)' : 'Due Date (Optional)'}
+              </label>
+              <input
+                type="date"
+                value={hwDueDate}
+                onChange={(e) => setHwDueDate(e.target.value)}
+                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+              />
+            </div>
+
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setIsAssigningHw(false)}
@@ -1685,19 +2240,319 @@ export const TeacherDashboard: React.FC = () => {
                     teacherId: user?.id,
                     title: hwTitle,
                     description: hwDesc,
+                    attachmentUrl: hwAttachmentUrl || undefined,
+                    attachmentType: hwAttachmentUrl ? detectAttachmentType(hwAttachmentUrl) : undefined,
+                    dueDate: hwDueDate ? new Date(hwDueDate).toISOString() : undefined,
                   })
                 }
                 disabled={!hwStudentId || !hwTitle || assignHomeworkMutation.isPending}
-                className="px-5 py-2 text-xs font-bold bg-brand-teal-800 text-white rounded-xl shadow-xs disabled:opacity-50"
+                className="px-5 py-2 text-xs font-bold bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-xl shadow-xs disabled:opacity-50 transition-colors"
               >
                 {assignHomeworkMutation.isPending
                   ? (language === 'he' ? 'מקצה...' : 'Assigning...')
-                  : (language === 'he' ? 'הקצה משימה' : 'Assign Assignment')}
+                  : (language === 'he' ? 'הקצה משימה לתלמיד' : 'Assign Assignment')}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Add Recorded Session Modal */}
+      {isCreatingRecording && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-lg w-full space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                  {language === 'he' ? 'הוספת שיעור מוקלט מ-Google Drive' : 'Add Recorded Session (Google Drive)'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {language === 'he'
+                    ? 'העלה קישור לסרטון שיוצג בנגן התלמיד לפי קטגוריה או מספר שיעור.'
+                    : 'Provide a Google Drive video link to appear in the student video player portal.'}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsCreatingRecording(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'he' ? 'תלמיד יעד (או כללי)' : 'Target Student'}
+                </label>
+                <select
+                  value={recStudentId}
+                  onChange={(e) => setRecStudentId(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+                >
+                  <option value="">{language === 'he' ? 'כל התלמידים (שיעור פתוח)' : 'All Students (Open Library)'}</option>
+                  {studentsData?.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.user.firstName} {s.user.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'he' ? 'קטגוריית נושא' : 'Topic Category'}
+                </label>
+                <select
+                  value={recCategory}
+                  onChange={(e) => setRecCategory(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+                >
+                  <option value="Grammar / דקדוק">Grammar / דקדוק</option>
+                  <option value="Vocabulary / אוצר מילים">Vocabulary / אוצר מילים</option>
+                  <option value="Speaking / שיחה וביטוי">Speaking / שיחה וביטוי</option>
+                  <option value="Reading & Pronunciation / קריאה">Reading & Pronunciation / קריאה</option>
+                  <option value="Slang & Daily Life / סלנג ויומיום">Slang & Daily Life / סלנג ויומיום</option>
+                  <option value="General Lesson / שיעור כללי">General Lesson / שיעור כללי</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'he' ? 'מספר שיעור' : 'Session #'}
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={recSessionNumber}
+                  onChange={(e) => setRecSessionNumber(parseInt(e.target.value) || 1)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'he' ? 'משך זמן (דקות)' : 'Duration (minutes)'}
+                </label>
+                <input
+                  type="number"
+                  min="5"
+                  max="120"
+                  value={recDuration}
+                  onChange={(e) => setRecDuration(parseInt(e.target.value) || 25)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {language === 'he' ? 'כותרת השיעור (אנגלית)' : 'Session Title (English)'}
+              </label>
+              <input
+                type="text"
+                value={recTitle}
+                onChange={(e) => setRecTitle(e.target.value)}
+                placeholder="e.g. Master the Pa'al Verb Conjugation in Present"
+                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {language === 'he' ? 'כותרת בעברית (אופציונלי)' : 'Hebrew Title (Optional)'}
+              </label>
+              <input
+                type="text"
+                dir="rtl"
+                value={recTitleHe}
+                onChange={(e) => setRecTitleHe(e.target.value)}
+                placeholder="לדוגמה: שליטה בבניין פעל בהווה"
+                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {language === 'he' ? 'קישור לסרטון מ-Google Drive / YouTube' : 'Google Drive / YouTube Video Link'}
+              </label>
+              <input
+                type="url"
+                value={recVideoUrl}
+                onChange={(e) => setRecVideoUrl(e.target.value)}
+                placeholder="https://drive.google.com/file/d/.../view or YouTube"
+                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+              />
+              {recVideoUrl && (
+                <div className="mt-1 flex items-center gap-1 text-[11px] text-brand-teal-700 dark:text-brand-teal-400">
+                  <Check className="w-3 h-3" />
+                  <span>
+                    {isGoogleDriveUrl(recVideoUrl)
+                      ? (language === 'he' ? 'זוהה קישור Google Drive - יוצג בנגן המובנה' : 'Google Drive video detected - ready for in-app stream')
+                      : (language === 'he' ? 'קישור וידאו נתמך' : 'Video link supported')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                {language === 'he' ? 'תיאור והערות לשיעור (אופציונלי)' : 'Session Notes / Key Takeaways (Optional)'}
+              </label>
+              <textarea
+                value={recDesc}
+                onChange={(e) => setRecDesc(e.target.value)}
+                placeholder={
+                  language === 'he'
+                    ? 'סיכום נקודות עיקריות, מילים חדשות שלמדנו, או דגשים להאזנה חוזרת...'
+                    : 'Summarize key grammar rules, vocabulary learned, or homework hints...'
+                }
+                rows={2}
+                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setIsCreatingRecording(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400"
+              >
+                {language === 'he' ? 'ביטול' : 'Cancel'}
+              </button>
+              <button
+                onClick={() =>
+                  createRecordedSessionMutation.mutate({
+                    studentId: recStudentId || undefined,
+                    title: recTitle,
+                    titleHe: recTitleHe || undefined,
+                    description: recDesc || undefined,
+                    category: recCategory,
+                    sessionNumber: Number(recSessionNumber),
+                    videoUrl: recVideoUrl,
+                    durationMinutes: Number(recDuration),
+                  })
+                }
+                disabled={!recTitle || !recVideoUrl || createRecordedSessionMutation.isPending}
+                className="px-5 py-2 text-xs font-bold bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-xl shadow-xs disabled:opacity-50 transition-colors"
+              >
+                {createRecordedSessionMutation.isPending
+                  ? (language === 'he' ? 'שומר...' : 'Saving...')
+                  : (language === 'he' ? 'פרסם שיעור מוקלט' : 'Publish Recording')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student Progress Detail Drawer Modal */}
+      {selectedStudentDetail && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-brand-teal-800 text-white font-black text-lg flex items-center justify-center shadow-xs">
+                  {selectedStudentDetail.user?.firstName?.[0] || 'S'}
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 dark:text-white text-base">
+                    {selectedStudentDetail.user?.firstName} {selectedStudentDetail.user?.lastName}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {selectedStudentDetail.user?.email} • {t(`levels.${selectedStudentDetail.level || 'BEGINNER'}`)}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedStudentDetail(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 text-center">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">
+                  {language === 'he' ? 'שיעורים שהושלמו' : 'Completed'}
+                </span>
+                <span className="text-lg font-black text-slate-900 dark:text-white">
+                  {selectedStudentDetail.stats?.completedLessons || 0}
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 text-center">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">
+                  {language === 'he' ? 'שיעורים שנותרו' : 'Remaining'}
+                </span>
+                <span className="text-lg font-black text-brand-teal-700 dark:text-brand-teal-400">
+                  {selectedStudentDetail.stats?.packageRemainingLessons || 0}
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 text-center">
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-semibold">
+                  {language === 'he' ? 'סה״כ נקודות' : 'Total Points'}
+                </span>
+                <span className="text-lg font-black text-brand-olive-600 dark:text-brand-olive-400">
+                  {selectedStudentDetail.totalPoints || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Homework overview for this student */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                {language === 'he' ? 'סטטיסטיקת שיעורי בית' : 'Homework Track Record'}
+              </h4>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-xs">
+                <span>{language === 'he' ? 'סה״כ משימות שהוקצו:' : 'Total Assigned Homework:'}</span>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {selectedStudentDetail.stats?.homeworkTotal || 0}
+                </span>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between text-xs">
+                <span>{language === 'he' ? 'ממתינים לבדיקה:' : 'Pending Reviews:'}</span>
+                <span className="font-bold text-amber-600 dark:text-amber-400">
+                  {selectedStudentDetail.stats?.pendingHomework || 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Footer buttons */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={() => {
+                  setHwStudentId(selectedStudentDetail.id);
+                  setSelectedStudentDetail(null);
+                  setIsAssigningHw(true);
+                }}
+                className="px-4 py-2 bg-brand-teal-800 text-white font-bold text-xs rounded-xl shadow-xs hover:bg-brand-teal-900 transition-colors"
+              >
+                + {language === 'he' ? 'הקצאת שיעורי בית' : 'Assign Homework'}
+              </button>
+              <button
+                onClick={() => {
+                  setRecStudentId(selectedStudentDetail.id);
+                  setSelectedStudentDetail(null);
+                  setIsCreatingRecording(true);
+                }}
+                className="px-4 py-2 bg-brand-olive-500 text-slate-950 font-bold text-xs rounded-xl shadow-xs hover:bg-brand-olive-600 transition-colors"
+              >
+                + {language === 'he' ? 'הוספת הקלטה' : 'Add Recording'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reusable In-System Google Drive & External Viewer Modal */}
+      <DriveViewerModal
+        isOpen={!!viewerUrl}
+        onClose={() => setViewerUrl(null)}
+        url={viewerUrl || ''}
+        title={viewerTitle}
+        subtitle={viewerSubtitle}
+      />
 
       {/* Delete Game Confirmation Modal (No browser alerts/confirms!) */}
       {deletingGameId && (

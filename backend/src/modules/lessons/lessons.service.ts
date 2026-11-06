@@ -87,7 +87,34 @@ export async function bookLesson(data: {
   });
   const isAdmin = booker?.role === 'ADMIN' || booker?.role === 'SUPER_ADMIN';
 
-  // Check active student package with remaining lessons/credits
+  // 1. Fetch Session Pricing configuration
+  const pricingSetting = await prisma.systemSetting.findUnique({
+    where: { key: 'session_pricing' },
+  });
+  const duration = data.durationMinutes || 25;
+  const pricingMap: Record<string, any> = (pricingSetting?.valueJson as Record<string, any>) || {
+    '25': 25,
+    '40': 40,
+    '55': 55,
+    currency: 'USD',
+  };
+  const durationPrice = Number(pricingMap[String(duration)] ?? (duration === 55 ? 55 : duration === 40 ? 40 : 25));
+  const currency = pricingMap.currency || 'USD';
+
+  // 2. Balance Verification
+  const studentBalance = Number(student.balance || 0);
+
+  if (!isAdmin && studentBalance < durationPrice) {
+    throw {
+      status: 400,
+      message: `Insufficient balance to book this ${duration}-minute session. Session cost: ${durationPrice} ${currency}, your current balance: ${studentBalance.toFixed(2)} ${currency}. Please contact the administrator to add balance.`,
+      requiredPrice: durationPrice,
+      currentBalance: studentBalance,
+      currency,
+    };
+  }
+
+  // Check if student has an active package to associate
   let activePackage = await prisma.studentPackage.findFirst({
     where: {
       studentId: student.id,
@@ -96,36 +123,6 @@ export async function bookLesson(data: {
     },
     orderBy: { createdAt: 'desc' },
   });
-
-  if (!activePackage || activePackage.lessonsUsed >= activePackage.lessonsTotal) {
-    if (isAdmin) {
-      // Auto-assign complimentary lesson package for administrative booking
-      const defaultPkg = await prisma.package.findFirst();
-      if (defaultPkg) {
-        activePackage = await prisma.studentPackage.create({
-          data: {
-            studentId: student.id,
-            packageId: defaultPkg.id,
-            lessonsTotal: 1,
-            lessonsUsed: 0,
-            status: 'ACTIVE',
-            startDate: new Date(),
-            endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-          },
-        });
-      } else {
-        throw {
-          status: 400,
-          message: 'Student does not have an active package with remaining credits.',
-        };
-      }
-    } else {
-      throw {
-        status: 400,
-        message: 'Student does not have an active package with remaining credits.',
-      };
-    }
-  }
 
   // Conflict prevention: check if teacher already booked at this exact time
   const existingLesson = await prisma.lesson.findFirst({
@@ -139,16 +136,34 @@ export async function bookLesson(data: {
     throw { status: 409, message: 'Teacher already has a lesson scheduled at this time' };
   }
 
-  // Database transaction: create lesson, deduct 1 credit, mark slot unavailable
+  // Database transaction: create lesson, deduct balance, mark slot unavailable
   return prisma.$transaction(async (tx) => {
+    // Deduct session price from student balance
+    const newBalance = Math.max(0, studentBalance - durationPrice);
+    await tx.student.update({
+      where: { id: student.id },
+      data: { balance: newBalance },
+    });
+
+    await tx.balanceTransaction.create({
+      data: {
+        studentId: student.id,
+        amount: -durationPrice,
+        balanceAfter: newBalance,
+        type: 'SESSION_BOOKING',
+        description: `Booked ${duration}-Minute Session with ${teacher.userId ? 'Teacher' : ''} (${durationPrice} ${currency})`,
+        createdById: data.bookedById,
+      },
+    });
+
     const lesson = await tx.lesson.create({
       data: {
         studentId: student.id,
         teacherId: teacher.id,
         timeSlotId: data.timeSlotId,
-        studentPackageId: activePackage.id,
+        studentPackageId: activePackage ? activePackage.id : undefined,
         scheduledAt: data.scheduledAt,
-        durationMinutes: data.durationMinutes || 25,
+        durationMinutes: duration,
         lessonType: data.lessonType || SlotType.REGULAR,
         zoomLink: data.zoomLink || 'https://zoom.us/j/9876543210',
         status: LessonStatus.SCHEDULED,
@@ -159,16 +174,18 @@ export async function bookLesson(data: {
       },
     });
 
-    // Deduct 1 credit from active package
-    const nextUsed = activePackage.lessonsUsed + 1;
-    const isCompletedPkg = nextUsed >= activePackage.lessonsTotal;
-    await tx.studentPackage.update({
-      where: { id: activePackage.id },
-      data: {
-        lessonsUsed: nextUsed,
-        status: isCompletedPkg ? 'COMPLETED' : 'ACTIVE',
-      },
-    });
+    // If active package exists, record usage
+    if (activePackage) {
+      const nextUsed = activePackage.lessonsUsed + 1;
+      const isCompletedPkg = nextUsed >= activePackage.lessonsTotal;
+      await tx.studentPackage.update({
+        where: { id: activePackage.id },
+        data: {
+          lessonsUsed: nextUsed,
+          status: isCompletedPkg ? 'COMPLETED' : 'ACTIVE',
+        },
+      });
+    }
 
     if (data.timeSlotId) {
       await tx.timeSlot.update({
@@ -182,6 +199,11 @@ export async function bookLesson(data: {
       action: 'LESSON_BOOKED',
       entityType: 'Lesson',
       entityId: lesson.id,
+      metaJson: {
+        duration,
+        durationPrice,
+        remainingBalance: newBalance,
+      },
     });
 
     return lesson;
@@ -245,6 +267,32 @@ export async function cancelLesson(id: string, cancelledById: string, cancelReas
         data: {
           lessonsUsed: { decrement: 1 },
           status: 'ACTIVE',
+        },
+      });
+    }
+
+    // Refund session fee back to student's balance if cancelled
+    if (lesson.status === LessonStatus.SCHEDULED) {
+      const duration = lesson.durationMinutes || 25;
+      const pricingSetting = await tx.systemSetting.findUnique({
+        where: { key: 'session_pricing' },
+      });
+      const pricingMap: Record<string, any> = (pricingSetting?.valueJson as Record<string, any>) || { '25': 25, '40': 40, '55': 55 };
+      const refundAmount = Number(pricingMap[String(duration)] ?? (duration === 55 ? 55 : duration === 40 ? 40 : 25));
+
+      const updatedStudent = await tx.student.update({
+        where: { id: lesson.studentId },
+        data: { balance: { increment: refundAmount } },
+      });
+
+      await tx.balanceTransaction.create({
+        data: {
+          studentId: lesson.studentId,
+          amount: refundAmount,
+          balanceAfter: updatedStudent.balance,
+          type: 'SESSION_REFUND',
+          description: `Refund for cancelled ${duration}-minute lesson`,
+          createdById: cancelledById,
         },
       });
     }

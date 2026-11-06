@@ -9,6 +9,8 @@ const createHomeworkSchema = z.object({
   teacherId: z.string(),
   title: z.string().min(1),
   description: z.string().optional(),
+  attachmentUrl: z.string().optional(),
+  attachmentType: z.string().optional(),
   dueDate: z.string().optional(),
 });
 

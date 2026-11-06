@@ -39,6 +39,7 @@ export async function listUsers(filters: {
           level: true,
           totalPoints: true,
           streakDays: true,
+          balance: true,
           packages: {
             where: { status: 'ACTIVE' },
             select: {
@@ -199,6 +200,65 @@ export async function forceResetPassword(id: string, newPass: string) {
   return prisma.user.update({
     where: { id },
     data: { passwordHash, mustChangePw: true },
+  });
+}
+
+export async function adjustStudentBalance(
+  studentIdOrUserId: string,
+  amount: number,
+  mode: 'add' | 'set' = 'add',
+  reason?: string,
+  adminUserId?: string
+) {
+  const student = await prisma.student.findFirst({
+    where: { OR: [{ id: studentIdOrUserId }, { userId: studentIdOrUserId }] },
+    include: { user: true },
+  });
+  if (!student) throw { status: 404, message: 'Student not found' };
+
+  return prisma.$transaction(async (tx) => {
+    const currentBalance = Number(student.balance || 0);
+    const newBalance = mode === 'set' ? amount : currentBalance + amount;
+    if (newBalance < 0) {
+      throw { status: 400, message: 'Balance cannot be negative' };
+    }
+
+    const updated = await tx.student.update({
+      where: { id: student.id },
+      data: { balance: newBalance },
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+
+    const netAmount = mode === 'set' ? newBalance - currentBalance : amount;
+    await tx.balanceTransaction.create({
+      data: {
+        studentId: student.id,
+        amount: netAmount,
+        balanceAfter: newBalance,
+        type: 'ADMIN_ADJUSTMENT',
+        description: reason || `Admin adjusted balance (${mode === 'set' ? 'Set to' : 'Added'} $${amount})`,
+        createdById: adminUserId,
+      },
+    });
+
+    await logAuditEvent({
+      userId: adminUserId || 'system',
+      action: 'STUDENT_BALANCE_ADJUSTED',
+      entityType: 'Student',
+      entityId: student.id,
+      metaJson: {
+        previousBalance: currentBalance,
+        newBalance,
+        netAmount,
+        reason,
+      },
+    });
+
+    return updated;
   });
 }
 

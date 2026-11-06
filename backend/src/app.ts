@@ -17,6 +17,7 @@ import gamesRouter from './modules/games/games.router';
 import notificationsRouter from './modules/notifications/notifications.router';
 import analyticsRouter from './modules/analytics/analytics.router';
 import settingsRouter from './modules/settings/settings.router';
+import recordedSessionsRouter from './modules/recorded-sessions/recorded-sessions.router';
 
 import { errorHandler } from './middleware/errorHandler';
 
@@ -87,6 +88,7 @@ app.use('/api/v1/games', gamesRouter);
 app.use('/api/v1/notifications', notificationsRouter);
 app.use('/api/v1/analytics', analyticsRouter);
 app.use('/api/v1/settings', settingsRouter);
+app.use('/api/v1/recorded-sessions', recordedSessionsRouter);
 
 // Global Error Handler
 app.use(errorHandler);

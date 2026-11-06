@@ -4,6 +4,7 @@ import { api } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { toast } from '../../store/toastStore';
+import { GlassSidebar } from '../../components/common/GlassSidebar';
 import {
   formatSlotRange12Hour,
   formatIsraelDateTime,
@@ -39,6 +40,7 @@ import {
   GraduationCap,
   MessageSquare,
   Coins,
+  Wallet,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -87,6 +89,71 @@ export const AdminDashboard: React.FC = () => {
   const [bookTeacherId, setBookTeacherId] = useState('');
   const [bookDateTime, setBookDateTime] = useState('');
   const [bookDuration, setBookDuration] = useState<25 | 40 | 55>(25);
+
+  // Session Pricing Management State (25, 40, 55 min)
+  const { data: sessionPricing } = useQuery({
+    queryKey: ['adminSessionPricing'],
+    queryFn: async () => {
+      const res = await api.get('/settings/session-pricing');
+      return res.data?.pricing;
+    },
+  });
+
+  const [pricing25, setPricing25] = useState<number | string>(25);
+  const [pricing40, setPricing40] = useState<number | string>(40);
+  const [pricing55, setPricing55] = useState<number | string>(55);
+  const [pricingCurrency, setPricingCurrency] = useState('USD');
+
+  React.useEffect(() => {
+    if (sessionPricing) {
+      setPricing25(sessionPricing['25'] ?? 25);
+      setPricing40(sessionPricing['40'] ?? 40);
+      setPricing55(sessionPricing['55'] ?? 55);
+      setPricingCurrency(sessionPricing.currency || 'USD');
+    }
+  }, [sessionPricing]);
+
+  const savePricingMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      return api.put('/settings/session-pricing', { pricing: payload });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminSessionPricing'] });
+      queryClient.invalidateQueries({ queryKey: ['sessionPricing'] });
+      toast.success(
+        language === 'he' ? 'מחירי השיעורים עודכנו בהצלחה!' : 'Session booking rates updated successfully!',
+        language === 'he' ? 'עודכן' : 'Saved'
+      );
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || 'Failed to update session rates');
+    },
+  });
+
+  // Student Balance Management State
+  const [isAdjustingBalance, setIsAdjustingBalance] = useState(false);
+  const [adjustStudent, setAdjustStudent] = useState<any | null>(null);
+  const [adjustAmount, setAdjustAmount] = useState<number | string>(50);
+  const [adjustMode, setAdjustMode] = useState<'add' | 'set'>('add');
+  const [adjustReason, setAdjustReason] = useState('Top-up by Admin');
+
+  const adjustBalanceMutation = useMutation({
+    mutationFn: async ({ studentId, amount, mode, reason }: any) => {
+      return api.post(`/users/${studentId}/balance`, { amount, mode, reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+      setIsAdjustingBalance(false);
+      setAdjustStudent(null);
+      toast.success(
+        language === 'he' ? 'יתרת התלמיד עודכנה בהצלחה!' : 'Student balance updated successfully!',
+        language === 'he' ? 'עודכן' : 'Success'
+      );
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error || 'Failed to update balance');
+    },
+  });
 
   // 1. Analytics Overview
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
@@ -395,12 +462,16 @@ export const AdminDashboard: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="min-h-screen w-full relative">
       {/* Mobile Top Bar */}
-      <div className="lg:hidden flex items-center justify-between bg-white/80 backdrop-blur-xl border border-slate-200/80 rounded-2xl p-4 mb-6 shadow-xs">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Engrew" className="w-8 h-8 object-contain" />
-          <span className="font-extrabold text-brand-teal-900 text-sm">Engrew Admin</span>
+      <div className="lg:hidden flex items-center justify-between bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 px-4 py-3 sticky top-16 z-20">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center p-1 shadow-2xs shrink-0">
+            <img src="/logo.png" alt="Engrew" className="w-full h-full object-contain drop-shadow-2xs" />
+          </div>
+          <span className="font-extrabold text-brand-teal-900 dark:text-white text-xs">
+            {language === 'he' ? 'מרכז ניהול ראשי' : 'Super Admin Hub'}
+          </span>
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -410,99 +481,29 @@ export const AdminDashboard: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
+      <div className="w-full">
         {/* Apple-Style Glassy Left Sidebar */}
-        <aside
-          className={`lg:w-72 w-full lg:sticky lg:top-24 z-20 transition-all ${
-            mobileMenuOpen ? 'block' : 'hidden lg:block'
-          }`}
-        >
-          <div className="relative overflow-hidden rounded-3xl p-4 sm:p-5 border border-slate-200/60 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-slate-900/5 dark:ring-white/5">
-            {/* Subtle Apple gradient glow behind sidebar */}
-            <div className="absolute -top-16 -left-16 w-40 h-40 bg-brand-teal-400/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-16 -right-16 w-40 h-40 bg-brand-olive-400/10 rounded-full blur-3xl pointer-events-none" />
+        <GlassSidebar
+          navItems={navItems}
+          activeTab={activeTab}
+          onTabChange={(tabId) => {
+            setActiveTab(tabId as any);
+            setMobileMenuOpen(false);
+          }}
+          user={{
+            firstName: currentUser?.firstName,
+            lastName: currentUser?.lastName,
+            email: currentUser?.email,
+            avatarUrl: currentUser?.avatarUrl,
+            role: currentUser?.role || 'SUPER_ADMIN',
+          }}
+          panelSubtitle={language === 'he' ? 'מרכז ניהול ראשי' : 'Super Admin Hub'}
+          isOpenMobile={mobileMenuOpen}
+          onCloseMobile={() => setMobileMenuOpen(false)}
+        />
 
-            {/* Sidebar Header */}
-            <div className="flex items-center gap-3 px-3 py-3 mb-4 border-b border-slate-200/50 dark:border-slate-800">
-              <div className="w-10 h-10 rounded-2xl bg-brand-teal-800 text-white flex items-center justify-center font-black shadow-md shadow-brand-teal-900/20">
-                <img src="/logo.png" alt="Engrew" className="w-6 h-6 object-contain brightness-0 invert" />
-              </div>
-              <div className="overflow-hidden">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight">Engrew</span>
-                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                </div>
-                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">Super Admin Panel</p>
-              </div>
-            </div>
-
-            {/* Nav Menu */}
-            <nav className="space-y-1.5">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                const label = language === 'he' ? item.labelHe : item.label;
-
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id as any);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold transition-all group ${
-                      isActive
-                        ? 'bg-brand-teal-800 text-white shadow-md shadow-brand-teal-900/20'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70 hover:backdrop-blur-sm'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Icon
-                        className={`w-4 h-4 transition-transform group-hover:scale-110 ${
-                          isActive ? 'text-brand-olive-300' : 'text-slate-500 dark:text-slate-400 group-hover:text-brand-teal-800 dark:group-hover:text-brand-teal-400'
-                        }`}
-                      />
-                      <span>{label}</span>
-                    </div>
-
-                    {item.badge !== null && (
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${
-                          isActive
-                            ? 'bg-brand-teal-900 text-brand-olive-300'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 group-hover:bg-slate-200 dark:group-hover:bg-slate-700'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* User Profile Pill */}
-            <div className="mt-8 pt-4 border-t border-slate-200/50 dark:border-slate-800 flex items-center justify-between px-2">
-              <div className="flex items-center gap-2.5 truncate">
-                <div className="w-8 h-8 rounded-full bg-brand-olive-100 dark:bg-brand-olive-950/70 text-brand-olive-800 dark:text-brand-olive-300 font-bold flex items-center justify-center text-xs">
-                  {currentUser?.firstName?.charAt(0) || 'A'}
-                </div>
-                <div className="truncate">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {currentUser?.firstName} {currentUser?.lastName}
-                  </p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{currentUser?.email}</p>
-                </div>
-              </div>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 border border-brand-teal-200 dark:border-brand-teal-800">
-                ADMIN
-              </span>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content Area */}
-        <main className="flex-1 w-full space-y-8">
+        {/* Main Content Area on the right */}
+        <main className="lg:ps-72 xl:ps-80 w-full min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8">
           {/* TAB 1: OVERVIEW & KPIS */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -1046,6 +1047,7 @@ export const AdminDashboard: React.FC = () => {
                         <th className="py-3 px-4">User</th>
                         <th className="py-3 px-4">Role</th>
                         <th className="py-3 px-4">Hebrew Level</th>
+                        <th className="py-3 px-4">Account Balance</th>
                         <th className="py-3 px-4">Session Credits</th>
                         <th className="py-3 px-4">Language</th>
                         <th className="py-3 px-4">Status</th>
@@ -1093,6 +1095,20 @@ export const AdminDashboard: React.FC = () => {
                                 {u.studentProfile?.level || (u.role === 'TEACHER' ? 'Native Instructor' : '—')}
                               </span>
                             </td>
+                            {/* Account Balance */}
+                            <td className="py-3.5 px-4">
+                              {u.role === 'STUDENT' ? (
+                                u.studentProfile ? (
+                                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
+                                    ${Number(u.studentProfile.balance || 0).toFixed(2)}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 dark:text-slate-500 italic">—</span>
+                                )
+                              ) : (
+                                <span className="text-slate-400 dark:text-slate-500">—</span>
+                              )}
+                            </td>
                             <td className="py-3.5 px-4">
                               {u.role === 'STUDENT' ? (
                                 u.studentProfile ? (
@@ -1122,17 +1138,33 @@ export const AdminDashboard: React.FC = () => {
                             <td className="py-3.5 px-4 text-right">
                               <div className="inline-flex items-center gap-2">
                                 {u.studentProfile && (
-                                  <button
-                                    onClick={() => {
-                                      setGrantStudentId(u.studentProfile.id);
-                                      setIsGrantingCredits(true);
-                                    }}
-                                    title="Grant Session Credits"
-                                    className="p-1.5 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 rounded-lg transition-colors flex items-center gap-1 font-bold text-[11px]"
-                                  >
-                                    <Coins className="w-4 h-4 text-amber-500" />
-                                    <span className="hidden sm:inline">+ Credit</span>
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setAdjustStudent(u);
+                                        setAdjustAmount(50);
+                                        setAdjustMode('add');
+                                        setAdjustReason('Admin balance top-up');
+                                        setIsAdjustingBalance(true);
+                                      }}
+                                      title="Adjust Account Balance"
+                                      className="p-1.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 rounded-lg transition-colors flex items-center gap-1 font-bold text-[11px]"
+                                    >
+                                      <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                      <span className="hidden sm:inline">+ Balance</span>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setGrantStudentId(u.studentProfile.id);
+                                        setIsGrantingCredits(true);
+                                      }}
+                                      title="Grant Session Credits"
+                                      className="p-1.5 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/60 rounded-lg transition-colors flex items-center gap-1 font-bold text-[11px]"
+                                    >
+                                      <Coins className="w-4 h-4 text-amber-500" />
+                                      <span className="hidden sm:inline">+ Credit</span>
+                                    </button>
+                                  </>
                                 )}
                                 <button
                                   onClick={() => resetPasswordMutation.mutate(u.id)}
@@ -1265,6 +1297,148 @@ export const AdminDashboard: React.FC = () => {
                   >
                     <Plus className="w-4 h-4 text-brand-olive-300" />
                     <span>Create Package</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Session Booking Rates by Duration (25m / 40m / 55m) */}
+              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-5 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                      <Wallet className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black text-slate-900 dark:text-white">
+                        {language === 'he' ? 'תמחור שיעורים לפי משך מפגש' : 'Session Booking Rates by Duration'}
+                      </h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {language === 'he'
+                          ? 'קבע את התעריף שינוכה אוטומטית מיתרת התלמיד בעת תיאום שיעור'
+                          : 'Set the automatic balance deduction amount when students book each session duration'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      {language === 'he' ? 'מטבע:' : 'Currency:'}
+                    </span>
+                    <select
+                      value={pricingCurrency}
+                      onChange={(e) => setPricingCurrency(e.target.value)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white"
+                    >
+                      <option value="USD">USD ($)</option>
+                      <option value="ILS">ILS (₪)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                  <div className="p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                        25 {language === 'he' ? 'דקות' : 'Minutes'}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
+                        {language === 'he' ? 'רגיל' : 'Standard'}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute start-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                        {pricingCurrency === 'ILS' ? '₪' : '$'}
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={pricing25}
+                        onChange={(e) => setPricing25(e.target.value)}
+                        className="w-full ps-8 pe-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-extrabold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                        placeholder="25"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                      {language === 'he' ? 'עלות למפגש 25 דק׳' : 'Cost per 25m private session'}
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                        40 {language === 'he' ? 'דקות' : 'Minutes'}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400">
+                        {language === 'he' ? 'מורחב' : 'Extended'}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute start-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                        {pricingCurrency === 'ILS' ? '₪' : '$'}
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={pricing40}
+                        onChange={(e) => setPricing40(e.target.value)}
+                        className="w-full ps-8 pe-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-extrabold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500"
+                        placeholder="40"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                      {language === 'he' ? 'עלות למפגש 40 דק׳' : 'Cost per 40m intensive session'}
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                        55 {language === 'he' ? 'דקות' : 'Minutes'}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400">
+                        {language === 'he' ? 'מלא' : 'Full Hour'}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute start-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
+                        {pricingCurrency === 'ILS' ? '₪' : '$'}
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={pricing55}
+                        onChange={(e) => setPricing55(e.target.value)}
+                        className="w-full ps-8 pe-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-extrabold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-purple-500"
+                        placeholder="55"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                      {language === 'he' ? 'עלות למפגש 55 דק׳' : 'Cost per 55m comprehensive session'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={() => {
+                      savePricingMutation.mutate({
+                        '25': Number(pricing25) || 25,
+                        '40': Number(pricing40) || 40,
+                        '55': Number(pricing55) || 55,
+                        currency: pricingCurrency,
+                      });
+                    }}
+                    disabled={savePricingMutation.isPending}
+                    className="px-5 py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-2"
+                  >
+                    <Check className="w-4 h-4 text-brand-olive-300" />
+                    <span>
+                      {savePricingMutation.isPending
+                        ? (language === 'he' ? 'שומר תמחור...' : 'Saving Rates...')
+                        : (language === 'he' ? 'שמור תמחור שיעורים' : 'Save Session Rates')}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1986,6 +2160,169 @@ export const AdminDashboard: React.FC = () => {
                 {bookLessonMutation.isPending
                   ? (language === 'he' ? 'מתאם...' : 'Scheduling...')
                   : (language === 'he' ? `אישור (${bookDuration} דק׳)` : `Confirm ${bookDuration}m Session`)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ADJUST STUDENT BALANCE MODAL */}
+      {isAdjustingBalance && adjustStudent && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 dark:text-white text-base">
+                    {language === 'he' ? 'עדכון יתרת חשבון תלמיד' : 'Adjust Student Account Balance'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {adjustStudent.firstName} {adjustStudent.lastName} ({adjustStudent.email})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsAdjustingBalance(false);
+                  setAdjustStudent(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                  {language === 'he' ? 'יתרה נוכחית:' : 'Current Balance:'}
+                </span>
+                <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                  ${Number(adjustStudent.studentProfile?.balance || 0).toFixed(2)}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                  {language === 'he' ? 'יתרה משוערת לאחר עדכון:' : 'Projected Balance:'}
+                </span>
+                <span className="text-xl font-black text-slate-900 dark:text-white">
+                  ${(
+                    adjustMode === 'add'
+                      ? Number(adjustStudent.studentProfile?.balance || 0) + (Number(adjustAmount) || 0)
+                      : Number(adjustAmount) || 0
+                  ).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  {language === 'he' ? 'אופן העדכון' : 'Adjustment Mode'}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdjustMode('add')}
+                    className={`py-2 rounded-xl font-extrabold text-xs border transition-all ${
+                      adjustMode === 'add'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    + {language === 'he' ? 'הוסף ליתרה' : 'Add to Balance'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdjustMode('set')}
+                    className={`py-2 rounded-xl font-extrabold text-xs border transition-all ${
+                      adjustMode === 'set'
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {language === 'he' ? 'קבע יתרה מדויקת' : 'Set Exact Balance'}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  {language === 'he' ? 'סכום ($ USD)' : 'Amount ($ USD)'}
+                </label>
+                <div className="flex gap-2 mb-2">
+                  {[25, 50, 100, 150, 250].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setAdjustAmount(amt)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                        Number(adjustAmount) === amt
+                          ? 'bg-brand-teal-800 text-white border-brand-teal-800'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      +${amt}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={adjustAmount}
+                  onChange={(e) => setAdjustAmount(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-black text-sm"
+                  placeholder="50.00"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  {language === 'he' ? 'סיבת העדכון / הערה' : 'Reason / Note'}
+                </label>
+                <input
+                  type="text"
+                  value={adjustReason}
+                  onChange={(e) => setAdjustReason(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  placeholder="Manual balance top-up by admin"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAdjustingBalance(false);
+                  setAdjustStudent(null);
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                {language === 'he' ? 'ביטול' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  adjustBalanceMutation.mutate({
+                    studentId: adjustStudent.studentProfile?.id,
+                    amount: Number(adjustAmount),
+                    mode: adjustMode,
+                    reason: adjustReason,
+                  });
+                }}
+                disabled={adjustBalanceMutation.isPending || !adjustAmount}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>
+                  {adjustBalanceMutation.isPending
+                    ? (language === 'he' ? 'מעדכן יתרה...' : 'Updating Balance...')
+                    : (language === 'he' ? 'אישור עדכון יתרה' : 'Confirm Balance')}
+                </span>
               </button>
             </div>
           </div>

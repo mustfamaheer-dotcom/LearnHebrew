@@ -46,6 +46,8 @@ export async function createHomework(data: {
   teacherId: string;
   title: string;
   description?: string;
+  attachmentUrl?: string;
+  attachmentType?: string;
   dueDate?: Date;
 }) {
   const student = await prisma.student.findFirst({
@@ -65,6 +67,8 @@ export async function createHomework(data: {
       teacherId: teacher.id,
       title: data.title,
       description: data.description,
+      attachmentUrl: data.attachmentUrl,
+      attachmentType: data.attachmentType,
       dueDate: data.dueDate,
       status: HomeworkStatus.PENDING,
     },

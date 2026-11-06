@@ -78,24 +78,24 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-3 sm:p-6 lg:p-10 relative overflow-hidden">
+    <div className="min-h-[calc(100dvh-4.5rem)] sm:min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-6 sm:p-6 lg:p-10 relative overflow-hidden">
       {/* Background ambient Apple-style glow */}
-      <div className="absolute top-1/4 start-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-teal-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 end-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-brand-olive-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 start-1/4 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-96 h-72 sm:h-96 bg-brand-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 end-1/4 translate-x-1/2 translate-y-1/2 w-72 sm:w-96 h-72 sm:h-96 bg-brand-olive-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Main Glassy Split-Screen Card */}
-      <div className="w-full max-w-5xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-[0_20px_60px_-15px_rgba(12,74,96,0.15)] overflow-hidden grid lg:grid-cols-12 relative z-10">
+      {/* Main Glassy Card: Single sleek card on mobile, Split-Screen on Desktop */}
+      <div className="w-full max-w-md lg:max-w-5xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_20px_60px_-15px_rgba(12,74,96,0.15)] overflow-hidden lg:grid lg:grid-cols-12 relative z-10 transition-all">
         
-        {/* LEFT PANEL: Engrew Platform Info, Logo & Utilities Brief */}
-        <div className="lg:col-span-5 bg-gradient-to-b from-brand-teal-950 via-brand-teal-900 to-brand-teal-800 text-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between relative overflow-hidden">
+        {/* DESKTOP-ONLY LEFT PANEL: Engrew Platform Info, Logo & Utilities Brief */}
+        <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-b from-brand-teal-950 via-brand-teal-900 to-brand-teal-800 text-white p-8 lg:p-10 flex-col justify-between relative overflow-hidden">
           {/* Subtle decorative glow overlay */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-brand-olive-400/10 rounded-full blur-2xl pointer-events-none" />
 
           {/* Top Brand Header */}
           <div className="space-y-6 relative z-10">
             <Link to="/" className="inline-flex items-center gap-3 group">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-2 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                <img src="/logo.png" alt="Engrew" className="w-full h-full object-contain brightness-0 invert" />
+              <div className="w-12 h-12 rounded-2xl bg-white p-1.5 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform shrink-0">
+                <img src="/logo.png" alt="Engrew" className="w-full h-full object-contain drop-shadow-2xs" />
               </div>
               <div>
                 <span className="text-2xl font-black tracking-tight text-white block">Engrew</span>
@@ -200,10 +200,26 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        {/* RIGHT PANEL: Sign In Form & Instant Demo Credentials */}
+        {/* SIGN IN FORM PANEL: Optimized for Mobile Touch & Desktop Clarity */}
         <div className="lg:col-span-7 p-6 sm:p-10 lg:p-12 flex flex-col justify-between bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl transition-colors">
           <div>
-            <div className="flex items-center justify-between mb-8">
+            {/* MOBILE BRAND HEADER (Hidden on desktop) */}
+            <div className="lg:hidden text-center mb-6">
+              <Link to="/" className="inline-flex flex-col items-center gap-2 group">
+                <div className="relative flex items-center justify-center p-1.5 rounded-2xl bg-gradient-to-br from-brand-teal-50 to-brand-olive-50 dark:from-brand-teal-950/50 dark:to-slate-900 border border-brand-teal-100/60 dark:border-brand-teal-800/50 shadow-sm group-hover:shadow-md transition-all group-hover:scale-105 duration-200">
+                  <img src="/logo.png" alt="Engrew" className="h-14 w-auto object-contain drop-shadow-xs" />
+                </div>
+                <div>
+                  <span className="text-2xl font-black tracking-tight text-brand-teal-900 dark:text-brand-teal-100">Engrew</span>
+                  <span className="text-[11px] font-bold text-brand-teal-700 dark:text-brand-teal-400 uppercase tracking-widest block">
+                    {language === 'he' ? 'אקדמיה לעברית' : 'Hebrew Academy'}
+                  </span>
+                </div>
+              </Link>
+            </div>
+
+            {/* DESKTOP HEADING (Hidden on mobile) */}
+            <div className="hidden lg:flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                   {language === 'he' ? 'ברוכים הבאים ל-Engrew' : 'Welcome to Engrew'}
@@ -219,8 +235,20 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
+            {/* MOBILE HEADING */}
+            <div className="lg:hidden text-center mb-5">
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {language === 'he' ? 'כניסה לחשבון' : 'Sign In'}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {language === 'he'
+                  ? 'הזן פרטי משתמש או השתמש במשתמש הדגמה'
+                  : 'Enter credentials or choose a 1-click demo'}
+              </p>
+            </div>
+
             {error && (
-              <div className="mb-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2.5 shadow-2xs">
+              <div className="mb-5 p-3.5 sm:p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2.5 shadow-2xs">
                 <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
                 <span>{error}</span>
               </div>
@@ -238,7 +266,7 @@ export const LoginPage: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full ps-10 pe-4 py-3 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-teal-800 dark:focus:ring-brand-teal-500 transition-all shadow-2xs"
+                    className="w-full ps-10 pe-4 py-3 sm:py-3 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-teal-800 dark:focus:ring-brand-teal-500 transition-all shadow-2xs"
                     placeholder="you@learnhebrew.com"
                   />
                 </div>
@@ -255,7 +283,7 @@ export const LoginPage: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full ps-10 pe-4 py-3 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-teal-800 dark:focus:ring-brand-teal-500 transition-all shadow-2xs"
+                    className="w-full ps-10 pe-4 py-3 sm:py-3 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-teal-800 dark:focus:ring-brand-teal-500 transition-all shadow-2xs"
                     placeholder="••••••••••••"
                   />
                 </div>
@@ -264,78 +292,81 @@ export const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 px-4 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 disabled:opacity-50 text-white font-extrabold text-sm rounded-2xl shadow-md transition-all hover:shadow-lg flex items-center justify-center gap-2 mt-2"
+                className="w-full py-3.5 px-4 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 disabled:opacity-50 text-white font-extrabold text-sm rounded-2xl shadow-md transition-all hover:shadow-lg active:scale-[0.99] flex items-center justify-center gap-2 mt-2"
               >
                 <span>{loading ? (language === 'he' ? 'מתחבר למערכת...' : 'Signing In...') : (language === 'he' ? 'כניסה למערכת' : 'Sign In')}</span>
                 <ArrowRight className="w-4 h-4 rtl:rotate-180 text-brand-olive-300" />
               </button>
             </form>
 
-            {/* Quick Demo Login Cards */}
-            <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-slate-800">
+            {/* Quick Demo Login Cards: Compact 3-Column on Both Mobile & Desktop */}
+            <div className="mt-6 pt-5 border-t border-slate-200/80 dark:border-slate-800">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
-                  {language === 'he' ? 'כניסה מיידית למשתמשי הדגמה' : '1-Click Demo Evaluation Sign-In'}
+                  {language === 'he' ? 'כניסה מהירה למשתמשי בדיקה' : '1-Click Demo Accounts'}
                 </span>
-                <span className="text-[11px] text-brand-teal-700 dark:text-brand-teal-400 font-semibold">
-                  {language === 'he' ? 'לחץ לבדיקה' : 'Click to Test'}
+                <span className="text-[10px] sm:text-[11px] text-brand-teal-700 dark:text-brand-teal-400 font-bold">
+                  {language === 'he' ? 'לחץ להתחברות' : 'Tap to Login'}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
                 {/* Admin Button */}
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('admin@learnhebrew.com', 'Admin@2026!')}
-                  className="p-3 text-start rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-teal-500 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/40 dark:hover:bg-slate-700/50 transition-all group"
+                  className="p-2 sm:p-3 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-teal-500 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <ShieldCheck className="w-4 h-4 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
-                    <span className="font-bold text-slate-900 dark:text-white text-xs">
-                      {language === 'he' ? 'מנהל מערכת' : 'Super Admin'}
-                    </span>
+                  <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center mb-1 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                    <ShieldCheck className="w-4 h-4" />
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">admin@learnhebrew.com</p>
+                  <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                    {language === 'he' ? 'מנהל' : 'Admin'}
+                  </span>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">admin@...</p>
                 </button>
 
                 {/* Teacher Button */}
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('sarah.cohen@learnhebrew.com', 'Teacher@2026!')}
-                  className="p-3 text-start rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-olive-500 dark:hover:border-brand-olive-400 hover:bg-brand-olive-50/40 dark:hover:bg-slate-700/50 transition-all group"
+                  className="p-2 sm:p-3 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-olive-500 dark:hover:border-brand-olive-400 hover:bg-brand-olive-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <GraduationCap className="w-4 h-4 text-brand-olive-700 dark:text-brand-olive-400 group-hover:scale-110 transition-transform" />
-                    <span className="font-bold text-slate-900 dark:text-white text-xs">
-                      {language === 'he' ? 'מורה מוסמך' : 'Teacher'}
-                    </span>
+                  <div className="w-8 h-8 rounded-xl bg-brand-olive-50 dark:bg-brand-olive-950/60 border border-brand-olive-200/60 dark:border-brand-olive-800/60 flex items-center justify-center mb-1 text-brand-olive-700 dark:text-brand-olive-400 group-hover:scale-110 transition-transform">
+                    <GraduationCap className="w-4 h-4" />
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">sarah.cohen@...</p>
+                  <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                    {language === 'he' ? 'מורה' : 'Teacher'}
+                  </span>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">sarah@...</p>
                 </button>
 
                 {/* Student Button */}
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('daniel.cohen@learnhebrew.com', 'Student@2026!')}
-                  className="p-3 text-start rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-teal-500 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/40 dark:hover:bg-slate-700/50 transition-all group"
+                  className="p-2 sm:p-3 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-teal-500 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Users className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 group-hover:scale-110 transition-transform" />
-                    <span className="font-bold text-slate-900 dark:text-white text-xs">
-                      {language === 'he' ? 'תלמיד' : 'Student'}
-                    </span>
+                  <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 border border-brand-teal-200/60 dark:border-brand-teal-800/60 flex items-center justify-center mb-1 text-brand-teal-700 dark:text-brand-teal-400 group-hover:scale-110 transition-transform">
+                    <Users className="w-4 h-4" />
                   </div>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate">daniel.cohen@...</p>
+                  <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                    {language === 'he' ? 'תלמיד' : 'Student'}
+                  </span>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">daniel@...</p>
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 pt-4 text-center text-xs text-slate-400 dark:text-slate-500">
-            {language === 'he'
-              ? 'מוגן באמצעות פרוטוקול אבטחה מתקדם ומדיניות ניטור כניסות.'
-              : 'Protected by enterprise JWT authentication & rate-limiting policies.'}
+          {/* Footer Back Link & Security Badge */}
+          <div className="mt-6 pt-4 text-center text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-3">
+            <Link to="/" className="text-brand-teal-800 dark:text-brand-teal-400 font-bold hover:underline">
+              {language === 'he' ? 'חזרה לדף הבית' : 'Back to Home'}
+            </Link>
+            <span>•</span>
+            <span>{language === 'he' ? 'פרוטוקול כניסה מאובטח' : 'Encrypted Access'}</span>
           </div>
         </div>
       </div>

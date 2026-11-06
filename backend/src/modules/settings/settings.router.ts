@@ -89,5 +89,50 @@ router.put(
   }
 );
 
+const DEFAULT_SESSION_PRICING = {
+  '25': 25,
+  '40': 40,
+  '55': 55,
+  currency: 'USD',
+};
+
+// GET Session Pricing by Duration (25m, 40m, 55m)
+router.get('/session-pricing', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: 'session_pricing' },
+    });
+    res.json({ pricing: setting?.valueJson || DEFAULT_SESSION_PRICING });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// UPDATE Session Pricing (Admin only)
+router.put(
+  '/session-pricing',
+  authenticate,
+  requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const pricing = req.body.pricing || req.body;
+      const setting = await prisma.systemSetting.upsert({
+        where: { key: 'session_pricing' },
+        update: { valueJson: pricing },
+        create: {
+          key: 'session_pricing',
+          valueJson: pricing,
+        },
+      });
+      res.json({
+        message: 'Session pricing updated successfully!',
+        pricing: setting.valueJson,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;
 
