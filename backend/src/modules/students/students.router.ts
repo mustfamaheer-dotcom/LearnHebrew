@@ -8,6 +8,7 @@ import {
   getStudentPackagesHandler,
   getStudentPointsHandler,
   getStudentHomeworkHandler,
+  getStudentTransactionsHandler,
 } from './students.controller';
 import { authenticate } from '../../middleware/auth';
 
@@ -23,6 +24,7 @@ router.get('/:id/lessons', getStudentLessonsHandler);
 router.get('/:id/packages', getStudentPackagesHandler);
 router.get('/:id/points', getStudentPointsHandler);
 router.get('/:id/homework', getStudentHomeworkHandler);
+router.get('/:id/transactions', getStudentTransactionsHandler);
 
 export default router;
 

@@ -195,3 +195,40 @@ export async function getStudentHomework(studentIdOrUserId: string) {
   });
 }
 
+export async function getStudentTransactions(studentIdOrUserId: string) {
+  const student = await getStudentById(studentIdOrUserId);
+  const transactions = await prisma.balanceTransaction.findMany({
+    where: { studentId: student.id },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  let totalDeposited = 0;
+  let totalSpent = 0;
+  let totalRefunded = 0;
+
+  transactions.forEach((tx) => {
+    const amt = Number(tx.amount);
+    if (tx.type === 'SESSION_BOOKING') {
+      totalSpent += Math.abs(amt);
+    } else if (tx.type === 'SESSION_REFUND') {
+      totalRefunded += amt;
+    } else if (tx.type === 'ADMIN_ADJUSTMENT') {
+      if (amt > 0) totalDeposited += amt;
+      else totalSpent += Math.abs(amt);
+    }
+  });
+
+  return {
+    studentId: student.id,
+    currentBalance: Number(student.balance || 0),
+    summary: {
+      totalDeposited,
+      totalSpent,
+      totalRefunded,
+      transactionCount: transactions.length,
+    },
+    transactions,
+  };
+}
+
+

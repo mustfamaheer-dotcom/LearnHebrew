@@ -50,6 +50,11 @@ import {
   Wallet,
   Maximize2,
   MoreHorizontal,
+  ArrowDownLeft,
+  ArrowUpRight,
+  RefreshCw,
+  Receipt,
+  ShieldCheck,
 } from 'lucide-react';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -62,11 +67,12 @@ export const StudentDashboard: React.FC = () => {
   const location = useLocation();
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'games' | 'leaderboard'
+    'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'games' | 'leaderboard' | 'balance'
   >(() => {
     if (location.pathname.includes('/games')) return 'games';
     if (location.pathname.includes('/leaderboard')) return 'leaderboard';
     if (location.pathname.includes('/recordings')) return 'recordings';
+    if (location.pathname.includes('/balance') || location.pathname.includes('/transactions')) return 'balance';
     return 'overview';
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -79,6 +85,8 @@ export const StudentDashboard: React.FC = () => {
       setActiveTab('leaderboard');
     } else if (location.pathname.includes('/recordings')) {
       setActiveTab('recordings');
+    } else if (location.pathname.includes('/balance') || location.pathname.includes('/transactions')) {
+      setActiveTab('balance');
     }
   }, [location.pathname]);
 
@@ -116,6 +124,32 @@ export const StudentDashboard: React.FC = () => {
       return res.data?.pricing;
     },
   });
+
+  // Fetch Student Account Balance & Transactions History
+  const {
+    data: transactionsResponse,
+    isLoading: isTransactionsLoading,
+    isRefetching: isTransactionsRefetching,
+    refetch: refetchTransactions,
+  } = useQuery({
+    queryKey: ['studentTransactions', user?.id],
+    queryFn: async () => {
+      const res = await api.get(`/students/${user?.id}/transactions`);
+      return res.data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const studentTransactions: any[] = transactionsResponse?.transactions || [];
+  const transactionsSummary = transactionsResponse?.summary || {
+    totalDeposited: 0,
+    totalSpent: 0,
+    totalRefunded: 0,
+    transactionCount: 0,
+  };
+
+  const [transactionTypeFilter, setTransactionTypeFilter] = useState<'ALL' | 'BOOKINGS' | 'DEPOSITS' | 'REFUNDS'>('ALL');
+  const [transactionSearchQuery, setTransactionSearchQuery] = useState('');
 
   // 2. Fetch Available Teachers for Booking
   const { data: teachersData } = useQuery({
@@ -185,6 +219,7 @@ export const StudentDashboard: React.FC = () => {
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['studentTransactions'] });
       setIsBookingModalOpen(false);
       setSelectedTeacherId('');
       setBookingDate('');
@@ -334,10 +369,17 @@ export const StudentDashboard: React.FC = () => {
       icon: Award,
       badge: student?.totalPoints ? (language === 'he' ? `${student.totalPoints} נק׳` : `${student.totalPoints} pts`) : null,
     },
+    {
+      id: 'balance',
+      label: 'Account Balance & History',
+      labelHe: 'יתרה והיסטוריית עסקאות',
+      icon: Wallet,
+      badge: `$${currentBalance.toFixed(0)}`,
+    },
   ];
 
   const isSecondaryActive =
-    activeTab === 'recordings' || activeTab === 'homework' || activeTab === 'leaderboard';
+    activeTab === 'recordings' || activeTab === 'homework' || activeTab === 'leaderboard' || activeTab === 'balance';
 
   const mobileTabs = [
     {
@@ -373,6 +415,8 @@ export const StudentDashboard: React.FC = () => {
           ? (language === 'he' ? 'ש״ב' : 'HW')
           : activeTab === 'leaderboard'
           ? (language === 'he' ? 'דירוג' : 'Rank')
+          : activeTab === 'balance'
+          ? (language === 'he' ? 'יתרה' : 'Balance')
           : (language === 'he' ? 'עוד' : 'More'),
       icon:
         activeTab === 'recordings'
@@ -381,6 +425,8 @@ export const StudentDashboard: React.FC = () => {
           ? BookOpen
           : activeTab === 'leaderboard'
           ? Award
+          : activeTab === 'balance'
+          ? Wallet
           : MoreHorizontal,
       badge: pendingHomeworkCount > 0 ? `${pendingHomeworkCount}` : null,
     },
@@ -448,7 +494,16 @@ export const StudentDashboard: React.FC = () => {
           onCloseMobile={() => setMobileMenuOpen(false)}
           customSlot={
             <div className="space-y-2 p-2.5 bg-slate-50/80 dark:bg-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('balance');
+                  setMobileMenuOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors text-start cursor-pointer"
+                title={language === 'he' ? 'צפה בהיסטוריית עסקאות ויתרה' : 'View Balance & Transaction History'}
+              >
                 <div className="flex items-center gap-1.5">
                   <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
@@ -458,7 +513,7 @@ export const StudentDashboard: React.FC = () => {
                 <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">
                   ${currentBalance.toFixed(2)}
                 </span>
-              </div>
+              </button>
               <div className="text-center p-2 rounded-xl bg-slate-50/60 dark:bg-slate-800/40">
                 <div className="flex items-center justify-center gap-1.5 text-amber-500 font-extrabold text-xs">
                   <Award className="w-3.5 h-3.5" />
@@ -501,15 +556,23 @@ export const StudentDashboard: React.FC = () => {
 
                   {/* Balance & Points Stats */}
                   <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[110px] border border-white/15">
-                      <div className="flex items-center justify-center gap-1 text-emerald-300 font-extrabold text-lg sm:text-xl">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('balance');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="bg-white/10 hover:bg-white/20 transition-all cursor-pointer backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[110px] border border-white/15 group"
+                      title={language === 'he' ? 'צפה בהיסטוריית עסקאות ויתרה' : 'View Balance & Transaction History'}
+                    >
+                      <div className="flex items-center justify-center gap-1 text-emerald-300 font-extrabold text-lg sm:text-xl group-hover:scale-105 transition-transform">
                         <Wallet className="w-5 h-5 text-emerald-300 shrink-0" />
                         <span>${currentBalance.toFixed(2)}</span>
                       </div>
                       <p className="text-[10px] sm:text-[11px] font-semibold text-brand-teal-100 uppercase mt-0.5">
                         {language === 'he' ? 'יתרת חשבון' : 'Balance'}
                       </p>
-                    </div>
+                    </button>
 
                     <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[105px] border border-white/15">
                       <div className="flex items-center justify-center gap-1 text-amber-400 font-extrabold text-lg sm:text-xl">
@@ -2269,6 +2332,465 @@ export const StudentDashboard: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* TAB 8: ACCOUNT BALANCE & TRANSACTIONS HISTORY */}
+          {activeTab === 'balance' && (
+            <div className="space-y-6">
+              {/* Header Banner */}
+              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-2">
+                    <Wallet className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>{language === 'he' ? 'מרכז יתרה ועסקאות אישי' : 'Student Wallet & Ledger'}</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                    {language === 'he' ? 'יתרת חשבון והיסטוריית עסקאות' : 'Account Balance & Transactions History'}
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                    {language === 'he'
+                      ? 'פירוט מלא של יתרת הארנק האישי שלך, חיובים עבור הזמנת שיעורים, טעינות כספיות, וזיכויים אוטומטיים במקרה של ביטול שיעור מראש.'
+                      : 'Complete transparent ledger of your wallet balance, lesson booking debits, deposits, and automated refunds.'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => refetchTransactions()}
+                    className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 transition-colors shadow-2xs"
+                    title={language === 'he' ? 'רענן נתוני עסקאות' : 'Refresh ledger'}
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isTransactionsRefetching ? 'animate-spin text-brand-teal-500' : ''}`} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDuration(25);
+                      setIsBookingModalOpen(true);
+                    }}
+                    className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 text-white text-xs font-extrabold rounded-xl transition-all shadow-sm flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4 text-brand-olive-300" />
+                    <span>{language === 'he' ? 'הזמן שיעור 25 דק׳ ($25)' : 'Book 25-Min Lesson ($25)'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+                {/* Available Balance Card */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-950/40 dark:via-emerald-900/20 dark:to-transparent border border-emerald-500/30 dark:border-emerald-500/40 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                      {language === 'he' ? 'יתרה זמינה בארנק' : 'Available Balance'}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <Wallet className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-3xl sm:text-4xl font-black text-emerald-700 dark:text-emerald-400 tracking-tight">
+                      ${currentBalance.toFixed(2)}
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                        hasEnoughBalance
+                          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+                      }`}>
+                        {hasEnoughBalance
+                          ? (language === 'he' ? `מספיק ל-${Math.floor(currentBalance / 25)} שיעורים` : `${Math.floor(currentBalance / 25)} lessons ready`)
+                          : (language === 'he' ? 'יתרה נמוכה' : 'Low balance')}
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {language === 'he' ? 'תעריף: $25' : 'Rate: $25/lesson'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Top-ups & Added */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {language === 'he' ? 'סך הפקדות וטעינות' : 'Total Top-ups'}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                      <ArrowDownLeft className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                      +${transactionsSummary.totalDeposited.toFixed(2)}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      {language === 'he' ? 'סך הכל כספים שנטענו לחשבון' : 'Direct deposits & admin credits'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Total Spent on Bookings */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {language === 'he' ? 'שיעורים שהוזמנו' : 'Lessons Booked'}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                      <ArrowUpRight className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
+                      -${transactionsSummary.totalSpent.toFixed(2)}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      {language === 'he' ? 'חיובים שבוצעו עבור שיעורים' : 'Deductions for booked lessons'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Total Auto-Refunds */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {language === 'he' ? 'החזרים וזיכויים' : 'Auto-Refunds'}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-950/70 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                      <RefreshCw className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-2xl sm:text-3xl font-black text-cyan-600 dark:text-cyan-400 tracking-tight">
+                      +${transactionsSummary.totalRefunded.toFixed(2)}
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      {language === 'he' ? 'זיכוי מלא על ביטול שיעורים מראש' : 'Instant 100% cancellation refunds'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Engrew Transparent Wallet Policy */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-slate-50/80 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-brand-teal-100 dark:bg-brand-teal-950/80 text-brand-teal-800 dark:text-brand-teal-300 shrink-0">
+                    <Receipt className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 dark:text-white">
+                      {language === 'he' ? 'תמחור שיעורים שקוף' : 'Transparent Pricing'}
+                    </h4>
+                    <p className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                      {language === 'he' ? 'שיעור 25 דקות מחויב ב-$25 בדיוק ללא עמלות נסתרות.' : '$25 per 25-minute lesson flat with certified teachers.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-cyan-100 dark:bg-cyan-950/80 text-cyan-800 dark:text-cyan-300 shrink-0">
+                    <RefreshCw className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 dark:text-white">
+                      {language === 'he' ? 'זיכוי אוטומטי מיידי' : 'Automated Refunds'}
+                    </h4>
+                    <p className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                      {language === 'he' ? 'ביטול שיעור מראש מזכה את הארנק מידית ב-$25 מלאים.' : 'Early cancellations refund 100% of the rate instantly.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-900 dark:text-white">
+                      {language === 'he' ? 'יתרה ללא תוקף' : 'Permanent Balance'}
+                    </h4>
+                    <p className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                      {language === 'he' ? 'כספי היתרה שמורים עבורך לצמיתות ואינם פגים לעולם.' : 'Funds remain valid indefinitely until you choose to book.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transactions History Card */}
+              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-5 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
+                {/* Filters and Search Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  {/* Category Pills */}
+                  <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-x-auto max-w-full">
+                    <button
+                      type="button"
+                      onClick={() => setTransactionTypeFilter('ALL')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        transactionTypeFilter === 'ALL'
+                          ? 'bg-white dark:bg-slate-900 text-brand-teal-800 dark:text-brand-teal-300 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {language === 'he' ? `הכל (${studentTransactions.length})` : `All (${studentTransactions.length})`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTransactionTypeFilter('BOOKINGS')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        transactionTypeFilter === 'BOOKINGS'
+                          ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {language === 'he' ? 'הזמנת שיעורים' : 'Bookings'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTransactionTypeFilter('DEPOSITS')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        transactionTypeFilter === 'DEPOSITS'
+                          ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {language === 'he' ? 'הפקדות וטעינות' : 'Top-ups'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTransactionTypeFilter('REFUNDS')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        transactionTypeFilter === 'REFUNDS'
+                          ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {language === 'he' ? 'זיכויים' : 'Refunds'}
+                    </button>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="relative min-w-[200px] sm:min-w-[240px]">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute start-3 top-3" />
+                    <input
+                      type="text"
+                      placeholder={language === 'he' ? 'חיפוש עסקאות, שיעור או סכום...' : 'Search transactions...'}
+                      value={transactionSearchQuery}
+                      onChange={(e) => setTransactionSearchQuery(e.target.value)}
+                      className="w-full ps-9 pe-3 py-2 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-teal-600"
+                    />
+                  </div>
+                </div>
+
+                {/* Filtered Transactions List / Table */}
+                {(() => {
+                  const filtered = studentTransactions.filter((tx: any) => {
+                    if (transactionTypeFilter === 'BOOKINGS' && tx.type !== 'SESSION_BOOKING') return false;
+                    if (transactionTypeFilter === 'DEPOSITS' && (tx.type !== 'ADMIN_ADJUSTMENT' || Number(tx.amount) <= 0)) return false;
+                    if (transactionTypeFilter === 'REFUNDS' && tx.type !== 'SESSION_REFUND') return false;
+
+                    if (!transactionSearchQuery) return true;
+                    const q = transactionSearchQuery.toLowerCase();
+                    const desc = (tx.description || '').toLowerCase();
+                    const type = (tx.type || '').toLowerCase();
+                    const amt = String(tx.amount);
+                    return desc.includes(q) || type.includes(q) || amt.includes(q);
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="py-12 text-center space-y-3">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
+                          <Receipt className="w-6 h-6" />
+                        </div>
+                        <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
+                          {language === 'he' ? 'אין עסקאות להצגה' : 'No transactions found'}
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                          {language === 'he'
+                            ? 'כל טעינה, חיוב על שיעור או החזר כספי יתועדו כאן בצורה מפורטת.'
+                            : 'Every top-up, lesson booking deduction, and refund will be tracked here.'}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      {/* Desktop Table View (Hidden on mobile) */}
+                      <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                        <table className="w-full text-start text-xs">
+                          <thead className="bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
+                            <tr>
+                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'סוג פעולה' : 'Type'}</th>
+                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'סכום' : 'Amount'}</th>
+                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'יתרה לאחר פעולה' : 'Balance After'}</th>
+                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תיאור ופרטים' : 'Description / Note'}</th>
+                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תאריך ושעה' : 'Date & Time'}</th>
+                              <th className="py-3.5 px-4 text-center">{language === 'he' ? 'סטטוס' : 'Status'}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900/60 font-medium">
+                            {filtered.map((tx: any) => {
+                              const amt = Number(tx.amount);
+                              const isPositive = amt > 0;
+                              const isBooking = tx.type === 'SESSION_BOOKING';
+                              const isRefund = tx.type === 'SESSION_REFUND';
+
+                              return (
+                                <tr key={tx.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                                  {/* Type */}
+                                  <td className="py-3.5 px-4 whitespace-nowrap">
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                                        isBooking
+                                          ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400'
+                                          : isRefund
+                                          ? 'bg-cyan-100 dark:bg-cyan-950/70 text-cyan-600 dark:text-cyan-400'
+                                          : 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400'
+                                      }`}>
+                                        {isBooking ? (
+                                          <ArrowUpRight className="w-4 h-4" />
+                                        ) : isRefund ? (
+                                          <RefreshCw className="w-3.5 h-3.5" />
+                                        ) : (
+                                          <ArrowDownLeft className="w-4 h-4" />
+                                        )}
+                                      </div>
+                                      <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                                        {isBooking
+                                          ? (language === 'he' ? 'הזמנת שיעור' : 'Lesson Booking')
+                                          : isRefund
+                                          ? (language === 'he' ? 'זיכוי שיעור' : 'Auto-Refund')
+                                          : (amt > 0 ? (language === 'he' ? 'טעינת יתרה' : 'Wallet Top-up') : (language === 'he' ? 'עדכון יתרה' : 'Adjustment'))}
+                                      </span>
+                                    </div>
+                                  </td>
+
+                                  {/* Amount */}
+                                  <td className="py-3.5 px-4 whitespace-nowrap">
+                                    <span className={`font-black text-sm ${
+                                      isPositive
+                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                        : 'text-rose-600 dark:text-rose-400'
+                                    }`}>
+                                      {isPositive ? `+$${amt.toFixed(2)}` : `-$${Math.abs(amt).toFixed(2)}`}
+                                    </span>
+                                  </td>
+
+                                  {/* Balance After */}
+                                  <td className="py-3.5 px-4 whitespace-nowrap font-bold text-slate-900 dark:text-white">
+                                    ${Number(tx.balanceAfter || 0).toFixed(2)}
+                                  </td>
+
+                                  {/* Description */}
+                                  <td className="py-3.5 px-4 max-w-xs text-slate-600 dark:text-slate-300">
+                                    <div className="line-clamp-2 leading-relaxed">
+                                      {tx.description || (language === 'he' ? 'פעולת יתרה במערכת' : 'Balance adjustment')}
+                                    </div>
+                                  </td>
+
+                                  {/* Date & Time */}
+                                  <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                                    {formatIsraelDateTime(tx.createdAt, {
+                                      includeDate: true,
+                                      locale: language === 'he' ? 'he-IL' : 'en-US',
+                                    })}
+                                  </td>
+
+                                  {/* Status */}
+                                  <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      <span>{language === 'he' ? 'הושלם' : 'Completed'}</span>
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Card Feed (Visible only on mobile screens) */}
+                      <div className="md:hidden space-y-3">
+                        {filtered.map((tx: any) => {
+                          const amt = Number(tx.amount);
+                          const isPositive = amt > 0;
+                          const isBooking = tx.type === 'SESSION_BOOKING';
+                          const isRefund = tx.type === 'SESSION_REFUND';
+
+                          return (
+                            <div
+                              key={tx.id}
+                              className="p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-850/90 border border-slate-200/80 dark:border-slate-800 space-y-3 shadow-2xs"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                                    isBooking
+                                      ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400'
+                                      : isRefund
+                                      ? 'bg-cyan-100 dark:bg-cyan-950/70 text-cyan-600 dark:text-cyan-400'
+                                      : 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400'
+                                  }`}>
+                                    {isBooking ? (
+                                      <ArrowUpRight className="w-4 h-4" />
+                                    ) : isRefund ? (
+                                      <RefreshCw className="w-4 h-4" />
+                                    ) : (
+                                      <ArrowDownLeft className="w-4 h-4" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="font-black text-xs text-slate-900 dark:text-white">
+                                      {isBooking
+                                        ? (language === 'he' ? 'הזמנת שיעור' : 'Lesson Booking')
+                                        : isRefund
+                                        ? (language === 'he' ? 'זיכוי שיעור' : 'Auto-Refund')
+                                        : (amt > 0 ? (language === 'he' ? 'טעינת יתרה' : 'Wallet Top-up') : (language === 'he' ? 'עדכון יתרה' : 'Adjustment'))}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                                      {formatIsraelDateTime(tx.createdAt, {
+                                        includeDate: true,
+                                        locale: language === 'he' ? 'he-IL' : 'en-US',
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className={`font-black text-base ${
+                                  isPositive
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : 'text-rose-600 dark:text-rose-400'
+                                }`}>
+                                  {isPositive ? `+$${amt.toFixed(2)}` : `-$${Math.abs(amt).toFixed(2)}`}
+                                </div>
+                              </div>
+
+                              {tx.description && (
+                                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-white/70 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                                  {tx.description}
+                                </p>
+                              )}
+
+                              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60 dark:border-slate-800">
+                                <span className="text-slate-500 dark:text-slate-400 font-medium">
+                                  {language === 'he' ? 'יתרה לאחר פעולה:' : 'Balance after:'}
+                                </span>
+                                <span className="font-extrabold text-slate-900 dark:text-white">
+                                  ${Number(tx.balanceAfter || 0).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
@@ -2704,16 +3226,18 @@ export const StudentDashboard: React.FC = () => {
                 </div>
               </button>
 
-              {/* Card 4: Balance & Top-up */}
+              {/* Card 4: Balance & Transactions History */}
               <button
                 type="button"
                 onClick={() => {
-                  setActiveTab('booking');
+                  setActiveTab('balance');
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className={`p-3.5 rounded-2xl border text-start transition-all flex flex-col justify-between space-y-2 ${
-                  !hasEnoughBalance
+                  activeTab === 'balance'
+                    ? 'bg-emerald-500/20 border-emerald-400/50 shadow-[0_0_15px_rgba(52,211,153,0.3)] ring-1 ring-emerald-400/50'
+                    : !hasEnoughBalance
                     ? 'bg-rose-950/40 border-rose-500/50'
                     : 'bg-white/5 border-white/10 hover:bg-white/10'
                 }`}
@@ -2728,10 +3252,10 @@ export const StudentDashboard: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-bold text-xs text-white">
-                    {language === 'he' ? 'יתרת חשבון' : 'Account Balance'}
+                    {language === 'he' ? 'יתרת חשבון והיסטוריה' : 'Account Balance & History'}
                   </p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
-                    {language === 'he' ? 'תעריפי שיעורים והזמנות' : 'Session rates & booking'}
+                    {language === 'he' ? 'פירוט עסקאות, טעינות וזיכויים' : 'Transactions, top-ups & refunds'}
                   </p>
                 </div>
               </button>

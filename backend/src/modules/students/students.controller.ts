@@ -81,3 +81,13 @@ export async function getStudentHomeworkHandler(req: AuthRequest, res: Response,
   }
 }
 
+export async function getStudentTransactionsHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const transactionsData = await studentsService.getStudentTransactions(req.params.id);
+    res.json(transactionsData);
+  } catch (error) {
+    next(error);
+  }
+}
+
+
