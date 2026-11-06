@@ -2470,8 +2470,8 @@ export const StudentDashboard: React.FC = () => {
       {/* iPhone-Style Floating Liquid Glass Bottom Navigation Bar (Mobile View) */}
       <nav
         aria-label="Mobile Navigation"
-        className="lg:hidden fixed bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-1.25rem)] max-w-md z-50 pointer-events-auto"
-        style={{ bottom: 'max(env(safe-area-inset-bottom, 0px), 0.75rem)' }}
+        className="lg:hidden fixed bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 w-[calc(100%-1.25rem)] max-w-md z-50 pointer-events-auto"
+        style={{ bottom: 'max(env(safe-area-inset-bottom, 0px), 0.25rem)' }}
       >
         <div className="relative rounded-full p-1.5 bg-slate-950/85 dark:bg-slate-950/90 backdrop-blur-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.1)_inset] grid grid-cols-5 items-center justify-around gap-1">
           {/* Top Edge Liquid Glass Sheen */}

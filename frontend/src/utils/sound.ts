@@ -33,3 +33,4 @@ export const playNotificationChime = () => {
     // AudioContext blocked by browser autoplay policy until user gesture
   }
 };
+

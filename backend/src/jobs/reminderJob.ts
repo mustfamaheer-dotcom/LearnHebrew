@@ -54,3 +54,4 @@ export const startReminderJob = () => {
   setTimeout(checkReminders, 5000);
   setInterval(checkReminders, 60 * 1000);
 };
+
