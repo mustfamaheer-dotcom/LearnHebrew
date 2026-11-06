@@ -641,7 +641,9 @@ export const AdminDashboard: React.FC = () => {
             lastName: currentUser?.lastName,
             email: currentUser?.email,
             avatarUrl: currentUser?.avatarUrl,
-            role: currentUser?.role === 'SUPER_ADMIN' ? 'Platform Owner' : (currentUser?.role || 'Platform Owner'),
+            role: currentUser?.role === 'SUPER_ADMIN'
+              ? (language === 'he' ? 'בעלים ומנהל ראשי' : 'Platform Owner')
+              : (currentUser?.role || (language === 'he' ? 'בעלים ומנהל ראשי' : 'Platform Owner')),
           }}
           panelSubtitle={language === 'he' ? 'מרכז בעל הפלטפורמה' : 'Platform Owner Hub'}
           isOpenMobile={mobileMenuOpen}
@@ -661,7 +663,7 @@ export const AdminDashboard: React.FC = () => {
                       <Sparkles className="w-4 h-4 text-brand-olive-400" />
                       <span>{language === 'he' ? 'מרכז שליטה ואנליטיקה מתקדמת' : 'Executive Control & Analytics Hub'}</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="text-[10px] text-white/70">Live</span>
+                      <span className="text-[10px] text-white/70">{language === 'he' ? 'פעיל' : 'Live'}</span>
                     </div>
                     <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
                       {language === 'he' ? 'סקירת ניהול Engrew' : 'Engrew Management Overview'}
@@ -718,7 +720,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300">
                     <Activity className="w-3 h-3 text-emerald-500" />
-                    <span>Live Command Hub</span>
+                    <span>{language === 'he' ? 'מרכז שליטה חי' : 'Live Command Hub'}</span>
                   </span>
                 </div>
 
@@ -754,7 +756,7 @@ export const AdminDashboard: React.FC = () => {
                         {language === 'he' ? 'קביעת שיעור' : 'Book Session'}
                       </span>
                       <span className="text-[10px] text-teal-700 dark:text-teal-400 font-bold">
-                        25 / 40 / 55 Min
+                        {language === 'he' ? '25 / 40 / 55 דק׳' : '25 / 40 / 55 Min'}
                       </span>
                     </div>
                   </button>
@@ -839,7 +841,9 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Platform Revenue</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider">
+                        {language === 'he' ? 'הכנסות הפלטפורמה' : 'Platform Revenue'}
+                      </span>
                       <BarChart2 className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
@@ -850,7 +854,9 @@ export const AdminDashboard: React.FC = () => {
                     <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
                       <TrendingUp className="w-3 h-3" /> +{analytics?.kpis?.revenueGrowth || '18.4'}%
                     </span>
-                    <span className="text-slate-400">MTD: ${analytics?.kpis?.revenueMTD || '540'}</span>
+                    <span className="text-slate-400">
+                      {language === 'he' ? `מתחילת החודש: $${analytics?.kpis?.revenueMTD || '540'}` : `MTD: $${analytics?.kpis?.revenueMTD || '540'}`}
+                    </span>
                   </div>
                 </div>
 
@@ -858,7 +864,9 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Student Wallet Pool</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider">
+                        {language === 'he' ? 'ארנקי יתרות תלמידים' : 'Student Wallet Pool'}
+                      </span>
                       <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
@@ -867,9 +875,11 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                     <span className="text-slate-500 dark:text-slate-400">
-                      Avg: ${(studentsList.length > 0 ? ((analytics?.kpis?.totalStudentBalance || totalPlatformBalance) / studentsList.length) : 0).toFixed(2)}
+                      {language === 'he' ? 'ממוצע:' : 'Avg:'} ${(studentsList.length > 0 ? ((analytics?.kpis?.totalStudentBalance || totalPlatformBalance) / studentsList.length) : 0).toFixed(2)}
                     </span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">Active Reserve</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {language === 'he' ? 'עתודה פעילה' : 'Active Reserve'}
+                    </span>
                   </div>
                 </div>
 
@@ -877,7 +887,9 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Total Lessons</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider">
+                        {language === 'he' ? 'סה״כ שיעורים' : 'Total Lessons'}
+                      </span>
                       <Clock className="w-4 h-4 text-brand-olive-600 dark:text-brand-olive-400" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
@@ -885,8 +897,12 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-brand-teal-700 dark:text-brand-teal-300">25m Core: 85%</span>
-                    <span className="text-slate-400">{completedLessonsCount} done</span>
+                    <span className="font-bold text-brand-teal-700 dark:text-brand-teal-300">
+                      {language === 'he' ? 'ליבת 25 דק׳: 85%' : '25m Core: 85%'}
+                    </span>
+                    <span className="text-slate-400">
+                      {language === 'he' ? `${completedLessonsCount} הושלמו` : `${completedLessonsCount} done`}
+                    </span>
                   </div>
                 </div>
 
@@ -894,7 +910,9 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Slot Utilization</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider">
+                        {language === 'he' ? 'ניצול משבצות הוראה' : 'Slot Utilization'}
+                      </span>
                       <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
@@ -902,8 +920,12 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-500 dark:text-slate-400">Peak 16:00-21:00</span>
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400">High Capacity</span>
+                    <span className="text-slate-500 dark:text-slate-400">
+                      {language === 'he' ? 'שיא 16:00-21:00' : 'Peak 16:00-21:00'}
+                    </span>
+                    <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                      {language === 'he' ? 'תפוסה גבוהה' : 'High Capacity'}
+                    </span>
                   </div>
                 </div>
 
@@ -911,7 +933,9 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Active Students</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider">
+                        {language === 'he' ? 'תלמידים פעילים' : 'Active Students'}
+                      </span>
                       <Users className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
@@ -919,8 +943,12 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">100% Retention</span>
-                    <span className="text-slate-400">HW: {analytics?.kpis?.homeworkCompletionRate || 92}%</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {language === 'he' ? '100% שימור' : '100% Retention'}
+                    </span>
+                    <span className="text-slate-400">
+                      {language === 'he' ? `ש״ב: ${analytics?.kpis?.homeworkCompletionRate || 92}%` : `HW: ${analytics?.kpis?.homeworkCompletionRate || 92}%`}
+                    </span>
                   </div>
                 </div>
 
@@ -928,7 +956,9 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Teacher Score</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider">
+                        {language === 'he' ? 'ציון איכות מורים' : 'Teacher Score'}
+                      </span>
                       <Star className="w-4 h-4 text-amber-500" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
@@ -936,8 +966,12 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-amber-600 dark:text-amber-400">Verified Surveys</span>
-                    <span className="text-slate-400">{certifiedTeachersCount} Teachers</span>
+                    <span className="font-bold text-amber-600 dark:text-amber-400">
+                      {language === 'he' ? 'סקרים מאומתים' : 'Verified Surveys'}
+                    </span>
+                    <span className="text-slate-400">
+                      {language === 'he' ? `${certifiedTeachersCount} מורים` : `${certifiedTeachersCount} Teachers`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -991,7 +1025,9 @@ export const AdminDashboard: React.FC = () => {
 
                             <div className="flex items-center gap-3 shrink-0">
                               <div className="text-right">
-                                <span className="text-[10px] text-slate-400 block font-medium">Balance</span>
+                                <span className="text-[10px] text-slate-400 block font-medium">
+                                  {language === 'he' ? 'יתרה' : 'Balance'}
+                                </span>
                                 <span className="text-xs font-black text-rose-600 dark:text-rose-400">
                                   ${Number(s.studentProfile?.balance || 0).toFixed(2)}
                                 </span>
@@ -1024,7 +1060,7 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-slate-400">
-                      Minimum 25-min booking cost: <strong className="text-slate-800 dark:text-slate-200">$25.00</strong>
+                      {language === 'he' ? 'עלות מינימלית לשיעור 25 דק׳:' : 'Minimum 25-min booking cost:'} <strong className="text-slate-800 dark:text-slate-200">$25.00</strong>
                     </span>
                     <button
                       onClick={() => handleOpenBalanceModal()}
@@ -1054,7 +1090,7 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                       </div>
                       <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-[11px]">
-                        {(analytics?.alerts || []).length || 3} Active
+                        {(analytics?.alerts || []).length || 3} {language === 'he' ? 'פעילות' : 'Active'}
                       </span>
                     </div>
 
@@ -1062,18 +1098,18 @@ export const AdminDashboard: React.FC = () => {
                       {(analytics?.alerts && analytics.alerts.length > 0 ? analytics.alerts : [
                         {
                           type: 'info',
-                          title: '25-Minute High Retention Format Active',
-                          desc: 'All scheduled sessions follow the pedagogical 25-minute focus block with immediate teacher feedback.'
+                          title: language === 'he' ? 'מתכונת 25 דקות לשימור גבוה פעילה' : '25-Minute High Retention Format Active',
+                          desc: language === 'he' ? 'כל השיעורים המתוכננים פועלים במתכונת 25 דקות פדגוגית עם משוב מיידי מהמורה.' : 'All scheduled sessions follow the pedagogical 25-minute focus block with immediate teacher feedback.'
                         },
                         {
                           type: 'warning',
-                          title: 'Auto-Refund on Cancellation Enabled',
-                          desc: 'Admins and students receive instant dollar-for-dollar wallet refunds when sessions are cancelled ahead of time.'
+                          title: language === 'he' ? 'החזר כספי אוטומטי בביטול מופעל' : 'Auto-Refund on Cancellation Enabled',
+                          desc: language === 'he' ? 'תלמידים ומנהלים מקבלים החזר כספי מלא ומיידי ליתרת החשבון בעת ביטול שיעור מראש.' : 'Admins and students receive instant dollar-for-dollar wallet refunds when sessions are cancelled ahead of time.'
                         },
                         {
                           type: 'info',
-                          title: 'Israeli Timezone Synchronized (Asia/Jerusalem)',
-                          desc: 'All booking slots and lesson calendars strictly adhere to Jerusalem standard & daylight time.'
+                          title: language === 'he' ? 'סנכרון מלא לשעון ישראל (ירושלים)' : 'Israeli Timezone Synchronized (Asia/Jerusalem)',
+                          desc: language === 'he' ? 'כל המשבצות ויומני השיעורים מתואמים במדויק לפי שעון ירושלים.' : 'All booking slots and lesson calendars strictly adhere to Jerusalem standard & daylight time.'
                         }
                       ]).slice(0, 4).map((alert: any, idx: number) => (
                         <div
@@ -1106,7 +1142,7 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-slate-400">
-                      System Status: <strong className="text-emerald-600 dark:text-emerald-400">100% Operational</strong>
+                      {language === 'he' ? 'סטטוס מערכת:' : 'System Status:'} <strong className="text-emerald-600 dark:text-emerald-400">{language === 'he' ? '100% תקין ופעיל' : '100% Operational'}</strong>
                     </span>
                     <button
                       onClick={() => setActiveTab('bookings')}
@@ -1134,10 +1170,10 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-3 text-xs font-bold">
                       <span className="flex items-center gap-1.5 text-brand-teal-800 dark:text-brand-teal-400">
-                        <span className="w-2.5 h-2.5 rounded-full bg-brand-teal-700 dark:bg-brand-teal-400" /> Revenue ($)
+                        <span className="w-2.5 h-2.5 rounded-full bg-brand-teal-700 dark:bg-brand-teal-400" /> {language === 'he' ? 'הכנסות ($)' : 'Revenue ($)'}
                       </span>
                       <span className="flex items-center gap-1.5 text-brand-olive-600 dark:text-brand-olive-400">
-                        <span className="w-2.5 h-2.5 rounded-full bg-brand-olive-500" /> Lessons
+                        <span className="w-2.5 h-2.5 rounded-full bg-brand-olive-500" /> {language === 'he' ? 'שיעורים' : 'Lessons'}
                       </span>
                     </div>
                   </div>
@@ -1155,6 +1191,14 @@ export const AdminDashboard: React.FC = () => {
                       const maxRev = 1600;
                       const revPct = Math.min(100, Math.round((m.revenue / maxRev) * 100));
                       const lesPct = Math.min(100, Math.round((m.lessons / 40) * 100));
+                      const monthMapHe: Record<string, string> = {
+                        Jun: 'יונ׳',
+                        Jul: 'יול׳',
+                        Aug: 'אוג׳',
+                        Sep: 'ספט׳',
+                        Oct: 'אוק׳',
+                        Nov: 'נוב׳',
+                      };
                       return (
                         <div key={idx} className="flex flex-col items-center h-full justify-end group">
                           <div className="text-[10px] font-black text-slate-700 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity mb-1">
@@ -1171,7 +1215,7 @@ export const AdminDashboard: React.FC = () => {
                             />
                           </div>
                           <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-2">
-                            {m.month}
+                            {language === 'he' ? (monthMapHe[m.month] || m.month) : m.month}
                           </span>
                         </div>
                       );
@@ -1180,15 +1224,21 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="grid grid-cols-3 gap-4 pt-4 text-center">
                     <div>
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase">Avg Monthly Growth</span>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase">
+                        {language === 'he' ? 'צמיחה חודשית ממוצעת' : 'Avg Monthly Growth'}
+                      </span>
                       <h5 className="text-base font-black text-emerald-600 dark:text-emerald-400">+22.5%</h5>
                     </div>
                     <div>
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase">Projected Q4</span>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase">
+                        {language === 'he' ? 'צפי רבעון 4' : 'Projected Q4'}
+                      </span>
                       <h5 className="text-base font-black text-slate-900 dark:text-white">$4,800+</h5>
                     </div>
                     <div>
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase">Completion Rate</span>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase">
+                        {language === 'he' ? 'שיעור השלמת שיעורים' : 'Completion Rate'}
+                      </span>
                       <h5 className="text-base font-black text-brand-teal-700 dark:text-brand-teal-300">98.2%</h5>
                     </div>
                   </div>
@@ -1201,7 +1251,9 @@ export const AdminDashboard: React.FC = () => {
                       {language === 'he' ? 'התפלגות פורמט השיעורים' : 'Session Format Distribution'}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-                      Engrew's proven 25-minute cognitive retention model vs extended slots
+                      {language === 'he'
+                        ? 'מודל 25 הדקות המוכח של Engrew לשימור קוגניטיבי מול משבצות מוארכות'
+                        : "Engrew's proven 25-minute cognitive retention model vs extended slots"}
                     </p>
 
                     <div className="space-y-4">
@@ -1209,17 +1261,19 @@ export const AdminDashboard: React.FC = () => {
                       <div>
                         <div className="flex justify-between items-center text-xs font-bold mb-1.5">
                           <span className="flex items-center gap-1.5 text-brand-teal-800 dark:text-brand-teal-300">
-                            <Clock className="w-3.5 h-3.5" /> 25-Minute Focus Block (Core)
+                            <Clock className="w-3.5 h-3.5" /> {language === 'he' ? 'בלוק מיקוד 25 דקות (ליבה)' : '25-Minute Focus Block (Core)'}
                           </span>
                           <span className="text-slate-900 dark:text-white font-black">
-                            {analytics?.durationBreakdown?.[25] || 10} sessions (85%)
+                            {analytics?.durationBreakdown?.[25] || 10} {language === 'he' ? 'שיעורים (85%)' : 'sessions (85%)'}
                           </span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
                           <div className="bg-brand-teal-700 h-full rounded-full w-[85%]" />
                         </div>
                         <span className="text-[10px] text-slate-400 mt-1 block">
-                          Optimal retention, zero cognitive fatigue, $25 session rate
+                          {language === 'he'
+                            ? 'שימור אופטימלי, ללא עייפות קוגניטיבית, תעריף $25 לשיעור'
+                            : 'Optimal retention, zero cognitive fatigue, $25 session rate'}
                         </span>
                       </div>
 
@@ -1227,10 +1281,10 @@ export const AdminDashboard: React.FC = () => {
                       <div>
                         <div className="flex justify-between items-center text-xs font-bold mb-1.5">
                           <span className="flex items-center gap-1.5 text-brand-olive-700 dark:text-brand-olive-400">
-                            <Clock className="w-3.5 h-3.5" /> 40-Minute Extended
+                            <Clock className="w-3.5 h-3.5" /> {language === 'he' ? 'משבצת מורחבת 40 דקות' : '40-Minute Extended'}
                           </span>
                           <span className="text-slate-900 dark:text-white font-black">
-                            {analytics?.durationBreakdown?.[40] || 2} sessions (10%)
+                            {analytics?.durationBreakdown?.[40] || 2} {language === 'he' ? 'שיעורים (10%)' : 'sessions (10%)'}
                           </span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
@@ -1242,10 +1296,10 @@ export const AdminDashboard: React.FC = () => {
                       <div>
                         <div className="flex justify-between items-center text-xs font-bold mb-1.5">
                           <span className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
-                            <Clock className="w-3.5 h-3.5" /> 55-Minute Intensive
+                            <Clock className="w-3.5 h-3.5" /> {language === 'he' ? 'משבצת אינטנסיבית 55 דקות' : '55-Minute Intensive'}
                           </span>
                           <span className="text-slate-900 dark:text-white font-black">
-                            {analytics?.durationBreakdown?.[55] || 1} sessions (5%)
+                            {analytics?.durationBreakdown?.[55] || 1} {language === 'he' ? 'שיעורים (5%)' : 'sessions (5%)'}
                           </span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
@@ -1257,10 +1311,12 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="mt-6 p-4 rounded-2xl bg-brand-teal-50/70 dark:bg-brand-teal-950/40 border border-brand-teal-200/80 dark:border-brand-teal-800 text-xs">
                     <span className="font-black text-brand-teal-900 dark:text-brand-teal-200 block mb-1">
-                      💡 Pedagogical Insight:
+                      {language === 'he' ? '💡 תובנה פדגוגית:' : '💡 Pedagogical Insight:'}
                     </span>
                     <p className="text-[11px] text-brand-teal-800 dark:text-brand-teal-300 leading-relaxed">
-                      25-minute lessons yield 2.4x higher weekly lesson frequency and over 94% retention compared to standard 60-minute blocks.
+                      {language === 'he'
+                        ? 'שיעורי 25 דקות מניבים תדירות שבועית גבוהה פי 2.4 ומעל 94% שימור ידע בהשוואה לשיעורים סטנדרטיים של 60 דקות.'
+                        : '25-minute lessons yield 2.4x higher weekly lesson frequency and over 94% retention compared to standard 60-minute blocks.'}
                     </p>
                   </div>
                 </div>
@@ -1296,12 +1352,12 @@ export const AdminDashboard: React.FC = () => {
                     <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
                       <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
                         <tr>
-                          <th className="py-3 px-4">Student</th>
-                          <th className="py-3 px-4">Type</th>
-                          <th className="py-3 px-4">Amount</th>
-                          <th className="py-3 px-4">Balance After</th>
-                          <th className="py-3 px-4">Description / Note</th>
-                          <th className="py-3 px-4">Date</th>
+                          <th className="py-3 px-4">{language === 'he' ? 'תלמיד' : 'Student'}</th>
+                          <th className="py-3 px-4">{language === 'he' ? 'סוג פעולה' : 'Type'}</th>
+                          <th className="py-3 px-4">{language === 'he' ? 'סכום' : 'Amount'}</th>
+                          <th className="py-3 px-4">{language === 'he' ? 'יתרה לאחר פעולה' : 'Balance After'}</th>
+                          <th className="py-3 px-4">{language === 'he' ? 'תיאור / הערה' : 'Description / Note'}</th>
+                          <th className="py-3 px-4">{language === 'he' ? 'תאריך' : 'Date'}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -1319,7 +1375,13 @@ export const AdminDashboard: React.FC = () => {
                                   ? 'bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300'
                                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                               }`}>
-                                {tx.type?.replace('_', ' ')}
+                                {tx.type === 'ADMIN_ADJUSTMENT'
+                                  ? (language === 'he' ? 'טעינת מנהל' : 'Admin Credit')
+                                  : tx.type === 'SESSION_REFUND'
+                                  ? (language === 'he' ? 'החזר כספי' : 'Refund')
+                                  : tx.type === 'SESSION_BOOKING'
+                                  ? (language === 'he' ? 'הזמנת שיעור' : 'Booking')
+                                  : (tx.type?.replace('_', ' ') || 'Adjustment')}
                               </span>
                             </td>
                             <td className="py-3 px-4 font-black">
@@ -1331,7 +1393,7 @@ export const AdminDashboard: React.FC = () => {
                               ${Number(tx.balanceAfter).toFixed(2)}
                             </td>
                             <td className="py-3 px-4 text-slate-500 dark:text-slate-400 truncate max-w-xs">
-                              {tx.description || 'System balance update'}
+                              {tx.description || (language === 'he' ? 'עדכון יתרה במערכת' : 'System balance update')}
                             </td>
                             <td className="py-3 px-4 text-slate-400 text-[11px]">
                               {formatIsraelDateTime(tx.createdAt, {
@@ -1371,12 +1433,12 @@ export const AdminDashboard: React.FC = () => {
                   <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
                     <thead className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
                       <tr>
-                        <th className="py-3 px-4">Student</th>
-                        <th className="py-3 px-4">Teacher</th>
-                        <th className="py-3 px-4">Date & Time (Israel)</th>
-                        <th className="py-3 px-4">Duration</th>
-                        <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4 text-right">Quick Action</th>
+                        <th className="py-3 px-4">{language === 'he' ? 'תלמיד' : 'Student'}</th>
+                        <th className="py-3 px-4">{language === 'he' ? 'מורה' : 'Teacher'}</th>
+                        <th className="py-3 px-4">{language === 'he' ? 'תאריך ושעה (ישראל)' : 'Date & Time (Israel)'}</th>
+                        <th className="py-3 px-4">{language === 'he' ? 'משך' : 'Duration'}</th>
+                        <th className="py-3 px-4">{language === 'he' ? 'סטטוס' : 'Status'}</th>
+                        <th className="py-3 px-4 text-right">{language === 'he' ? 'פעולה מהירה' : 'Quick Action'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -1396,7 +1458,7 @@ export const AdminDashboard: React.FC = () => {
                           </td>
                           <td className="py-3.5 px-4">
                             <span className="px-2.5 py-0.5 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 font-bold text-[10px]">
-                              {l.durationMinutes || 25} Minutes
+                              {language === 'he' ? `${l.durationMinutes || 25} דקות` : `${l.durationMinutes || 25} Minutes`}
                             </span>
                           </td>
                           <td className="py-3.5 px-4">
@@ -1409,7 +1471,11 @@ export const AdminDashboard: React.FC = () => {
                                   : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                               }`}
                             >
-                              {l.status}
+                              {l.status === 'SCHEDULED'
+                                ? (language === 'he' ? 'מתוכנן' : 'SCHEDULED')
+                                : l.status === 'COMPLETED'
+                                ? (language === 'he' ? 'הושלם' : 'COMPLETED')
+                                : (language === 'he' ? 'בוטל' : l.status)}
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-right">
@@ -1421,14 +1487,14 @@ export const AdminDashboard: React.FC = () => {
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-[10px] shadow-xs"
                               >
                                 <Video className="w-3 h-3" />
-                                <span>Join</span>
+                                <span>{language === 'he' ? 'כניסה לזום' : 'Join'}</span>
                               </a>
                             ) : (
                               <button
                                 onClick={() => setActiveTab('bookings')}
                                 className="text-slate-400 hover:text-brand-teal-700 text-[11px] font-bold"
                               >
-                                Manage
+                                {language === 'he' ? 'ניהול' : 'Manage'}
                               </button>
                             )}
                           </td>
@@ -3086,11 +3152,11 @@ export const AdminDashboard: React.FC = () => {
                   <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                     <span>{editFirstName} {editLastName}</span>
                     <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 border border-brand-teal-200 dark:border-brand-teal-800">
-                      {editRole === 'SUPER_ADMIN' ? 'Platform Owner' : editRole}
+                      {editRole === 'SUPER_ADMIN' ? (language === 'he' ? 'בעלים ומנהל ראשי' : 'Platform Owner') : editRole === 'TEACHER' ? (language === 'he' ? 'מורה מוסמך' : 'Teacher') : editRole === 'STUDENT' ? (language === 'he' ? 'תלמיד' : 'Student') : editRole}
                     </span>
                   </h2>
                   <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-0.5">
-                    User ID: {selectedUserForEdit.id}
+                    {language === 'he' ? 'מזהה משתמש:' : 'User ID:'} {selectedUserForEdit.id}
                   </p>
                 </div>
               </div>
@@ -3176,10 +3242,10 @@ export const AdminDashboard: React.FC = () => {
                       onChange={(e) => setEditRole(e.target.value as any)}
                       className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs"
                     >
-                      <option value="STUDENT">Student (Hebrew Learner)</option>
-                      <option value="TEACHER">Teacher (Certified Native Instructor)</option>
-                      <option value="ADMIN">Admin (Staff Administrator)</option>
-                      <option value="SUPER_ADMIN">Platform Owner (Full Superadmin Governance)</option>
+                      <option value="STUDENT">{language === 'he' ? 'תלמיד (לומד עברית)' : 'Student (Hebrew Learner)'}</option>
+                      <option value="TEACHER">{language === 'he' ? 'מורה (מורה מוסמך)' : 'Teacher (Certified Native Instructor)'}</option>
+                      <option value="ADMIN">{language === 'he' ? 'מנהל (מנהל צוות)' : 'Admin (Staff Administrator)'}</option>
+                      <option value="SUPER_ADMIN">{language === 'he' ? 'בעלים ומנהל ראשי (שליטה מלאה)' : 'Platform Owner (Full Superadmin Governance)'}</option>
                     </select>
                   </div>
 
