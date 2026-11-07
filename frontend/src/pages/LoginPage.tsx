@@ -9,6 +9,7 @@ import {
   Mail,
   ArrowRight,
   ShieldCheck,
+  ShieldAlert,
   GraduationCap,
   Sparkles,
   Clock,
@@ -24,13 +25,34 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lockoutSeconds, setLockoutSeconds] = useState<number>(0);
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
 
   const setAuth = useAuthStore((state) => state.setAuth);
   const { t, language } = useTranslation();
   const navigate = useNavigate();
 
+  // Active countdown timer for account lockout
+  React.useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setLockoutSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setError(null);
+          setRemainingAttempts(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutSeconds]);
+
   const handleLogin = async (e?: React.FormEvent, customEmail?: string, customPass?: string) => {
     if (e) e.preventDefault();
+    if (lockoutSeconds > 0) return;
+
     setError(null);
     setLoading(true);
 
@@ -44,6 +66,9 @@ export const LoginPage: React.FC = () => {
       });
 
       setAuth(res.data.user, res.data.accessToken);
+      setLockoutSeconds(0);
+      setRemainingAttempts(null);
+
       toast.success(
         language === 'he' ? `שלום ${res.data.user.firstName}, התחברת בהצלחה!` : `Welcome back, ${res.data.user.firstName}!`,
         language === 'he' ? 'התחברות הצליחה' : 'Signed In'
@@ -59,13 +84,31 @@ export const LoginPage: React.FC = () => {
         navigate('/student');
       }
     } catch (err: any) {
-      const msg =
-        err.response?.data?.error ||
-        (language === 'he'
-          ? 'פרטי ההתחברות שגויים. אנא נסה שוב או השתמש במשתמש הדגמה.'
-          : 'Invalid login credentials. Please verify your details or use a 1-click demo account.');
-      setError(msg);
-      toast.error(msg, language === 'he' ? 'שגיאת התחברות' : 'Login Error');
+      const resData = err.response?.data;
+      const statusCode = err.response?.status;
+
+      // Handle 429 Account Lockout (5 failed attempts -> 15 min lock)
+      if (statusCode === 429 || resData?.retryAfterSeconds) {
+        const seconds = Number(resData?.retryAfterSeconds) || 900;
+        setLockoutSeconds(seconds);
+        setRemainingAttempts(0);
+        const msg = resData?.error || (language === 'he'
+          ? 'החשבון נחסם עקב 5 ניסיונות שגויים. נסה שוב בעוד 15 דקות.'
+          : 'Account locked due to 5 consecutive failed login attempts. Please try again in 15 minutes.');
+        setError(msg);
+        toast.error(msg, language === 'he' ? 'חשבון נחסם זמנית' : 'Account Locked');
+      } else {
+        if (resData?.remainingAttempts !== undefined) {
+          setRemainingAttempts(resData.remainingAttempts);
+        }
+        const msg =
+          resData?.error ||
+          (language === 'he'
+            ? 'פרטי ההתחברות שגויים. אנא נסה שוב או השתמש במשתמש הדגמה.'
+            : 'Invalid login credentials. Please verify your details or use a 1-click demo account.');
+        setError(msg);
+        toast.error(msg, language === 'he' ? 'שגיאת התחברות' : 'Login Error');
+      }
     } finally {
       setLoading(false);
     }
@@ -247,12 +290,36 @@ export const LoginPage: React.FC = () => {
               </p>
             </div>
 
-            {error && (
-              <div className="mb-5 p-3.5 sm:p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2.5 shadow-2xs">
-                <div className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+            {/* Rate Limiting & Error States */}
+            {lockoutSeconds > 0 ? (
+              <div className="mb-5 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-semibold space-y-1.5 shadow-sm animate-pulse">
+                <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider text-[11px]">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 text-rose-500" />
+                    <span>{language === 'he' ? 'החשבון נחסם זמנית (5 שגיאות)' : 'Account Temporarily Locked'}</span>
+                  </div>
+                  <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-rose-200/80 dark:bg-rose-900/60 font-bold">
+                    {Math.floor(lockoutSeconds / 60)}:{String(lockoutSeconds % 60).padStart(2, '0')}
+                  </span>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300">
+                  {language === 'he'
+                    ? `בוצעו 5 ניסיונות כושלים ברצף. לצורכי אבטחה, הכניסה חסומה למשך 15 דקות. ניתן לנסות שוב בעוד ${Math.floor(lockoutSeconds / 60)} דקות ו-${lockoutSeconds % 60} שניות.`
+                    : `5 consecutive failed attempts detected. For your security, this account is locked for 15 minutes. Please wait for the timer to expire.`}
+                </p>
+              </div>
+            ) : error ? (
+              <div className={`mb-5 p-3.5 sm:p-4 rounded-2xl text-xs font-semibold flex items-center gap-2.5 shadow-2xs ${
+                remainingAttempts !== null && remainingAttempts <= 2
+                  ? 'bg-amber-50 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+                  : 'bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300'
+              }`}>
+                <div className={`w-2 h-2 rounded-full shrink-0 ${
+                  remainingAttempts !== null && remainingAttempts <= 2 ? 'bg-amber-500' : 'bg-rose-500'
+                }`} />
                 <span>{error}</span>
               </div>
-            )}
+            ) : null}
 
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
@@ -265,8 +332,9 @@ export const LoginPage: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={lockoutSeconds > 0}
                     required
-                    className="w-full ps-10 pe-4 py-3 sm:py-3 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-teal-800 dark:focus:ring-brand-teal-500 transition-all shadow-2xs"
+                    className="w-full ps-10 pe-4 py-3 sm:py-3 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-teal-800 dark:focus:ring-brand-teal-500 transition-all shadow-2xs disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900"
                     placeholder="you@learnhebrew.com"
                   />
                 </div>
@@ -282,8 +350,9 @@ export const LoginPage: React.FC = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    disabled={lockoutSeconds > 0}
                     required
-                    className="w-full ps-10 pe-4 py-3 sm:py-3 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-teal-800 dark:focus:ring-brand-teal-500 transition-all shadow-2xs"
+                    className="w-full ps-10 pe-4 py-3 sm:py-3 bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-teal-800 dark:focus:ring-brand-teal-500 transition-all shadow-2xs disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900"
                     placeholder="••••••••••••"
                   />
                 </div>
@@ -291,11 +360,22 @@ export const LoginPage: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || lockoutSeconds > 0}
                 className="w-full py-3.5 px-4 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 disabled:opacity-50 text-white font-extrabold text-sm rounded-2xl shadow-md transition-all hover:shadow-lg active:scale-[0.99] flex items-center justify-center gap-2 mt-2"
               >
-                <span>{loading ? (language === 'he' ? 'מתחבר למערכת...' : 'Signing In...') : (language === 'he' ? 'כניסה למערכת' : 'Sign In')}</span>
-                <ArrowRight className="w-4 h-4 rtl:rotate-180 text-brand-olive-300" />
+                {lockoutSeconds > 0 ? (
+                  <>
+                    <ShieldAlert className="w-4 h-4 text-rose-400" />
+                    <span>
+                      {language === 'he' ? 'נעול' : 'Locked'} ({Math.floor(lockoutSeconds / 60)}:{String(lockoutSeconds % 60).padStart(2, '0')})
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span>{loading ? (language === 'he' ? 'מתחבר למערכת...' : 'Signing In...') : (language === 'he' ? 'כניסה למערכת' : 'Sign In')}</span>
+                    <ArrowRight className="w-4 h-4 rtl:rotate-180 text-brand-olive-300" />
+                  </>
+                )}
               </button>
             </form>
 

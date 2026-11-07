@@ -45,3 +45,4 @@ export async function logSystemEvent(params: LogSystemEventParams): Promise<void
     console.error('[SystemLogger Failed to write log]', err);
   }
 }
+

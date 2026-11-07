@@ -10,14 +10,21 @@ import { logSystemEvent } from '../../utils/systemLogger';
 import { LogCategory, LogLevel } from '@prisma/client';
 import crypto from 'crypto';
 
+// Pre-computed bcrypt hash of a random 32-char string with cost 12 to eliminate timing side-channels
+const DUMMY_BCRYPT_HASH = '$2a$12$e8kP60k7eP8N0/c7GqFw3e1E7wNqF0/e8kP60k7eP8N0/c7GqFw3e';
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const ACCOUNT_LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
 export async function login(
   email: string,
   pass: string,
   ipAddress?: string,
   userAgent?: string
 ) {
+  const normalizedEmail = email.toLowerCase().trim();
+
   const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
+    where: { email: normalizedEmail },
     include: {
       studentProfile: true,
       teacherProfile: true,
@@ -25,20 +32,58 @@ export async function login(
   });
 
   if (!user) {
+    // Constant-time mitigation against user enumeration
+    await comparePassword(pass, DUMMY_BCRYPT_HASH);
     throw { status: 401, message: 'Invalid credentials' };
   }
 
   if (!user.isActive) {
-    throw { status: 403, message: 'Account is deactivated. Please contact admin.' };
+    throw { status: 403, message: 'Account is deactivated. Please contact administrator.' };
   }
 
-  if (user.lockedUntil && user.lockedUntil > new Date()) {
-    throw {
-      status: 403,
-      message: `Account is locked until ${user.lockedUntil.toLocaleTimeString()}`,
-    };
+  const now = new Date();
+
+  // 1. Check if user account is currently locked out
+  if (user.lockedUntil) {
+    if (user.lockedUntil > now) {
+      const remainingMs = user.lockedUntil.getTime() - now.getTime();
+      const remainingSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
+      const minutes = Math.floor(remainingSeconds / 60);
+      const seconds = remainingSeconds % 60;
+      const timeRemainingLabel =
+        minutes > 0
+          ? `${minutes} minute${minutes > 1 ? 's' : ''} and ${seconds} second${seconds !== 1 ? 's' : ''}`
+          : `${seconds} second${seconds !== 1 ? 's' : ''}`;
+
+      await logSystemEvent({
+        level: LogLevel.WARN,
+        category: LogCategory.SECURITY,
+        message: `Blocked login attempt on locked account: ${user.email} (${timeRemainingLabel} remaining)`,
+        userId: user.id,
+        ipAddress,
+        userAgent,
+        meta: { email: user.email, lockedUntil: user.lockedUntil, remainingSeconds },
+      });
+
+      throw {
+        status: 429,
+        message: `Account is temporarily locked due to 5 consecutive failed login attempts. Please try again in ${timeRemainingLabel}.`,
+        retryAfterSeconds: remainingSeconds,
+        lockedUntil: user.lockedUntil.toISOString(),
+        remainingAttempts: 0,
+      };
+    } else {
+      // Lockout window has passed. Reset failedLogins counter for a fresh window!
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { failedLogins: 0, lockedUntil: null },
+      });
+      user.failedLogins = 0;
+      user.lockedUntil = null;
+    }
   }
 
+  // 2. Validate Password
   const isMatch = await comparePassword(pass, user.passwordHash);
   // Strict check: Only permit dev password bypass when explicitly enabled in local development
   const isDevBypass =
@@ -46,42 +91,81 @@ export async function login(
     process.env.ENABLE_DEV_LOGIN_BYPASS === 'true' &&
     (pass === 'password123' || pass === 'password');
   const isValid = isMatch || isDevBypass;
+
+  // 3. Handle Login Failure (Strict 5-Attempt Lockout Policy)
   if (!isValid) {
-    const failedLogins = user.failedLogins + 1;
-    let lockedUntil: Date | null = null;
-    if (failedLogins >= 5) {
-      lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min lockout
+    const newFailedLogins = user.failedLogins + 1;
+
+    // Threshold reached: Lock user for 15 minutes immediately
+    if (newFailedLogins >= MAX_FAILED_LOGIN_ATTEMPTS) {
+      const lockoutExpiry = new Date(Date.now() + ACCOUNT_LOCKOUT_MS);
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { failedLogins: newFailedLogins, lockedUntil: lockoutExpiry },
+      });
+
+      await logAuditEvent({
+        userId: user.id,
+        action: 'ACCOUNT_LOCKED_5_FAILURES',
+        ipAddress,
+        userAgent,
+        metaJson: { failedAttempts: newFailedLogins, lockedUntil: lockoutExpiry },
+      });
+
+      await logSystemEvent({
+        level: LogLevel.CRITICAL,
+        category: LogCategory.SECURITY,
+        message: `Account locked: ${user.email} after ${newFailedLogins} consecutive failed login attempts (15 min lockout)`,
+        userId: user.id,
+        ipAddress,
+        userAgent,
+        meta: { email: user.email, failedAttempts: newFailedLogins, lockedUntil: lockoutExpiry },
+      });
+
+      throw {
+        status: 429,
+        message: 'Account locked due to 5 consecutive failed login attempts. Please try again in 15 minutes.',
+        retryAfterSeconds: 15 * 60,
+        lockedUntil: lockoutExpiry.toISOString(),
+        remainingAttempts: 0,
+      };
     }
 
+    // User still has remaining attempts before lockout (< 5)
     await prisma.user.update({
       where: { id: user.id },
-      data: { failedLogins, lockedUntil },
+      data: { failedLogins: newFailedLogins },
     });
+
+    const remainingAttempts = MAX_FAILED_LOGIN_ATTEMPTS - newFailedLogins;
 
     await logAuditEvent({
       userId: user.id,
       action: 'LOGIN_FAILED',
       ipAddress,
       userAgent,
-      metaJson: { failedAttempts: failedLogins },
+      metaJson: { failedAttempts: newFailedLogins, remainingAttempts },
     });
 
     await logSystemEvent({
-      level: failedLogins >= 5 ? LogLevel.CRITICAL : LogLevel.WARN,
+      level: LogLevel.WARN,
       category: LogCategory.SECURITY,
-      message: failedLogins >= 5
-        ? `Account locked: ${user.email} after ${failedLogins} consecutive failed attempts`
-        : `Failed login attempt for ${user.email} (attempt ${failedLogins})`,
+      message: `Failed login attempt for ${user.email} (${newFailedLogins}/${MAX_FAILED_LOGIN_ATTEMPTS}, ${remainingAttempts} remaining)`,
       userId: user.id,
       ipAddress,
       userAgent,
-      meta: { email: user.email, failedAttempts: failedLogins, lockedUntil },
+      meta: { email: user.email, failedAttempts: newFailedLogins, remainingAttempts },
     });
 
-    throw { status: 401, message: 'Invalid credentials' };
+    throw {
+      status: 401,
+      message: `Invalid credentials. ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining before a 15-minute account lockout.`,
+      remainingAttempts,
+    };
   }
 
-  // Reset failed logins on success
+  // 4. Handle Success: Reset failedLogins counter & lockout status
   if (user.failedLogins > 0 || user.lockedUntil) {
     await prisma.user.update({
       where: { id: user.id },

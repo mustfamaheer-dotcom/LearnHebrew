@@ -47,8 +47,20 @@ export function errorHandler(
     });
   }
 
+  // RFC 6585 & RFC 7231 Standard Rate Limiting Headers
+  if (err.retryAfterSeconds) {
+    res.setHeader('Retry-After', String(err.retryAfterSeconds));
+    res.setHeader('X-RateLimit-Reset', String(Math.ceil(Date.now() / 1000) + err.retryAfterSeconds));
+  }
+  if (err.remainingAttempts !== undefined) {
+    res.setHeader('X-RateLimit-Remaining', String(err.remainingAttempts));
+  }
+
   res.status(statusCode).json({
     error: message,
+    ...(err.retryAfterSeconds && { retryAfterSeconds: err.retryAfterSeconds }),
+    ...(err.lockedUntil && { lockedUntil: err.lockedUntil }),
+    ...(err.remainingAttempts !== undefined && { remainingAttempts: err.remainingAttempts }),
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 }
