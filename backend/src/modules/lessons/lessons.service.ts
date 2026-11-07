@@ -415,3 +415,119 @@ export async function saveRecording(id: string, recordingUrl: string) {
   });
 }
 
+export async function rescheduleLesson(
+  lessonId: string,
+  userId: string,
+  newTimeSlotId: string,
+  newScheduledAt: Date
+) {
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    include: {
+      student: { include: { user: true } },
+      teacher: { include: { user: true } },
+    },
+  });
+
+  if (!lesson) {
+    throw { status: 404, message: 'Lesson not found' };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw { status: 401, message: 'Unauthorized' };
+
+  if (user.role === 'STUDENT' && lesson.student.userId !== userId) {
+    throw { status: 403, message: 'You are not authorized to reschedule this lesson' };
+  }
+
+  if (lesson.status !== LessonStatus.SCHEDULED) {
+    throw { status: 400, message: `Only scheduled lessons can be rescheduled (current: ${lesson.status})` };
+  }
+
+  const newSlot = await prisma.timeSlot.findUnique({
+    where: { id: newTimeSlotId },
+  });
+
+  if (!newSlot) {
+    throw { status: 404, message: 'Selected time slot does not exist' };
+  }
+
+  if (newSlot.teacherId !== lesson.teacherId) {
+    throw { status: 400, message: 'Rescheduled lesson must be with the same teacher' };
+  }
+
+  if (!newSlot.isAvailable) {
+    throw { status: 400, message: 'Selected time slot is no longer available' };
+  }
+
+  const existingConflict = await prisma.lesson.findFirst({
+    where: {
+      teacherId: lesson.teacherId,
+      scheduledAt: newScheduledAt,
+      status: LessonStatus.SCHEDULED,
+    },
+  });
+
+  if (existingConflict) {
+    throw { status: 400, message: 'Teacher is already booked for this specific time' };
+  }
+
+  const duration = lesson.durationMinutes || 25;
+  const zoomLink = newSlot.zoomLink || lesson.zoomLink || lesson.teacher.defaultZoomLink || 'https://zoom.us/j/engrew-live';
+
+  return prisma.$transaction(async (tx) => {
+    // 1. Release previous slot
+    if (lesson.timeSlotId) {
+      await tx.timeSlot.update({
+        where: { id: lesson.timeSlotId },
+        data: { isAvailable: true },
+      });
+    }
+
+    // 2. Mark previous lesson as CANCELLED with reschedule note
+    await tx.lesson.update({
+      where: { id: lesson.id },
+      data: {
+        status: LessonStatus.CANCELLED,
+        cancelledAt: new Date(),
+        cancelledById: userId,
+        cancelReason: `Rescheduled to ${newScheduledAt.toISOString()}`,
+      },
+    });
+
+    // 3. Mark new slot unavailable
+    await tx.timeSlot.update({
+      where: { id: newSlot.id },
+      data: { isAvailable: false },
+    });
+
+    // 4. Create new lesson linked with rescheduledFromId without deducting additional balance
+    const newLesson = await tx.lesson.create({
+      data: {
+        studentId: lesson.studentId,
+        teacherId: lesson.teacherId,
+        timeSlotId: newSlot.id,
+        studentPackageId: lesson.studentPackageId,
+        scheduledAt: newScheduledAt,
+        durationMinutes: duration,
+        lessonType: lesson.lessonType,
+        zoomLink,
+        status: LessonStatus.SCHEDULED,
+        rescheduledFromId: lesson.id,
+      },
+      include: {
+        student: { include: { user: true } },
+        teacher: { include: { user: true } },
+      },
+    });
+
+    // Fire real-time notification
+    notificationService.notifyBookingCreated(newLesson).catch((err) =>
+      console.error('[Notification Trigger Error - notifyBookingCreated on reschedule]', err)
+    );
+
+    return newLesson;
+  });
+}
+
+

@@ -5,6 +5,7 @@ import {
   getLessonHandler,
   updateLessonHandler,
   cancelLessonHandler,
+  rescheduleLessonHandler,
   completeLessonHandler,
   saveRecordingHandler,
 } from './lessons.controller';
@@ -19,6 +20,7 @@ router.post('/', bookLessonHandler);
 router.get('/:id', getLessonHandler);
 router.patch('/:id', updateLessonHandler);
 router.delete('/:id', cancelLessonHandler);
+router.post('/:id/reschedule', rescheduleLessonHandler);
 router.post('/:id/complete', completeLessonHandler);
 router.post('/:id/recording', saveRecordingHandler);
 

@@ -20,6 +20,7 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-icons': ['lucide-react'],
           'vendor-data': ['@tanstack/react-query', 'axios', 'zustand'],
+          'vendor-charts': ['recharts'],
         },
       },
     },

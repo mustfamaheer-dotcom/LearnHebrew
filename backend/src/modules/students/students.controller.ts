@@ -90,4 +90,13 @@ export async function getStudentTransactionsHandler(req: AuthRequest, res: Respo
   }
 }
 
+export async function getStudentProgressHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const progressData = await studentsService.getStudentProgressAnalytics(req.params.id);
+    res.json(progressData);
+  } catch (error) {
+    next(error);
+  }
+}
+
 

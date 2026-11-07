@@ -273,6 +273,9 @@ model Lesson {
   cancelledById    String?
   cancelledBy      User?           @relation("CancelledLessons", fields: [cancelledById], references: [id])
   cancelReason     String?
+  rescheduledFromId String?
+  rescheduledFrom   Lesson?         @relation("LessonReschedule", fields: [rescheduledFromId], references: [id])
+  rescheduledTo     Lesson[]        @relation("LessonReschedule")
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 

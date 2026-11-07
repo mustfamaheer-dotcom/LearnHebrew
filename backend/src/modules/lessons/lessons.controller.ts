@@ -25,6 +25,11 @@ const cancelLessonSchema = z.object({
   reason: z.string().optional(),
 });
 
+const rescheduleLessonSchema = z.object({
+  newTimeSlotId: z.string().uuid(),
+  newScheduledAt: z.string(),
+});
+
 export async function listLessonsHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const studentId = req.query.studentId as string | undefined;
@@ -91,6 +96,21 @@ export async function cancelLessonHandler(req: AuthRequest, res: Response, next:
     const data = cancelLessonSchema.parse(req.body);
     const lesson = await lessonsService.cancelLesson(req.params.id, req.user!.userId, data.reason);
     res.json({ lesson, message: 'Lesson cancelled successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function rescheduleLessonHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const data = rescheduleLessonSchema.parse(req.body);
+    const newLesson = await lessonsService.rescheduleLesson(
+      req.params.id,
+      req.user!.userId,
+      data.newTimeSlotId,
+      new Date(data.newScheduledAt)
+    );
+    res.json({ lesson: newLesson, message: 'Lesson rescheduled successfully' });
   } catch (error) {
     next(error);
   }

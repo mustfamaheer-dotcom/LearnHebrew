@@ -12,6 +12,8 @@ import { MatchingGame } from '../../components/games/MatchingGame';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
+import { StudentProgressTab } from '../../components/student/StudentProgressTab';
+import { RescheduleModal } from '../../components/student/RescheduleModal';
 import { isGoogleDriveUrl, getVideoEmbedUrl } from '../../lib/driveUtils';
 import {
   formatSlotRange12Hour,
@@ -57,6 +59,7 @@ import {
   RefreshCw,
   Receipt,
   ShieldCheck,
+  TrendingUp,
 } from 'lucide-react';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -70,12 +73,13 @@ export const StudentDashboard: React.FC = () => {
   const { isCollapsed } = useSidebarStore();
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'games' | 'leaderboard' | 'balance'
+    'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'games' | 'leaderboard' | 'balance' | 'progress'
   >(() => {
     if (location.pathname.includes('/games')) return 'games';
     if (location.pathname.includes('/leaderboard')) return 'leaderboard';
     if (location.pathname.includes('/recordings')) return 'recordings';
     if (location.pathname.includes('/balance') || location.pathname.includes('/transactions')) return 'balance';
+    if (location.pathname.includes('/progress') || location.pathname.includes('/analytics')) return 'progress';
     return 'overview';
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -90,6 +94,8 @@ export const StudentDashboard: React.FC = () => {
       setActiveTab('recordings');
     } else if (location.pathname.includes('/balance') || location.pathname.includes('/transactions')) {
       setActiveTab('balance');
+    } else if (location.pathname.includes('/progress') || location.pathname.includes('/analytics')) {
+      setActiveTab('progress');
     }
   }, [location.pathname]);
 
@@ -100,6 +106,7 @@ export const StudentDashboard: React.FC = () => {
   const [ratingLessonId, setRatingLessonId] = useState<string | null>(null);
   const [ratingVal, setRatingVal] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
+  const [reschedulingLesson, setReschedulingLesson] = useState<any | null>(null);
 
   // Session Booking Modal & In-Page State (25, 40, or 55 min)
   const [selectedDuration, setSelectedDuration] = useState<25 | 40 | 55>(25);
@@ -325,6 +332,13 @@ export const StudentDashboard: React.FC = () => {
       badge: null,
     },
     {
+      id: 'progress',
+      label: 'My Progress',
+      labelHe: 'ההתקדמות שלי',
+      icon: TrendingUp,
+      badge: null,
+    },
+    {
       id: 'booking',
       label: 'Book Session',
       labelHe: 'הזמנת שיעור',
@@ -376,7 +390,11 @@ export const StudentDashboard: React.FC = () => {
   ];
 
   const isSecondaryActive =
-    activeTab === 'recordings' || activeTab === 'homework' || activeTab === 'leaderboard' || activeTab === 'balance';
+    activeTab === 'recordings' ||
+    activeTab === 'homework' ||
+    activeTab === 'leaderboard' ||
+    activeTab === 'balance' ||
+    activeTab === 'progress';
 
   const mobileTabs = [
     {
@@ -406,7 +424,9 @@ export const StudentDashboard: React.FC = () => {
     {
       id: isSecondaryActive ? activeTab : 'more',
       label:
-        activeTab === 'recordings'
+        activeTab === 'progress'
+          ? (language === 'he' ? 'התקדמות' : 'Progress')
+          : activeTab === 'recordings'
           ? (language === 'he' ? 'הקלטות' : 'Video')
           : activeTab === 'homework'
           ? (language === 'he' ? 'ש״ב' : 'HW')
@@ -416,7 +436,9 @@ export const StudentDashboard: React.FC = () => {
           ? (language === 'he' ? 'יתרה' : 'Balance')
           : (language === 'he' ? 'עוד' : 'More'),
       icon:
-        activeTab === 'recordings'
+        activeTab === 'progress'
+          ? TrendingUp
+          : activeTab === 'recordings'
           ? PlayCircle
           : activeTab === 'homework'
           ? BookOpen
@@ -758,16 +780,28 @@ export const StudentDashboard: React.FC = () => {
                   </div>
 
                   <div className="pt-5 border-t border-slate-100 dark:border-slate-800/80 mt-5">
-                    {upcomingLessons.length > 0 && upcomingLessons[0].zoomLink ? (
-                      <a
-                        href={upcomingLessons[0].zoomLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full py-2.5 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Video className="w-4 h-4" />
-                        <span>{language === 'he' ? 'כניסה לשיעור בזום' : 'Join Zoom Lesson'}</span>
-                      </a>
+                    {upcomingLessons.length > 0 ? (
+                      <div className="flex items-center gap-2">
+                        {upcomingLessons[0].zoomLink && (
+                          <a
+                            href={upcomingLessons[0].zoomLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Video className="w-4 h-4" />
+                            <span>{language === 'he' ? 'זום' : 'Join Zoom'}</span>
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setReschedulingLesson(upcomingLessons[0])}
+                          className="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-slate-200/80 dark:border-slate-700"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 text-teal-500" />
+                          <span>{language === 'he' ? 'שינוי מועד' : 'Reschedule'}</span>
+                        </button>
+                      </div>
                     ) : (
                       <button
                         onClick={() => setActiveTab('booking')}
@@ -1363,17 +1397,28 @@ export const StudentDashboard: React.FC = () => {
                             </div>
                           </div>
 
-                          {l.zoomLink && (
-                            <a
-                              href={l.zoomLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-4 py-2 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-bold text-xs rounded-xl shadow-2xs flex items-center gap-2 self-start sm:self-auto"
+                          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => setReschedulingLesson(l)}
+                              className="px-3.5 py-2 bg-slate-100 dark:bg-slate-750 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
                             >
-                              <Video className="w-4 h-4" />
-                              <span>{language === 'he' ? 'כניסה לשיעור בזום' : 'Join Zoom Lesson'}</span>
-                            </a>
-                          )}
+                              <RefreshCw className="w-3.5 h-3.5 text-teal-500" />
+                              <span>{language === 'he' ? 'שינוי מועד' : 'Reschedule'}</span>
+                            </button>
+
+                            {l.zoomLink && (
+                              <a
+                                href={l.zoomLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-bold text-xs rounded-xl shadow-2xs flex items-center gap-2"
+                              >
+                                <Video className="w-4 h-4" />
+                                <span>{language === 'he' ? 'כניסה לשיעור בזום' : 'Join Zoom Lesson'}</span>
+                              </a>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -2792,6 +2837,11 @@ export const StudentDashboard: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* TAB 9: STUDENT PROGRESS ANALYTICS DASHBOARD */}
+          {activeTab === 'progress' && student?.id && (
+            <StudentProgressTab studentId={student.id} />
+          )}
         </main>
       </div>
 
@@ -3029,6 +3079,13 @@ export const StudentDashboard: React.FC = () => {
         subtitle={viewerSubtitle}
       />
 
+      {/* Lesson Rescheduling Modal (Same Teacher, Zero Extra Charge) */}
+      <RescheduleModal
+        isOpen={!!reschedulingLesson}
+        lesson={reschedulingLesson}
+        onClose={() => setReschedulingLesson(null)}
+      />
+
       {/* iPhone-Style Floating Liquid Glass Bottom Navigation Bar (Mobile View) */}
       <nav
         aria-label="Mobile Navigation"
@@ -3259,6 +3316,38 @@ export const StudentDashboard: React.FC = () => {
                     {language === 'he' ? 'פירוט עסקאות, טעינות וזיכויים' : 'Transactions, top-ups & refunds'}
                   </p>
                 </div>
+              </button>
+
+              {/* Card 5: My Progress Analytics */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('progress');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`col-span-2 p-3.5 rounded-2xl border text-start transition-all flex items-center justify-between gap-4 ${
+                  activeTab === 'progress'
+                    ? 'bg-teal-500/20 border-teal-400/50 shadow-[0_0_15px_rgba(20,184,166,0.3)] ring-1 ring-teal-400/50'
+                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-teal-500/20 text-teal-300 shrink-0">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-xs text-white">
+                      {language === 'he' ? 'ההתקדמות הלימודית שלי' : 'My Learning Progress'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {language === 'he' ? 'גרפי נוכחות שבועית, דיוק במשחקים ומפת רמות' : 'Weekly attendance, game accuracy & level roadmap'}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-teal-400/20 text-teal-300 border border-teal-400/30 shrink-0">
+                  {language === 'he' ? 'צפה במדדים' : 'View'}
+                </span>
               </button>
             </div>
           </div>
