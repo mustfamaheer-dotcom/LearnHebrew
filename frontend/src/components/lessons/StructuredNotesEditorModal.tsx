@@ -611,3 +611,4 @@ export const StructuredNotesEditorModal: React.FC<StructuredNotesEditorModalProp
     </div>
   );
 };
+

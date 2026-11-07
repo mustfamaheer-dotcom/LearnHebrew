@@ -3323,9 +3323,12 @@ export const StudentDashboard: React.FC = () => {
         className="lg:hidden fixed bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-1.25rem)] max-w-md z-50 pointer-events-auto"
         style={{ bottom: 'max(calc(env(safe-area-inset-bottom, 0px) - 28px), 4px)' }}
       >
-        <div className="relative rounded-full p-1.5 bg-slate-950/85 dark:bg-slate-950/90 backdrop-blur-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.1)_inset] grid grid-cols-5 items-center justify-around gap-1">
-          {/* Top Edge Liquid Glass Sheen */}
-          <div className="absolute inset-x-6 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" />
+        {/* Ambient colored underglow reflecting onto underlying page content */}
+        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-teal-500/35 via-cyan-400/25 to-teal-400/35 blur-xl opacity-75 -z-10 pointer-events-none" />
+
+        <div className="relative rounded-full p-1.5 liquid-glass-shell grid grid-cols-5 items-center justify-around gap-1">
+          {/* Top Edge Curved Liquid Glass Sheen */}
+          <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none rounded-full" />
 
           {mobileTabs.map((item) => {
             const Icon = item.icon;
@@ -3343,37 +3346,32 @@ export const StudentDashboard: React.FC = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className={`relative py-1.5 px-1 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${
+                className={`relative py-1.5 px-1 rounded-full flex flex-col items-center justify-center transition-all duration-300 group active:scale-90 ${
                   isActive
-                    ? 'bg-white/20 dark:bg-white/25 backdrop-blur-xl border border-white/40 shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1.5px_rgba(255,255,255,0.7)]'
-                    : 'hover:bg-white/10 text-slate-300 dark:text-slate-400'
+                    ? 'liquid-glass-capsule-active'
+                    : 'hover:bg-white/[0.08] active:bg-white/[0.14] text-white/70 hover:text-white'
                 }`}
               >
-                {/* Active Lens Chromatic Glow & Top Highlight */}
-                {isActive && (
-                  <>
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400/25 via-emerald-400/15 to-transparent pointer-events-none" />
-                    <div className="absolute inset-x-2 top-0.5 h-[1px] bg-white/70 rounded-full pointer-events-none" />
-                  </>
-                )}
-
-                {/* Notification Badge Dot */}
+                {/* Notification Badge Dot for Live Lesson with Liquid Ping Ripple */}
                 {item.badge && (
-                  <span className="absolute top-1 end-2 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse" />
+                  <span className="absolute top-1 end-2 flex h-2.5 w-2.5 items-center justify-center pointer-events-none">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,1)]" />
+                  </span>
                 )}
 
                 <Icon
                   className={`w-5 h-5 shrink-0 transition-transform duration-200 ${
                     isActive
-                      ? 'text-cyan-300 scale-110 drop-shadow-[0_0_10px_rgba(34,211,238,0.85)]'
-                      : 'text-white/80 group-hover:scale-105'
+                      ? 'text-cyan-200 scale-110 drop-shadow-[0_0_10px_rgba(34,211,238,0.9)]'
+                      : 'text-white/80 group-hover:scale-105 group-hover:text-white'
                   }`}
                 />
                 <span
                   className={`text-[10px] tracking-tight mt-0.5 leading-tight truncate max-w-full ${
                     isActive
-                      ? 'text-cyan-300 font-black drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]'
-                      : 'text-white/75 font-bold'
+                      ? 'text-cyan-100 font-black drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]'
+                      : 'text-white/70 font-bold group-hover:text-white/90'
                   }`}
                 >
                   {item.label}
@@ -3387,28 +3385,28 @@ export const StudentDashboard: React.FC = () => {
       {/* iOS Liquid Glass Mobile "More" Sheet */}
       {isMobileMoreOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+          className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setIsMobileMoreOpen(false)}
         >
           <div
-            className="w-full max-w-lg bg-slate-900/95 dark:bg-slate-950/95 backdrop-blur-3xl rounded-t-3xl border-t border-x border-white/20 p-5 pb-32 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            className="w-full max-w-lg liquid-glass-sheet rounded-t-3xl p-5 pb-32 space-y-4 animate-in slide-in-from-bottom duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Grab Handle */}
-            <div className="w-12 h-1.5 bg-white/30 rounded-full mx-auto" />
+            <div className="w-12 h-1.5 bg-white/40 rounded-full mx-auto" />
 
             <div className="flex items-center justify-between px-1">
               <div>
                 <h3 className="font-extrabold text-base text-white tracking-tight">
                   {language === 'he' ? 'פעולות ותכנים נוספים' : 'More Learning Tools'}
                 </h3>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-300">
                   {language === 'he' ? 'שיעורים מוקלטים, שיעורי בית, לוח דירוג ויתרה' : 'Recorded sessions, homework, rankings & balance'}
                 </p>
               </div>
               <button
                 onClick={() => setIsMobileMoreOpen(false)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-white bg-white/10"
+                className="p-1.5 rounded-full text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -3423,18 +3421,18 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`p-3.5 rounded-2xl border text-start transition-all flex flex-col justify-between space-y-2 ${
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 ${
                   activeTab === 'recordings'
-                    ? 'bg-white/20 border-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.3)]'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    ? 'liquid-glass-card ring-1 ring-cyan-400/60 shadow-[0_0_20px_rgba(34,211,238,0.35)]'
+                    : 'liquid-glass-card'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-brand-teal-500/20 text-cyan-300">
+                  <div className="p-2 rounded-xl bg-brand-teal-500/25 text-cyan-300">
                     <PlayCircle className="w-5 h-5" />
                   </div>
                   {recordedSessions.length > 0 && (
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/30">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-400/25 text-cyan-200 border border-cyan-400/40">
                       {recordedSessions.length}
                     </span>
                   )}
@@ -3443,7 +3441,7 @@ export const StudentDashboard: React.FC = () => {
                   <p className="font-bold text-xs text-white">
                     {language === 'he' ? 'שיעורים מוקלטים' : 'Recorded Sessions'}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
+                  <p className="text-[10px] text-slate-300 mt-0.5">
                     {language === 'he' ? 'צפייה חוזרת בשיעורים' : 'Google Drive replays'}
                   </p>
                 </div>
@@ -3457,18 +3455,18 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`p-3.5 rounded-2xl border text-start transition-all flex flex-col justify-between space-y-2 ${
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 ${
                   activeTab === 'homework'
-                    ? 'bg-white/20 border-brand-olive-400/50 shadow-[0_0_15px_rgba(163,230,53,0.3)]'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    ? 'liquid-glass-card ring-1 ring-lime-400/60 shadow-[0_0_20px_rgba(163,230,53,0.35)]'
+                    : 'liquid-glass-card'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-brand-olive-500/20 text-brand-olive-300">
+                  <div className="p-2 rounded-xl bg-brand-olive-500/25 text-lime-300">
                     <BookOpen className="w-5 h-5" />
                   </div>
                   {pendingHomeworkCount > 0 && (
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 animate-pulse">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400/25 text-amber-200 border border-amber-400/40 animate-pulse">
                       {pendingHomeworkCount} {language === 'he' ? 'לבדיקה' : 'pending'}
                     </span>
                   )}
@@ -3477,7 +3475,7 @@ export const StudentDashboard: React.FC = () => {
                   <p className="font-bold text-xs text-white">
                     {language === 'he' ? 'שיעורי בית' : 'Homework & Tasks'}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
+                  <p className="text-[10px] text-slate-300 mt-0.5">
                     {language === 'he' ? 'הגשות ומשוב מורים' : 'Submissions & feedback'}
                   </p>
                 </div>
@@ -3491,17 +3489,17 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`p-3.5 rounded-2xl border text-start transition-all flex flex-col justify-between space-y-2 ${
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 ${
                   activeTab === 'leaderboard'
-                    ? 'bg-white/20 border-purple-400/50 shadow-[0_0_15px_rgba(192,132,252,0.3)]'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    ? 'liquid-glass-card ring-1 ring-purple-400/60 shadow-[0_0_20px_rgba(192,132,252,0.35)]'
+                    : 'liquid-glass-card'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300">
+                  <div className="p-2 rounded-xl bg-purple-500/25 text-purple-300">
                     <Award className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-400/20 text-purple-300 border border-purple-400/30">
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-400/25 text-purple-200 border border-purple-400/40">
                     {student?.totalPoints || 0} pts
                   </span>
                 </div>
@@ -3509,7 +3507,7 @@ export const StudentDashboard: React.FC = () => {
                   <p className="font-bold text-xs text-white">
                     {language === 'he' ? 'לוח דירוג' : 'Leaderboard'}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
+                  <p className="text-[10px] text-slate-300 mt-0.5">
                     {language === 'he' ? 'ליגות ונקודות XP' : 'XP Points & Ranking'}
                   </p>
                 </div>
@@ -3523,19 +3521,19 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`p-3.5 rounded-2xl border text-start transition-all flex flex-col justify-between space-y-2 ${
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 ${
                   activeTab === 'balance'
-                    ? 'bg-emerald-500/20 border-emerald-400/50 shadow-[0_0_15px_rgba(52,211,153,0.3)] ring-1 ring-emerald-400/50'
+                    ? 'liquid-glass-card ring-1 ring-emerald-400/60 shadow-[0_0_20px_rgba(52,211,153,0.35)]'
                     : !hasEnoughBalance
-                    ? 'bg-rose-950/40 border-rose-500/50'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    ? 'liquid-glass-card ring-1 ring-rose-500/60'
+                    : 'liquid-glass-card'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
+                  <div className="p-2 rounded-xl bg-emerald-500/25 text-emerald-300">
                     <Wallet className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-400/25 text-emerald-200 border border-emerald-400/40">
                     ${currentBalance.toFixed(2)}
                   </span>
                 </div>
@@ -3543,7 +3541,7 @@ export const StudentDashboard: React.FC = () => {
                   <p className="font-bold text-xs text-white">
                     {language === 'he' ? 'יתרת חשבון והיסטוריה' : 'Account Balance & History'}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">
+                  <p className="text-[10px] text-slate-300 mt-0.5">
                     {language === 'he' ? 'פירוט עסקאות, טעינות וזיכויים' : 'Transactions, top-ups & refunds'}
                   </p>
                 </div>
@@ -3557,26 +3555,26 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`col-span-2 p-3.5 rounded-2xl border text-start transition-all flex items-center justify-between gap-4 ${
+                className={`col-span-2 p-3.5 rounded-2xl text-start transition-all flex items-center justify-between gap-4 active:scale-95 ${
                   activeTab === 'progress'
-                    ? 'bg-teal-500/20 border-teal-400/50 shadow-[0_0_15px_rgba(20,184,166,0.3)] ring-1 ring-teal-400/50'
-                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    ? 'liquid-glass-card ring-1 ring-teal-400/60 shadow-[0_0_20px_rgba(20,184,166,0.35)]'
+                    : 'liquid-glass-card'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-teal-500/20 text-teal-300 shrink-0">
+                  <div className="p-2.5 rounded-xl bg-teal-500/25 text-teal-300 shrink-0">
                     <TrendingUp className="w-5 h-5" />
                   </div>
                   <div>
                     <p className="font-bold text-xs text-white">
                       {language === 'he' ? 'ההתקדמות הלימודית שלי' : 'My Learning Progress'}
                     </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
+                    <p className="text-[10px] text-slate-300 mt-0.5">
                       {language === 'he' ? 'גרפי נוכחות שבועית, דיוק במשחקים ומפת רמות' : 'Weekly attendance, game accuracy & level roadmap'}
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-teal-400/20 text-teal-300 border border-teal-400/30 shrink-0">
+                <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-teal-400/25 text-teal-200 border border-teal-400/40 shrink-0">
                   {language === 'he' ? 'צפה במדדים' : 'View'}
                 </span>
               </button>

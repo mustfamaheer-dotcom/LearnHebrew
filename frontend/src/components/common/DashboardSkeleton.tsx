@@ -210,9 +210,9 @@ export const DashboardSkeleton: React.FC<DashboardSkeletonProps> = ({
         </div>
       </main>
 
-      {/* 6. Mobile Floating Bottom Capsule Bar Skeleton (Matches Student Navigation) */}
-      <div className="lg:hidden fixed bottom-3 inset-x-0 z-40 flex justify-center px-4 pointer-events-none">
-        <div className="w-full max-w-sm h-14 rounded-full bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-700/60 shadow-2xl flex items-center justify-around px-4">
+      {/* 6. Mobile Floating Bottom Capsule Bar Skeleton (Matches Student Navigation Liquid Glass) */}
+      <div className="lg:hidden fixed bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-1.25rem)] max-w-md z-40 pointer-events-none">
+        <div className="w-full h-14 rounded-full liquid-glass-shell flex items-center justify-around px-4">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex flex-col items-center gap-1">
               <div className="w-5 h-5 rounded-md skeleton-shimmer opacity-50" />

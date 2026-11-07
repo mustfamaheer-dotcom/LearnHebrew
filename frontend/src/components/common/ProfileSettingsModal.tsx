@@ -396,3 +396,4 @@ export const ProfileSettingsModal: React.FC = () => {
     </div>
   );
 };
+

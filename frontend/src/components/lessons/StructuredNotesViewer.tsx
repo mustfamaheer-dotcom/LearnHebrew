@@ -271,3 +271,4 @@ export const StructuredNotesViewer: React.FC<StructuredNotesViewerProps> = ({
     </div>
   );
 };
+
