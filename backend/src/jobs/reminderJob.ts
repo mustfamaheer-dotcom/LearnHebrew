@@ -1,11 +1,19 @@
 import { prisma } from '../config/database';
 import { notificationService } from '../modules/notifications/notifications.service';
+import { logSystemEvent } from '../utils/systemLogger';
+import { LogCategory, LogLevel } from '@prisma/client';
 
 /**
  * 60-Second Background Job for Pre-Lesson Reminders with DB Idempotency
  */
 export const startReminderJob = () => {
   console.log('⏰ [ReminderJob] Initialized 60-second background pre-lesson reminder worker.');
+
+  logSystemEvent({
+    level: LogLevel.INFO,
+    category: LogCategory.JOB,
+    message: '[ReminderJob] Initialized 60-second background pre-lesson reminder worker.',
+  });
 
   const checkReminders = async () => {
     try {
@@ -44,9 +52,28 @@ export const startReminderJob = () => {
 
         await notificationService.notifyLessonReminder(lesson, leadMinutes);
         console.log(`🔔 [ReminderJob] Dispatched ${leadMinutes}-min reminder for lesson ${lesson.id} (${lesson.student.user.firstName} & ${lesson.teacher.user.firstName}).`);
+
+        await logSystemEvent({
+          level: LogLevel.INFO,
+          category: LogCategory.JOB,
+          message: `[ReminderJob] Dispatched ${leadMinutes}-min reminder for lesson ${lesson.id}`,
+          meta: {
+            lessonId: lesson.id,
+            studentEmail: lesson.student.user.email,
+            teacherEmail: lesson.teacher.user.email,
+            leadMinutes,
+          },
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[ReminderJob Error]', error);
+      await logSystemEvent({
+        level: LogLevel.ERROR,
+        category: LogCategory.JOB,
+        message: `[ReminderJob Error] ${error?.message || 'Unknown reminder worker failure'}`,
+        errorClass: error?.constructor?.name,
+        stack: error?.stack,
+      });
     }
   };
 
@@ -54,4 +81,3 @@ export const startReminderJob = () => {
   setTimeout(checkReminders, 5000);
   setInterval(checkReminders, 60 * 1000);
 };
-

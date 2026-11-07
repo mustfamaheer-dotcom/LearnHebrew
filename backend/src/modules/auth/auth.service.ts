@@ -6,6 +6,8 @@ import {
   verifyRefreshToken,
 } from '../../utils/jwt';
 import { logAuditEvent } from '../../utils/audit';
+import { logSystemEvent } from '../../utils/systemLogger';
+import { LogCategory, LogLevel } from '@prisma/client';
 import crypto from 'crypto';
 
 export async function login(
@@ -62,6 +64,18 @@ export async function login(
       ipAddress,
       userAgent,
       metaJson: { failedAttempts: failedLogins },
+    });
+
+    await logSystemEvent({
+      level: failedLogins >= 5 ? LogLevel.CRITICAL : LogLevel.WARN,
+      category: LogCategory.SECURITY,
+      message: failedLogins >= 5
+        ? `Account locked: ${user.email} after ${failedLogins} consecutive failed attempts`
+        : `Failed login attempt for ${user.email} (attempt ${failedLogins})`,
+      userId: user.id,
+      ipAddress,
+      userAgent,
+      meta: { email: user.email, failedAttempts: failedLogins, lockedUntil },
     });
 
     throw { status: 401, message: 'Invalid credentials' };

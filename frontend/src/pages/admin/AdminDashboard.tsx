@@ -7,6 +7,7 @@ import { useSidebarStore } from '../../store/sidebarStore';
 import { toast } from '../../store/toastStore';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
+import { SystemLogsTab } from '../../components/admin/SystemLogsTab';
 import {
   formatSlotRange12Hour,
   formatIsraelDateTime,
@@ -65,6 +66,7 @@ import {
   Target,
   PieChart,
   Shield,
+  Terminal,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -75,7 +77,7 @@ export const AdminDashboard: React.FC = () => {
 
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'landing_cms' | 'users' | 'teachers' | 'packages' | 'bookings' | 'surveys'
+    'overview' | 'landing_cms' | 'users' | 'teachers' | 'packages' | 'bookings' | 'surveys' | 'system_logs'
   >('overview');
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -668,6 +670,18 @@ export const AdminDashboard: React.FC = () => {
       icon: MessageSquare,
       badge: surveysData?.length || 0,
     },
+    ...(currentUser?.role === 'SUPER_ADMIN'
+      ? [
+          {
+            id: 'system_logs',
+            label: 'System Logs',
+            labelHe: 'יומן מערכת ובקרה',
+            icon: Terminal,
+            badge: 'Live',
+            badgeColor: 'bg-rose-500 text-white',
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -3093,6 +3107,11 @@ export const AdminDashboard: React.FC = () => {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* TAB 8: SYSTEM OBSERVABILITY & ERROR TRACKING (PLATFORM OWNER ONLY) */}
+          {activeTab === 'system_logs' && (
+            <SystemLogsTab />
           )}
         </main>
       </div>

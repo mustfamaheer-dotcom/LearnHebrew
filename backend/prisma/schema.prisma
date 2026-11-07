@@ -112,6 +112,7 @@ model User {
   createdGames   Game[]           @relation("CreatedGames")
   notifications  Notification[]
   auditLogs      AuditLog[]
+  systemLogs     SystemLog[]
 
   @@index([email])
   @@index([role])
@@ -465,6 +466,52 @@ model AuditLog {
   @@index([createdAt])
 }
 
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}
+
+enum LogCategory {
+  AUTH
+  API
+  LESSON
+  BALANCE
+  NOTIFICATION
+  JOB
+  SYSTEM
+  SECURITY
+}
+
+model SystemLog {
+  id          String      @id @default(uuid())
+  level       LogLevel    @default(INFO)
+  category    LogCategory @default(SYSTEM)
+  message     String
+  statusCode  Int?
+  method      String?
+  path        String?
+  durationMs  Int?
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ipAddress   String?
+  userAgent   String?
+  errorClass  String?
+  stack       String?
+  metaJson    Json?
+  createdAt   DateTime    @default(now())
+
+  @@index([level])
+  @@index([category])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([statusCode])
+  @@index([level, createdAt])
+  @@index([category, createdAt])
+}
 
 model SystemSetting {
   id        String   @id @default(uuid())

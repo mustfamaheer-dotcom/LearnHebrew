@@ -18,9 +18,11 @@ import notificationsRouter from './modules/notifications/notifications.router';
 import analyticsRouter from './modules/analytics/analytics.router';
 import settingsRouter from './modules/settings/settings.router';
 import recordedSessionsRouter from './modules/recorded-sessions/recorded-sessions.router';
+import systemLogsRouter from './modules/system-logs/system-logs.router';
 
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
+import { requestLogger } from './middleware/requestLogger';
 
 export const app = express();
 
@@ -74,6 +76,9 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 
+// HTTP Request & Telemetry Logger
+app.use(requestLogger);
+
 // Health Check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'LearnHebrew API', timestamp: new Date().toISOString() });
@@ -93,6 +98,7 @@ app.use('/api/v1/notifications', notificationsRouter);
 app.use('/api/v1/analytics', analyticsRouter);
 app.use('/api/v1/settings', settingsRouter);
 app.use('/api/v1/recorded-sessions', recordedSessionsRouter);
+app.use('/api/v1/system-logs', systemLogsRouter);
 
 // Global Error Handler
 app.use(errorHandler);
