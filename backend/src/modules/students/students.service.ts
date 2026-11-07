@@ -385,4 +385,61 @@ export async function getStudentProgressAnalytics(studentIdOrUserId: string) {
   };
 }
 
+export async function getStudentCertificates(studentIdOrUserId: string) {
+  const student = await getStudentById(studentIdOrUserId);
+  const certificates = await prisma.certificate.findMany({
+    where: { studentId: student.id },
+    orderBy: { completionDate: 'desc' },
+  });
+
+  return { certificates };
+}
+
+export async function generateCertificate(
+  studentIdOrUserId: string,
+  data?: { packageId?: string; customTitle?: string; customTitleHe?: string }
+) {
+  const student = await getStudentById(studentIdOrUserId);
+  const user = student.user;
+
+  const levelNames: Record<string, { en: string; he: string }> = {
+    BEGINNER: { en: 'Alef (Beginner)', he: 'רמה א׳ - מתחילים' },
+    ELEMENTARY: { en: 'Bet (Elementary)', he: 'רמה ב׳ - יסודי' },
+    INTERMEDIATE: { en: 'Gimel (Intermediate)', he: 'רמה ג׳ - ביניים' },
+    UPPER_INTERMEDIATE: { en: 'Dalet (Upper Intermediate)', he: 'רמה ד׳ - מתקדמים א׳' },
+    ADVANCED: { en: 'He (Advanced)', he: 'רמה ה׳ - מתקדמים ב׳' },
+    FLUENT: { en: 'Vav (Fluent / Ulpan)', he: 'רמה ו׳ - שוטף / אולפן' },
+  };
+
+  const levelInfo = levelNames[student.level] || { en: student.level, he: student.level };
+  const randomSerial = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const certNumber = `ENG-2026-${randomSerial}`;
+
+  let packageName = data?.customTitle || 'Hebrew Language Mastery Track (10 Sessions)';
+  let packageNameHe = data?.customTitleHe || 'מסלול מיומנויות השפה העברית (10 מפגשים)';
+
+  if (data?.packageId) {
+    const pkg = await prisma.package.findUnique({ where: { id: data.packageId } });
+    if (pkg) {
+      packageName = pkg.name;
+      packageNameHe = pkg.nameHe;
+    }
+  }
+
+  const certificate = await prisma.certificate.create({
+    data: {
+      studentId: student.id,
+      packageId: data?.packageId,
+      packageName,
+      packageNameHe,
+      studentName: `${user.firstName} ${user.lastName}`,
+      levelAchieved: levelInfo.en,
+      levelAchievedHe: levelInfo.he,
+      certificateNumber: certNumber,
+    },
+  });
+
+  return certificate;
+}
+
 

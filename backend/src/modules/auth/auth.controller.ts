@@ -13,6 +13,12 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+const updateProfileSchema = z.object({
+  firstName: z.string().min(1, 'First name is required').max(50).optional(),
+  lastName: z.string().min(1, 'Last name is required').max(50).optional(),
+  languagePref: z.enum(['en', 'he']).optional(),
+});
+
 export async function loginHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const data = loginSchema.parse(req.body);
@@ -93,6 +99,16 @@ export async function meHandler(req: AuthRequest, res: Response, next: NextFunct
   try {
     const user = await authService.getCurrentUser(req.user!.userId);
     res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateProfileHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const data = updateProfileSchema.parse(req.body);
+    const user = await authService.updateProfile(req.user!.userId, data);
+    res.json({ user, message: 'Profile updated successfully' });
   } catch (error) {
     next(error);
   }

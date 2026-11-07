@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../../config/database';
 import { authenticate, requireRoles, AuthRequest } from '../../middleware/auth';
 import { Role } from '@prisma/client';
+import { getCachedOrFetch, cacheDel } from '../../lib/cache';
 
 const router = Router();
 
@@ -45,18 +46,17 @@ const DEFAULT_LANDING_CONFIG = {
   ],
 };
 
-// GET Landing Page Config (Public)
+// GET Landing Page Config (Public with Redis cache)
 router.get('/landing-page', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const setting = await prisma.systemSetting.findUnique({
-      where: { key: 'landing_page_config' },
+    const config = await getCachedOrFetch('settings:landing-page', 60, async () => {
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: 'landing_page_config' },
+      });
+      return setting ? setting.valueJson : DEFAULT_LANDING_CONFIG;
     });
 
-    if (!setting) {
-      return res.json({ config: DEFAULT_LANDING_CONFIG });
-    }
-
-    res.json({ config: setting.valueJson });
+    res.json({ config });
   } catch (error) {
     next(error);
   }
@@ -79,6 +79,7 @@ router.put(
         },
       });
 
+      await cacheDel('settings:landing-page');
       res.json({
         message: 'Landing page updated successfully!',
         config: setting.valueJson,

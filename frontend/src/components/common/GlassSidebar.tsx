@@ -4,9 +4,11 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Settings,
 } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSidebarStore } from '../../store/sidebarStore';
+import { useAuthStore } from '../../store/authStore';
 
 export interface GlassNavItem {
   id: string;
@@ -300,22 +302,20 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
           )}
 
           {/* User Profile Card */}
-          {user && (
-            isCollapsed ? (
+          {user && (() => {
+            const openProfileModal = useAuthStore.getState().openProfileModal;
+            const initials = `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase();
+
+            return isCollapsed ? (
               <div className="relative group flex justify-center">
-                <div className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-center cursor-pointer">
-                  {user.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user.firstName || 'User'}
-                      className="w-8 h-8 rounded-xl object-cover ring-2 ring-brand-teal-300 dark:ring-brand-teal-700 shrink-0"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-olive-100 to-brand-olive-200 dark:from-brand-olive-950 dark:to-brand-olive-900 text-brand-olive-900 dark:text-brand-olive-300 font-black flex items-center justify-center text-xs shrink-0">
-                      {user.firstName?.charAt(0) || 'U'}
-                    </div>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={openProfileModal}
+                  title={language === 'he' ? 'הגדרות פרופיל' : 'Profile Settings'}
+                  className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black flex items-center justify-center text-xs shadow-xs hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer"
+                >
+                  {initials || 'U'}
+                </button>
                 {/* User Tooltip */}
                 <div className="hidden lg:block absolute start-[calc(100%+0.65rem)] bottom-0 p-2.5 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 space-y-0.5">
                   <p className="font-bold text-white">{user.firstName} {user.lastName}</p>
@@ -329,36 +329,35 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
               </div>
             ) : (
               <div className="bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs backdrop-blur-md flex items-center justify-between gap-2.5 transition-colors">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  {user.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user.firstName || 'User'}
-                      className="w-9 h-9 rounded-xl object-cover ring-2 ring-brand-teal-200 dark:ring-brand-teal-800/80 shrink-0 shadow-xs"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-olive-100 to-brand-olive-200 dark:from-brand-olive-950 dark:to-brand-olive-900 text-brand-olive-900 dark:text-brand-olive-300 font-black flex items-center justify-center text-xs shrink-0 border border-brand-olive-300/60 dark:border-brand-olive-800 shadow-xs">
-                      {user.firstName?.charAt(0) || 'U'}
-                    </div>
-                  )}
+                <button
+                  type="button"
+                  onClick={openProfileModal}
+                  className="flex items-center gap-2.5 min-w-0 flex-1 text-start group cursor-pointer"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black flex items-center justify-center text-xs shrink-0 shadow-xs ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
+                    {initials || 'U'}
+                  </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate" title={`${user.firstName || ''} ${user.lastName || ''}`}>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" title={`${user.firstName || ''} ${user.lastName || ''}`}>
                       {user.firstName} {user.lastName}
                     </p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate" title={user.email}>
                       {user.email}
                     </p>
                   </div>
-                </div>
+                </button>
 
-                {user.role && (
-                  <span className="text-[9px] font-black px-2.5 py-1 rounded-lg bg-brand-teal-50 dark:bg-brand-teal-950/80 text-brand-teal-900 dark:text-brand-teal-300 border border-brand-teal-200/80 dark:border-brand-teal-800 shrink-0 uppercase tracking-wider">
-                    {user.role === 'SUPER_ADMIN' ? 'Platform Owner' : user.role}
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={openProfileModal}
+                  title={language === 'he' ? 'הגדרות פרופיל וסיסמה' : 'Profile & Password Settings'}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
               </div>
-            )
-          )}
+            );
+          })()}
         </div>
       </aside>
     </>

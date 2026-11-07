@@ -8,11 +8,12 @@ import {
   LogOut,
   Sun,
   Moon,
+  Settings,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 
 export const Navbar: React.FC = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, openProfileModal } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const { t, language, setLanguage } = useTranslation();
   const navigate = useNavigate();
@@ -84,20 +85,17 @@ export const Navbar: React.FC = () => {
 
             {user ? (
               <div className="flex items-center gap-1 sm:gap-2">
-                <div className="flex items-center gap-2 p-1 sm:p-1.5 sm:ps-2 sm:pe-3 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-2xs">
-                  {user.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user.firstName}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl object-cover ring-2 ring-brand-teal-100 dark:ring-brand-teal-900 shrink-0"
-                    />
-                  ) : (
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-br from-brand-teal-700 to-brand-teal-900 text-white flex items-center justify-center font-bold text-xs shadow-2xs shrink-0">
-                      {user.firstName[0]}
-                    </div>
-                  )}
+                <button
+                  type="button"
+                  onClick={openProfileModal}
+                  className="flex items-center gap-2 p-1 sm:p-1.5 sm:ps-2 sm:pe-3 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group"
+                  title={language === 'he' ? 'ערוך פרופיל ושנה סיסמה' : 'Edit profile & change password'}
+                >
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-br from-brand-teal-600 to-indigo-700 text-white flex items-center justify-center font-black text-xs shadow-2xs shrink-0 ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
+                    {`${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() || 'U'}
+                  </div>
                   <div className="text-start hidden md:block">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                       {user.firstName} {user.lastName}
                     </p>
                     <span className="text-[10px] font-extrabold text-brand-olive-600 dark:text-brand-olive-400 uppercase tracking-wider block">
@@ -114,7 +112,16 @@ export const Navbar: React.FC = () => {
                         : user.role}
                     </span>
                   </div>
-                </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openProfileModal}
+                  className="p-1.5 sm:p-2 text-slate-400 dark:text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 rounded-xl hover:bg-teal-50 dark:hover:bg-teal-950/40 border border-slate-200/40 dark:border-slate-800 transition-colors shrink-0"
+                  title={language === 'he' ? 'הגדרות פרופיל וסיסמה' : 'Profile & Password Settings'}
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
 
                 <button
                   onClick={handleLogout}

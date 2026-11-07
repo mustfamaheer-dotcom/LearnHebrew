@@ -5,9 +5,12 @@ interface AuthState {
   user: User | null;
   accessToken: string | null;
   language: LanguagePref;
+  isProfileModalOpen: boolean;
   setAuth: (user: User, token: string) => void;
   setUser: (user: User) => void;
   setLanguage: (lang: LanguagePref) => void;
+  openProfileModal: () => void;
+  closeProfileModal: () => void;
   logout: () => void;
 }
 
@@ -21,6 +24,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: savedUser,
   accessToken: savedToken,
   language: savedLang,
+  isProfileModalOpen: false,
+
+  openProfileModal: () => set({ isProfileModalOpen: true }),
+  closeProfileModal: () => set({ isProfileModalOpen: false }),
 
   setAuth: (user, token) => {
     localStorage.setItem('learnhebrew_token', token);

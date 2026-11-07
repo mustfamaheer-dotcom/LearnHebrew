@@ -7,7 +7,7 @@ import {
 } from '../../utils/jwt';
 import { logAuditEvent } from '../../utils/audit';
 import { logSystemEvent } from '../../utils/systemLogger';
-import { LogCategory, LogLevel } from '@prisma/client';
+import { LogCategory, LogLevel, LanguagePref } from '@prisma/client';
 import crypto from 'crypto';
 
 // Pre-computed bcrypt hash of a random 32-char string with cost 12 to eliminate timing side-channels
@@ -311,6 +311,43 @@ export async function getCurrentUser(userId: string) {
 
   if (!user) throw { status: 404, message: 'User not found' };
   const { passwordHash: _, ...safeUser } = user;
+  return safeUser;
+}
+
+export async function updateProfile(
+  userId: string,
+  data: { firstName?: string; lastName?: string; languagePref?: string }
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw { status: 404, message: 'User not found' };
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      firstName: data.firstName !== undefined ? data.firstName.trim() : undefined,
+      lastName: data.lastName !== undefined ? data.lastName.trim() : undefined,
+      languagePref: data.languagePref ? (data.languagePref as LanguagePref) : undefined,
+    },
+    include: {
+      studentProfile: {
+        include: {
+          packages: {
+            where: { status: 'ACTIVE' },
+            include: { package: true },
+          },
+        },
+      },
+      teacherProfile: true,
+    },
+  });
+
+  await logAuditEvent({
+    userId,
+    action: 'PROFILE_UPDATED',
+    metaJson: { firstName: data.firstName, lastName: data.lastName, languagePref: data.languagePref },
+  });
+
+  const { passwordHash: _, ...safeUser } = updatedUser;
   return safeUser;
 }
 

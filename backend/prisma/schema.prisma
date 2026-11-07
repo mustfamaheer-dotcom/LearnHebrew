@@ -154,6 +154,8 @@ model Student {
   pointsLedger  PointsLedger[]
   recordedSessions RecordedSession[]
   balanceTransactions BalanceTransaction[]
+  badges        Badge[]
+  certificates  Certificate[]
 
   @@index([userId])
   @@index([level])
@@ -521,4 +523,41 @@ model SystemSetting {
   key       String   @unique
   valueJson Json
   updatedAt DateTime @updatedAt
+}
+
+model Badge {
+  id            String    @id @default(uuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  code          String
+  title         String
+  titleHe       String?
+  description   String?
+  descriptionHe String?
+  icon          String    @default("🏆")
+  seasonKey     String?
+  rankAwarded   Int?
+  awardedAt     DateTime  @default(now())
+
+  @@index([studentId])
+  @@index([seasonKey])
+}
+
+model Certificate {
+  id                String       @id @default(uuid())
+  studentId         String
+  student           Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  packageId         String?
+  packageName       String       // e.g. "Hebrew Conversation Intensive (10 Sessions)"
+  packageNameHe     String?      // e.g. "מסלול עברית אינטנסיבי לשיחה (10 מפגשים)"
+  studentName       String       // e.g. "Noah Miller"
+  levelAchieved     String       // e.g. "Alef (Beginner 1)"
+  levelAchievedHe   String?      // e.g. "רמה א׳ - מתחילים"
+  completionDate    DateTime     @default(now())
+  certificateNumber String       @unique // e.g. "ENG-2026-981F87"
+  verificationCode  String       @default(uuid())
+  createdAt         DateTime     @default(now())
+
+  @@index([studentId])
+  @@index([certificateNumber])
 }

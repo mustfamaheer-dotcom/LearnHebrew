@@ -2462,11 +2462,9 @@ export const AdminDashboard: React.FC = () => {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={t.user?.avatarUrl || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'}
-                            alt={t.user?.firstName}
-                            className="w-12 h-12 rounded-2xl object-cover border border-slate-200 dark:border-slate-700"
-                          />
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black text-sm flex items-center justify-center border border-slate-200 dark:border-slate-700 shrink-0 shadow-xs ring-1 ring-teal-400/30">
+                            {`${t.user?.firstName?.charAt(0) || ''}${t.user?.lastName?.charAt(0) || ''}`.toUpperCase() || 'T'}
+                          </div>
                           <div>
                             <h2 className="text-base font-bold text-slate-900 dark:text-white">
                               {t.user?.firstName} {t.user?.lastName}

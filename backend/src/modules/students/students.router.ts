@@ -10,6 +10,8 @@ import {
   getStudentHomeworkHandler,
   getStudentTransactionsHandler,
   getStudentProgressHandler,
+  getStudentCertificatesHandler,
+  generateCertificateHandler,
 } from './students.controller';
 import { authenticate } from '../../middleware/auth';
 import { validateUuidParam } from '../../middleware/validateUuid';
@@ -27,6 +29,8 @@ router.get('/:id', validateUuidParam('id'), authorizeStudentAccess, getStudentHa
 router.patch('/:id/level', validateUuidParam('id'), authorizeStudentAccess, updateStudentLevelHandler);
 router.get('/:id/dashboard', validateUuidParam('id'), authorizeStudentAccess, getStudentDashboardHandler);
 router.get('/:id/progress', validateUuidParam('id'), authorizeStudentAccess, getStudentProgressHandler);
+router.get('/:id/certificates', validateUuidParam('id'), authorizeStudentAccess, getStudentCertificatesHandler);
+router.post('/:id/certificates', validateUuidParam('id'), authorizeStudentAccess, generateCertificateHandler);
 router.get('/:id/lessons', validateUuidParam('id'), authorizeStudentAccess, getStudentLessonsHandler);
 router.get('/:id/packages', validateUuidParam('id'), authorizeStudentAccess, getStudentPackagesHandler);
 router.get('/:id/points', validateUuidParam('id'), authorizeStudentAccess, getStudentPointsHandler);

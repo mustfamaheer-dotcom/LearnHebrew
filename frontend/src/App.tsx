@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navbar } from './components/common/Navbar';
 import { ToastContainer } from './components/common/ToastContainer';
+import { ProfileSettingsModal } from './components/common/ProfileSettingsModal';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { PageLoader } from './components/common/PageLoader';
 import { useAuthStore } from './store/authStore';
@@ -87,6 +88,7 @@ export const App: React.FC = () => {
               </Routes>
             </Suspense>
           </main>
+          <ProfileSettingsModal />
           <ToastContainer />
         </div>
       </BrowserRouter>

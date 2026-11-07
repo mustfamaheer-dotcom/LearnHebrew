@@ -39,7 +39,7 @@ async function main() {
       languagePref: 'en',
       mustChangePw: false,
       isActive: true,
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+      avatarUrl: null,
     },
   });
 
@@ -55,7 +55,7 @@ async function main() {
       mustChangePw: false,
       isActive: true,
       createdById: adminUser.id,
-      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
+      avatarUrl: null,
       teacherProfile: {
         create: {
           bio: 'Certified Hebrew linguist with 8+ years teaching experience in Tel Aviv and online. Specializes in conversational fluency and modern idioms.',
@@ -79,7 +79,7 @@ async function main() {
       mustChangePw: false,
       isActive: true,
       createdById: adminUser.id,
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+      avatarUrl: null,
       teacherProfile: {
         create: {
           bio: 'Passionate educator focusing on beginners, pronunciation, and reading comprehension. Warm, patient, and highly interactive classes.',
@@ -104,7 +104,7 @@ async function main() {
       mustChangePw: false,
       isActive: true,
       createdById: adminUser.id,
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+      avatarUrl: null,
       studentProfile: {
         create: {
           level: HebrewLevel.BEGINNER,
@@ -128,7 +128,7 @@ async function main() {
       mustChangePw: false,
       isActive: true,
       createdById: adminUser.id,
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      avatarUrl: null,
       studentProfile: {
         create: {
           level: HebrewLevel.INTERMEDIATE,
@@ -152,7 +152,7 @@ async function main() {
       mustChangePw: false,
       isActive: true,
       createdById: adminUser.id,
-      avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150',
+      avatarUrl: null,
       studentProfile: {
         create: {
           level: HebrewLevel.ELEMENTARY,

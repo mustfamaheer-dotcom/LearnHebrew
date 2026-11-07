@@ -14,6 +14,8 @@ import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
 import { StudentProgressTab } from '../../components/student/StudentProgressTab';
 import { RescheduleModal } from '../../components/student/RescheduleModal';
+import { StructuredNotesViewer } from '../../components/lessons/StructuredNotesViewer';
+import { CertificateModal, CertificateData } from '../../components/common/CertificateModal';
 import { isGoogleDriveUrl, getVideoEmbedUrl } from '../../lib/driveUtils';
 import {
   formatSlotRange12Hour,
@@ -107,6 +109,7 @@ export const StudentDashboard: React.FC = () => {
   const [ratingVal, setRatingVal] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [reschedulingLesson, setReschedulingLesson] = useState<any | null>(null);
+  const [selectedCert, setSelectedCert] = useState<CertificateData | null>(null);
 
   // Session Booking Modal & In-Page State (25, 40, or 55 min)
   const [selectedDuration, setSelectedDuration] = useState<25 | 40 | 55>(25);
@@ -180,12 +183,14 @@ export const StudentDashboard: React.FC = () => {
     },
   });
 
-  // 4. Fetch Leaderboard
-  const { data: leaderboardData } = useQuery({
-    queryKey: ['leaderboard'],
+  const [leaderboardPeriod, setLeaderboardPeriod] = useState<'weekly' | 'monthly' | 'all_time'>('weekly');
+
+  // 4. Fetch Leaderboard (Weekly, Monthly Seasons & All-Time)
+  const { data: leaderboardData = [], isLoading: isLeaderboardLoading } = useQuery({
+    queryKey: ['leaderboard', leaderboardPeriod],
     queryFn: async () => {
-      const res = await api.get('/games/leaderboard');
-      return res.data.leaderboard;
+      const res = await api.get(`/games/leaderboard?period=${leaderboardPeriod}`);
+      return res.data.leaderboard || [];
     },
   });
 
@@ -197,6 +202,16 @@ export const StudentDashboard: React.FC = () => {
       return res.data.sessions || [];
     },
     enabled: !!user?.id,
+  });
+
+  // 6. Fetch Student Certificates of Completion
+  const { data: certificatesData = [] } = useQuery<CertificateData[]>({
+    queryKey: ['studentCertificates', dashboard?.student?.id],
+    queryFn: async () => {
+      const res = await api.get(`/students/${dashboard?.student?.id}/certificates`);
+      return res.data?.certificates || [];
+    },
+    enabled: !!dashboard?.student?.id,
   });
 
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -984,6 +999,73 @@ export const StudentDashboard: React.FC = () => {
                   </p>
                 )}
               </div>
+
+              {/* Official Certificates of Completion & Milestones */}
+              {certificatesData.length > 0 && (
+                <div className="bg-gradient-to-br from-amber-500/10 via-amber-600/5 to-transparent dark:from-amber-950/30 dark:via-amber-900/10 dark:to-transparent rounded-3xl p-6 sm:p-7 border border-amber-300/60 dark:border-amber-700/50 shadow-xs relative overflow-hidden">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-md shadow-amber-500/20">
+                        <Award className="w-5 h-5 text-slate-950" />
+                      </div>
+                      <div>
+                        <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>{language === 'he' ? 'תעודות סיום רשמיות' : 'Official Certificates of Completion'}</span>
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
+                            {certificatesData.length} {language === 'he' ? 'הוענקו' : 'Awarded'}
+                          </span>
+                        </h2>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
+                          {language === 'he'
+                            ? 'תעודות חתומות עם קוד אימות רשמי הניתנות להדפסה ושמירה ב-PDF'
+                            : 'Verified milestone credentials with serial verification numbers, ready to print & download'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {certificatesData.map((cert) => (
+                      <div
+                        key={cert.id}
+                        className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-amber-200 dark:border-amber-800/60 flex flex-col justify-between shadow-xs hover:border-amber-400 transition-all group"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300/60">
+                              {cert.certificateNumber}
+                            </span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {new Date(cert.completionDate).toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US')}
+                            </span>
+                          </div>
+                          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                            {language === 'he' && cert.packageNameHe ? cert.packageNameHe : cert.packageName}
+                          </h3>
+                          <p className="text-xs font-semibold text-brand-teal-700 dark:text-brand-teal-400 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                            <span>{language === 'he' && cert.levelAchievedHe ? cert.levelAchievedHe : cert.levelAchieved}</span>
+                          </p>
+                        </div>
+
+                        <div className="pt-4 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                          <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            {language === 'he' ? 'אימות חתום' : 'Verified Serial'}
+                          </span>
+                          <button
+                            onClick={() => setSelectedCert(cert)}
+                            className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                          >
+                            <Award className="w-3.5 h-3.5" />
+                            <span>{language === 'he' ? 'הצג תעודה רשמית' : 'View Certificate'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1118,14 +1200,9 @@ export const StudentDashboard: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-center gap-3 mb-2">
-                        <img
-                          src={
-                            t.user?.avatarUrl ||
-                            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'
-                          }
-                          alt={t.user?.firstName}
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-brand-teal-700/20"
-                        />
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black text-xs flex items-center justify-center shadow-xs ring-1 ring-teal-400/30 shrink-0">
+                          {`${t.user?.firstName?.charAt(0) || ''}${t.user?.lastName?.charAt(0) || ''}`.toUpperCase() || 'T'}
+                        </div>
                         <div className="overflow-hidden flex-1">
                           <p className="font-bold text-sm text-slate-900 dark:text-white truncate">
                             {t.user?.firstName} {t.user?.lastName}
@@ -1481,12 +1558,7 @@ export const StudentDashboard: React.FC = () => {
                           </div>
 
                           {lesson.teacherNotes && (
-                            <p className="text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700">
-                              <strong className="text-slate-800 dark:text-slate-200">
-                                {language === 'he' ? 'סיכום המורה:' : 'Session Notes:'}
-                              </strong>{' '}
-                              {lesson.teacherNotes}
-                            </p>
+                            <StructuredNotesViewer notesString={lesson.teacherNotes} />
                           )}
 
                           <div className="flex items-center justify-between pt-1">
@@ -2328,53 +2400,217 @@ export const StudentDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 6: LEADERBOARD */}
+          {/* TAB 6: LEADERBOARD & SEASONAL LEAGUES */}
           {activeTab === 'leaderboard' && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Award className="w-6 h-6 text-amber-500" />
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                    {t('nav.leaderboard')}
+            <div className="space-y-6 animate-fade-in">
+              {/* Header Banner & Period Switcher */}
+              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-xs font-bold text-amber-800 dark:text-amber-300 mb-2">
+                    <Award className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{language === 'he' ? 'ליגות עברית עונתיות ותגי הישג' : 'Seasonal Leagues & Achievement Badges'}</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                    {language === 'he' ? 'לוח מובילים ודירוג עונתי' : 'Leaderboard & Seasonal Rankings'}
                   </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
+                    {language === 'he'
+                      ? 'התחרה עם תלמידים אחרים, צבור נקודות XP משיעורים ומשחקים, וזכה בתגי הישג עונתיים בלעדיים.'
+                      : 'Compete with fellow learners, earn XP from live lessons & games, and unlock seasonal achievement badges.'}
+                  </p>
                 </div>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  {language === 'he' ? 'מובילי הלמידה בעברית' : 'Top Hebrew Students'}
-                </span>
+
+                {/* Season Toggle Pills */}
+                <div className="flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setLeaderboardPeriod('weekly')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      leaderboardPeriod === 'weekly'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {language === 'he' ? 'ליגה שבועית' : 'This Week'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setLeaderboardPeriod('monthly')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      leaderboardPeriod === 'monthly'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {language === 'he' ? 'ליגה חודשית' : 'This Month'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setLeaderboardPeriod('all_time')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      leaderboardPeriod === 'all_time'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {language === 'he' ? 'היכל התהילה' : 'All-Time'}
+                  </button>
+                </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-start text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-xs text-slate-400 dark:text-slate-500 font-bold uppercase">
-                      <th className="pb-3 text-start">{language === 'he' ? 'דירוג' : 'Rank'}</th>
-                      <th className="pb-3 text-start">{language === 'he' ? 'תלמיד' : 'Student'}</th>
-                      <th className="pb-3 text-start">{language === 'he' ? 'רמה' : 'Level'}</th>
-                      <th className="pb-3 text-end">{language === 'he' ? 'נקודות' : 'Points'}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {leaderboardData?.map((entry: any, idx: number) => (
-                      <tr
-                        key={entry.studentId}
-                        className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
-                      >
-                        <td className="py-3 font-bold text-slate-700 dark:text-slate-300">
-                          #{idx + 1}
-                        </td>
-                        <td className="py-3 font-semibold text-slate-900 dark:text-white">
-                          {entry.student?.user?.firstName} {entry.student?.user?.lastName}
-                        </td>
-                        <td className="py-3 text-xs text-slate-500 dark:text-slate-400">
-                          {t(`levels.${entry.student?.level || 'BEGINNER'}`)}
-                        </td>
-                        <td className="py-3 text-end font-extrabold text-amber-600 dark:text-amber-400">
-                          {entry.totalPoints} {language === 'he' ? 'נק׳' : 'pts'}
-                        </td>
+              {/* Top 3 Podium Cards */}
+              {leaderboardData.length >= 3 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* #2 Silver */}
+                  <div className="order-2 sm:order-1 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center shadow-xs">
+                    <span className="text-2xl mb-1">🥈</span>
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-400 to-slate-600 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-slate-300 dark:ring-slate-700 mb-2 shrink-0">
+                      {leaderboardData[1].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '2'}
+                    </div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-full">
+                      {leaderboardData[1].name}
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
+                      {t(`levels.${leaderboardData[1].level || 'BEGINNER'}`)}
+                    </span>
+                    <p className="mt-3 text-base font-extrabold text-slate-700 dark:text-slate-300">
+                      {leaderboardData[1].totalPoints.toLocaleString()} <span className="text-xs font-normal">XP</span>
+                    </p>
+                  </div>
+
+                  {/* #1 Gold - Elevated */}
+                  <div className="order-1 sm:order-2 p-6 rounded-3xl bg-gradient-to-b from-amber-500/10 to-transparent dark:from-amber-950/30 dark:to-slate-900 border border-amber-300 dark:border-amber-700/60 flex flex-col items-center text-center shadow-md sm:-mt-2 relative">
+                    <div className="absolute -top-3 px-3 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-sm">
+                      ★ {language === 'he' ? 'מוביל הליגה' : 'League Leader'} ★
+                    </div>
+                    <span className="text-3xl mb-1 mt-1">🥇</span>
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-lg flex items-center justify-center shadow-lg ring-4 ring-amber-300 dark:ring-amber-500/60 mb-2 shrink-0">
+                      {leaderboardData[0].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '1'}
+                    </div>
+                    <h3 className="font-extrabold text-base text-slate-900 dark:text-white truncate max-w-full">
+                      {leaderboardData[0].name}
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300/60 mt-1">
+                      {t(`levels.${leaderboardData[0].level || 'BEGINNER'}`)}
+                    </span>
+                    <p className="mt-3 text-xl font-black text-amber-600 dark:text-amber-400">
+                      {leaderboardData[0].totalPoints.toLocaleString()} <span className="text-xs font-normal">XP</span>
+                    </p>
+                  </div>
+
+                  {/* #3 Bronze */}
+                  <div className="order-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center shadow-xs">
+                    <span className="text-2xl mb-1">🥉</span>
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-700 to-amber-900 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-amber-700/40 mb-2 shrink-0">
+                      {leaderboardData[2].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '3'}
+                    </div>
+                    <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-full">
+                      {leaderboardData[2].name}
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
+                      {t(`levels.${leaderboardData[2].level || 'BEGINNER'}`)}
+                    </span>
+                    <p className="mt-3 text-base font-extrabold text-amber-800 dark:text-amber-600">
+                      {leaderboardData[2].totalPoints.toLocaleString()} <span className="text-xs font-normal">XP</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Full Standings Table */}
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    {language === 'he' ? 'טבלת הדירוג המלאה' : 'Full League Standings'}
+                  </h3>
+                  <span className="text-xs text-slate-400">
+                    {leaderboardData.length} {language === 'he' ? 'תלמידים בדירוג' : 'students ranked'}
+                  </span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-start text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 font-bold uppercase">
+                        <th className="pb-3 text-start w-16">{language === 'he' ? 'דירוג' : 'Rank'}</th>
+                        <th className="pb-3 text-start">{language === 'he' ? 'תלמיד' : 'Student'}</th>
+                        <th className="pb-3 text-start">{language === 'he' ? 'תגי הישג' : 'Badges'}</th>
+                        <th className="pb-3 text-start">{language === 'he' ? 'רמה' : 'Level'}</th>
+                        <th className="pb-3 text-start">{language === 'he' ? 'רצף' : 'Streak'}</th>
+                        <th className="pb-3 text-end">{language === 'he' ? 'נקודות' : 'Points'}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
+                      {leaderboardData.map((entry: any, idx: number) => {
+                        const isTop1 = idx === 0;
+                        const isTop2 = idx === 1;
+                        const isTop3 = idx === 2;
+
+                        return (
+                          <tr
+                            key={entry.studentId}
+                            className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
+                              entry.studentId === student?.id
+                                ? 'bg-teal-50/50 dark:bg-teal-950/20 font-bold'
+                                : ''
+                            }`}
+                          >
+                            <td className="py-3 font-extrabold text-sm text-slate-900 dark:text-white">
+                              {isTop1 ? '🥇 #1' : isTop2 ? '🥈 #2' : isTop3 ? '🥉 #3' : `#${idx + 1}`}
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                                  {entry.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'U'}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-slate-900 dark:text-white">
+                                    {entry.name}
+                                    {entry.studentId === student?.id && (
+                                      <span className="ms-1.5 text-[9px] px-1.5 py-0.5 rounded-md bg-teal-500/20 text-teal-700 dark:text-teal-300">
+                                        {language === 'he' ? 'אתה' : 'You'}
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-1">
+                                {entry.badges && entry.badges.length > 0 ? (
+                                  entry.badges.map((b: any) => (
+                                    <span
+                                      key={b.id}
+                                      className="text-base"
+                                      title={language === 'he' ? b.titleHe || b.title : b.title}
+                                    >
+                                      {b.icon || '🏆'}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-[10px] text-slate-400">—</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                {t(`levels.${entry.level || 'BEGINNER'}`)}
+                              </span>
+                            </td>
+                            <td className="py-3 text-slate-600 dark:text-slate-400 font-medium">
+                              {entry.streakDays > 0 ? `🔥 ${entry.streakDays}d` : '—'}
+                            </td>
+                            <td className="py-3 text-end font-black text-amber-600 dark:text-amber-400 text-sm">
+                              {entry.totalPoints.toLocaleString()} <span className="text-[10px] font-normal text-slate-400">XP</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -2947,14 +3183,9 @@ export const StudentDashboard: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <img
-                          src={
-                            t.user?.avatarUrl ||
-                            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150'
-                          }
-                          alt={t.user?.firstName}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black text-[11px] flex items-center justify-center shadow-xs ring-1 ring-teal-400/30 shrink-0">
+                          {`${t.user?.firstName?.charAt(0) || ''}${t.user?.lastName?.charAt(0) || ''}`.toUpperCase() || 'T'}
+                        </div>
                         <div className="overflow-hidden">
                           <p className="font-bold text-slate-900 dark:text-white truncate">
                             {t.user?.firstName} {t.user?.lastName}
@@ -3353,6 +3584,13 @@ export const StudentDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Certificate Modal for Viewing & Printing Official PDF Certificates */}
+      <CertificateModal
+        isOpen={!!selectedCert}
+        certificate={selectedCert}
+        onClose={() => setSelectedCert(null)}
+      />
     </div>
   );
 };

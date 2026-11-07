@@ -47,8 +47,23 @@ export async function listGamesHandler(req: AuthRequest, res: Response, next: Ne
 
 export async function getLeaderboardHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const leaderboard = await gamesService.getLeaderboard();
-    res.json({ leaderboard });
+    const period = (req.query.period as any) || 'all_time';
+    const leaderboard = await gamesService.getLeaderboard(period);
+    res.json({ leaderboard, period });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resetSeasonHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { seasonKey, seasonTitle, seasonTitleHe } = req.body;
+    const badges = await gamesService.resetLeaderboardSeason(
+      seasonKey || `SEASON_${new Date().toISOString().slice(0, 7)}`,
+      seasonTitle || 'Hebrew Monthly League',
+      seasonTitleHe || 'ליגת העברית החודשית'
+    );
+    res.json({ message: 'Season finalized and badges awarded successfully', badges });
   } catch (error) {
     next(error);
   }

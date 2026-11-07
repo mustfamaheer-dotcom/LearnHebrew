@@ -15,6 +15,7 @@ import { FlashcardGame } from '../../components/games/FlashcardGame';
 import { QuizGame } from '../../components/games/QuizGame';
 import { MatchingGame } from '../../components/games/MatchingGame';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
+import { StructuredNotesEditorModal } from '../../components/lessons/StructuredNotesEditorModal';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { isGoogleDriveUrl, detectAttachmentType } from '../../lib/driveUtils';
@@ -120,6 +121,7 @@ export const TeacherDashboard: React.FC = () => {
   } | null>(null);
   const [slotZoomLink, setSlotZoomLink] = useState('');
   const [saveZoomAsDefault, setSaveZoomAsDefault] = useState(true);
+  const [structuredNotesLesson, setStructuredNotesLesson] = useState<any | null>(null);
 
   // Helper to compute dates of current week (Sunday to Saturday) based on selectedDate
   const getWeekDates = (baseDateStr: string) => {
@@ -1341,16 +1343,16 @@ export const TeacherDashboard: React.FC = () => {
                         )}
 
                         <button
-                          onClick={() => {
-                            setRecordingLessonId(lesson.id);
-                            setRecordingUrl(lesson.recordingUrl || '');
-                            setSessionNotes(lesson.teacherNotes || '');
-                          }}
-                          className="font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                          type="button"
+                          onClick={() => setStructuredNotesLesson(lesson)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 font-bold text-xs hover:bg-teal-100 dark:hover:bg-teal-900 transition-all shadow-2xs"
                         >
-                          {lesson.recordingUrl
-                            ? (language === 'he' ? 'עריכת הקלטה והערות' : 'Edit Recording & Notes')
-                            : (language === 'he' ? '+ הוסף הקלטה והערות' : '+ Add Recording & Notes')}
+                          <FileText className="w-3.5 h-3.5 text-teal-600" />
+                          <span>
+                            {lesson.teacherNotes || lesson.recordingUrl
+                              ? (language === 'he' ? 'עריכת סיכום מובנה והקלטה' : 'Edit Structured Notes & Recording')
+                              : (language === 'he' ? '+ הוסף סיכום מובנה והקלטה' : '+ Add Structured Notes & Recording')}
+                          </span>
                         </button>
                       </div>
 
@@ -2635,6 +2637,15 @@ export const TeacherDashboard: React.FC = () => {
         url={viewerUrl || ''}
         title={viewerTitle}
         subtitle={viewerSubtitle}
+      />
+
+      {/* Structured Lesson Notes & Study Guide Editor Modal */}
+      <StructuredNotesEditorModal
+        isOpen={!!structuredNotesLesson}
+        lessonId={structuredNotesLesson?.id || ''}
+        initialNotes={structuredNotesLesson?.teacherNotes}
+        initialRecordingUrl={structuredNotesLesson?.recordingUrl}
+        onClose={() => setStructuredNotesLesson(null)}
       />
 
       {/* Delete Game Confirmation Modal (No browser alerts/confirms!) */}

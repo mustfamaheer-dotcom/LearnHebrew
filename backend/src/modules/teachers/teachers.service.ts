@@ -1,35 +1,38 @@
 import { prisma } from '../../config/database';
 import { SlotType } from '@prisma/client';
+import { getCachedOrFetch, cacheInvalidatePrefix } from '../../lib/cache';
 
 export async function listTeachers() {
-  return prisma.teacher.findMany({
-    include: {
-      user: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          avatarUrl: true,
-          languagePref: true,
+  return getCachedOrFetch('teachers:list', 60, async () => {
+    return prisma.teacher.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            avatarUrl: true,
+            languagePref: true,
+          },
+        },
+        timeSlots: true,
+        lessons: {
+          where: {
+            status: 'SCHEDULED',
+            scheduledAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+          },
+          select: {
+            id: true,
+            scheduledAt: true,
+            durationMinutes: true,
+          },
+        },
+        _count: {
+          select: { lessons: true },
         },
       },
-      timeSlots: true,
-      lessons: {
-        where: {
-          status: 'SCHEDULED',
-          scheduledAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        },
-        select: {
-          id: true,
-          scheduledAt: true,
-          durationMinutes: true,
-        },
-      },
-      _count: {
-        select: { lessons: true },
-      },
-    },
+    });
   });
 }
 
@@ -123,7 +126,7 @@ export async function addSlot(
     });
   }
 
-  return prisma.timeSlot.create({
+  const created = await prisma.timeSlot.create({
     data: {
       teacherId: teacher.id,
       dayOfWeek: data.dayOfWeek,
@@ -134,12 +137,16 @@ export async function addSlot(
       zoomLink: zoomUrl,
     },
   });
+  await cacheInvalidatePrefix('teachers:');
+  return created;
 }
 
 export async function deleteSlot(slotId: string) {
-  return prisma.timeSlot.delete({
+  const deleted = await prisma.timeSlot.delete({
     where: { id: slotId },
   });
+  await cacheInvalidatePrefix('teachers:');
+  return deleted;
 }
 
 export async function getTeacherStudents(teacherIdOrUserId: string) {

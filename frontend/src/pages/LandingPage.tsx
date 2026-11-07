@@ -799,17 +799,9 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  {t.avatar ? (
-                    <img
-                      src={t.avatar}
-                      alt={t.name}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-brand-teal-100 dark:ring-brand-teal-900"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-brand-olive-100 dark:bg-brand-olive-950 text-brand-olive-800 dark:text-brand-olive-300 font-bold flex items-center justify-center text-xs">
-                      {t.name?.charAt(0) || 'S'}
-                    </div>
-                  )}
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black flex items-center justify-center text-xs shadow-xs ring-1 ring-teal-400/30 shrink-0">
+                    {t.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
+                  </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white">{t.name}</h4>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">{t.location}</p>

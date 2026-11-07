@@ -99,4 +99,22 @@ export async function getStudentProgressHandler(req: AuthRequest, res: Response,
   }
 }
 
+export async function getStudentCertificatesHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const certs = await studentsService.getStudentCertificates(req.params.id);
+    res.json(certs);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function generateCertificateHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const cert = await studentsService.generateCertificate(req.params.id, req.body);
+    res.json({ certificate: cert, message: 'Certificate generated successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
 

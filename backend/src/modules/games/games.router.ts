@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   listGamesHandler,
   getLeaderboardHandler,
+  resetSeasonHandler,
   getGameHandler,
   createGameHandler,
   updateGameHandler,
@@ -17,6 +18,7 @@ router.use(authenticate);
 
 router.get('/', listGamesHandler);
 router.get('/leaderboard', getLeaderboardHandler);
+router.post('/leaderboard/reset-season', requireRoles(Role.ADMIN, Role.SUPER_ADMIN), resetSeasonHandler);
 router.get('/:id', getGameHandler);
 router.post('/', requireRoles(Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN), createGameHandler);
 router.put('/:id', requireRoles(Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN), updateGameHandler);
