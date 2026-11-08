@@ -9,6 +9,7 @@ import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { SystemLogsTab } from '../../components/admin/SystemLogsTab';
 import { ReminderNotificationHubTab } from '../../components/admin/ReminderNotificationHubTab';
+import { ReviewsAndFeedbackTab } from '../../components/admin/ReviewsAndFeedbackTab';
 import {
   formatSlotRange12Hour,
   formatIsraelDateTime,
@@ -69,7 +70,26 @@ import {
   PieChart,
   Shield,
   Terminal,
+  LayoutGrid,
+  Gift,
+  MoreHorizontal,
 } from 'lucide-react';
+
+// Custom outline Home icon with inner circle door matching iOS pill island aesthetic
+const HomeIslandIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 2.5 3 9.5v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-10l-9-7Z" />
+    <circle cx="12" cy="14" r="2.2" />
+  </svg>
+);
 
 export const AdminDashboard: React.FC = () => {
   const { t, language } = useTranslation();
@@ -83,6 +103,7 @@ export const AdminDashboard: React.FC = () => {
   >('overview');
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState<string>('ALL');
 
@@ -696,24 +717,6 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full relative">
-      {/* Mobile Top Bar */}
-      <div className="lg:hidden flex items-center justify-between bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 px-4 py-3 sticky top-16 z-20">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center p-1 shadow-2xs shrink-0">
-            <img src="/logo.png" alt="Engrew" className="w-full h-full object-contain drop-shadow-2xs" />
-          </div>
-          <span className="font-extrabold text-brand-teal-900 dark:text-white text-xs">
-            {language === 'he' ? 'מרכז בעל הפלטפורמה' : 'Platform Owner Hub'}
-          </span>
-        </div>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200"
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
-
       <div className="w-full">
         {/* Apple-Style Glassy Left Sidebar */}
         <GlassSidebar
@@ -721,7 +724,7 @@ export const AdminDashboard: React.FC = () => {
           activeTab={activeTab}
           onTabChange={(tabId) => {
             setActiveTab(tabId as any);
-            setMobileMenuOpen(false);
+            setIsMobileMoreOpen(false);
           }}
           user={{
             firstName: currentUser?.firstName,
@@ -733,8 +736,8 @@ export const AdminDashboard: React.FC = () => {
               : (currentUser?.role || (language === 'he' ? 'בעלים ומנהל ראשי' : 'Platform Owner')),
           }}
           panelSubtitle={language === 'he' ? 'מרכז בעל הפלטפורמה' : 'Platform Owner Hub'}
-          isOpenMobile={mobileMenuOpen}
-          onCloseMobile={() => setMobileMenuOpen(false)}
+          isOpenMobile={false}
+          onCloseMobile={() => setIsMobileMoreOpen(false)}
         />
 
         {/* Main Content Area on the right */}
@@ -2897,42 +2900,7 @@ export const AdminDashboard: React.FC = () => {
 
           {/* TAB 7: SURVEYS & REVIEWS */}
           {activeTab === 'surveys' && (
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                  Student Lesson Reviews & Teacher Feedback
-                </h1>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Ratings on lesson quality, difficulty calibration, and teacher reviews.
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                {(surveysData || []).map((s: any) => (
-                  <div key={s.id} className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                          {s.lesson?.student?.user?.firstName} {s.lesson?.student?.user?.lastName} &rarr;{' '}
-                          {s.teacher?.user?.firstName} {s.teacher?.user?.lastName}
-                        </h2>
-                        <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                          {new Date(s.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-lg text-xs font-bold border border-amber-200 dark:border-amber-800/60">
-                        <Star className="w-3.5 h-3.5 fill-amber-500" />
-                        <span>{s.qualityRating || 5}/5</span>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl italic border border-transparent dark:border-slate-700">
-                      "{s.comments || 'Great lesson! Teacher spoke at the right pace and explained the roots clearly.'}"
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ReviewsAndFeedbackTab />
           )}
 
           {/* TAB 8: SYSTEM OBSERVABILITY & ERROR TRACKING (PLATFORM OWNER ONLY) */}
@@ -3903,6 +3871,284 @@ export const AdminDashboard: React.FC = () => {
                     : (language === 'he' ? 'אישור עדכון יתרה' : 'Confirm Balance')}
                 </span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Capsule Island Bottom Navigation Bar (Mobile View) */}
+      <nav
+        aria-label="Mobile Navigation"
+        className={`lg:hidden fixed left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-40 transition-all duration-300 ${
+          isMobileMoreOpen ? 'opacity-0 pointer-events-none translate-y-8' : 'opacity-100 pointer-events-auto translate-y-0'
+        }`}
+        style={{ bottom: 'max(calc(env(safe-area-inset-bottom, 0px) - 30px), 4px)' }}
+      >
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4/5 h-10 bg-gradient-to-r from-brand-teal-500/20 via-teal-400/25 to-brand-olive-500/20 blur-xl pointer-events-none -z-10" />
+
+        <div className="relative rounded-full py-2 px-3 floating-capsule-shell grid grid-cols-5 items-center justify-around gap-1">
+          <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 dark:via-white/20 to-transparent pointer-events-none rounded-full" />
+
+          {[
+            { id: 'overview', label: language === 'he' ? 'מדדים' : 'Overview', icon: BarChart2, badge: null },
+            { id: 'users', label: language === 'he' ? 'משתמשים' : 'Users', icon: Users, badge: usersData?.length ? String(usersData.length) : null },
+            { id: 'bookings', label: language === 'he' ? 'שיעורים' : 'Bookings', icon: Calendar, badge: scheduledLessonsCount > 0 ? String(scheduledLessonsCount) : null },
+            { id: 'packages', label: language === 'he' ? 'חבילות' : 'Packages', icon: Layers, badge: null },
+            { id: 'more', label: language === 'he' ? 'עוד' : 'More', icon: Sliders, badge: null },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isHubSecondaryActive =
+              activeTab === 'teachers' ||
+              activeTab === 'landing_cms' ||
+              activeTab === 'surveys' ||
+              activeTab === 'reminders_hub' ||
+              activeTab === 'system_logs';
+            const isActive =
+              (item.id === 'more' && (isMobileMoreOpen || isHubSecondaryActive)) ||
+              (item.id !== 'more' && activeTab === item.id);
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  if (item.id === 'more') {
+                    setIsMobileMoreOpen(true);
+                  } else {
+                    setActiveTab(item.id as any);
+                    setIsMobileMoreOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`relative py-1.5 px-2 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${
+                  isActive
+                    ? 'floating-capsule-active active:scale-95'
+                    : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/60 active:scale-95'
+                }`}
+              >
+                {/* Notification Badge Dot */}
+                {item.badge && (
+                  <span className="absolute top-1 end-2 flex h-2 w-2 items-center justify-center pointer-events-none">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-teal-500 opacity-75 animate-ping" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-600 shadow-[0_0_8px_rgba(20,184,166,0.8)]" />
+                  </span>
+                )}
+
+                <Icon
+                  className={`w-6 h-6 shrink-0 transition-transform duration-200 ${
+                    isActive
+                      ? 'text-[#0c4a60] dark:text-[#2dd4bf] stroke-[2.2] scale-105 drop-shadow-[0_1px_4px_rgba(12,74,96,0.25)]'
+                      : 'text-slate-900 dark:text-slate-100 stroke-[1.8] group-hover:scale-105'
+                  }`}
+                />
+                <span
+                  className={`text-[11px] tracking-tight mt-0.5 leading-tight truncate max-w-full transition-colors ${
+                    isActive
+                      ? 'text-[#0c4a60] dark:text-[#2dd4bf] font-bold'
+                      : 'text-slate-800 dark:text-slate-200 font-semibold group-hover:text-slate-950 dark:group-hover:text-white'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* iOS Liquid Glass Mobile "More" Sheet (Admin Tools) */}
+      {isMobileMoreOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setIsMobileMoreOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-x border-slate-200/90 dark:border-slate-800/90 rounded-t-3xl p-5 pb-32 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Grab Handle */}
+            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto" />
+
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
+                  {language === 'he' ? 'כלי ניהול נוספים' : 'Platform Owner Tools'}
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {language === 'he' ? 'עמוד בית, מורים, משובים, תזכורות ובקרת מערכת' : 'CMS, teachers, surveys, reminders & system audit'}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMobileMoreOpen(false)}
+                className="p-1.5 rounded-full text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              {/* Card 1: Landing Page CMS */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('landing_cms');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
+                  activeTab === 'landing_cms'
+                    ? 'border-brand-teal-500 dark:border-cyan-400 ring-2 ring-brand-teal-500/20 dark:ring-cyan-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-brand-teal-700 dark:text-teal-300 border border-brand-teal-200/60 dark:border-teal-800/40">
+                    <Sliders className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-teal-900/80 text-brand-teal-900 dark:text-teal-200 border border-brand-teal-300/60 dark:border-teal-700/50">
+                    Live
+                  </span>
+                </div>
+                <div>
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
+                    {language === 'he' ? 'ניהול עמוד הבית' : 'Landing Page CMS'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {language === 'he' ? 'עריכת טקסטים, באנרים ותכנים' : 'Headlines, banners & content'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Card 2: Teachers & 25m Slots */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('teachers');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
+                  activeTab === 'teachers'
+                    ? 'border-brand-olive-500 dark:border-lime-400 ring-2 ring-brand-olive-500/20 dark:ring-lime-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-brand-olive-50 dark:bg-brand-olive-950/60 text-brand-olive-700 dark:text-brand-olive-300 border border-brand-olive-200/60 dark:border-brand-olive-800/40">
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-olive-100 dark:bg-brand-olive-950/70 text-brand-olive-900 dark:text-brand-olive-200 border border-brand-olive-300/70 dark:border-brand-olive-700/50">
+                    {teachersData?.length || 0}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
+                    {language === 'he' ? 'מורים ומשבצות' : 'Teachers & Slots'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {language === 'he' ? 'פרופיל מורים ומשבצות 25 דק׳' : 'Teacher rosters & slot capacity'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Card 3: Surveys & Reviews */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('surveys');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
+                  activeTab === 'surveys'
+                    ? 'border-purple-500 dark:border-purple-400 ring-2 ring-purple-500/20 dark:ring-purple-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/40">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/70 text-purple-900 dark:text-purple-200 border border-purple-300/70 dark:border-purple-700/50">
+                    {surveysData?.length || 0}
+                  </span>
+                </div>
+                <div>
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
+                    {language === 'he' ? 'משובים וסקרים' : 'Surveys & Reviews'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {language === 'he' ? 'דירוגי שיעורים ומשוב מורים' : 'Student ratings & lesson reviews'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Card 4: Reminder Engine & Hub */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('reminders_hub');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
+                  activeTab === 'reminders_hub'
+                    ? 'border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/20 dark:ring-emerald-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
+                    <BellRing className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-900 dark:text-emerald-200 border border-emerald-300/70 dark:border-emerald-700/50">
+                    Live
+                  </span>
+                </div>
+                <div>
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
+                    {language === 'he' ? 'מנוע תזכורות' : 'Reminder Engine'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {language === 'he' ? 'התראות וואטסאפ ואימייל' : 'WhatsApp & Email hub'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Card 5: System Logs (SUPER_ADMIN) */}
+              {currentUser?.role === 'SUPER_ADMIN' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('system_logs');
+                    setIsMobileMoreOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`col-span-2 p-3.5 rounded-2xl text-start transition-all flex items-center justify-between gap-4 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
+                    activeTab === 'system_logs'
+                      ? 'border-rose-500 dark:border-rose-400 ring-2 ring-rose-500/20 dark:ring-rose-400/20'
+                      : 'border-slate-200/90 dark:border-slate-700/60'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40 shrink-0">
+                      <Terminal className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-xs text-slate-900 dark:text-white">
+                        {language === 'he' ? 'יומן מערכת ובקרה' : 'System Logs & Audit'}
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        {language === 'he' ? 'תיעוד שגיאות, אבטחה ופעילות שרת' : 'Error tracing, security & activity logs'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-extrabold px-3 py-1.5 rounded-full bg-rose-600 dark:bg-rose-500/20 text-white dark:text-rose-200 border border-rose-600 dark:border-rose-400/40 shrink-0">
+                    Live
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>

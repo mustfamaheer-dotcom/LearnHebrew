@@ -15,9 +15,9 @@ const bookLessonSchema = z.object({
 });
 
 const updateLessonSchema = z.object({
-  teacherNotes: z.string().optional(),
-  recordingUrl: z.string().optional(),
-  zoomLink: z.string().optional(),
+  teacherNotes: z.string().nullable().optional(),
+  recordingUrl: z.string().nullable().optional(),
+  zoomLink: z.string().nullable().optional(),
   status: z.nativeEnum(LessonStatus).optional(),
 });
 

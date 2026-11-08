@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import { HebrewLevel, GameType, PointsEventType } from '@prisma/client';
+import { Prisma, HebrewLevel, GameType, PointsEventType } from '@prisma/client';
 import { getCachedOrFetch, cacheInvalidatePrefix } from '../../lib/cache';
 
 export async function listGames(filters: {
@@ -65,13 +65,15 @@ export async function getLeaderboard(period: 'all_time' | 'weekly' | 'monthly' =
       take: 10,
     });
 
+    const studentInclude: Prisma.StudentInclude = {
+      user: { select: { firstName: true, lastName: true } },
+      badges: { orderBy: { awardedAt: 'desc' }, take: 3 },
+    };
+
     const studentIds = grouped.map((g) => g.studentId);
     const students = await prisma.student.findMany({
       where: { id: { in: studentIds } },
-      include: {
-        user: { select: { firstName: true, lastName: true } },
-        badges: { orderBy: { awardedAt: 'desc' }, take: 3 },
-      },
+      include: studentInclude,
     });
 
     const studentMap = new Map(students.map((s) => [s.id, s]));
@@ -112,7 +114,7 @@ export async function getLeaderboard(period: 'all_time' | 'weekly' | 'monthly' =
         orderBy: { awardedAt: 'desc' },
         take: 3,
       },
-    },
+    } satisfies Prisma.StudentInclude,
   });
 
   return topStudents.map((s, idx) => ({

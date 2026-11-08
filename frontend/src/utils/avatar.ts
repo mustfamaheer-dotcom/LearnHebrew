@@ -70,3 +70,4 @@ export function processImageToWebP(file: File, maxSize = 400, quality = 0.88): P
     reader.readAsDataURL(file);
   });
 }
+

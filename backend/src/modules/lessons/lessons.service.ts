@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import { SlotType, LessonStatus, PointsEventType } from '@prisma/client';
+import { Prisma, SlotType, LessonStatus, PointsEventType } from '@prisma/client';
 import { logAuditEvent } from '../../utils/audit';
 import { notificationService } from '../notifications/notifications.service';
 
@@ -271,8 +271,76 @@ export async function getLessonById(id: string) {
   return lesson;
 }
 
+async function syncLessonRecordingToSession(lessonId: string, recordingUrl: string) {
+  if (!recordingUrl || !recordingUrl.trim()) return;
+  try {
+    const url = recordingUrl.trim();
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        student: { include: { user: true } },
+        teacher: { include: { user: true } },
+      },
+    });
+
+    if (!lesson) return;
+
+    const studentName = lesson.student?.user
+      ? `${lesson.student.user.firstName} ${lesson.student.user.lastName}`
+      : 'Student';
+    const teacherName = lesson.teacher?.user
+      ? `${lesson.teacher.user.firstName} ${lesson.teacher.user.lastName}`
+      : 'Teacher';
+    const dateStr = lesson.scheduledAt
+      ? new Date(lesson.scheduledAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : '';
+
+    const sessionTitle = `1-on-1 Lesson - ${studentName} (${dateStr})`;
+    const sessionTitleHe = `שיעור פרטי - ${studentName} (${dateStr})`;
+
+    const existing = await prisma.recordedSession.findFirst({
+      where: { lessonId: lesson.id },
+    });
+
+    if (existing) {
+      await prisma.recordedSession.update({
+        where: { id: existing.id },
+        data: {
+          videoUrl: url,
+          teacherId: lesson.teacherId,
+          studentId: lesson.studentId,
+          title: sessionTitle,
+          titleHe: sessionTitleHe,
+          isPublished: true,
+        },
+      });
+    } else {
+      await prisma.recordedSession.create({
+        data: {
+          lessonId: lesson.id,
+          teacherId: lesson.teacherId,
+          studentId: lesson.studentId,
+          title: sessionTitle,
+          titleHe: sessionTitleHe,
+          description: `Live 25-minute recorded session with ${teacherName}. Review notes, grammar focus, and vocabulary.`,
+          videoUrl: url,
+          category: 'Private Sessions',
+          durationMinutes: 25,
+          isPublished: true,
+        },
+      });
+    }
+  } catch (err) {
+    console.error('Failed to auto-sync recorded session from lesson notes:', err);
+  }
+}
+
 export async function updateLesson(id: string, data: any) {
-  return prisma.lesson.update({
+  const updated = await prisma.lesson.update({
     where: { id },
     data,
     include: {
@@ -280,6 +348,12 @@ export async function updateLesson(id: string, data: any) {
       teacher: { include: { user: true } },
     },
   });
+
+  if (data.recordingUrl) {
+    await syncLessonRecordingToSession(id, data.recordingUrl);
+  }
+
+  return updated;
 }
 
 export async function cancelLesson(id: string, cancelledById: string, cancelReason?: string) {
@@ -409,10 +483,12 @@ export async function completeLesson(id: string) {
 }
 
 export async function saveRecording(id: string, recordingUrl: string) {
-  return prisma.lesson.update({
+  const updated = await prisma.lesson.update({
     where: { id },
     data: { recordingUrl },
   });
+  await syncLessonRecordingToSession(id, recordingUrl);
+  return updated;
 }
 
 export async function rescheduleLesson(
@@ -502,19 +578,21 @@ export async function rescheduleLesson(
     });
 
     // 4. Create new lesson linked with rescheduledFromId without deducting additional balance
+    const newLessonData: Prisma.LessonUncheckedCreateInput = {
+      studentId: lesson.studentId,
+      teacherId: lesson.teacherId,
+      timeSlotId: newSlot.id,
+      studentPackageId: lesson.studentPackageId,
+      scheduledAt: newScheduledAt,
+      durationMinutes: duration,
+      lessonType: lesson.lessonType,
+      zoomLink,
+      status: LessonStatus.SCHEDULED,
+      rescheduledFromId: lesson.id,
+    };
+
     const newLesson = await tx.lesson.create({
-      data: {
-        studentId: lesson.studentId,
-        teacherId: lesson.teacherId,
-        timeSlotId: newSlot.id,
-        studentPackageId: lesson.studentPackageId,
-        scheduledAt: newScheduledAt,
-        durationMinutes: duration,
-        lessonType: lesson.lessonType,
-        zoomLink,
-        status: LessonStatus.SCHEDULED,
-        rescheduledFromId: lesson.id,
-      },
+      data: newLessonData,
       include: {
         student: { include: { user: true } },
         teacher: { include: { user: true } },

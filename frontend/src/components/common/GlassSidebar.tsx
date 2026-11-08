@@ -63,16 +63,16 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
       {/* Mobile Drawer Overlay Backdrop */}
       {isOpenMobile && (
         <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 lg:hidden transition-opacity"
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[70] lg:hidden transition-opacity"
           onClick={onCloseMobile}
         />
       )}
 
       {/* Fixed Left Sidebar */}
       <aside
-        className={`fixed top-16 sm:top-20 start-0 bottom-0 z-40 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-e border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/95 backdrop-blur-2xl flex flex-col justify-between transition-all duration-300 ease-in-out ${
+        className={`fixed top-16 sm:top-20 start-0 bottom-0 z-40 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-e border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl flex flex-col justify-between transition-all duration-300 ease-in-out ${
           isOpenMobile
-            ? 'flex z-50 !top-0 !h-screen w-72 shadow-2xl'
+            ? 'flex z-[70] !top-0 !h-screen w-80 max-w-[85vw] shadow-2xl rounded-e-3xl sm:rounded-e-none'
             : isCollapsed
             ? 'hidden lg:flex w-20'
             : 'hidden lg:flex w-72 xl:w-80'
@@ -263,9 +263,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
         </div>
 
         {/* Bottom Section: Action Button + User Profile */}
-        <div className={`border-t border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 bg-slate-50/50 dark:bg-slate-950/60 transition-all ${
-          isCollapsed ? 'p-2 space-y-2' : 'p-3.5 space-y-3'
-        }`}>
+        <div
+          className={`border-t border-slate-200/60 dark:border-slate-800/80 shrink-0 relative z-10 bg-slate-50/50 dark:bg-slate-950/60 transition-all ${
+            isCollapsed ? 'p-2 space-y-2' : 'p-3.5 space-y-3'
+          }`}
+          style={{ paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 8px), 14px)' }}
+        >
           {/* Action Button */}
           {actionButton && (
             isCollapsed ? (

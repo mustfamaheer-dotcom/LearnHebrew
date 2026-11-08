@@ -12,7 +12,6 @@ import { MatchingGame } from '../../components/games/MatchingGame';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
-import { StudentProgressTab } from '../../components/student/StudentProgressTab';
 import { RescheduleModal } from '../../components/student/RescheduleModal';
 import { StructuredNotesViewer } from '../../components/lessons/StructuredNotesViewer';
 import { CertificateModal, CertificateData } from '../../components/common/CertificateModal';
@@ -38,6 +37,8 @@ import {
   Star,
   Send,
   AlertCircle,
+  AlertTriangle,
+  UserCheck,
   Plus,
   X,
   Sparkles,
@@ -45,6 +46,9 @@ import {
   GraduationCap,
   Globe2,
   LayoutDashboard,
+  LayoutGrid,
+  Gift,
+  Home,
   Menu,
   PlayCircle,
   Eye,
@@ -55,7 +59,7 @@ import {
   Search,
   Wallet,
   Maximize2,
-  MoreHorizontal,
+  Sliders,
   ArrowDownLeft,
   ArrowUpRight,
   RefreshCw,
@@ -66,6 +70,26 @@ import {
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+// Custom outline Home icon with inner circle door matching iOS pill island aesthetic
+const HomeIslandIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 2.5 3 9.5v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-10l-9-7Z" />
+    <circle cx="12" cy="14" r="2.2" />
+  </svg>
+);
+
+const StudentProgressTab = React.lazy(() =>
+  import('../../components/student/StudentProgressTab').then((m) => ({ default: m.StudentProgressTab }))
+);
 
 export const StudentDashboard: React.FC = () => {
   const user = useAuthStore((state) => state.user);
@@ -105,9 +129,24 @@ export const StudentDashboard: React.FC = () => {
   const [studentGameLevelFilter, setStudentGameLevelFilter] = useState<string>('ALL');
   const [submittingHwId, setSubmittingHwId] = useState<string | null>(null);
   const [hwNote, setHwNote] = useState('');
-  const [ratingLessonId, setRatingLessonId] = useState<string | null>(null);
-  const [ratingVal, setRatingVal] = useState(5);
-  const [ratingComment, setRatingComment] = useState('');
+  // Rate Lesson State
+  const [ratingLessonTarget, setRatingLessonTarget] = useState<any | null>(null);
+  const [lessonRatingVal, setLessonRatingVal] = useState<number>(0);
+  const [hoverLessonStar, setHoverLessonStar] = useState<number>(0);
+  const [lessonPace, setLessonPace] = useState<number>(3);
+  const [lessonDifficulty, setLessonDifficulty] = useState<number>(3);
+  const [lessonComment, setLessonComment] = useState<string>('');
+  const [lessonRatingError, setLessonRatingError] = useState<string | null>(null);
+
+  // Rate Teacher State
+  const [ratingTeacherTarget, setRatingTeacherTarget] = useState<any | null>(null);
+  const [teacherOverallRating, setTeacherOverallRating] = useState<number>(0);
+  const [hoverTeacherStar, setHoverTeacherStar] = useState<number>(0);
+  const [teacherCommunication, setTeacherCommunication] = useState<number>(5);
+  const [teacherKnowledge, setTeacherKnowledge] = useState<number>(5);
+  const [teacherPunctuality, setTeacherPunctuality] = useState<number>(5);
+  const [teacherComment, setTeacherComment] = useState<string>('');
+  const [teacherRatingError, setTeacherRatingError] = useState<string | null>(null);
   const [reschedulingLesson, setReschedulingLesson] = useState<any | null>(null);
   const [selectedCert, setSelectedCert] = useState<CertificateData | null>(null);
 
@@ -286,23 +325,129 @@ export const StudentDashboard: React.FC = () => {
     },
   });
 
-  // Feedback submit mutation
-  const submitFeedbackMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return api.post(`/feedback/lesson/${data.lessonId}`, {
-        qualityRating: data.rating,
-        difficulty: 3,
-        paceRating: 3,
-        comments: data.comment,
+  const getStarRatingLabel = (stars: number, lang: string) => {
+    const isHeb = lang === 'he';
+    switch (stars) {
+      case 5:
+        return isHeb ? '⭐⭐⭐⭐⭐ 5 מתוך 5 - מצוין! חוויה מעולה' : '⭐⭐⭐⭐⭐ 5 of 5 - Excellent! Outstanding';
+      case 4:
+        return isHeb ? '⭐⭐⭐⭐ 4 מתוך 5 - טוב מאוד! מרוצה מאוד' : '⭐⭐⭐⭐ 4 of 5 - Very Good! Great session';
+      case 3:
+        return isHeb ? '⭐⭐⭐ 3 מתוך 5 - טוב, תאם את הציפיות' : '⭐⭐⭐ 3 of 5 - Good, met expectations';
+      case 2:
+        return isHeb ? '⭐⭐ 2 מתוך 5 - סביר, טעון שיפור' : '⭐⭐ 2 of 5 - Fair, needs improvement';
+      case 1:
+        return isHeb ? '⭐ 1 מתוך 5 - טעון שיפור משמעותי' : '⭐ 1 of 5 - Poor, needs significant work';
+      default:
+        return isHeb ? 'לחץ על הכוכבים כדי לבחור דירוג (1 עד 5 כוכבים)' : 'Click on the stars above to select a rating (1 to 5)';
+    }
+  };
+
+  const openRateLesson = (lesson: any) => {
+    setRatingLessonTarget(lesson);
+    setRatingTeacherTarget(null);
+    setLessonRatingVal(lesson.feedback?.qualityRating || 0);
+    setLessonPace(lesson.feedback?.paceRating || 3);
+    setLessonDifficulty(lesson.feedback?.difficulty || 3);
+    setLessonComment(lesson.feedback?.comments || '');
+    setLessonRatingError(null);
+  };
+
+  const openRateTeacher = (lesson: any) => {
+    setRatingTeacherTarget(lesson);
+    setRatingLessonTarget(null);
+    const existingSurvey = lesson.teacher?.surveys?.[0];
+    setTeacherOverallRating(existingSurvey?.overallRating || 0);
+    setTeacherCommunication(existingSurvey?.communication || 5);
+    setTeacherKnowledge(existingSurvey?.knowledge || 5);
+    setTeacherPunctuality(existingSurvey?.punctuality || 5);
+    setTeacherComment(existingSurvey?.comments || '');
+    setTeacherRatingError(null);
+  };
+
+  // Lesson Feedback submit mutation
+  const submitLessonFeedbackMutation = useMutation({
+    mutationFn: async (payload: {
+      lessonId: string;
+      qualityRating: number;
+      difficulty: number;
+      paceRating: number;
+      comments?: string;
+    }) => {
+      return api.post(`/feedback/lesson/${payload.lessonId}`, {
+        qualityRating: payload.qualityRating,
+        difficulty: payload.difficulty,
+        paceRating: payload.paceRating,
+        comments: payload.comments?.trim() || null,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
-      setRatingLessonId(null);
-      setRatingComment('');
+      setRatingLessonTarget(null);
+      setLessonRatingError(null);
       toast.success(
-        language === 'he' ? 'תודה על הדירוג והמשוב!' : 'Thank you for your rating & feedback!'
+        language === 'he'
+          ? 'תודה על הדירוג! משוב השיעור נשמר בהצלחה.'
+          : 'Thank you! Lesson rating submitted successfully.'
       );
+    },
+    onError: (err: any) => {
+      const serverMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        '';
+      const guidance =
+        language === 'he'
+          ? 'שגיאה בשמירת דירוג השיעור. אנא בדוק את החיבור לרשת ונסה שוב.'
+          : 'Failed to submit lesson rating. Please verify your connection and try again.';
+      const full = serverMsg ? `${serverMsg} • ${guidance}` : guidance;
+      setLessonRatingError(full);
+      toast.error(full);
+    },
+  });
+
+  // Teacher Survey submit mutation
+  const submitTeacherSurveyMutation = useMutation({
+    mutationFn: async (payload: {
+      teacherId: string;
+      overallRating: number;
+      communication: number;
+      knowledge: number;
+      punctuality: number;
+      comments?: string;
+    }) => {
+      return api.post(`/feedback/survey/${payload.teacherId}`, {
+        overallRating: payload.overallRating,
+        communication: payload.communication,
+        knowledge: payload.knowledge,
+        punctuality: payload.punctuality,
+        comments: payload.comments?.trim() || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+      setRatingTeacherTarget(null);
+      setTeacherRatingError(null);
+      toast.success(
+        language === 'he'
+          ? 'תודה רבה! דירוג המורה נשמר וציון המורה עודכן.'
+          : 'Thank you! Teacher rating submitted and instructor score updated.'
+      );
+    },
+    onError: (err: any) => {
+      const serverMsg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        '';
+      const guidance =
+        language === 'he'
+          ? 'שגיאה בשמירת דירוג המורה. אנא בדוק את החיבור לרשת ונסה שוב.'
+          : 'Failed to submit teacher survey. Please verify your connection and try again.';
+      const full = serverMsg ? `${serverMsg} • ${guidance}` : guidance;
+      setTeacherRatingError(full);
+      toast.error(full);
     },
   });
 
@@ -407,26 +552,26 @@ export const StudentDashboard: React.FC = () => {
   const isSecondaryActive =
     activeTab === 'recordings' ||
     activeTab === 'homework' ||
-    activeTab === 'leaderboard' ||
     activeTab === 'balance' ||
+    activeTab === 'leaderboard' ||
     activeTab === 'progress';
 
   const mobileTabs = [
     {
       id: 'overview',
       label: language === 'he' ? 'ראשי' : 'Home',
-      icon: LayoutDashboard,
+      icon: HomeIslandIcon,
       badge: null,
     },
     {
       id: 'booking',
       label: language === 'he' ? 'הזמנה' : 'Book',
-      icon: Clock,
+      icon: Calendar,
       badge: !hasEnoughBalance ? '!' : null,
     },
     {
       id: 'lessons',
-      label: language === 'he' ? 'שיעורים' : 'Live',
+      label: language === 'he' ? 'שיעורים' : 'Lessons',
       icon: Video,
       badge: upcomingLessons.length > 0 ? `${upcomingLessons.length}` : null,
     },
@@ -434,34 +579,12 @@ export const StudentDashboard: React.FC = () => {
       id: 'games',
       label: language === 'he' ? 'משחקים' : 'Games',
       icon: Gamepad2,
-      badge: null,
+      badge: student?.streakDays ? `${student.streakDays}🔥` : null,
     },
     {
-      id: isSecondaryActive ? activeTab : 'more',
-      label:
-        activeTab === 'progress'
-          ? (language === 'he' ? 'התקדמות' : 'Progress')
-          : activeTab === 'recordings'
-          ? (language === 'he' ? 'הקלטות' : 'Video')
-          : activeTab === 'homework'
-          ? (language === 'he' ? 'ש״ב' : 'HW')
-          : activeTab === 'leaderboard'
-          ? (language === 'he' ? 'דירוג' : 'Rank')
-          : activeTab === 'balance'
-          ? (language === 'he' ? 'יתרה' : 'Balance')
-          : (language === 'he' ? 'עוד' : 'More'),
-      icon:
-        activeTab === 'progress'
-          ? TrendingUp
-          : activeTab === 'recordings'
-          ? PlayCircle
-          : activeTab === 'homework'
-          ? BookOpen
-          : activeTab === 'leaderboard'
-          ? Award
-          : activeTab === 'balance'
-          ? Wallet
-          : MoreHorizontal,
+      id: 'more',
+      label: language === 'he' ? 'עוד' : 'More',
+      icon: Sliders,
       badge: pendingHomeworkCount > 0 ? `${pendingHomeworkCount}` : null,
     },
   ];
@@ -1607,95 +1730,486 @@ export const StudentDashboard: React.FC = () => {
                             <StructuredNotesViewer notesString={lesson.teacherNotes} />
                           )}
 
-                          <div className="flex items-center justify-between pt-1">
-                            {lesson.recordingUrl ? (
-                              <button
-                                onClick={() => {
-                                  setViewerUrl(lesson.recordingUrl);
-                                  setViewerTitle(`${lesson.teacher?.user?.firstName || 'Lesson'} Recording`);
-                                  setViewerSubtitle(new Date(lesson.scheduledAt).toLocaleDateString());
-                                }}
-                                className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 hover:underline"
-                              >
-                                <PlayCircle className="w-3.5 h-3.5 text-brand-olive-600" />
-                                <span>
-                                  {language === 'he'
-                                    ? 'צפייה בהקלטה במערכת'
-                                    : 'Watch Recording In-App'}
+                          {/* Actions & Separated Rating Controls Row */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                            <div>
+                              {lesson.recordingUrl ? (
+                                <button
+                                  onClick={() => {
+                                    setViewerUrl(lesson.recordingUrl);
+                                    setViewerTitle(`${lesson.teacher?.user?.firstName || 'Lesson'} Recording`);
+                                    setViewerSubtitle(new Date(lesson.scheduledAt).toLocaleDateString());
+                                  }}
+                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 hover:underline"
+                                >
+                                  <PlayCircle className="w-3.5 h-3.5 text-brand-olive-600" />
+                                  <span>
+                                    {language === 'he'
+                                      ? 'צפייה בהקלטה במערכת'
+                                      : 'Watch Recording In-App'}
+                                  </span>
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">
+                                  {language === 'he' ? 'ההקלטה תועלה בקרוב' : 'Recording uploading soon'}
                                 </span>
-                              </button>
-                            ) : (
-                              <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">
-                                {language === 'he' ? 'ההקלטה תועלה בקרוב' : 'Recording uploading soon'}
-                              </span>
-                            )}
+                              )}
+                            </div>
 
-                            {!lesson.feedback && (
-                              <button
-                                onClick={() => setRatingLessonId(lesson.id)}
-                                className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 flex items-center gap-1"
-                              >
-                                <Star className="w-3.5 h-3.5" />
-                                <span>{language === 'he' ? 'דרג שיעור' : 'Rate Lesson'}</span>
-                              </button>
-                            )}
+                            {/* Separated Rate Lesson & Rate Teacher Controls */}
+                            <div className="flex items-center gap-2">
+                              {/* 1. Rate Lesson Button / Badge */}
+                              {lesson.feedback ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openRateLesson(lesson)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-bold hover:bg-amber-500/20 transition-colors"
+                                  title={language === 'he' ? 'לחץ לעריכת דירוג השיעור' : 'Click to edit lesson rating'}
+                                >
+                                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                                  <span>
+                                    {language === 'he'
+                                      ? `שיעור: ${lesson.feedback.qualityRating}/5`
+                                      : `Lesson: ${lesson.feedback.qualityRating}/5`}
+                                  </span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => openRateLesson(lesson)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all shadow-2xs"
+                                >
+                                  <Star className="w-3.5 h-3.5 text-amber-500" />
+                                  <span>{language === 'he' ? 'דרג שיעור' : 'Rate Lesson'}</span>
+                                </button>
+                              )}
+
+                              {/* 2. Rate Teacher Button / Badge */}
+                              {lesson.teacher?.surveys?.[0] ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openRateTeacher(lesson)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 text-xs font-bold hover:bg-purple-500/20 transition-colors"
+                                  title={language === 'he' ? 'לחץ לעריכת דירוג המורה' : 'Click to edit teacher rating'}
+                                >
+                                  <Award className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                                  <span>
+                                    {language === 'he'
+                                      ? `מורה: ${lesson.teacher.surveys[0].overallRating}/5`
+                                      : `Teacher: ${lesson.teacher.surveys[0].overallRating}/5`}
+                                  </span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => openRateTeacher(lesson)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 text-xs font-bold hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-all shadow-2xs"
+                                >
+                                  <Award className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                                  <span>{language === 'he' ? 'דרג מורה' : 'Rate Teacher'}</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Rating Modal / Inline Form */}
-                          {ratingLessonId === lesson.id && (
-                            <div className="mt-3 p-3 bg-amber-50/60 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/80 space-y-2 text-xs">
-                              <span className="font-bold text-slate-800 dark:text-slate-200 block">
-                                {language === 'he'
-                                  ? 'דרג את איכות השיעור (1–5 כוכבים):'
-                                  : 'Rate Lesson Quality (1–5 Stars):'}
-                              </span>
-                              <div className="flex gap-1.5">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => setRatingVal(star)}
-                                    className="p-1"
-                                  >
-                                    <Star
-                                      className={`w-4 h-4 ${
-                                        star <= ratingVal
-                                          ? 'text-amber-500 fill-amber-500'
-                                          : 'text-slate-300 dark:text-slate-600'
-                                      }`}
-                                    />
-                                  </button>
-                                ))}
-                              </div>
-                              <input
-                                type="text"
-                                value={ratingComment}
-                                onChange={(e) => setRatingComment(e.target.value)}
-                                placeholder={
-                                  language === 'he'
-                                    ? 'הוסף משוב או הערה למורה (אופציונלי)...'
-                                    : 'Leave a comment for your teacher (optional)...'
-                                }
-                                className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg text-xs"
-                              />
-                              <div className="flex gap-2 justify-end">
+                          {/* SEPARATE FORM 1: RATE LESSON QUALITY */}
+                          {ratingLessonTarget?.id === lesson.id && (
+                            <div className="mt-3 p-4 bg-amber-50/70 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/80 space-y-3.5 text-xs animate-fade-in text-start">
+                              {/* Header */}
+                              <div className="flex items-center justify-between pb-2 border-b border-amber-200/60 dark:border-amber-800/60">
+                                <div className="flex items-center gap-2">
+                                  <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                                    {language === 'he' ? 'דירוג איכות השיעור' : 'Rate Lesson Quality'}
+                                  </span>
+                                </div>
                                 <button
-                                  onClick={() => setRatingLessonId(null)}
-                                  className="px-2.5 py-1 text-slate-600 dark:text-slate-400 font-semibold"
+                                  type="button"
+                                  onClick={() => setRatingLessonTarget(null)}
+                                  className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              {/* Clear Actionable Error Message */}
+                              {lessonRatingError && (
+                                <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl flex items-start gap-2.5 text-rose-800 dark:text-rose-200 animate-fade-in">
+                                  <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <span className="font-bold block">
+                                      {language === 'he' ? 'שימת לב נדרשת:' : 'Action Required:'}
+                                    </span>
+                                    <p className="mt-0.5 leading-relaxed">{lessonRatingError}</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Star Rating with Dynamic Live Guidance */}
+                              <div>
+                                <span className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
+                                  {language === 'he' ? 'בחר דירוג לשיעור (1–5 כוכבים):' : 'Select Lesson Rating (1–5 Stars):'}
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  {[1, 2, 3, 4, 5].map((star) => {
+                                    const isFilled = star <= (hoverLessonStar || lessonRatingVal);
+                                    return (
+                                      <button
+                                        key={star}
+                                        type="button"
+                                        onMouseEnter={() => setHoverLessonStar(star)}
+                                        onMouseLeave={() => setHoverLessonStar(0)}
+                                        onClick={() => {
+                                          setLessonRatingVal(star);
+                                          if (lessonRatingError) setLessonRatingError(null);
+                                        }}
+                                        className="p-1.5 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-transform active:scale-95"
+                                        title={`${star} Stars`}
+                                      >
+                                        <Star
+                                          className={`w-6 h-6 transition-colors ${
+                                            isFilled
+                                              ? 'text-amber-500 fill-amber-500'
+                                              : 'text-slate-300 dark:text-slate-600'
+                                          }`}
+                                        />
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <p className="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                  {getStarRatingLabel(hoverLessonStar || lessonRatingVal, language)}
+                                </p>
+                              </div>
+
+                              {/* Pace & Difficulty Pill Selectors */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                {/* Pace */}
+                                <div>
+                                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    {language === 'he' ? 'קצב השיעור:' : 'Lesson Pace:'}
+                                  </label>
+                                  <div className="flex gap-1.5">
+                                    {[
+                                      { val: 1, labelHe: 'איטי', labelEn: 'Slow' },
+                                      { val: 3, labelHe: 'מתאים בדיוק', labelEn: 'Just Right' },
+                                      { val: 5, labelHe: 'מהיר', labelEn: 'Fast' },
+                                    ].map((item) => (
+                                      <button
+                                        key={item.val}
+                                        type="button"
+                                        onClick={() => setLessonPace(item.val)}
+                                        className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition-colors ${
+                                          lessonPace === item.val
+                                            ? 'bg-amber-500 text-white border-amber-600'
+                                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                                        }`}
+                                      >
+                                        {language === 'he' ? item.labelHe : item.labelEn}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Difficulty */}
+                                <div>
+                                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    {language === 'he' ? 'רמת קושי:' : 'Difficulty:'}
+                                  </label>
+                                  <div className="flex gap-1.5">
+                                    {[
+                                      { val: 1, labelHe: 'קל', labelEn: 'Easy' },
+                                      { val: 3, labelHe: 'מאוזן', labelEn: 'Balanced' },
+                                      { val: 5, labelHe: 'מאתגר', labelEn: 'Challenging' },
+                                    ].map((item) => (
+                                      <button
+                                        key={item.val}
+                                        type="button"
+                                        onClick={() => setLessonDifficulty(item.val)}
+                                        className={`flex-1 py-1 px-2 rounded-lg text-xs font-bold border transition-colors ${
+                                          lessonDifficulty === item.val
+                                            ? 'bg-amber-500 text-white border-amber-600'
+                                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
+                                        }`}
+                                      >
+                                        {language === 'he' ? item.labelHe : item.labelEn}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Optional Comment */}
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                  {language === 'he' ? 'משוב נוסף על השיעור (אופציונלי):' : 'Additional Lesson Feedback (optional):'}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={lessonComment}
+                                  onChange={(e) => setLessonComment(e.target.value)}
+                                  placeholder={
+                                    language === 'he'
+                                      ? 'מה אהבת בשיעור? מה תרצה לתרגל יותר בפעם הבאה?...'
+                                      : 'What did you learn? Any areas to focus on next time?...'
+                                  }
+                                  className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs outline-none focus:ring-2 focus:ring-amber-500"
+                                />
+                              </div>
+
+                              {/* Form Actions */}
+                              <div className="flex gap-2 justify-end pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setRatingLessonTarget(null)}
+                                  className="px-3 py-1.5 text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-200/50 rounded-xl"
                                 >
                                   {language === 'he' ? 'ביטול' : 'Cancel'}
                                 </button>
                                 <button
-                                  onClick={() =>
-                                    submitFeedbackMutation.mutate({
+                                  type="button"
+                                  disabled={submitLessonFeedbackMutation.isPending}
+                                  onClick={() => {
+                                    if (!lessonRatingVal || lessonRatingVal < 1) {
+                                      setLessonRatingError(
+                                        language === 'he'
+                                          ? 'אנא בחר דירוג (1–5 כוכבים) על ידי לחיצה על הכוכבים למעלה לפני השליחה.'
+                                          : 'Please select a star rating (1–5 stars) above before submitting.'
+                                      );
+                                      return;
+                                    }
+                                    submitLessonFeedbackMutation.mutate({
                                       lessonId: lesson.id,
-                                      rating: ratingVal,
-                                      comment: ratingComment,
-                                    })
-                                  }
-                                  className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg shadow-2xs"
+                                      qualityRating: lessonRatingVal,
+                                      difficulty: lessonDifficulty,
+                                      paceRating: lessonPace,
+                                      comments: lessonComment,
+                                    });
+                                  }}
+                                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                                 >
-                                  {language === 'he' ? 'שלח דירוג' : 'Submit Rating'}
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>
+                                    {submitLessonFeedbackMutation.isPending
+                                      ? language === 'he' ? 'שולח...' : 'Submitting...'
+                                      : language === 'he' ? 'שלח דירוג שיעור' : 'Submit Lesson Rating'}
+                                  </span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* SEPARATE FORM 2: RATE TEACHER */}
+                          {ratingTeacherTarget?.id === lesson.id && (
+                            <div className="mt-3 p-4 bg-purple-50/70 dark:bg-purple-950/40 rounded-2xl border border-purple-200 dark:border-purple-800/80 space-y-3.5 text-xs animate-fade-in text-start">
+                              {/* Header */}
+                              <div className="flex items-center justify-between pb-2 border-b border-purple-200/60 dark:border-purple-800/60">
+                                <div className="flex items-center gap-2">
+                                  <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                                    {language === 'he'
+                                      ? `דירוג והערכת מורה: ${lesson.teacher?.user?.firstName || 'המורה'}`
+                                      : `Rate Teacher: ${lesson.teacher?.user?.firstName || 'Teacher'}`}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setRatingTeacherTarget(null)}
+                                  className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              {/* Clear Actionable Error Message */}
+                              {teacherRatingError && (
+                                <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl flex items-start gap-2.5 text-rose-800 dark:text-rose-200 animate-fade-in">
+                                  <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <span className="font-bold block">
+                                      {language === 'he' ? 'שימת לב נדרשת:' : 'Action Required:'}
+                                    </span>
+                                    <p className="mt-0.5 leading-relaxed">{teacherRatingError}</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Overall Teacher Star Rating */}
+                              <div>
+                                <span className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
+                                  {language === 'he' ? 'ציון כללי למורה (1–5 כוכבים):' : 'Overall Teacher Rating (1–5 Stars):'}
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  {[1, 2, 3, 4, 5].map((star) => {
+                                    const isFilled = star <= (hoverTeacherStar || teacherOverallRating);
+                                    return (
+                                      <button
+                                        key={star}
+                                        type="button"
+                                        onMouseEnter={() => setHoverTeacherStar(star)}
+                                        onMouseLeave={() => setHoverTeacherStar(0)}
+                                        onClick={() => {
+                                          setTeacherOverallRating(star);
+                                          if (teacherRatingError) setTeacherRatingError(null);
+                                        }}
+                                        className="p-1.5 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-transform active:scale-95"
+                                        title={`${star} Stars`}
+                                      >
+                                        <Star
+                                          className={`w-6 h-6 transition-colors ${
+                                            isFilled
+                                              ? 'text-amber-500 fill-amber-500'
+                                              : 'text-slate-300 dark:text-slate-600'
+                                          }`}
+                                        />
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <p className="mt-1 text-xs font-semibold text-purple-700 dark:text-purple-400">
+                                  {getStarRatingLabel(hoverTeacherStar || teacherOverallRating, language)}
+                                </p>
+                              </div>
+
+                              {/* Detailed Teacher Criteria */}
+                              <div className="space-y-2 pt-1 border-t border-purple-200/50 dark:border-purple-800/50">
+                                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block">
+                                  {language === 'he' ? 'הערכת מאפייני הוראה:' : 'Teaching Evaluation Criteria:'}
+                                </span>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                  {/* Communication */}
+                                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60">
+                                    <span className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
+                                      {language === 'he' ? 'תקשורת וסבלנות' : 'Communication'}
+                                    </span>
+                                    <div className="flex gap-1">
+                                      {[1, 2, 3, 4, 5].map((s) => (
+                                        <button
+                                          key={s}
+                                          type="button"
+                                          onClick={() => setTeacherCommunication(s)}
+                                          className="p-0.5"
+                                        >
+                                          <Star
+                                            className={`w-4 h-4 ${
+                                              s <= teacherCommunication
+                                                ? 'text-amber-500 fill-amber-500'
+                                                : 'text-slate-300 dark:text-slate-600'
+                                            }`}
+                                          />
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Knowledge */}
+                                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60">
+                                    <span className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
+                                      {language === 'he' ? 'בקיאות והסבר' : 'Knowledge & Style'}
+                                    </span>
+                                    <div className="flex gap-1">
+                                      {[1, 2, 3, 4, 5].map((s) => (
+                                        <button
+                                          key={s}
+                                          type="button"
+                                          onClick={() => setTeacherKnowledge(s)}
+                                          className="p-0.5"
+                                        >
+                                          <Star
+                                            className={`w-4 h-4 ${
+                                              s <= teacherKnowledge
+                                                ? 'text-amber-500 fill-amber-500'
+                                                : 'text-slate-300 dark:text-slate-600'
+                                            }`}
+                                          />
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  {/* Punctuality */}
+                                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60">
+                                    <span className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
+                                      {language === 'he' ? 'דיוק וזמנים' : 'Punctuality'}
+                                    </span>
+                                    <div className="flex gap-1">
+                                      {[1, 2, 3, 4, 5].map((s) => (
+                                        <button
+                                          key={s}
+                                          type="button"
+                                          onClick={() => setTeacherPunctuality(s)}
+                                          className="p-0.5"
+                                        >
+                                          <Star
+                                            className={`w-4 h-4 ${
+                                              s <= teacherPunctuality
+                                                ? 'text-amber-500 fill-amber-500'
+                                                : 'text-slate-300 dark:text-slate-600'
+                                            }`}
+                                          />
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Teacher Comment */}
+                              <div>
+                                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                  {language === 'he' ? 'מילה טובה או משוב למורה (אופציונלי):' : 'Feedback or Compliment for Teacher (optional):'}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={teacherComment}
+                                  onChange={(e) => setTeacherComment(e.target.value)}
+                                  placeholder={
+                                    language === 'he'
+                                      ? 'שתף את המורה במה שהיה מצוין או הצעות לעתיד...'
+                                      : 'Write a compliment or feedback for your tutor...'
+                                  }
+                                  className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                                />
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex gap-2 justify-end pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setRatingTeacherTarget(null)}
+                                  className="px-3 py-1.5 text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-200/50 rounded-xl"
+                                >
+                                  {language === 'he' ? 'ביטול' : 'Cancel'}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={submitTeacherSurveyMutation.isPending}
+                                  onClick={() => {
+                                    if (!teacherOverallRating || teacherOverallRating < 1) {
+                                      setTeacherRatingError(
+                                        language === 'he'
+                                          ? 'אנא בחר ציון כללי למורה (1–5 כוכבים) על ידי לחיצה על הכוכבים למעלה לפני השליחה.'
+                                          : 'Please select an overall teacher rating (1–5 stars) above before submitting.'
+                                      );
+                                      return;
+                                    }
+                                    submitTeacherSurveyMutation.mutate({
+                                      teacherId: lesson.teacherId,
+                                      overallRating: teacherOverallRating,
+                                      communication: teacherCommunication,
+                                      knowledge: teacherKnowledge,
+                                      punctuality: teacherPunctuality,
+                                      comments: teacherComment,
+                                    });
+                                  }}
+                                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>
+                                    {submitTeacherSurveyMutation.isPending
+                                      ? language === 'he' ? 'שולח...' : 'Submitting...'
+                                      : language === 'he' ? 'שלח דירוג מורה' : 'Submit Teacher Rating'}
+                                  </span>
                                 </button>
                               </div>
                             </div>
@@ -3122,7 +3636,9 @@ export const StudentDashboard: React.FC = () => {
 
           {/* TAB 9: STUDENT PROGRESS ANALYTICS DASHBOARD */}
           {activeTab === 'progress' && student?.id && (
-            <StudentProgressTab studentId={student.id} />
+            <React.Suspense fallback={<DashboardSkeleton />}>
+              <StudentProgressTab studentId={student.id} />
+            </React.Suspense>
           )}
         </main>
       </div>
@@ -3363,18 +3879,20 @@ export const StudentDashboard: React.FC = () => {
         onClose={() => setReschedulingLesson(null)}
       />
 
-      {/* iPhone-Style Floating Liquid Glass Bottom Navigation Bar (Mobile View) */}
+      {/* Floating Capsule Island Bottom Navigation Bar (Matches Uploaded Pill Styling) */}
       <nav
         aria-label="Mobile Navigation"
-        className="lg:hidden fixed left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-50 pointer-events-auto"
-        style={{ bottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}
+        className={`lg:hidden fixed left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-40 transition-all duration-300 ${
+          isMobileMoreOpen || mobileMenuOpen ? 'opacity-0 pointer-events-none translate-y-8' : 'opacity-100 pointer-events-auto translate-y-0'
+        }`}
+        style={{ bottom: 'max(calc(env(safe-area-inset-bottom, 0px) - 30px), 4px)' }}
       >
-        {/* Ambient colored underglow reflecting onto underlying page content */}
-        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-teal-500/30 via-cyan-400/20 to-teal-400/30 blur-xl opacity-70 -z-10 pointer-events-none" />
+        {/* Soft Ambient Brand Halo / Glow reflecting platform brand colors */}
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4/5 h-10 bg-gradient-to-r from-brand-teal-500/20 via-teal-400/25 to-brand-olive-500/20 blur-xl pointer-events-none -z-10" />
 
-        <div className="relative rounded-full p-1.5 liquid-glass-shell grid grid-cols-5 items-center justify-around gap-1">
-          {/* Top Edge Curved Liquid Glass Sheen */}
-          <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none rounded-full" />
+        <div className="relative rounded-full py-2 px-3 floating-capsule-shell grid grid-cols-5 items-center justify-around gap-1">
+          {/* Top Edge Specular Curve Sheen */}
+          <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 dark:via-white/20 to-transparent pointer-events-none rounded-full" />
 
           {mobileTabs.map((item) => {
             const Icon = item.icon;
@@ -3389,35 +3907,36 @@ export const StudentDashboard: React.FC = () => {
                     setIsMobileMoreOpen(true);
                   } else {
                     setActiveTab(item.id as any);
+                    setIsMobileMoreOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className={`relative py-1.5 px-1 rounded-full flex flex-col items-center justify-center transition-all duration-300 group active:scale-90 ${
+                className={`relative py-1.5 px-2 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${
                   isActive
-                    ? 'liquid-glass-capsule-active'
-                    : 'hover:bg-white/[0.08] active:bg-white/[0.14] text-slate-300 hover:text-white'
+                    ? 'floating-capsule-active active:scale-95'
+                    : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/60 active:scale-95'
                 }`}
               >
-                {/* Notification Badge Dot for Live Lesson with Liquid Ping Ripple */}
+                {/* Notification Badge Dot with Ping Ripple */}
                 {item.badge && (
-                  <span className="absolute top-1 end-2 flex h-2.5 w-2.5 items-center justify-center pointer-events-none">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,1)]" />
+                  <span className="absolute top-1 end-2 flex h-2 w-2 items-center justify-center pointer-events-none">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-teal-500 opacity-75 animate-ping" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-600 shadow-[0_0_8px_rgba(20,184,166,0.8)]" />
                   </span>
                 )}
 
                 <Icon
-                  className={`w-5 h-5 shrink-0 transition-transform duration-200 ${
+                  className={`w-6 h-6 shrink-0 transition-transform duration-200 ${
                     isActive
-                      ? 'text-cyan-300 scale-110 drop-shadow-[0_0_8px_rgba(34,211,238,0.85)]'
-                      : 'text-slate-300 group-hover:scale-105 group-hover:text-white'
+                      ? 'text-[#0c4a60] dark:text-[#2dd4bf] stroke-[2.2] scale-105 drop-shadow-[0_1px_4px_rgba(12,74,96,0.25)]'
+                      : 'text-slate-900 dark:text-slate-100 stroke-[1.8] group-hover:scale-105'
                   }`}
                 />
                 <span
-                  className={`text-[10px] tracking-tight mt-0.5 leading-tight truncate max-w-full ${
+                  className={`text-[11px] tracking-tight mt-0.5 leading-tight truncate max-w-full transition-colors ${
                     isActive
-                      ? 'text-cyan-100 font-black drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]'
-                      : 'text-slate-300 font-bold group-hover:text-white'
+                      ? 'text-[#0c4a60] dark:text-[#2dd4bf] font-bold'
+                      : 'text-slate-800 dark:text-slate-200 font-semibold group-hover:text-slate-950 dark:group-hover:text-white'
                   }`}
                 >
                   {item.label}
@@ -3431,28 +3950,29 @@ export const StudentDashboard: React.FC = () => {
       {/* iOS Liquid Glass Mobile "More" Sheet */}
       {isMobileMoreOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200"
+          className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setIsMobileMoreOpen(false)}
         >
           <div
-            className="w-full max-w-lg liquid-glass-sheet rounded-t-3xl p-5 pb-32 space-y-4 animate-in slide-in-from-bottom duration-300"
+            className="w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-x border-slate-200/90 dark:border-slate-800/90 rounded-t-3xl p-5 pb-32 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Grab Handle */}
-            <div className="w-12 h-1.5 bg-white/40 rounded-full mx-auto" />
+            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto" />
 
             <div className="flex items-center justify-between px-1">
               <div>
-                <h3 className="font-extrabold text-base text-white tracking-tight">
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
                   {language === 'he' ? 'פעולות ותכנים נוספים' : 'More Learning Tools'}
                 </h3>
-                <p className="text-[11px] text-slate-300">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {language === 'he' ? 'שיעורים מוקלטים, שיעורי בית, לוח דירוג ויתרה' : 'Recorded sessions, homework, rankings & balance'}
                 </p>
               </div>
               <button
                 onClick={() => setIsMobileMoreOpen(false)}
-                className="p-1.5 rounded-full text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 transition-colors"
+                className="p-1.5 rounded-full text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -3467,27 +3987,27 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 ${
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
                   activeTab === 'recordings'
-                    ? 'liquid-glass-card ring-1 ring-cyan-400/60 shadow-[0_0_20px_rgba(34,211,238,0.35)]'
-                    : 'liquid-glass-card'
+                    ? 'border-brand-teal-500 dark:border-cyan-400 ring-2 ring-brand-teal-500/20 dark:ring-cyan-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-brand-teal-500/25 text-cyan-300">
+                  <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-brand-teal-700 dark:text-teal-300 border border-brand-teal-200/60 dark:border-teal-800/40">
                     <PlayCircle className="w-5 h-5" />
                   </div>
                   {recordedSessions.length > 0 && (
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-400/25 text-cyan-200 border border-cyan-400/40">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-teal-900/80 text-brand-teal-900 dark:text-teal-200 border border-brand-teal-300/60 dark:border-teal-700/50">
                       {recordedSessions.length}
                     </span>
                   )}
                 </div>
                 <div>
-                  <p className="font-bold text-xs text-white">
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
                     {language === 'he' ? 'שיעורים מוקלטים' : 'Recorded Sessions'}
                   </p>
-                  <p className="text-[10px] text-slate-300 mt-0.5">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                     {language === 'he' ? 'צפייה חוזרת בשיעורים' : 'Google Drive replays'}
                   </p>
                 </div>
@@ -3501,27 +4021,27 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 ${
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
                   activeTab === 'homework'
-                    ? 'liquid-glass-card ring-1 ring-lime-400/60 shadow-[0_0_20px_rgba(163,230,53,0.35)]'
-                    : 'liquid-glass-card'
+                    ? 'border-brand-olive-500 dark:border-lime-400 ring-2 ring-brand-olive-500/20 dark:ring-lime-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-brand-olive-500/25 text-lime-300">
+                  <div className="p-2 rounded-xl bg-brand-olive-50 dark:bg-brand-olive-950/60 text-brand-olive-700 dark:text-brand-olive-300 border border-brand-olive-200/60 dark:border-brand-olive-800/40">
                     <BookOpen className="w-5 h-5" />
                   </div>
                   {pendingHomeworkCount > 0 && (
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400/25 text-amber-200 border border-amber-400/40 animate-pulse">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-300/70 dark:border-amber-700/50 animate-pulse">
                       {pendingHomeworkCount} {language === 'he' ? 'לבדיקה' : 'pending'}
                     </span>
                   )}
                 </div>
                 <div>
-                  <p className="font-bold text-xs text-white">
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
                     {language === 'he' ? 'שיעורי בית' : 'Homework & Tasks'}
                   </p>
-                  <p className="text-[10px] text-slate-300 mt-0.5">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                     {language === 'he' ? 'הגשות ומשוב מורים' : 'Submissions & feedback'}
                   </p>
                 </div>
@@ -3535,25 +4055,25 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 ${
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
                   activeTab === 'leaderboard'
-                    ? 'liquid-glass-card ring-1 ring-purple-400/60 shadow-[0_0_20px_rgba(192,132,252,0.35)]'
-                    : 'liquid-glass-card'
+                    ? 'border-purple-500 dark:border-purple-400 ring-2 ring-purple-500/20 dark:ring-purple-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-purple-500/25 text-purple-300">
+                  <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/40">
                     <Award className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-400/25 text-purple-200 border border-purple-400/40">
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/70 text-purple-900 dark:text-purple-200 border border-purple-300/70 dark:border-purple-700/50">
                     {student?.totalPoints || 0} pts
                   </span>
                 </div>
                 <div>
-                  <p className="font-bold text-xs text-white">
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
                     {language === 'he' ? 'לוח דירוג' : 'Leaderboard'}
                   </p>
-                  <p className="text-[10px] text-slate-300 mt-0.5">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                     {language === 'he' ? 'ליגות ונקודות XP' : 'XP Points & Ranking'}
                   </p>
                 </div>
@@ -3567,27 +4087,27 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 ${
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
                   activeTab === 'balance'
-                    ? 'liquid-glass-card ring-1 ring-emerald-400/60 shadow-[0_0_20px_rgba(52,211,153,0.35)]'
+                    ? 'border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/20 dark:ring-emerald-400/20'
                     : !hasEnoughBalance
-                    ? 'liquid-glass-card ring-1 ring-rose-500/60'
-                    : 'liquid-glass-card'
+                    ? 'border-rose-400 ring-2 ring-rose-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-emerald-500/25 text-emerald-300">
+                  <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
                     <Wallet className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-400/25 text-emerald-200 border border-emerald-400/40">
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-900 dark:text-emerald-200 border border-emerald-300/70 dark:border-emerald-700/50">
                     ${currentBalance.toFixed(2)}
                   </span>
                 </div>
                 <div>
-                  <p className="font-bold text-xs text-white">
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
                     {language === 'he' ? 'יתרת חשבון והיסטוריה' : 'Account Balance & History'}
                   </p>
-                  <p className="text-[10px] text-slate-300 mt-0.5">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                     {language === 'he' ? 'פירוט עסקאות, טעינות וזיכויים' : 'Transactions, top-ups & refunds'}
                   </p>
                 </div>
@@ -3601,26 +4121,26 @@ export const StudentDashboard: React.FC = () => {
                   setIsMobileMoreOpen(false);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`col-span-2 p-3.5 rounded-2xl text-start transition-all flex items-center justify-between gap-4 active:scale-95 ${
+                className={`col-span-2 p-3.5 rounded-2xl text-start transition-all flex items-center justify-between gap-4 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
                   activeTab === 'progress'
-                    ? 'liquid-glass-card ring-1 ring-teal-400/60 shadow-[0_0_20px_rgba(20,184,166,0.35)]'
-                    : 'liquid-glass-card'
+                    ? 'border-brand-teal-500 dark:border-teal-400 ring-2 ring-brand-teal-500/20 dark:ring-teal-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-teal-500/25 text-teal-300 shrink-0">
+                  <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-brand-teal-700 dark:text-teal-300 border border-brand-teal-200/60 dark:border-teal-800/40 shrink-0">
                     <TrendingUp className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="font-bold text-xs text-white">
+                    <p className="font-extrabold text-xs text-slate-900 dark:text-white">
                       {language === 'he' ? 'ההתקדמות הלימודית שלי' : 'My Learning Progress'}
                     </p>
-                    <p className="text-[10px] text-slate-300 mt-0.5">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                       {language === 'he' ? 'גרפי נוכחות שבועית, דיוק במשחקים ומפת רמות' : 'Weekly attendance, game accuracy & level roadmap'}
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-teal-400/25 text-teal-200 border border-teal-400/40 shrink-0">
+                <span className="text-[10px] font-extrabold px-3 py-1.5 rounded-full bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-teal-500/20 text-white dark:text-teal-200 border border-brand-teal-800 dark:border-teal-400/40 shrink-0">
                   {language === 'he' ? 'צפה במדדים' : 'View'}
                 </span>
               </button>

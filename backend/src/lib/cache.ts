@@ -96,16 +96,24 @@ export async function cacheDel(key: string): Promise<void> {
   memCache.delete(key);
 }
 
+// In-flight promise registry to prevent cache stampedes (Single-Flight Pattern)
+const inFlightPromises = new Map<string, Promise<any>>();
+
 /**
- * Invalidate keys matching a prefix/wildcard
+ * Invalidate keys matching a prefix/wildcard using non-blocking SCAN
  */
 export async function cacheInvalidatePrefix(prefix: string): Promise<void> {
   if (isRedisReady) {
     try {
-      const keys = await redis.keys(`${prefix}*`);
-      if (keys.length > 0) {
-        await redis.del(...keys);
-      }
+      let cursor = '0';
+      do {
+        // Use non-blocking SCAN with batching to avoid locking Redis event loop
+        const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', `${prefix}*`, 'COUNT', 100);
+        cursor = nextCursor;
+        if (keys.length > 0) {
+          await redis.del(...keys);
+        }
+      } while (cursor !== '0');
     } catch {
       // Fallback
     }
@@ -119,7 +127,9 @@ export async function cacheInvalidatePrefix(prefix: string): Promise<void> {
 }
 
 /**
- * Transparent fetch-through cache wrapper
+ * Transparent fetch-through cache wrapper with Single-Flight Stampede Defense.
+ * If 500 concurrent requests request an expired/missing key simultaneously,
+ * only 1 query hits PostgreSQL and all 500 receive the resolved result.
  */
 export async function getCachedOrFetch<T>(
   key: string,
@@ -131,8 +141,21 @@ export async function getCachedOrFetch<T>(
     return cached;
   }
 
-  const fresh = await fetcher();
-  await cacheSet(key, fresh, ttlSeconds);
-  return fresh;
+  // Check if there is already an in-flight fetch for this key
+  let inFlight = inFlightPromises.get(key);
+  if (!inFlight) {
+    inFlight = (async () => {
+      try {
+        const fresh = await fetcher();
+        await cacheSet(key, fresh, ttlSeconds);
+        return fresh;
+      } finally {
+        inFlightPromises.delete(key);
+      }
+    })();
+    inFlightPromises.set(key, inFlight);
+  }
+
+  return inFlight as Promise<T>;
 }
 

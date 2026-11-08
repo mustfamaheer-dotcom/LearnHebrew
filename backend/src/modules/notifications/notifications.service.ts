@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { prisma } from '../../config/database';
 import { NotificationCategory, NotificationPriority } from '@prisma/client';
+import { redis } from '../../lib/cache';
+import Redis from 'ioredis';
 
 export interface CreateNotificationDTO {
   userId: string;
@@ -18,6 +20,47 @@ export interface CreateNotificationDTO {
 export class NotificationService {
   // In-memory active Server-Sent Events client connections keyed by userId
   private sseClients: Map<string, Set<Response>> = new Map();
+  private subscriber: Redis | null = null;
+  private readonly CHANNEL_NAME = 'engrew:notifications:bus';
+  private readonly instanceId = Math.random().toString(36).substring(2, 9);
+
+  constructor() {
+    this.initDistributedPubSub();
+  }
+
+  /**
+   * Initializes Redis Pub/Sub listener for multi-node SSE sync
+   */
+  private initDistributedPubSub() {
+    try {
+      this.subscriber = redis.duplicate({
+        lazyConnect: true,
+        maxRetriesPerRequest: 1,
+      });
+
+      this.subscriber.on('message', (channel, message) => {
+        if (channel === this.CHANNEL_NAME) {
+          try {
+            const { originId, userId, event, data } = JSON.parse(message);
+            // Skip if this instance dispatched it originally (already delivered locally)
+            if (originId !== this.instanceId) {
+              this.localPushToUser(userId, event, data);
+            }
+          } catch {
+            // Malformed payload guard
+          }
+        }
+      });
+
+      this.subscriber.connect().then(() => {
+        this.subscriber?.subscribe(this.CHANNEL_NAME).catch(() => {});
+      }).catch(() => {
+        // Fallback to local push if Redis is offline
+      });
+    } catch {
+      // Redis offline fallback
+    }
+  }
 
   /**
    * Register an open SSE stream connection for real-time dispatch
@@ -61,9 +104,27 @@ export class NotificationService {
   }
 
   /**
-   * Push an event to all active SSE streams of a specific user
+   * Push an event to all active SSE streams of a specific user across the entire cluster
    */
   public pushToUser(userId: string, event: string, data: any) {
+    // 1. Deliver immediately to local clients connected to this instance
+    this.localPushToUser(userId, event, data);
+
+    // 2. Broadcast across Redis Pub/Sub so clients on other server instances receive the event
+    try {
+      redis.publish(
+        this.CHANNEL_NAME,
+        JSON.stringify({ originId: this.instanceId, userId, event, data })
+      ).catch(() => {});
+    } catch {
+      // Redis offline resilience
+    }
+  }
+
+  /**
+   * Deliver an SSE payload to local response sockets
+   */
+  private localPushToUser(userId: string, event: string, data: any) {
     const userSet = this.sseClients.get(userId);
     if (userSet && userSet.size > 0) {
       const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;

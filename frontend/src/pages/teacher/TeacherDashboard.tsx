@@ -48,6 +48,9 @@ import {
   ArrowRight,
   Award,
   Search,
+  LayoutGrid,
+  Gift,
+  Sliders,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -97,6 +100,22 @@ const TIME_BLOCKS_55 = [
   { start: '16:00', end: '16:55' },
 ];
 
+// Custom outline Home icon with inner circle door matching iOS pill island aesthetic
+const HomeIslandIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 2.5 3 9.5v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-10l-9-7Z" />
+    <circle cx="12" cy="14" r="2.2" />
+  </svg>
+);
+
 export const TeacherDashboard: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const { t, language } = useTranslation();
@@ -105,6 +124,7 @@ export const TeacherDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'calendar' | 'lessons' | 'students' | 'homework' | 'recordings' | 'games'>('calendar');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDay());
   const [selectedDuration, setSelectedDuration] = useState<SessionDuration>(25);
@@ -755,30 +775,6 @@ export const TeacherDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full relative">
-      {/* Mobile Top Navigation bar with toggle & active section pill */}
-      <div className="lg:hidden flex items-center justify-between p-3 sm:p-4 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 px-4 py-3 sticky top-16 z-20 shadow-xs">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center p-1 shadow-2xs shrink-0">
-            <img src="/logo.png" alt="Engrew" className="w-full h-full object-contain drop-shadow-2xs" />
-          </div>
-          <div className="min-w-0">
-            <span className="font-extrabold text-xs text-slate-900 dark:text-white block truncate">
-              {language === 'he' ? 'פורטל מורים מוסמכים' : 'Teacher Portal'}
-            </span>
-            <span className="text-[11px] font-bold text-brand-teal-700 dark:text-brand-teal-400 block truncate">
-              {navItems.find((item) => item.id === activeTab)?.label || activeTab}
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs shadow-xs transition-colors shrink-0"
-        >
-          {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          <span>{mobileMenuOpen ? (language === 'he' ? 'סגור' : 'Close') : (language === 'he' ? 'תפריט' : 'Menu')}</span>
-        </button>
-      </div>
-
       <div className="w-full">
         {/* Apple-Style Glassy Left Sidebar */}
         <GlassSidebar
@@ -786,12 +782,15 @@ export const TeacherDashboard: React.FC = () => {
           activeTab={activeTab}
           onTabChange={(tabId) => {
             setActiveTab(tabId as any);
-            setMobileMenuOpen(false);
+            setIsMobileMoreOpen(false);
           }}
           user={user}
           panelSubtitle="Certified Teacher Portal"
-          isOpenMobile={mobileMenuOpen}
-          onCloseMobile={() => setMobileMenuOpen(false)}
+          isOpenMobile={false}
+          onCloseMobile={() => {
+            setMobileMenuOpen(false);
+            setIsMobileMoreOpen(false);
+          }}
         />
 
         {/* Main Content Area */}
@@ -3464,6 +3463,177 @@ export const TeacherDashboard: React.FC = () => {
                     ? (language === 'he' ? 'פותח שעה...' : 'Opening Slot...')
                     : (language === 'he' ? 'אישור ופתיחת שעה' : 'Confirm & Open Slot')}
                 </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Capsule Island Bottom Navigation Bar (Mobile View) */}
+      <nav
+        aria-label="Mobile Navigation"
+        className={`lg:hidden fixed left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-40 transition-all duration-300 ${
+          isMobileMoreOpen ? 'opacity-0 pointer-events-none translate-y-8' : 'opacity-100 pointer-events-auto translate-y-0'
+        }`}
+        style={{ bottom: 'max(calc(env(safe-area-inset-bottom, 0px) - 30px), 4px)' }}
+      >
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4/5 h-10 bg-gradient-to-r from-brand-teal-500/20 via-teal-400/25 to-brand-olive-500/20 blur-xl pointer-events-none -z-10" />
+
+        <div className="relative rounded-full py-2 px-3 floating-capsule-shell grid grid-cols-5 items-center justify-around gap-1">
+          <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 dark:via-white/20 to-transparent pointer-events-none rounded-full" />
+
+          {[
+            { id: 'calendar', label: language === 'he' ? 'יומן' : 'Calendar', icon: CalendarIcon },
+            { id: 'lessons', label: language === 'he' ? 'שיעורים' : 'Lessons', icon: Video },
+            { id: 'students', label: language === 'he' ? 'תלמידים' : 'Students', icon: Users },
+            { id: 'homework', label: language === 'he' ? 'שיעורי בית' : 'Homework', icon: BookOpen },
+            { id: 'more', label: language === 'he' ? 'עוד' : 'More', icon: Sliders },
+          ].map((item) => {
+            const Icon = item.icon;
+            const isSecondaryActive = activeTab === 'recordings' || activeTab === 'games';
+            const isActive =
+              (item.id === 'more' && (isMobileMoreOpen || isSecondaryActive)) ||
+              (item.id !== 'more' && activeTab === item.id);
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  if (item.id === 'more') {
+                    setIsMobileMoreOpen(true);
+                  } else {
+                    setActiveTab(item.id as any);
+                    setIsMobileMoreOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`relative py-1.5 px-2 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${
+                  isActive
+                    ? 'floating-capsule-active active:scale-95'
+                    : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/60 active:scale-95'
+                }`}
+              >
+                <Icon
+                  className={`w-6 h-6 shrink-0 transition-transform duration-200 ${
+                    isActive
+                      ? 'text-[#0c4a60] dark:text-[#2dd4bf] stroke-[2.2] scale-105 drop-shadow-[0_1px_4px_rgba(12,74,96,0.25)]'
+                      : 'text-slate-900 dark:text-slate-100 stroke-[1.8] group-hover:scale-105'
+                  }`}
+                />
+                <span
+                  className={`text-[11px] tracking-tight mt-0.5 leading-tight truncate max-w-full transition-colors ${
+                    isActive
+                      ? 'text-[#0c4a60] dark:text-[#2dd4bf] font-bold'
+                      : 'text-slate-800 dark:text-slate-200 font-semibold group-hover:text-slate-950 dark:group-hover:text-white'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* iOS Liquid Glass Mobile "More" Sheet */}
+      {isMobileMoreOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setIsMobileMoreOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border-t border-x border-slate-200/90 dark:border-slate-800/90 rounded-t-3xl p-5 pb-32 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Grab Handle */}
+            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto" />
+
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
+                  {language === 'he' ? 'כלים ותכנים נוספים' : 'Additional Teaching Tools'}
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {language === 'he'
+                    ? 'שיעורים מוקלטים (Drive) ומשחקים לימודיים מותאמים'
+                    : 'Google Drive video replays & interactive study games'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileMoreOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Teaching Tools Cards Grid */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              {/* Recorded Sessions */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('recordings');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`bg-slate-50/90 dark:bg-slate-800/70 border p-4 rounded-2xl flex flex-col justify-between gap-3 text-start group active:scale-[0.98] transition-all ${
+                  activeTab === 'recordings'
+                    ? 'border-brand-teal-500 ring-2 ring-brand-teal-500/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60 hover:border-brand-teal-500/50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-brand-teal-700 dark:text-teal-300 border border-brand-teal-200/60 dark:border-teal-800/40">
+                    <PlayCircle className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-teal-900/80 text-brand-teal-900 dark:text-teal-200 border border-brand-teal-300/60 dark:border-teal-700/50">
+                    {recordedSessionsData?.length || 0}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-brand-teal-700 dark:group-hover:text-teal-300 transition-colors">
+                    {language === 'he' ? 'שיעורים מוקלטים' : 'Recorded Sessions'}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                    {language === 'he' ? 'סרטוני Google Drive' : 'Google Drive replays'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Custom Games */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('games');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`bg-slate-50/90 dark:bg-slate-800/70 border p-4 rounded-2xl flex flex-col justify-between gap-3 text-start group active:scale-[0.98] transition-all ${
+                  activeTab === 'games'
+                    ? 'border-brand-teal-500 ring-2 ring-brand-teal-500/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60 hover:border-brand-teal-500/50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/40">
+                    <Gamepad2 className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/80 text-purple-900 dark:text-purple-200 border border-purple-300/60 dark:border-purple-700/50">
+                    {gamesData?.length || 0}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
+                    {language === 'he' ? 'משחקים לימודיים' : 'Interactive Games'}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                    {language === 'he' ? 'כרטיסיות והתאמות מילים' : 'Vocabulary flashcards & matching'}
+                  </p>
+                </div>
               </button>
             </div>
           </div>

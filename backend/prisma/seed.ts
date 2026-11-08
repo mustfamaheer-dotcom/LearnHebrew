@@ -1,5 +1,6 @@
 import { PrismaClient, Role, HebrewLevel, GameType, SlotType, LessonStatus, HomeworkStatus, PointsEventType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import process from 'process';
 
 const prisma = new PrismaClient();
 

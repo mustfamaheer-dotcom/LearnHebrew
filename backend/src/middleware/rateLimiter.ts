@@ -24,6 +24,10 @@ export const apiLimiter = rateLimit({
   max: 600,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Allow load testing / benchmark runs in development mode
+    return process.env.NODE_ENV !== 'production' && req.headers['x-benchmark'] === 'true';
+  },
   message: {
     error: 'Too many requests from this client. Please slow down.',
   },

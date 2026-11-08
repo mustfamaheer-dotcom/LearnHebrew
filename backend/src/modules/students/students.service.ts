@@ -120,7 +120,11 @@ export async function getStudentDashboard(studentIdOrUserId: string) {
         include: {
           teacher: {
             include: {
-              user: { select: { firstName: true, lastName: true } },
+              user: { select: { firstName: true, lastName: true, avatarUrl: true } },
+              surveys: {
+                where: { studentId: student.id },
+                take: 1,
+              },
             },
           },
           feedback: true,
@@ -148,6 +152,10 @@ export async function getStudentLessons(studentIdOrUserId: string) {
       teacher: {
         include: {
           user: { select: { firstName: true, lastName: true, avatarUrl: true } },
+          surveys: {
+            where: { studentId: student.id },
+            take: 1,
+          },
         },
       },
       feedback: true,

@@ -5,17 +5,17 @@ import { AuthRequest } from '../../middleware/auth';
 
 const lessonFeedbackSchema = z.object({
   qualityRating: z.number().int().min(1).max(5),
-  difficulty: z.number().int().min(1).max(5),
-  paceRating: z.number().int().min(1).max(5),
-  comments: z.string().optional(),
+  difficulty: z.number().int().min(1).max(5).default(3),
+  paceRating: z.number().int().min(1).max(5).default(3),
+  comments: z.string().nullable().optional(),
 });
 
 const teacherSurveySchema = z.object({
-  communication: z.number().int().min(1).max(5),
-  knowledge: z.number().int().min(1).max(5),
-  punctuality: z.number().int().min(1).max(5),
+  communication: z.number().int().min(1).max(5).default(5),
+  knowledge: z.number().int().min(1).max(5).default(5),
+  punctuality: z.number().int().min(1).max(5).default(5),
   overallRating: z.number().int().min(1).max(5),
-  comments: z.string().optional(),
+  comments: z.string().nullable().optional(),
 });
 
 export async function submitLessonFeedbackHandler(req: AuthRequest, res: Response, next: NextFunction) {
@@ -41,6 +41,27 @@ export async function getLessonFeedbackHandler(req: AuthRequest, res: Response, 
   }
 }
 
+export async function listLessonFeedbacksHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const teacherId = req.query.teacherId as string | undefined;
+    const studentId = req.query.studentId as string | undefined;
+    const minRating = req.query.minRating ? parseInt(req.query.minRating as string, 10) : undefined;
+    const maxRating = req.query.maxRating ? parseInt(req.query.maxRating as string, 10) : undefined;
+    const search = req.query.search as string | undefined;
+
+    const feedbacks = await feedbackService.listLessonFeedbacks({
+      teacherId,
+      studentId,
+      minRating,
+      maxRating,
+      search,
+    });
+    res.json({ feedbacks });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function submitTeacherSurveyHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const data = teacherSurveySchema.parse(req.body);
@@ -58,10 +79,43 @@ export async function submitTeacherSurveyHandler(req: AuthRequest, res: Response
 export async function listTeacherSurveysHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const teacherId = req.query.teacherId as string | undefined;
-    const surveys = await feedbackService.listTeacherSurveys(teacherId);
+    const minRating = req.query.minRating ? parseInt(req.query.minRating as string, 10) : undefined;
+    const search = req.query.search as string | undefined;
+
+    const surveys = await feedbackService.listTeacherSurveys({
+      teacherId,
+      minRating,
+      search,
+    });
     res.json({ surveys });
   } catch (error) {
     next(error);
   }
 }
 
+export async function getFeedbackAnalyticsHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const analytics = await feedbackService.getFeedbackAnalytics();
+    res.json({ analytics });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteLessonFeedbackHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    await feedbackService.deleteLessonFeedback(req.params.id);
+    res.json({ message: 'Lesson feedback deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteTeacherSurveyHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    await feedbackService.deleteTeacherSurvey(req.params.id);
+    res.json({ message: 'Teacher survey deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}

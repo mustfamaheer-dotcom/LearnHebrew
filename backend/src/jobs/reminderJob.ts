@@ -45,32 +45,42 @@ export const executeReminderCheck = async (): Promise<ReminderCheckResult> => {
 
     let dispatchedCount = 0;
 
-    // 4. Atomically dispatch reminders
-    for (const lesson of upcomingLessons) {
-      // Atomic lock to guarantee single dispatch
-      await prisma.lesson.update({
-        where: { id: lesson.id },
-        data: { reminderSentAt: new Date() },
-      });
+    // 4. Concurrently process reminders in bounded chunks of 10 to avoid sequential event-loop blocking
+    const CHUNK_SIZE = 10;
+    for (let i = 0; i < upcomingLessons.length; i += CHUNK_SIZE) {
+      const chunk = upcomingLessons.slice(i, i + CHUNK_SIZE);
+      await Promise.allSettled(
+        chunk.map(async (lesson) => {
+          try {
+            // Atomic lock to guarantee single dispatch
+            await prisma.lesson.update({
+              where: { id: lesson.id },
+              data: { reminderSentAt: new Date() },
+            });
 
-      await notificationService.notifyLessonReminder(lesson, leadMinutes);
-      dispatchedCount++;
+            await notificationService.notifyLessonReminder(lesson, leadMinutes);
+            dispatchedCount++;
 
-      console.log(
-        `🔔 [ReminderJob] Dispatched ${leadMinutes}-min reminder for lesson ${lesson.id} (${lesson.student.user.firstName} & ${lesson.teacher.user.firstName}).`
+            console.log(
+              `🔔 [ReminderJob] Dispatched ${leadMinutes}-min reminder for lesson ${lesson.id} (${lesson.student.user.firstName} & ${lesson.teacher.user.firstName}).`
+            );
+
+            await logSystemEvent({
+              level: LogLevel.INFO,
+              category: LogCategory.JOB,
+              message: `[ReminderJob] Dispatched ${leadMinutes}-min reminder for lesson ${lesson.id}`,
+              meta: {
+                lessonId: lesson.id,
+                studentEmail: lesson.student.user.email,
+                teacherEmail: lesson.teacher.user.email,
+                leadMinutes,
+              },
+            });
+          } catch (itemError) {
+            console.error(`[ReminderJob] Failed to dispatch reminder for lesson ${lesson.id}:`, itemError);
+          }
+        })
       );
-
-      await logSystemEvent({
-        level: LogLevel.INFO,
-        category: LogCategory.JOB,
-        message: `[ReminderJob] Dispatched ${leadMinutes}-min reminder for lesson ${lesson.id}`,
-        meta: {
-          lessonId: lesson.id,
-          studentEmail: lesson.student.user.email,
-          teacherEmail: lesson.teacher.user.email,
-          leadMinutes,
-        },
-      });
     }
 
     return {
