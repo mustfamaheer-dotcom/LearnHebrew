@@ -564,20 +564,24 @@ export const StudentProgressTab: React.FC<StudentProgressTabProps> = ({ studentI
 
             {/* Next level progress bar */}
             {progression.pointsToNextLevel > 0 && (
-              <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-slate-50 to-amber-50 dark:from-purple-950/40 dark:to-slate-900/40 border border-purple-200 dark:border-purple-800/40">
+              <div className={`mb-6 p-4 rounded-2xl border ${
+                isDark
+                  ? 'bg-purple-950/40 border-purple-800/50'
+                  : 'bg-purple-50/80 border-purple-200'
+              }`}>
                 <div className="flex items-center justify-between text-xs font-bold mb-2">
-                  <span className="text-purple-900 dark:text-purple-300">
+                  <span className={isDark ? 'text-purple-300 font-bold' : 'text-purple-900 font-bold'}>
                     {isHe ? 'התקדמות לשלב הבא:' : 'Progress to next milestone:'}
                   </span>
-                  <span className="text-slate-900 dark:text-white font-extrabold">
+                  <span className={isDark ? 'text-white font-black' : 'text-slate-900 font-extrabold'}>
                     {isHe
                       ? `עוד ${progression.pointsToNextLevel} נק׳ ליעד (${progression.nextLevelLabel})`
                       : `${progression.pointsToNextLevel} XP needed for ${progression.nextLevelLabel}`}
                   </span>
                 </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                <div className={`w-full rounded-full h-2.5 overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
                   <div
-                    className="bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 h-2.5 rounded-full transition-all duration-700"
+                    className="bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 h-2.5 rounded-full transition-all duration-700 shadow-xs"
                     style={{ width: `${Math.min(100, Math.max(0, progression.progressPercentage))}%` }}
                   />
                 </div>
@@ -590,56 +594,96 @@ export const StudentProgressTab: React.FC<StudentProgressTabProps> = ({ studentI
                 const isCompleted = lvl.isCompleted && !lvl.isCurrent;
                 const isCurrent = lvl.isCurrent;
 
+                // Card container styling
+                let cardClass = '';
+                if (isCurrent) {
+                  cardClass = isDark
+                    ? 'bg-purple-950/80 border-purple-400 shadow-[0_0_25px_rgba(168,85,247,0.35)] ring-2 ring-purple-400/60'
+                    : 'bg-purple-100/90 border-purple-500 shadow-md ring-2 ring-purple-400/50';
+                } else if (isCompleted) {
+                  cardClass = isDark
+                    ? 'bg-emerald-950/40 border-emerald-700/60'
+                    : 'bg-emerald-50 border-emerald-300';
+                } else {
+                  cardClass = isDark
+                    ? 'bg-slate-850/80 border-slate-800'
+                    : 'bg-slate-50 border-slate-200';
+                }
+
+                // Title styling
+                let titleClass = '';
+                if (isCurrent) {
+                  titleClass = isDark ? 'text-white font-black' : 'text-purple-950 font-black';
+                } else if (isCompleted) {
+                  titleClass = isDark ? 'text-emerald-200 font-extrabold' : 'text-emerald-950 font-black';
+                } else {
+                  titleClass = isDark ? 'text-slate-300 font-bold' : 'text-slate-700 font-bold';
+                }
+
+                // Divider styling
+                let dividerClass = '';
+                if (isCurrent) {
+                  dividerClass = isDark ? 'border-purple-700/50' : 'border-purple-300';
+                } else if (isCompleted) {
+                  dividerClass = isDark ? 'border-emerald-800/40' : 'border-emerald-200';
+                } else {
+                  dividerClass = isDark ? 'border-slate-800' : 'border-slate-200';
+                }
+
+                // Badge pill styling
+                let badgeClass = '';
+                if (isCurrent) {
+                  badgeClass = isDark
+                    ? 'bg-purple-500/25 text-purple-200 border border-purple-400/60 shadow-[0_0_12px_rgba(168,85,247,0.3)] font-black'
+                    : 'bg-purple-200 text-purple-950 border border-purple-400 font-black';
+                } else if (isCompleted) {
+                  badgeClass = isDark
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-600/50 font-extrabold'
+                    : 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold';
+                } else {
+                  badgeClass = isDark
+                    ? 'text-slate-400 font-bold'
+                    : 'text-slate-500 font-bold';
+                }
+
                 return (
                   <div
                     key={lvl.level}
-                    className={`relative p-3.5 rounded-2xl border text-center transition-all flex flex-col justify-between ${
-                      isCurrent
-                        ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-400 dark:border-purple-500 shadow-md ring-2 ring-purple-400/50'
-                        : isCompleted
-                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700/50'
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'
-                    }`}
+                    className={`relative p-3.5 rounded-2xl border text-center transition-all flex flex-col justify-between ${cardClass}`}
                   >
                     <div>
                       {/* Step indicator badge */}
-                      <div className="flex justify-center mb-2">
+                      <div className="flex justify-center mb-2.5">
                         {isCompleted ? (
-                          <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-600 flex items-center justify-center font-bold">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                            isDark
+                              ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-500/50'
+                              : 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                          }`}>
                             <CheckCircle2 className="w-4 h-4" />
                           </div>
                         ) : isCurrent ? (
-                          <div className="w-7 h-7 rounded-full bg-purple-600 text-white font-black text-xs flex items-center justify-center animate-pulse shadow-md">
+                          <div className="w-8 h-8 rounded-full bg-purple-600 text-white font-black text-xs flex items-center justify-center shadow-lg shadow-purple-500/50 ring-2 ring-purple-300/50 animate-pulse">
                             ★
                           </div>
                         ) : (
-                          <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs font-bold flex items-center justify-center">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${
+                            isDark
+                              ? 'bg-slate-800 text-slate-300 border border-slate-700'
+                              : 'bg-slate-200 text-slate-700 border border-slate-300'
+                          }`}>
                             {index + 1}
                           </div>
                         )}
                       </div>
 
-                      <h4 className={`font-black text-xs truncate ${
-                        isCurrent
-                          ? 'text-purple-950 dark:text-white'
-                          : isCompleted
-                          ? 'text-emerald-950 dark:text-emerald-200'
-                          : 'text-slate-700 dark:text-slate-300'
-                      }`}>
+                      <h4 className={`text-xs truncate ${titleClass}`}>
                         {isHe ? lvl.labelHe : lvl.label}
                       </h4>
                     </div>
 
-                    <div className="mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-700">
-                      <span
-                        className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block ${
-                          isCurrent
-                            ? 'bg-purple-200 dark:bg-purple-900/80 text-purple-900 dark:text-purple-200 border border-purple-300 dark:border-purple-600'
-                            : isCompleted
-                            ? 'bg-emerald-200 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200'
-                            : 'text-slate-500 dark:text-slate-400'
-                        }`}
-                      >
+                    <div className={`mt-3 pt-2 border-t ${dividerClass}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full inline-block ${badgeClass}`}>
                         {isCompleted
                           ? isHe ? 'הושלם' : 'Passed'
                           : isCurrent
@@ -653,23 +697,31 @@ export const StudentProgressTab: React.FC<StudentProgressTabProps> = ({ studentI
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className={`mt-6 pt-4 border-t flex flex-wrap items-center justify-between gap-3 text-xs ${
+            isDark ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-500'
+          }`}>
             <span>
               {isHe
                 ? 'המורה מעדכן את הרמה בסיום כל שלב'
                 : 'Teachers verify and graduate levels upon completion'}
             </span>
             <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold">
+              <span className={`flex items-center gap-1.5 font-bold ${
+                isDark ? 'text-emerald-400' : 'text-emerald-700'
+              }`}>
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <span>{isHe ? 'הושלם' : 'Completed'}</span>
               </span>
-              <span className="flex items-center gap-1.5 text-purple-700 dark:text-purple-400 font-bold">
+              <span className={`flex items-center gap-1.5 font-bold ${
+                isDark ? 'text-purple-400' : 'text-purple-700'
+              }`}>
                 <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
                 <span>{isHe ? 'נוכחי' : 'Current'}</span>
               </span>
-              <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+              <span className={`flex items-center gap-1.5 font-medium ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}>
+                <span className={`w-2.5 h-2.5 rounded-full ${isDark ? 'bg-slate-600' : 'bg-slate-300'}`} />
                 <span>{isHe ? 'נעול' : 'Locked'}</span>
               </span>
             </div>
