@@ -211,7 +211,10 @@ export const DashboardSkeleton: React.FC<DashboardSkeletonProps> = ({
       </main>
 
       {/* 6. Mobile Floating Bottom Capsule Bar Skeleton (Matches Student Navigation Liquid Glass) */}
-      <div className="lg:hidden fixed bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-1.25rem)] max-w-md z-40 pointer-events-none">
+      <div
+        className="lg:hidden fixed left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-40 pointer-events-none"
+        style={{ bottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}
+      >
         <div className="w-full h-14 rounded-full liquid-glass-shell flex items-center justify-around px-4">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="flex flex-col items-center gap-1">

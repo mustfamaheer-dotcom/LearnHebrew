@@ -3366,15 +3366,15 @@ export const StudentDashboard: React.FC = () => {
       {/* iPhone-Style Floating Liquid Glass Bottom Navigation Bar (Mobile View) */}
       <nav
         aria-label="Mobile Navigation"
-        className="lg:hidden fixed bottom-1 left-1/2 -translate-x-1/2 w-[calc(100%-1.25rem)] max-w-md z-50 pointer-events-auto"
-        style={{ bottom: 'max(calc(env(safe-area-inset-bottom, 0px) - 28px), 4px)' }}
+        className="lg:hidden fixed left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-50 pointer-events-auto"
+        style={{ bottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 16px)' }}
       >
         {/* Ambient colored underglow reflecting onto underlying page content */}
-        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-teal-500/35 via-cyan-400/25 to-teal-400/35 blur-xl opacity-75 -z-10 pointer-events-none" />
+        <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-teal-500/30 via-cyan-400/20 to-teal-400/30 blur-xl opacity-70 -z-10 pointer-events-none" />
 
         <div className="relative rounded-full p-1.5 liquid-glass-shell grid grid-cols-5 items-center justify-around gap-1">
           {/* Top Edge Curved Liquid Glass Sheen */}
-          <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none rounded-full" />
+          <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none rounded-full" />
 
           {mobileTabs.map((item) => {
             const Icon = item.icon;
@@ -3395,7 +3395,7 @@ export const StudentDashboard: React.FC = () => {
                 className={`relative py-1.5 px-1 rounded-full flex flex-col items-center justify-center transition-all duration-300 group active:scale-90 ${
                   isActive
                     ? 'liquid-glass-capsule-active'
-                    : 'hover:bg-white/[0.08] active:bg-white/[0.14] text-white/70 hover:text-white'
+                    : 'hover:bg-white/[0.08] active:bg-white/[0.14] text-slate-300 hover:text-white'
                 }`}
               >
                 {/* Notification Badge Dot for Live Lesson with Liquid Ping Ripple */}
@@ -3409,15 +3409,15 @@ export const StudentDashboard: React.FC = () => {
                 <Icon
                   className={`w-5 h-5 shrink-0 transition-transform duration-200 ${
                     isActive
-                      ? 'text-cyan-200 scale-110 drop-shadow-[0_0_10px_rgba(34,211,238,0.9)]'
-                      : 'text-white/80 group-hover:scale-105 group-hover:text-white'
+                      ? 'text-cyan-300 scale-110 drop-shadow-[0_0_8px_rgba(34,211,238,0.85)]'
+                      : 'text-slate-300 group-hover:scale-105 group-hover:text-white'
                   }`}
                 />
                 <span
                   className={`text-[10px] tracking-tight mt-0.5 leading-tight truncate max-w-full ${
                     isActive
-                      ? 'text-cyan-100 font-black drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]'
-                      : 'text-white/70 font-bold group-hover:text-white/90'
+                      ? 'text-cyan-100 font-black drop-shadow-[0_0_6px_rgba(34,211,238,0.5)]'
+                      : 'text-slate-300 font-bold group-hover:text-white'
                   }`}
                 >
                   {item.label}
