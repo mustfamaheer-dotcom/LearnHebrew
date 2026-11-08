@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import fs from 'fs';
+import path from 'path';
 import * as authService from './auth.service';
 import { AuthRequest } from '../../middleware/auth';
 
@@ -17,6 +19,7 @@ const updateProfileSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50).optional(),
   lastName: z.string().min(1, 'Last name is required').max(50).optional(),
   languagePref: z.enum(['en', 'he']).optional(),
+  avatarUrl: z.string().nullable().optional(),
 });
 
 export async function loginHandler(req: Request, res: Response, next: NextFunction) {
@@ -107,7 +110,39 @@ export async function meHandler(req: AuthRequest, res: Response, next: NextFunct
 export async function updateProfileHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const data = updateProfileSchema.parse(req.body);
-    const user = await authService.updateProfile(req.user!.userId, data);
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
+
+    // Permissions: Only Teachers and Platform Owners (ADMIN / SUPER_ADMIN) can set avatar images
+    if (data.avatarUrl !== undefined && data.avatarUrl !== null && data.avatarUrl.trim() !== '') {
+      const allowedRoles = ['TEACHER', 'ADMIN', 'SUPER_ADMIN'];
+      if (!allowedRoles.includes(userRole)) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Students are not permitted to set profile images. Only Teachers and Platform Owners can customize avatar images.',
+        });
+      }
+
+      // If avatarUrl is a Base64 data URL (e.g. data:image/webp;base64,...), persist it as a .webp file on disk
+      if (data.avatarUrl.startsWith('data:image/')) {
+        try {
+          const uploadsDir = path.join(process.cwd(), 'uploads', 'avatars');
+          if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+          }
+          const base64Data = data.avatarUrl.replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Buffer.from(base64Data, 'base64');
+          const filename = `avatar-${userId}-${Date.now()}.webp`;
+          const filePath = path.join(uploadsDir, filename);
+          fs.writeFileSync(filePath, buffer);
+          data.avatarUrl = `/uploads/avatars/${filename}`;
+        } catch (fileErr) {
+          console.error('Failed to write WebP avatar to disk, persisting data URL directly:', fileErr);
+        }
+      }
+    }
+
+    const user = await authService.updateProfile(userId, data);
     res.json({ user, message: 'Profile updated successfully' });
   } catch (error) {
     next(error);

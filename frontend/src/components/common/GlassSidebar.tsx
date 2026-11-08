@@ -9,6 +9,7 @@ import {
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { useAuthStore } from '../../store/authStore';
+import { getAvatarUrl } from '../../utils/avatar';
 
 export interface GlassNavItem {
   id: string;
@@ -312,9 +313,13 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                   type="button"
                   onClick={openProfileModal}
                   title={language === 'he' ? 'הגדרות פרופיל' : 'Profile Settings'}
-                  className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black flex items-center justify-center text-xs shadow-xs hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer"
+                  className="w-10 h-10 rounded-2xl overflow-hidden bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black flex items-center justify-center text-xs shadow-xs hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer"
                 >
-                  {initials || 'U'}
+                  {user.avatarUrl ? (
+                    <img src={getAvatarUrl(user.avatarUrl)} alt={user.firstName} className="w-full h-full object-cover" />
+                  ) : (
+                    initials || 'U'
+                  )}
                 </button>
                 {/* User Tooltip */}
                 <div className="hidden lg:block absolute start-[calc(100%+0.65rem)] bottom-0 p-2.5 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 space-y-0.5">
@@ -334,8 +339,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                   onClick={openProfileModal}
                   className="flex items-center gap-2.5 min-w-0 flex-1 text-start group cursor-pointer"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black flex items-center justify-center text-xs shrink-0 shadow-xs ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
-                    {initials || 'U'}
+                  <div className="w-9 h-9 rounded-xl overflow-hidden bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black flex items-center justify-center text-xs shrink-0 shadow-xs ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
+                    {user.avatarUrl ? (
+                      <img src={getAvatarUrl(user.avatarUrl)} alt={user.firstName} className="w-full h-full object-cover" />
+                    ) : (
+                      initials || 'U'
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" title={`${user.firstName || ''} ${user.lastName || ''}`}>

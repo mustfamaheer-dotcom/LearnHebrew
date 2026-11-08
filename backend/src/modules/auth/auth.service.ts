@@ -316,7 +316,7 @@ export async function getCurrentUser(userId: string) {
 
 export async function updateProfile(
   userId: string,
-  data: { firstName?: string; lastName?: string; languagePref?: string }
+  data: { firstName?: string; lastName?: string; languagePref?: string; avatarUrl?: string | null }
 ) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw { status: 404, message: 'User not found' };
@@ -327,6 +327,7 @@ export async function updateProfile(
       firstName: data.firstName !== undefined ? data.firstName.trim() : undefined,
       lastName: data.lastName !== undefined ? data.lastName.trim() : undefined,
       languagePref: data.languagePref ? (data.languagePref as LanguagePref) : undefined,
+      avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : undefined,
     },
     include: {
       studentProfile: {
@@ -344,7 +345,12 @@ export async function updateProfile(
   await logAuditEvent({
     userId,
     action: 'PROFILE_UPDATED',
-    metaJson: { firstName: data.firstName, lastName: data.lastName, languagePref: data.languagePref },
+    metaJson: {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      languagePref: data.languagePref,
+      avatarUpdated: data.avatarUrl !== undefined,
+    },
   });
 
   const { passwordHash: _, ...safeUser } = updatedUser;

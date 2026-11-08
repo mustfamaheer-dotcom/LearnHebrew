@@ -11,6 +11,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { getAvatarUrl } from '../../utils/avatar';
 
 export const Navbar: React.FC = () => {
   const { user, logout, openProfileModal } = useAuthStore();
@@ -91,8 +92,12 @@ export const Navbar: React.FC = () => {
                   className="flex items-center gap-2 p-1 sm:p-1.5 sm:ps-2 sm:pe-3 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group"
                   title={language === 'he' ? 'ערוך פרופיל ושנה סיסמה' : 'Edit profile & change password'}
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-gradient-to-br from-brand-teal-600 to-indigo-700 text-white flex items-center justify-center font-black text-xs shadow-2xs shrink-0 ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
-                    {`${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() || 'U'}
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl overflow-hidden bg-gradient-to-br from-brand-teal-600 to-indigo-700 text-white flex items-center justify-center font-black text-xs shadow-2xs shrink-0 ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
+                    {user.avatarUrl ? (
+                      <img src={getAvatarUrl(user.avatarUrl)} alt={user.firstName} className="w-full h-full object-cover" />
+                    ) : (
+                      `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() || 'U'
+                    )}
                   </div>
                   <div className="text-start hidden md:block">
                     <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">

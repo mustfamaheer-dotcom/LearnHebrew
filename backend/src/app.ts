@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 
 import authRouter from './modules/auth/auth.router';
 import usersRouter from './modules/users/users.router';
@@ -71,10 +72,13 @@ app.use(
 // Global API Rate Limiter
 app.use('/api/', apiLimiter);
 
-// Parsers with strict anti-DoS payload size limits
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+// Parsers with generous limit for WebP avatars
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// Static Uploads Serving (Avatars & media)
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // HTTP Request & Telemetry Logger
 app.use(requestLogger);
