@@ -50,6 +50,17 @@ export class NotificationService {
   }
 
   /**
+   * Total number of active authenticated clients listening to SSE
+   */
+  public getActiveClientsCount(): number {
+    let count = 0;
+    this.sseClients.forEach((set) => {
+      count += set.size;
+    });
+    return count;
+  }
+
+  /**
    * Push an event to all active SSE streams of a specific user
    */
   public pushToUser(userId: string, event: string, data: any) {

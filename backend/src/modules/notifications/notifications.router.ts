@@ -1,11 +1,166 @@
 import { Router, Response, NextFunction } from 'express';
 import { prisma } from '../../config/database';
-import { authenticate, AuthRequest } from '../../middleware/auth';
+import { authenticate, AuthRequest, requireRoles } from '../../middleware/auth';
 import { notificationService } from './notifications.service';
-import { NotificationCategory } from '@prisma/client';
+import { NotificationCategory, Role } from '@prisma/client';
+import { executeReminderCheck } from '../../jobs/reminderJob';
 
 const router = Router();
 router.use(authenticate);
+
+/**
+ * Admin: Get Notification Hub & Reminder Engine Statistics
+ */
+router.get(
+  '/admin/stats',
+  requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const now = new Date();
+      const in24h = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      const [
+        totalRemindersDispatched,
+        totalBroadcastsSent,
+        totalNotificationsAllTime,
+        upcomingLessonsNext24h,
+        totalUnreadOverall,
+      ] = await Promise.all([
+        prisma.notification.count({
+          where: { category: NotificationCategory.REMINDER },
+        }),
+        prisma.notification.count({
+          where: { type: 'BROADCAST_ANNOUNCEMENT' },
+        }),
+        prisma.notification.count(),
+        prisma.lesson.count({
+          where: {
+            status: 'SCHEDULED',
+            scheduledAt: { gte: now, lte: in24h },
+          },
+        }),
+        prisma.notification.count({
+          where: { isRead: false },
+        }),
+      ]);
+
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: 'notification_config' },
+      });
+      const config = (setting?.valueJson as any) || {
+        lessonReminderMinutes: 30,
+        enableSoundChime: true,
+      };
+
+      res.json({
+        stats: {
+          totalRemindersDispatched,
+          totalBroadcastsSent,
+          totalNotificationsAllTime,
+          upcomingLessonsNext24h,
+          totalUnreadOverall,
+          activeSubscribers: notificationService.getActiveClientsCount(),
+          workerStatus: 'RUNNING',
+          workerIntervalSeconds: 60,
+          currentLeadMinutes: Number(config.lessonReminderMinutes) || 30,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * Admin: Trigger Manual Sweep of Pre-Lesson Reminder Check
+ */
+router.post(
+  '/reminders/trigger-check',
+  requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const result = await executeReminderCheck();
+      res.json({
+        message: 'Reminder sweep executed successfully',
+        ...result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * Admin: View Dispatched Notifications & Audit Stream Across Entire System
+ */
+router.get(
+  '/admin/all',
+  requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const category = req.query.category as string | undefined;
+      const search = req.query.search as string | undefined;
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(Number(req.query.limit) || 25, 100);
+      const skip = (page - 1) * limit;
+
+      const where: any = {};
+      if (category && category !== 'ALL') {
+        where.category = category as NotificationCategory;
+      }
+
+      if (search && search.trim()) {
+        const query = search.trim();
+        where.OR = [
+          { titleEn: { contains: query, mode: 'insensitive' } },
+          { titleHe: { contains: query, mode: 'insensitive' } },
+          { bodyEn: { contains: query, mode: 'insensitive' } },
+          { bodyHe: { contains: query, mode: 'insensitive' } },
+          {
+            user: {
+              OR: [
+                { firstName: { contains: query, mode: 'insensitive' } },
+                { lastName: { contains: query, mode: 'insensitive' } },
+                { email: { contains: query, mode: 'insensitive' } },
+              ],
+            },
+          },
+        ];
+      }
+
+      const [notifications, totalCount] = await Promise.all([
+        prisma.notification.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                role: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        prisma.notification.count({ where }),
+      ]);
+
+      res.json({
+        notifications,
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit) || 1,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 /**
  * Real-Time Server-Sent Events (SSE) Stream

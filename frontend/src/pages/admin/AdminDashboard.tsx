@@ -8,6 +8,7 @@ import { toast } from '../../store/toastStore';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { SystemLogsTab } from '../../components/admin/SystemLogsTab';
+import { ReminderNotificationHubTab } from '../../components/admin/ReminderNotificationHubTab';
 import {
   formatSlotRange12Hour,
   formatIsraelDateTime,
@@ -23,6 +24,7 @@ import {
   ShieldAlert,
   CheckCircle,
   Bell,
+  BellRing,
   KeyRound,
   Trash2,
   Star,
@@ -77,7 +79,7 @@ export const AdminDashboard: React.FC = () => {
 
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'landing_cms' | 'users' | 'teachers' | 'packages' | 'bookings' | 'surveys' | 'system_logs'
+    'overview' | 'landing_cms' | 'reminders_hub' | 'users' | 'teachers' | 'packages' | 'bookings' | 'surveys' | 'system_logs'
   >('overview');
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -669,6 +671,14 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'משובים וסקרים',
       icon: MessageSquare,
       badge: surveysData?.length || 0,
+    },
+    {
+      id: 'reminders_hub',
+      label: 'Reminder Engine & Hub',
+      labelHe: 'מנוע תזכורות והתראות',
+      icon: BellRing,
+      badge: 'Live',
+      badgeColor: 'bg-emerald-500 text-white',
     },
     ...(currentUser?.role === 'SUPER_ADMIN'
       ? [
@@ -1876,213 +1886,31 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               )}
 
-              {/* Notification & Pre-Lesson Reminder Engine Controls */}
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                      <Bell className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h2 className="text-base font-black text-slate-900 dark:text-white">
-                        {language === 'he' ? 'מנוע תזכורות שיעורים והתראות מערכת' : 'Pre-Lesson Reminder Engine & Notification Hub'}
-                      </h2>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {language === 'he'
-                          ? 'קביעת זמן התזכורת האוטומטית לפני תחילת שיעור ושליחת הודעות שידור בזמן אמת לכלל המשתמשים.'
-                          : 'Configure automated countdown alerts before 25-min lessons and broadcast live announcements.'}
-                      </p>
-                    </div>
+              {/* Notification & Pre-Lesson Reminder Hub Quick Banner */}
+              <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-950/30 rounded-3xl p-6 border border-amber-200/80 dark:border-amber-800/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-md">
+                    <BellRing className="w-5 h-5" />
                   </div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800 self-start sm:self-auto">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>{language === 'he' ? 'מנוע פועל (בדיקה כל 60 שניות)' : 'Active Worker (60s Polling)'}</span>
-                  </span>
-                </div>
-
-                <div className="grid lg:grid-cols-2 gap-8 items-start">
-                  {/* Left: Pre-Lesson Reminder Timing */}
-                  <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200/70 dark:border-slate-800 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase text-slate-900 dark:text-white tracking-wider flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
-                        <span>{language === 'he' ? 'זמן תזכורת מקדימה לשיעור' : 'Pre-Lesson Reminder Lead Time'}</span>
-                      </h3>
-                      <span className="text-xs font-extrabold text-brand-teal-800 dark:text-brand-teal-300 bg-brand-teal-50 dark:bg-brand-teal-950/70 px-2.5 py-0.5 rounded-lg border border-brand-teal-200 dark:border-brand-teal-800">
-                        {reminderLeadMinutes} {language === 'he' ? 'דקות לפני השיעור' : 'Minutes Before'}
-                      </span>
-                    </div>
-
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                      {language === 'he' ? 'מנוע תזכורות שיעורים ומרכז התראות שודרג ללשונית נפרדת' : 'Dedicated Reminder Engine & Notification Hub'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {language === 'he'
-                        ? 'כאשר שיעור מתקרב לטווח דקות זה, המערכת שולחת התראה אינטראקטיבית עם צליל וכפתור כניסה ישירה לזום לתלמיד ולמורה.'
-                        : 'Students and teachers automatically receive an in-app alert, sound chime, and direct Zoom button ahead of the session.'}
+                        ? 'כל הגדרות התזמון, תבניות ההודעות, שידורים חיים ויומן התראות מלא עברו ללשונית ייעודית.'
+                        : 'Custom countdown intervals, audio chimes, live broadcast studio, and audit logs now live in a dedicated tab.'}
                     </p>
-
-                    {/* Quick Presets */}
-                    <div className="grid grid-cols-4 gap-2">
-                      {[15, 30, 45, 60].map((mins) => (
-                        <button
-                          key={mins}
-                          type="button"
-                          onClick={() => setReminderLeadMinutes(mins)}
-                          className={`py-2 px-1 text-center rounded-xl text-xs font-black transition-all border ${
-                            reminderLeadMinutes === mins
-                              ? 'bg-brand-teal-800 text-white border-brand-teal-900 shadow-xs'
-                              : 'bg-white dark:bg-slate-850 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-teal-500'
-                          }`}
-                        >
-                          {mins} {language === 'he' ? 'דק׳' : 'Min'}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Custom Minute Input */}
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        {language === 'he' ? 'התאמה אישית (בדקות):' : 'Custom Lead Time (Minutes):'}
-                      </label>
-                      <input
-                        type="number"
-                        min={5}
-                        max={1440}
-                        value={reminderLeadMinutes}
-                        onChange={(e) => setReminderLeadMinutes(Math.max(1, Number(e.target.value)))}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      disabled={updateNotifConfigMutation.isPending}
-                      onClick={() => updateNotifConfigMutation.mutate(reminderLeadMinutes)}
-                      className="w-full py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <Save className="w-3.5 h-3.5 text-brand-olive-300" />
-                      <span>{updateNotifConfigMutation.isPending ? (language === 'he' ? 'שומר...' : 'Saving...') : (language === 'he' ? 'שמור הגדרות תזכורת' : 'Save Reminder Timing')}</span>
-                    </button>
-                  </div>
-
-                  {/* Right: Global Live Broadcast Sender */}
-                  <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200/70 dark:border-slate-800 space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase text-slate-900 dark:text-white tracking-wider flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-amber-500" />
-                        <span>{language === 'he' ? 'שידור התראה גלובלית לכל המשתמשים' : 'Broadcast Live Notification'}</span>
-                      </h3>
-                      <span className="text-[10px] font-bold text-slate-400">SSE Push</span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { id: 'ALL', labelEn: 'All Users', labelHe: 'כל המשתמשים' },
-                        { id: 'STUDENT', labelEn: 'Students', labelHe: 'תלמידים בלבד' },
-                        { id: 'TEACHER', labelEn: 'Teachers', labelHe: 'מורים בלבד' },
-                      ].map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => setBroadcastTarget(t.id as any)}
-                          className={`py-1.5 text-center rounded-lg text-[11px] font-bold transition-all border ${
-                            broadcastTarget === t.id
-                              ? 'bg-amber-500 text-slate-950 border-amber-600 font-black shadow-xs'
-                              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                          }`}
-                        >
-                          {language === 'he' ? t.labelHe : t.labelEn}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                          Title (EN)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Holiday Schedule Update"
-                          value={broadcastTitleEn}
-                          onChange={(e) => setBroadcastTitleEn(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                          כותרת (עברית)
-                        </label>
-                        <input
-                          type="text"
-                          dir="rtl"
-                          placeholder="למשל: עדכון לוח שיעורים לחג"
-                          value={broadcastTitleHe}
-                          onChange={(e) => setBroadcastTitleHe(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                          Message Body (EN)
-                        </label>
-                        <textarea
-                          rows={2}
-                          placeholder="Detailed announcement text..."
-                          value={broadcastBodyEn}
-                          onChange={(e) => setBroadcastBodyEn(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                          תוכן ההודעה (עברית)
-                        </label>
-                        <textarea
-                          rows={2}
-                          dir="rtl"
-                          placeholder="פירוט ההודעה..."
-                          value={broadcastBodyHe}
-                          onChange={(e) => setBroadcastBodyHe(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                        {language === 'he' ? 'קישור לפעולה (אופציונלי):' : 'Action URL (Optional):'}
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. /student or https://..."
-                        value={broadcastUrl}
-                        onChange={(e) => setBroadcastUrl(e.target.value)}
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      disabled={sendBroadcastMutation.isPending || !broadcastTitleEn || !broadcastTitleHe}
-                      onClick={() =>
-                        sendBroadcastMutation.mutate({
-                          targetRole: broadcastTarget,
-                          titleEn: broadcastTitleEn,
-                          titleHe: broadcastTitleHe,
-                          bodyEn: broadcastBodyEn,
-                          bodyHe: broadcastBodyHe,
-                          actionUrl: broadcastUrl || undefined,
-                        })
-                      }
-                      className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-black text-xs shadow-xs transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <Zap className="w-3.5 h-3.5" />
-                      <span>{sendBroadcastMutation.isPending ? (language === 'he' ? 'משדר...' : 'Broadcasting...') : (language === 'he' ? 'שלח שידור חי מיידי' : 'Dispatch Broadcast Now')}</span>
-                    </button>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('reminders_hub')}
+                  className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <BellRing className="w-4 h-4" />
+                  <span>{language === 'he' ? 'פתח מרכז תזכורות והתראות' : 'Open Reminders Hub'}</span>
+                </button>
               </div>
             </div>
           )}
@@ -3110,6 +2938,11 @@ export const AdminDashboard: React.FC = () => {
           {/* TAB 8: SYSTEM OBSERVABILITY & ERROR TRACKING (PLATFORM OWNER ONLY) */}
           {activeTab === 'system_logs' && (
             <SystemLogsTab />
+          )}
+
+          {/* TAB 9: PRE-LESSON REMINDER ENGINE & NOTIFICATION HUB */}
+          {activeTab === 'reminders_hub' && (
+            <ReminderNotificationHubTab currentUserRole={currentUser?.role} />
           )}
         </main>
       </div>
