@@ -106,6 +106,10 @@ export const StudentDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'games' | 'leaderboard' | 'balance' | 'progress'
   >(() => {
+    const searchTab = new URLSearchParams(window.location.search).get('tab');
+    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'balance', 'progress'].includes(searchTab)) {
+      return searchTab as any;
+    }
     if (location.pathname.includes('/games')) return 'games';
     if (location.pathname.includes('/leaderboard')) return 'leaderboard';
     if (location.pathname.includes('/recordings')) return 'recordings';
@@ -115,6 +119,23 @@ export const StudentDashboard: React.FC = () => {
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
+
+  useEffect(() => {
+    const handleNavEvent = (e: any) => {
+      if (e.detail?.tab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'balance', 'progress'].includes(e.detail.tab)) {
+        setActiveTab(e.detail.tab);
+      }
+    };
+    window.addEventListener('engrew:navigate-tab', handleNavEvent);
+    return () => window.removeEventListener('engrew:navigate-tab', handleNavEvent);
+  }, []);
+
+  useEffect(() => {
+    const searchTab = new URLSearchParams(location.search).get('tab');
+    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'balance', 'progress'].includes(searchTab)) {
+      setActiveTab(searchTab as any);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (location.pathname.includes('/games')) {

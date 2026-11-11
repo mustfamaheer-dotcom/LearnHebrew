@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
@@ -94,6 +95,7 @@ const HomeIslandIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 export const AdminDashboard: React.FC = () => {
   const { t, language } = useTranslation();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
   const { isCollapsed } = useSidebarStore();
@@ -101,7 +103,30 @@ export const AdminDashboard: React.FC = () => {
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<
     'overview' | 'landing_cms' | 'reminders_hub' | 'users' | 'teachers' | 'packages' | 'bookings' | 'surveys' | 'system_logs'
-  >('overview');
+  >(() => {
+    const searchTab = new URLSearchParams(window.location.search).get('tab');
+    if (searchTab && ['overview', 'landing_cms', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(searchTab)) {
+      return searchTab as any;
+    }
+    return 'overview';
+  });
+
+  useEffect(() => {
+    const handleNavEvent = (e: any) => {
+      if (e.detail?.tab && ['overview', 'landing_cms', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(e.detail.tab)) {
+        setActiveTab(e.detail.tab);
+      }
+    };
+    window.addEventListener('engrew:navigate-tab', handleNavEvent);
+    return () => window.removeEventListener('engrew:navigate-tab', handleNavEvent);
+  }, []);
+
+  useEffect(() => {
+    const searchTab = new URLSearchParams(location.search).get('tab');
+    if (searchTab && ['overview', 'landing_cms', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(searchTab)) {
+      setActiveTab(searchTab as any);
+    }
+  }, [location.search]);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);

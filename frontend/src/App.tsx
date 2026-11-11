@@ -58,11 +58,18 @@ export const App: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        // Do not trigger on landing page or when not logged in
+        if (window.location.pathname === '/' || !useAuthStore.getState().user) {
+          return;
+        }
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
       }
     };
-    const handleCustomOpen = () => setIsCommandPaletteOpen(true);
+    const handleCustomOpen = () => {
+      if (window.location.pathname === '/' || !useAuthStore.getState().user) return;
+      setIsCommandPaletteOpen(true);
+    };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('engrew:open-command-palette', handleCustomOpen);

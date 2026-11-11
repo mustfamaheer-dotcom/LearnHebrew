@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
@@ -126,10 +127,34 @@ const HomeIslandIcon: React.FC<{ className?: string }> = ({ className }) => (
 export const TeacherDashboard: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const { t, language } = useTranslation();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { isCollapsed } = useSidebarStore();
 
-  const [activeTab, setActiveTab] = useState<'calendar' | 'lessons' | 'students' | 'homework' | 'recordings' | 'games'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'lessons' | 'students' | 'homework' | 'recordings' | 'games'>(() => {
+    const searchTab = new URLSearchParams(window.location.search).get('tab');
+    if (searchTab && ['calendar', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(searchTab)) {
+      return searchTab as any;
+    }
+    return 'calendar';
+  });
+
+  useEffect(() => {
+    const handleNavEvent = (e: any) => {
+      if (e.detail?.tab && ['calendar', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(e.detail.tab)) {
+        setActiveTab(e.detail.tab);
+      }
+    };
+    window.addEventListener('engrew:navigate-tab', handleNavEvent);
+    return () => window.removeEventListener('engrew:navigate-tab', handleNavEvent);
+  }, []);
+
+  useEffect(() => {
+    const searchTab = new URLSearchParams(location.search).get('tab');
+    if (searchTab && ['calendar', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(searchTab)) {
+      setActiveTab(searchTab as any);
+    }
+  }, [location.search]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);

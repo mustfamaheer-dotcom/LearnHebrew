@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Command,
@@ -20,6 +21,8 @@ import {
   Award,
   TrendingUp,
   Wallet,
+  FolderOpen,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -44,12 +47,27 @@ interface Props {
 }
 
 export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNavigateTab }) => {
+  const navigate = useNavigate();
   const { user, logout, openProfileModal } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const { language, setLanguage } = useTranslation();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleNavigate = (tabId: string) => {
+    if (onNavigateTab) {
+      onNavigateTab(tabId);
+    }
+    window.dispatchEvent(new CustomEvent('engrew:navigate-tab', { detail: { tab: tabId } }));
+    if (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') {
+      navigate(`/admin?tab=${tabId}`);
+    } else if (user?.role === 'TEACHER') {
+      navigate(`/teacher?tab=${tabId}`);
+    } else {
+      navigate(`/student?tab=${tabId}`);
+    }
+  };
 
   // Focus input when opened
   useEffect(() => {
@@ -73,7 +91,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'KPIs & Overview Dashboard',
         titleHe: 'לוח מדדים וראשי',
         icon: Sliders,
-        action: () => onNavigateTab?.('overview'),
+        action: () => handleNavigate('overview'),
       },
       {
         id: 'users',
@@ -82,7 +100,16 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'User Management & Roles',
         titleHe: 'ניהול משתמשים והרשאות',
         icon: Users,
-        action: () => onNavigateTab?.('users'),
+        action: () => handleNavigate('users'),
+      },
+      {
+        id: 'teachers',
+        category: 'Navigation',
+        categoryHe: 'ניווט',
+        title: 'Teacher Applications & Profiles',
+        titleHe: 'ניהול מורים ובקשות הצטרפות',
+        icon: ShieldCheck,
+        action: () => handleNavigate('teachers'),
       },
       {
         id: 'bookings',
@@ -91,7 +118,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Bookings & Session Calendar',
         titleHe: 'יומן שיעורים והזמנות',
         icon: Calendar,
-        action: () => onNavigateTab?.('bookings'),
+        action: () => handleNavigate('bookings'),
       },
       {
         id: 'packages',
@@ -100,7 +127,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Pricing & Lesson Packages',
         titleHe: 'חבילות ומחירונים',
         icon: Layers,
-        action: () => onNavigateTab?.('packages'),
+        action: () => handleNavigate('packages'),
       },
       {
         id: 'landing_cms',
@@ -109,7 +136,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Landing Page CMS Editor',
         titleHe: 'ניהול תוכן עמוד הבית',
         icon: Sliders,
-        action: () => onNavigateTab?.('landing_cms'),
+        action: () => handleNavigate('landing_cms'),
       },
       {
         id: 'surveys',
@@ -118,7 +145,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Student Reviews & Feedback',
         titleHe: 'סקרי שביעות רצון ומשוב',
         icon: MessageSquare,
-        action: () => onNavigateTab?.('surveys'),
+        action: () => handleNavigate('surveys'),
       },
       {
         id: 'reminders_hub',
@@ -127,7 +154,16 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Reminder Engine & Notifications Hub',
         titleHe: 'מנוע תזכורות והתראות',
         icon: BellRing,
-        action: () => onNavigateTab?.('reminders_hub'),
+        action: () => handleNavigate('reminders_hub'),
+      },
+      {
+        id: 'system_logs',
+        category: 'Navigation',
+        categoryHe: 'ניווט',
+        title: 'System & Audit Logs',
+        titleHe: 'יומני מערכת וביקורת',
+        icon: Sliders,
+        action: () => handleNavigate('system_logs'),
       }
     );
   } else if (user?.role === 'TEACHER') {
@@ -139,7 +175,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Availability & Slot Management',
         titleHe: 'יומן זמינות וניהול שעות',
         icon: Calendar,
-        action: () => onNavigateTab?.('calendar'),
+        action: () => handleNavigate('calendar'),
       },
       {
         id: 'lessons',
@@ -148,7 +184,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Scheduled Lessons & Zoom Links',
         titleHe: 'שיעורים קבועים וקישורי זום',
         icon: Video,
-        action: () => onNavigateTab?.('lessons'),
+        action: () => handleNavigate('lessons'),
       },
       {
         id: 'students',
@@ -157,7 +193,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Student Profiles & Notes',
         titleHe: 'פרופילי תלמידים והערות',
         icon: Users,
-        action: () => onNavigateTab?.('students'),
+        action: () => handleNavigate('students'),
       },
       {
         id: 'homework',
@@ -166,7 +202,16 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Assign & Grade Homework',
         titleHe: 'מתן ובדיקת שיעורי בית',
         icon: BookOpen,
-        action: () => onNavigateTab?.('homework'),
+        action: () => handleNavigate('homework'),
+      },
+      {
+        id: 'recordings',
+        category: 'Navigation',
+        categoryHe: 'ניווט',
+        title: 'Google Drive Class Recordings',
+        titleHe: 'הקלטות שיעורים ב-Drive',
+        icon: FolderOpen,
+        action: () => handleNavigate('recordings'),
       },
       {
         id: 'games',
@@ -175,7 +220,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Custom Vocabulary Games',
         titleHe: 'משחקי מילים ותרגול',
         icon: Gamepad2,
-        action: () => onNavigateTab?.('games'),
+        action: () => handleNavigate('games'),
       }
     );
   } else {
@@ -188,7 +233,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Home Dashboard',
         titleHe: 'עמוד ראשי',
         icon: Sliders,
-        action: () => onNavigateTab?.('overview'),
+        action: () => handleNavigate('overview'),
       },
       {
         id: 'booking',
@@ -197,7 +242,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Book a New Hebrew Lesson',
         titleHe: 'הזמנת שיעור עברית חדש',
         icon: Calendar,
-        action: () => onNavigateTab?.('booking'),
+        action: () => handleNavigate('booking'),
       },
       {
         id: 'lessons',
@@ -206,7 +251,16 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Upcoming & Past Lessons',
         titleHe: 'השיעורים שלי',
         icon: Video,
-        action: () => onNavigateTab?.('lessons'),
+        action: () => handleNavigate('lessons'),
+      },
+      {
+        id: 'recordings',
+        category: 'Navigation',
+        categoryHe: 'ניווט',
+        title: 'Lesson Recordings & Replays',
+        titleHe: 'הקלטות שיעורים וצפייה חוזרת',
+        icon: FolderOpen,
+        action: () => handleNavigate('recordings'),
       },
       {
         id: 'games',
@@ -215,7 +269,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Vocabulary & Hebrew Games',
         titleHe: 'משחקי לימוד ואוצר מילים',
         icon: Gamepad2,
-        action: () => onNavigateTab?.('games'),
+        action: () => handleNavigate('games'),
       },
       {
         id: 'leaderboard',
@@ -224,7 +278,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'XP Leaderboard & Rankings',
         titleHe: 'לוח נקודות ודירוג תלמידים',
         icon: Award,
-        action: () => onNavigateTab?.('leaderboard'),
+        action: () => handleNavigate('leaderboard'),
       },
       {
         id: 'homework',
@@ -233,7 +287,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Homework Tasks & Feedback',
         titleHe: 'מטלות שיעורי בית ומשוב',
         icon: BookOpen,
-        action: () => onNavigateTab?.('homework'),
+        action: () => handleNavigate('homework'),
       },
       {
         id: 'balance',
@@ -242,7 +296,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'Wallet Balance & Top-Up',
         titleHe: 'יתרת ארנק ורכישת חבילות',
         icon: Wallet,
-        action: () => onNavigateTab?.('balance'),
+        action: () => handleNavigate('balance'),
       },
       {
         id: 'progress',
@@ -251,7 +305,7 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         title: 'My Learning Progress & Roadmaps',
         titleHe: 'התקדמות הלמידה ומפת דרכים',
         icon: TrendingUp,
-        action: () => onNavigateTab?.('progress'),
+        action: () => handleNavigate('progress'),
       }
     );
   }
@@ -292,7 +346,10 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
       title: 'Sign Out of Engrew',
       titleHe: 'התנתקות מהמערכת',
       icon: LogOut,
-      action: logout,
+      action: () => {
+        logout();
+        navigate('/login');
+      },
     }
   );
 
