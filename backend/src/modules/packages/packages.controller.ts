@@ -102,3 +102,44 @@ export async function grantCreditsHandler(req: AuthRequest, res: Response, next:
   }
 }
 
+
+
+export async function validateCouponHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { code, amount } = req.body;
+    if (!code) {
+      return res.status(400).json({ error: 'Coupon code is required' });
+    }
+    const result = await packagesService.validateCoupon(code, Number(amount) || 0);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listCouponsHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const coupons = await packagesService.listCoupons();
+    res.status(200).json({ coupons });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createCouponHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const coupon = await packagesService.createCoupon(req.body);
+    res.status(201).json({ coupon });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteCouponHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    await packagesService.deleteCoupon(req.params.id);
+    res.status(200).json({ message: 'Coupon deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}

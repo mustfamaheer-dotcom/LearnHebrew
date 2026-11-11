@@ -561,3 +561,22 @@ model Certificate {
   @@index([studentId])
   @@index([certificateNumber])
 }
+
+model Coupon {
+  id              String        @id @default(uuid())
+  code            String        @unique
+  discountType    String        @default("PERCENT") // "PERCENT" | "FIXED"
+  discountValue   Decimal       @db.Decimal(10, 2)
+  minSpend        Decimal?      @db.Decimal(10, 2)
+  maxUses         Int?
+  usedCount       Int           @default(0)
+  expiresAt       DateTime?
+  isActive        Boolean       @default(true)
+  description     String?
+  descriptionHe   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([code])
+  @@index([isActive])
+}

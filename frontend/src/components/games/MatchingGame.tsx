@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import { haptics } from '../../utils/haptics';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Trophy, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
@@ -59,6 +60,7 @@ export const MatchingGame: React.FC<MatchingGameProps> = ({
 
   const handleHebrewClick = (id: string) => {
     if (matchedIds.includes(id)) return;
+    haptics.tap();
     setSelectedHebrew(id);
 
     if (selectedEnglish) {
@@ -68,6 +70,7 @@ export const MatchingGame: React.FC<MatchingGameProps> = ({
 
   const handleEnglishClick = (id: string) => {
     if (matchedIds.includes(id)) return;
+    haptics.tap();
     setSelectedEnglish(id);
 
     if (selectedHebrew) {
@@ -78,6 +81,7 @@ export const MatchingGame: React.FC<MatchingGameProps> = ({
   const checkMatch = (hId: string, eId: string) => {
     if (hId === eId) {
       // Match found!
+      haptics.success();
       const nextMatched = [...matchedIds, hId];
       setMatchedIds(nextMatched);
       setSelectedHebrew(null);
@@ -90,6 +94,7 @@ export const MatchingGame: React.FC<MatchingGameProps> = ({
       }
     } else {
       // Wrong pair
+      haptics.error();
       setWrongPair({ hebrew: hId, english: eId });
       setTimeout(() => {
         setSelectedHebrew(null);

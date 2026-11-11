@@ -504,6 +504,34 @@ async function main() {
     },
   });
 
+  // Promotional Coupons
+  await prisma.coupon.upsert({
+    where: { code: 'HEBREW20' },
+    update: {},
+    create: {
+      code: 'HEBREW20',
+      discountType: 'PERCENT',
+      discountValue: 20,
+      description: '20% off all lesson packages',
+      descriptionHe: '20% הנחה על כל חבילות השיעורים',
+      isActive: true,
+    },
+  });
+
+  await prisma.coupon.upsert({
+    where: { code: 'SHALOM50' },
+    update: {},
+    create: {
+      code: 'SHALOM50',
+      discountType: 'FIXED',
+      discountValue: 50,
+      minSpend: 100,
+      description: '$50 instant discount on orders over $100',
+      descriptionHe: '$50 הנחה בהזמנה מעל $100',
+      isActive: true,
+    },
+  });
+
   console.log('Seeding completed successfully!');
   console.log('Demo Credentials:');
   console.log('  Admin:   admin@learnhebrew.com       / Admin@2026!');

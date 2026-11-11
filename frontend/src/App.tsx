@@ -1,9 +1,10 @@
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navbar } from './components/common/Navbar';
 import { ToastContainer } from './components/common/ToastContainer';
 import { ProfileSettingsModal } from './components/common/ProfileSettingsModal';
+import { CommandPaletteModal } from './components/common/CommandPaletteModal';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { PageLoader } from './components/common/PageLoader';
 import { useAuthStore } from './store/authStore';
@@ -38,6 +39,7 @@ const queryClient = new QueryClient({
 export const App: React.FC = () => {
   const language = useAuthStore((state) => state.language);
   const theme = useThemeStore((state) => state.theme);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.dir = language === 'he' ? 'rtl' : 'ltr';
@@ -51,6 +53,24 @@ export const App: React.FC = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [theme]);
+
+  // Global Command Palette (⌘+K / Ctrl+K) & Custom Event Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    const handleCustomOpen = () => setIsCommandPaletteOpen(true);
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('engrew:open-command-palette', handleCustomOpen);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('engrew:open-command-palette', handleCustomOpen);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -88,6 +108,10 @@ export const App: React.FC = () => {
               </Routes>
             </Suspense>
           </main>
+          <CommandPaletteModal
+            isOpen={isCommandPaletteOpen}
+            onClose={() => setIsCommandPaletteOpen(false)}
+          />
           <ProfileSettingsModal />
           <ToastContainer />
         </div>

@@ -9,6 +9,7 @@ import {
   Sun,
   Moon,
   Settings,
+  Search,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { getAvatarUrl } from '../../utils/avatar';
@@ -56,6 +57,20 @@ export const Navbar: React.FC = () => {
 
           {/* Right Controls: Dark Mode Toggle, Language switch & User profile */}
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Spotlight / Command Palette Button (⌘K) */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('engrew:open-command-palette'))}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all shadow-2xs group shrink-0"
+              title={language === 'he' ? 'חיפוש מהיר ופקודות (⌘K)' : 'Quick command palette (⌘K)'}
+              aria-label="Quick Command Palette"
+            >
+              <Search className="w-4 h-4 text-slate-500 dark:text-slate-400 group-hover:text-brand-teal-600 dark:group-hover:text-teal-400 transition-colors" />
+              <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-500 border border-slate-200 dark:border-slate-700 font-mono">
+                <span>⌘</span>
+                <span>K</span>
+              </kbd>
+            </button>
+
             {/* Dark Mode Theme Toggle */}
             <button
               onClick={toggleTheme}

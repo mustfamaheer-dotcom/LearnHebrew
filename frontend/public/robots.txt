@@ -1,0 +1,14 @@
+# Robots.txt for Engrew Hebrew Academy (https://engrew.com)
+User-agent: *
+Allow: /
+Allow: /login
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /teacher
+Disallow: /teacher/*
+Disallow: /student
+Disallow: /student/*
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://engrew.com/sitemap.xml

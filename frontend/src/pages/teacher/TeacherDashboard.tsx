@@ -18,9 +18,15 @@ import { DriveViewerModal } from '../../components/common/DriveViewerModal';
 import { StructuredNotesEditorModal } from '../../components/lessons/StructuredNotesEditorModal';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
+import { LiveLessonCountdownIsland } from '../../components/lessons/LiveLessonCountdownIsland';
+import { TeacherShareModal } from '../../components/teacher/TeacherShareModal';
+import { haptics } from '../../utils/haptics';
+import { getGoogleCalendarUrl, downloadIcsFile } from '../../utils/calendarSync';
 import { isGoogleDriveUrl, detectAttachmentType } from '../../lib/driveUtils';
 import {
+  Calendar,
   Calendar as CalendarIcon,
+  Download,
   Clock,
   CheckCircle,
   Video,
@@ -51,6 +57,7 @@ import {
   LayoutGrid,
   Gift,
   Sliders,
+  Share2,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -125,6 +132,7 @@ export const TeacherDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'calendar' | 'lessons' | 'students' | 'homework' | 'recordings' | 'games'>('calendar');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDay());
   const [selectedDuration, setSelectedDuration] = useState<SessionDuration>(25);
@@ -799,6 +807,9 @@ export const TeacherDashboard: React.FC = () => {
             ? 'lg:ps-[calc(5rem+1.5rem)]'
             : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
         } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-6 sm:space-y-8 min-w-0`}>
+          {/* Live Imminent Lesson Countdown Island */}
+          <LiveLessonCountdownIsland lessons={lessons} userRole="TEACHER" />
+
           {/* Top Banner */}
           <div className="bg-gradient-to-r from-brand-teal-900 to-brand-teal-950 rounded-3xl p-5 sm:p-8 text-white shadow-md relative overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 relative z-10">
@@ -817,6 +828,13 @@ export const TeacherDashboard: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
+                <button
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs shadow-xs transition-colors border border-white/20 text-center"
+                >
+                  <Share2 className="w-4 h-4 text-brand-olive-300" />
+                  <span>{language === 'he' ? 'שתף פרופיל מורה' : 'Share Profile'}</span>
+                </button>
                 <button
                   onClick={() => openNewGameModal('FLASHCARD')}
                   className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-bold text-xs shadow-xs transition-colors border border-brand-teal-700 text-center"
@@ -1328,6 +1346,47 @@ export const TeacherDashboard: React.FC = () => {
                           <Video className="w-3.5 h-3.5" />
                           <span>{language === 'he' ? 'כניסה לשיעור בזום' : 'Launch Zoom Class'}</span>
                         </a>
+
+                        <a
+                          href={getGoogleCalendarUrl({
+                            id: lesson.id,
+                            title: `Engrew Hebrew Lesson with ${lesson.student?.user?.firstName || 'Student'}`,
+                            description: `1-on-1 Hebrew lesson (${lessonDur} min)`,
+                            scheduledAt: lesson.scheduledAt,
+                            durationMinutes: lessonDur,
+                            zoomLink: lesson.zoomLink || 'https://zoom.us',
+                            studentName: lesson.student?.user?.firstName,
+                          })}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => haptics.tap()}
+                          title={language === 'he' ? 'הוסף ל-Google Calendar' : 'Add to Google Calendar'}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-semibold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                        >
+                          <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                          <span>Google Cal</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            haptics.tap();
+                            downloadIcsFile({
+                              id: lesson.id,
+                              title: `Engrew Hebrew Lesson with ${lesson.student?.user?.firstName || 'Student'}`,
+                              description: `1-on-1 Hebrew lesson (${lessonDur} min)`,
+                              scheduledAt: lesson.scheduledAt,
+                              durationMinutes: lessonDur,
+                              zoomLink: lesson.zoomLink || 'https://zoom.us',
+                              studentName: lesson.student?.user?.firstName,
+                            });
+                          }}
+                          title={language === 'he' ? 'הורד קובץ iCal / Outlook' : 'Download Apple / Outlook (.ics)'}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-semibold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                        >
+                          <Download className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>.ics</span>
+                        </button>
 
                         {lesson.recordingUrl && (
                           <a
@@ -3500,6 +3559,7 @@ export const TeacherDashboard: React.FC = () => {
                 key={item.id}
                 type="button"
                 onClick={() => {
+                  haptics.tap();
                   if (item.id === 'more') {
                     setIsMobileMoreOpen(true);
                   } else {
@@ -3638,6 +3698,15 @@ export const TeacherDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share Teacher Profile Modal */}
+      {user && (
+        <TeacherShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          teacher={user as any}
+        />
       )}
     </div>
   );

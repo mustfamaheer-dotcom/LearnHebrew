@@ -10,6 +10,7 @@ import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { SystemLogsTab } from '../../components/admin/SystemLogsTab';
 import { ReminderNotificationHubTab } from '../../components/admin/ReminderNotificationHubTab';
 import { ReviewsAndFeedbackTab } from '../../components/admin/ReviewsAndFeedbackTab';
+import { haptics } from '../../utils/haptics';
 import {
   formatSlotRange12Hour,
   formatIsraelDateTime,
@@ -3912,6 +3913,7 @@ export const AdminDashboard: React.FC = () => {
                 key={item.id}
                 type="button"
                 onClick={() => {
+                  haptics.tap();
                   if (item.id === 'more') {
                     setIsMobileMoreOpen(true);
                   } else {

@@ -160,3 +160,86 @@ export async function grantStudentCredits(params: {
   });
 }
 
+
+
+export async function validateCoupon(code: string, purchaseAmount: number) {
+  const coupon = await prisma.coupon.findUnique({
+    where: { code: code.trim().toUpperCase() },
+  });
+
+  if (!coupon || !coupon.isActive) {
+    throw { status: 400, message: 'Invalid or inactive coupon code' };
+  }
+
+  if (coupon.expiresAt && new Date() > coupon.expiresAt) {
+    throw { status: 400, message: 'This coupon code has expired' };
+  }
+
+  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
+    throw { status: 400, message: 'This coupon has reached its maximum usage limit' };
+  }
+
+  if (coupon.minSpend && purchaseAmount < Number(coupon.minSpend)) {
+    throw {
+      status: 400,
+      message: `Minimum purchase of $${Number(coupon.minSpend).toFixed(2)} required to use this coupon`,
+    };
+  }
+
+  let discountAmount = 0;
+  if (coupon.discountType === 'PERCENT') {
+    discountAmount = (purchaseAmount * Number(coupon.discountValue)) / 100;
+  } else {
+    discountAmount = Math.min(Number(coupon.discountValue), purchaseAmount);
+  }
+
+  const finalAmount = Math.max(0, purchaseAmount - discountAmount);
+
+  return {
+    valid: true,
+    code: coupon.code,
+    discountType: coupon.discountType,
+    discountValue: Number(coupon.discountValue),
+    discountAmount: Number(discountAmount.toFixed(2)),
+    finalAmount: Number(finalAmount.toFixed(2)),
+    description: coupon.description,
+    descriptionHe: coupon.descriptionHe,
+  };
+}
+
+export async function listCoupons() {
+  return prisma.coupon.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+export async function createCoupon(data: {
+  code: string;
+  discountType?: string;
+  discountValue: number;
+  minSpend?: number;
+  maxUses?: number;
+  expiresAt?: Date | string;
+  description?: string;
+  descriptionHe?: string;
+}) {
+  return prisma.coupon.create({
+    data: {
+      code: data.code.trim().toUpperCase(),
+      discountType: data.discountType || 'PERCENT',
+      discountValue: data.discountValue,
+      minSpend: data.minSpend ?? null,
+      maxUses: data.maxUses ?? null,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      description: data.description || null,
+      descriptionHe: data.descriptionHe || null,
+      isActive: true,
+    },
+  });
+}
+
+export async function deleteCoupon(id: string) {
+  return prisma.coupon.delete({
+    where: { id },
+  });
+}

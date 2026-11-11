@@ -13,6 +13,10 @@ import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
 import { RescheduleModal } from '../../components/student/RescheduleModal';
+import { LiveLessonCountdownIsland } from '../../components/lessons/LiveLessonCountdownIsland';
+import { haptics } from '../../utils/haptics';
+import { triggerConfetti } from '../../utils/confetti';
+import { getGoogleCalendarUrl, downloadIcsFile } from '../../utils/calendarSync';
 import { StructuredNotesViewer } from '../../components/lessons/StructuredNotesViewer';
 import { CertificateModal, CertificateData } from '../../components/common/CertificateModal';
 import { isGoogleDriveUrl, getVideoEmbedUrl } from '../../lib/driveUtils';
@@ -27,6 +31,7 @@ import {
   Calendar as CalendarIcon,
   Video,
   Award,
+  Download,
   CheckCircle,
   CheckCircle2,
   Clock,
@@ -141,6 +146,39 @@ export const StudentDashboard: React.FC = () => {
   // Rate Teacher State
   const [ratingTeacherTarget, setRatingTeacherTarget] = useState<any | null>(null);
   const [teacherOverallRating, setTeacherOverallRating] = useState<number>(0);
+
+  // Promotional Coupon State
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  const handleValidateCoupon = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!couponInput.trim()) return;
+
+    setIsValidatingCoupon(true);
+    try {
+      const res = await api.post('/packages/validate-coupon', {
+        code: couponInput.trim(),
+        amount: 100,
+      });
+      setAppliedCoupon(res.data);
+      haptics.success();
+      triggerConfetti.celebrate();
+      toast.success(
+        language === 'he'
+          ? `קוד קופון ${res.data.code} הופעל בהצלחה!`
+          : `Promo code ${res.data.code} applied successfully!`
+      );
+    } catch (err: any) {
+      haptics.error();
+      const msg = err.response?.data?.message || err.response?.data?.error || (language === 'he' ? 'קוד קופון לא תקין או פג תוקף' : 'Invalid or expired coupon code');
+      toast.error(msg);
+      setAppliedCoupon(null);
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
   const [hoverTeacherStar, setHoverTeacherStar] = useState<number>(0);
   const [teacherCommunication, setTeacherCommunication] = useState<number>(5);
   const [teacherKnowledge, setTeacherKnowledge] = useState<number>(5);
@@ -741,6 +779,9 @@ export const StudentDashboard: React.FC = () => {
             ? 'lg:ps-[calc(5rem+1.5rem)]'
             : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
         } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8 pb-36 sm:pb-40 lg:pb-12`}>
+          {/* Live Imminent Lesson Countdown Island */}
+          <LiveLessonCountdownIsland lessons={upcomingLessons} userRole="STUDENT" />
+
           {/* TAB 1: OVERVIEW & STATUS */}
           {activeTab === 'overview' && (
             <div className="space-y-8">
@@ -1644,6 +1685,47 @@ export const StudentDashboard: React.FC = () => {
                           </div>
 
                           <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                            <a
+                              href={getGoogleCalendarUrl({
+                                id: l.id,
+                                title: `Engrew Hebrew Lesson with ${l.teacher?.user?.firstName || 'Teacher'}`,
+                                description: `1-on-1 Hebrew lesson (${lessonDur} min)`,
+                                scheduledAt: l.scheduledAt,
+                                durationMinutes: lessonDur,
+                                zoomLink: l.zoomLink || 'https://zoom.us',
+                                teacherName: l.teacher?.user?.firstName,
+                              })}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => haptics.tap()}
+                              title={language === 'he' ? 'הוסף ל-Google Calendar' : 'Add to Google Calendar'}
+                              className="px-2.5 py-2 bg-slate-100 dark:bg-slate-750 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
+                            >
+                              <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                              <span className="hidden sm:inline">Google Cal</span>
+                            </a>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                haptics.tap();
+                                downloadIcsFile({
+                                  id: l.id,
+                                  title: `Engrew Hebrew Lesson with ${l.teacher?.user?.firstName || 'Teacher'}`,
+                                  description: `1-on-1 Hebrew lesson (${lessonDur} min)`,
+                                  scheduledAt: l.scheduledAt,
+                                  durationMinutes: lessonDur,
+                                  zoomLink: l.zoomLink || 'https://zoom.us',
+                                  teacherName: l.teacher?.user?.firstName,
+                                });
+                              }}
+                              title={language === 'he' ? 'הורד קובץ iCal / Outlook' : 'Download Apple / Outlook (.ics)'}
+                              className="px-2.5 py-2 bg-slate-100 dark:bg-slate-750 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
+                            >
+                              <Download className="w-3.5 h-3.5 text-emerald-500" />
+                              <span className="hidden sm:inline">.ics</span>
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => setReschedulingLesson(l)}
@@ -3358,6 +3440,93 @@ export const StudentDashboard: React.FC = () => {
                 </div>
               </div>
 
+              {/* Promotional Coupon & Discount Code Redemption */}
+              <div className="bg-gradient-to-r from-amber-500/10 via-brand-teal-500/5 to-emerald-500/10 dark:from-amber-950/30 dark:via-brand-teal-950/20 dark:to-emerald-950/30 rounded-3xl p-6 sm:p-7 border border-amber-300/50 dark:border-amber-700/40 shadow-xs relative overflow-hidden">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-md shadow-amber-500/20 shrink-0">
+                      <Gift className="w-5 h-5 text-slate-950" />
+                    </div>
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-[11px] font-extrabold text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 mb-1">
+                        <Sparkles className="w-3 h-3" />
+                        <span>{language === 'he' ? 'הטבה מיוחדת' : 'Special Offer'}</span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                        {language === 'he' ? 'מימוש קוד קופון או שובר הנחה' : 'Redeem Coupon Code or Voucher'}
+                      </h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 max-w-xl">
+                        {language === 'he'
+                          ? 'הזן קוד קופון רשמי כדי לקבל הנחה מיידית על חבילות שיעורים ורכישות (למשל: HEBREW20 או SHALOM50).'
+                          : 'Enter a valid coupon code to unlock instant savings on lesson packages and bookings (e.g., HEBREW20 or SHALOM50).'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Coupon Input Form */}
+                  <form onSubmit={handleValidateCoupon} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        placeholder={language === 'he' ? 'קוד קופון (למשל HEBREW20)' : 'Coupon code (e.g. HEBREW20)'}
+                        className="w-full sm:w-56 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-brand-teal-500 shadow-2xs"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isValidatingCoupon || !couponInput.trim()}
+                      className="px-5 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+                    >
+                      {isValidatingCoupon ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-brand-olive-300" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4 text-brand-olive-300" />
+                      )}
+                      <span>{language === 'he' ? 'הפעל קופון' : 'Apply Code'}</span>
+                    </button>
+                  </form>
+                </div>
+
+                {/* Applied Coupon Banner */}
+                {appliedCoupon && (
+                  <div className="mt-4 p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-between gap-3 text-xs animate-in fade-in">
+                    <div className="flex items-center gap-2.5">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <div>
+                        <div className="flex items-center gap-2 font-bold text-emerald-900 dark:text-emerald-200">
+                          <span className="font-mono bg-emerald-200 dark:bg-emerald-900/60 px-2 py-0.5 rounded-md border border-emerald-400/50">
+                            {appliedCoupon.code}
+                          </span>
+                          <span>
+                            {appliedCoupon.discountType === 'PERCENT'
+                              ? `${appliedCoupon.discountValue}% ${language === 'he' ? 'הנחה' : 'OFF'}`
+                              : `$${appliedCoupon.discountValue} ${language === 'he' ? 'הנחה' : 'OFF'}`}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                          {language === 'he'
+                            ? appliedCoupon.descriptionHe || appliedCoupon.description
+                            : appliedCoupon.description || appliedCoupon.descriptionHe}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAppliedCoupon(null);
+                        setCouponInput('');
+                        haptics.tap();
+                      }}
+                      className="text-xs font-bold text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors px-2 py-1"
+                    >
+                      {language === 'he' ? 'הסר' : 'Remove'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Transactions History Card */}
               <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-5 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5">
                 {/* Filters and Search Bar */}
@@ -3903,6 +4072,7 @@ export const StudentDashboard: React.FC = () => {
                 key={item.id}
                 type="button"
                 onClick={() => {
+                  haptics.tap();
                   if (item.id === 'more') {
                     setIsMobileMoreOpen(true);
                   } else {

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
+import { haptics } from '../../utils/haptics';
+import { triggerConfetti } from '../../utils/confetti';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Check, X, Trophy, Sparkles, AlertCircle } from 'lucide-react';
@@ -45,11 +47,15 @@ export const QuizGame: React.FC<QuizGameProps> = ({
 
     const isCorrect = index === currentQ.correctIndex;
     if (isCorrect) {
+      haptics.success();
       setCorrectAnswers((prev) => prev + 1);
+    } else {
+      haptics.error();
     }
   };
 
   const handleNextQuestion = () => {
+    haptics.tap();
     setSelectedOption(null);
     setIsAnswered(false);
 
@@ -70,11 +76,11 @@ export const QuizGame: React.FC<QuizGameProps> = ({
         completed: true,
       });
       setAwardedPoints(res.data.pointsEarned);
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-      });
+      if (score === 100) {
+        triggerConfetti.fireworks();
+      } else {
+        triggerConfetti.celebrate();
+      }
     } catch (err) {
       console.error('Failed to submit quiz session:', err);
     }
