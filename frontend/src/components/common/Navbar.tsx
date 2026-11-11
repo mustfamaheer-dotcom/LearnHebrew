@@ -59,11 +59,11 @@ export const Navbar: React.FC = () => {
 
           {/* Right Controls: Dark Mode Toggle, Language switch & User profile */}
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            {/* Spotlight / Command Palette Button (⌘K) - hidden on Landing Page */}
+            {/* Spotlight / Command Palette Button (⌘K) - hidden on Landing Page and Mobile */}
             {!isLandingPage && user && (
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('engrew:open-command-palette'))}
-                className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all shadow-2xs group shrink-0"
+                className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all shadow-2xs group shrink-0"
                 title={language === 'he' ? 'חיפוש מהיר ופקודות (⌘K)' : 'Quick command palette (⌘K)'}
                 aria-label="Quick Command Palette"
               >
