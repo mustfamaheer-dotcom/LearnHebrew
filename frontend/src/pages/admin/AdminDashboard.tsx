@@ -622,9 +622,25 @@ export const AdminDashboard: React.FC = () => {
     }) => {
       return api.post(`/packages/${pkgId}/assign`, { studentId });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
-      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
+      const refetched = await queryClient.fetchQuery({
+        queryKey: ['adminUsers'],
+        queryFn: async () => {
+          const res = await api.get('/users');
+          return res.data.users;
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
+
+      // Keep user edit modal in sync with the new package assignment
+      if (selectedUserForEdit) {
+        const updated = (refetched || []).find((u: any) => u.id === selectedUserForEdit.id);
+        if (updated) {
+          setSelectedUserForEdit(updated);
+        }
+      }
+
       setIsAssigningPkg(false);
       setAssignStudentId('');
       setAssignPkgId('');
@@ -634,7 +650,7 @@ export const AdminDashboard: React.FC = () => {
     },
     onError: (err: any) => {
       toast.error(
-        err.response?.data?.error || (language === 'he' ? 'שגיאה בהקצאת חבילה' : 'Failed to assign package')
+        err.response?.data?.error || err.response?.data?.message || (language === 'he' ? 'שגיאה בהקצאת חבילה' : 'Failed to assign package')
       );
     },
   });
@@ -3600,85 +3616,6 @@ export const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* ASSIGN PACKAGE MODAL */}
-      {isAssigningPkg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-transparent dark:border-slate-800 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {language === 'he' ? 'הקצאת חבילת שיעורים לתלמיד' : 'Assign Package to Student'}
-              </h2>
-              <button onClick={() => setIsAssigningPkg(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'בחר חבילה' : 'Select Package'}
-                </label>
-                <select
-                  value={assignPkgId}
-                  onChange={(e) => setAssignPkgId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
-                >
-                  <option value="">-- {language === 'he' ? 'בחר חבילה' : 'Choose a Package'} --</option>
-                  {(packagesData || []).map((p: any) => (
-                    <option key={p.id} value={p.id}>
-                      {language === 'he' ? (p.nameHe || p.name) : (p.name || p.nameEn)} ({p.totalLessons ?? p.lessonsCount ?? 0} {language === 'he' ? 'שיעורים' : 'lessons'} - {p.currency === 'ILS' ? '₪' : '$'}{p.price ?? p.priceUsd ?? 0})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'בחר תלמיד' : 'Select Student'}
-                </label>
-                <select
-                  value={assignStudentId}
-                  onChange={(e) => setAssignStudentId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
-                >
-                  <option value="">-- {language === 'he' ? 'בחר תלמיד' : 'Choose a Student'} --</option>
-                  {studentsList.map((s: any) => (
-                    <option key={s.id} value={s.id}>
-                      {s.firstName} {s.lastName} ({s.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setIsAssigningPkg(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-              >
-                {language === 'he' ? 'ביטול' : 'Cancel'}
-              </button>
-              <button
-                onClick={() => {
-                  if (!assignPkgId || !assignStudentId) {
-                    toast.warning(language === 'he' ? 'אנא בחר גם חבילה וגם תלמיד' : 'Please select both package and student');
-                    return;
-                  }
-                  assignPackageMutation.mutate({
-                    pkgId: assignPkgId,
-                    studentId: assignStudentId,
-                  });
-                }}
-                disabled={assignPackageMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-brand-teal-800 text-white text-xs font-bold hover:bg-brand-teal-900 shadow-sm"
-              >
-                {assignPackageMutation.isPending ? 'Assigning...' : language === 'he' ? 'הקצאת חבילה' : 'Assign Package'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* COMPREHENSIVE USER ACCOUNTS & ROLES GOVERNANCE MODAL */}
       {isEditingUser && selectedUserForEdit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
@@ -3996,6 +3933,190 @@ export const AdminDashboard: React.FC = () => {
                   {updateUserMutation.isPending
                     ? (language === 'he' ? 'שומר שינויים...' : 'Saving Changes...')
                     : (language === 'he' ? 'שמור שינויים בחשבון' : 'Save User Account')}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN PACKAGE MODAL - HIGH ELEVATION OVERLAY */}
+      {isAssigningPkg && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200/80 dark:border-slate-800 space-y-5 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-700 dark:text-brand-teal-300 flex items-center justify-center font-bold shadow-2xs">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-slate-900 dark:text-white">
+                    {language === 'he' ? 'הקצאת חבילת שיעורים לתלמיד' : 'Assign Package to Student'}
+                  </h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {language === 'he'
+                      ? 'הקצאת מכסות שיעורים תקפות ל-30 יום ישירות לחשבון התלמיד'
+                      : 'Credit 30-day session quotas directly to student account'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAssigningPkg(false);
+                  setAssignPkgId('');
+                }}
+                className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Target Student Preview or Selector */}
+              {selectedUserForEdit && selectedUserForEdit.studentProfile?.id === assignStudentId ? (
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'תלמיד מקבל ההקצאה' : 'Target Student'}
+                  </label>
+                  <div className="p-3.5 rounded-2xl bg-brand-teal-50/50 dark:bg-brand-teal-950/30 border border-brand-teal-200/70 dark:border-brand-teal-800/60 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-teal-700 to-brand-teal-900 text-white font-black flex items-center justify-center text-xs shadow-xs">
+                        {selectedUserForEdit.firstName?.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-black text-xs text-slate-900 dark:text-white">
+                          {selectedUserForEdit.firstName} {selectedUserForEdit.lastName}
+                        </p>
+                        <p className="text-[11px] text-slate-500 font-mono">
+                          {selectedUserForEdit.email}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold">
+                      {language === 'he' ? 'תלמיד נבחר' : 'Selected Student'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'בחר תלמיד' : 'Select Student'} <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={assignStudentId}
+                    onChange={(e) => setAssignStudentId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                  >
+                    <option value="">-- {language === 'he' ? 'בחר תלמיד מהרשימה' : 'Choose a Student from List'} --</option>
+                    {studentsList.map((s: any) => (
+                      <option key={s.id} value={s.id}>
+                        {s.firstName} {s.lastName} ({s.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Package Selector */}
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'he' ? 'בחר חבילת שיעורים' : 'Select Lesson Package'} <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={assignPkgId}
+                  onChange={(e) => setAssignPkgId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                >
+                  <option value="">-- {language === 'he' ? 'בחר חבילה להקצאה' : 'Choose a Package to Assign'} --</option>
+                  {(packagesData || []).map((p: any) => {
+                    const items = p.sessionItems || [];
+                    const summary = items.length > 0
+                      ? items.map((si: any) => `${si.quantity}x ${si.sessionType?.durationMinutes ?? 25}m`).join(', ')
+                      : `${p.totalLessons ?? p.lessonsCount ?? 0} lessons`;
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {language === 'he' ? (p.nameHe || p.name) : (p.name || p.nameEn)} — [{summary}] — ({p.currency === 'ILS' ? '₪' : '$'}{p.price ?? p.priceUsd ?? 0})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Selected Package Details Card */}
+              {(() => {
+                const selectedPkg = (packagesData || []).find((p: any) => p.id === assignPkgId);
+                if (!selectedPkg) return null;
+                const items = selectedPkg.sessionItems || [];
+
+                return (
+                  <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-850/60 border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-xs text-slate-900 dark:text-white">
+                        {language === 'he' ? (selectedPkg.nameHe || selectedPkg.name) : (selectedPkg.name || selectedPkg.nameEn)}
+                      </span>
+                      <span className="font-black text-sm text-brand-teal-800 dark:text-brand-teal-400">
+                        {selectedPkg.currency === 'ILS' ? '₪' : '$'}{selectedPkg.price ?? selectedPkg.priceUsd ?? 0}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {items.length > 0 ? (
+                        items.map((si: any) => (
+                          <span
+                            key={si.id || si.sessionTypeId}
+                            className="px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold border border-slate-200 dark:border-slate-700"
+                          >
+                            {si.quantity} &times; {si.sessionType?.durationMinutes ?? 25} {language === 'he' ? 'דק׳' : 'min'}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[11px] text-slate-500 font-bold">
+                          {selectedPkg.totalLessons ?? selectedPkg.lessonsCount ?? 0} {language === 'he' ? 'שיעורים' : 'Lessons'}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-slate-500">
+                      <span>{language === 'he' ? 'תוקף שיעורים:' : 'Validity:'} <strong>30 {language === 'he' ? 'יום' : 'days'}</strong></span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">{language === 'he' ? 'הקצאה מיידית' : 'Instant Activation'}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAssigningPkg(false);
+                  setAssignPkgId('');
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+              >
+                {language === 'he' ? 'ביטול' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!assignPkgId || !assignStudentId) {
+                    toast.warning(language === 'he' ? 'אנא בחר גם חבילה וגם תלמיד' : 'Please select both package and student');
+                    return;
+                  }
+                  assignPackageMutation.mutate({
+                    pkgId: assignPkgId,
+                    studentId: assignStudentId,
+                  });
+                }}
+                disabled={assignPackageMutation.isPending || !assignPkgId || !assignStudentId}
+                className="flex-1 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                <UserCheck className="w-4 h-4 text-slate-950" />
+                <span>
+                  {assignPackageMutation.isPending
+                    ? (language === 'he' ? 'מקצה חבילה...' : 'Assigning Package...')
+                    : (language === 'he' ? 'אשר הקצאת חבילה' : 'Confirm Assignment')}
                 </span>
               </button>
             </div>
