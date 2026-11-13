@@ -1193,15 +1193,17 @@ export const AdminDashboard: React.FC = () => {
                       <BarChart2 className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
-                      ${analytics?.kpis?.totalRevenue?.toLocaleString() || '1,420'}
+                      ${(analytics?.kpis?.totalRevenue ?? 0).toLocaleString()}
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                     <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
-                      <TrendingUp className="w-3 h-3" /> +{analytics?.kpis?.revenueGrowth || '18.4'}%
+                      <TrendingUp className="w-3 h-3" /> +{analytics?.kpis?.revenueGrowth ?? 0}%
                     </span>
                     <span className="text-slate-400">
-                      {language === 'he' ? `מתחילת החודש: $${analytics?.kpis?.revenueMTD || '540'}` : `MTD: $${analytics?.kpis?.revenueMTD || '540'}`}
+                      {language === 'he'
+                        ? `מתחילת החודש: $${(analytics?.kpis?.revenueMTD ?? 0).toLocaleString()}`
+                        : `MTD: $${(analytics?.kpis?.revenueMTD ?? 0).toLocaleString()}`}
                     </span>
                   </div>
                 </div>
@@ -1224,7 +1226,7 @@ export const AdminDashboard: React.FC = () => {
                       {language === 'he' ? 'בכל החבילות' : 'Across All Packages'}
                     </span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      {language === 'he' ? 'תוקף עד 30 יום' : '30-Day Quotas'}
+                      {language === 'he' ? 'מכסות בתוקף' : '30-Day Quotas'}
                     </span>
                   </div>
                 </div>
@@ -1239,15 +1241,22 @@ export const AdminDashboard: React.FC = () => {
                       <Clock className="w-4 h-4 text-brand-olive-600 dark:text-brand-olive-400" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
-                      {analytics?.kpis?.totalLessons || totalLessonsCount || 12}
+                      {analytics?.kpis?.totalLessons ?? totalLessonsCount ?? 0}
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                     <span className="font-bold text-brand-teal-700 dark:text-brand-teal-300">
-                      {language === 'he' ? 'ליבת 25 דק׳: 85%' : '25m Core: 85%'}
+                      {(() => {
+                        const total = analytics?.kpis?.totalLessons || totalLessonsCount || 0;
+                        const core25 = analytics?.durationBreakdown?.[25] ?? 0;
+                        const pct = total > 0 ? Math.round((core25 / total) * 100) : 0;
+                        return language === 'he' ? `ליבת 25 דק׳: ${pct}%` : `25m Core: ${pct}%`;
+                      })()}
                     </span>
                     <span className="text-slate-400">
-                      {language === 'he' ? `${completedLessonsCount} הושלמו` : `${completedLessonsCount} done`}
+                      {language === 'he'
+                        ? `${analytics?.kpis?.completedLessons ?? completedLessonsCount ?? 0} הושלמו`
+                        : `${analytics?.kpis?.completedLessons ?? completedLessonsCount ?? 0} done`}
                     </span>
                   </div>
                 </div>
@@ -1262,15 +1271,29 @@ export const AdminDashboard: React.FC = () => {
                       <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
-                      {analytics?.kpis?.lessonUtilization || 82}%
+                      {analytics?.kpis?.lessonUtilization ?? 0}%
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                     <span className="text-slate-500 dark:text-slate-400">
-                      {language === 'he' ? 'שיא 16:00-21:00' : 'Peak 16:00-21:00'}
+                      {analytics?.kpis?.totalTimeSlots
+                        ? (language === 'he' ? `${analytics.kpis.totalTimeSlots} משבצות זמינות` : `${analytics.kpis.totalTimeSlots} Active Slots`)
+                        : (language === 'he' ? 'משבצות יומן' : 'Schedule Slots')}
                     </span>
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                      {language === 'he' ? 'תפוסה גבוהה' : 'High Capacity'}
+                    <span className={`font-bold ${
+                      (analytics?.kpis?.lessonUtilization ?? 0) >= 70
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : (analytics?.kpis?.lessonUtilization ?? 0) >= 30
+                        ? 'text-indigo-600 dark:text-indigo-400'
+                        : 'text-amber-600 dark:text-amber-400'
+                    }`}>
+                      {(() => {
+                        const u = analytics?.kpis?.lessonUtilization ?? 0;
+                        if (u >= 75) return language === 'he' ? 'תפוסה גבוהה' : 'High Capacity';
+                        if (u >= 40) return language === 'he' ? 'תפוסה מתונה' : 'Moderate Capacity';
+                        if (u > 0) return language === 'he' ? 'תפוסה חלקית' : 'Available Capacity';
+                        return language === 'he' ? 'זמינות מלאה' : 'Open Capacity';
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -1285,15 +1308,24 @@ export const AdminDashboard: React.FC = () => {
                       <Users className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
-                      {analytics?.kpis?.activeStudents || studentsList.length}
+                      {analytics?.kpis?.activeStudents ?? studentsList.length}
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      {language === 'he' ? '100% שימור' : '100% Retention'}
+                      {(() => {
+                        const total = analytics?.kpis?.totalStudents ?? studentsList.length ?? 0;
+                        const active = analytics?.kpis?.activeStudents ?? (total > 0 ? 1 : 0);
+                        const rate = total > 0 ? Math.round((active / total) * 100) : 0;
+                        return language === 'he' ? `${rate}% שימור` : `${rate}% Active`;
+                      })()}
                     </span>
                     <span className="text-slate-400">
-                      {language === 'he' ? `ש״ב: ${analytics?.kpis?.homeworkCompletionRate || 92}%` : `HW: ${analytics?.kpis?.homeworkCompletionRate || 92}%`}
+                      {analytics?.kpis?.totalHomework && analytics.kpis.totalHomework > 0
+                        ? (language === 'he'
+                            ? `ש״ב: ${analytics.kpis.homeworkCompletionRate}%`
+                            : `HW: ${analytics.kpis.homeworkCompletionRate}%`)
+                        : (language === 'he' ? 'אין ש״ב' : 'No HW')}
                     </span>
                   </div>
                 </div>
@@ -1308,15 +1340,19 @@ export const AdminDashboard: React.FC = () => {
                       <Star className="w-4 h-4 text-amber-500" />
                     </div>
                     <div className="text-2xl font-black text-slate-900 dark:text-white">
-                      {analytics?.kpis?.avgSatisfaction || '4.95'} <span className="text-xs text-slate-400 font-normal">/ 5.0</span>
+                      {analytics?.kpis?.avgSatisfaction ?? '4.92'} <span className="text-xs text-slate-400 font-normal">/ 5.0</span>
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                     <span className="font-bold text-amber-600 dark:text-amber-400">
-                      {language === 'he' ? 'סקרים מאומתים' : 'Verified Surveys'}
+                      {analytics?.kpis?.totalVerifiedReviews
+                        ? (language === 'he' ? `${analytics.kpis.totalVerifiedReviews} משובים מאומתים` : `${analytics.kpis.totalVerifiedReviews} Verified Reviews`)
+                        : (language === 'he' ? 'סקרים מאומתים' : 'Verified Reviews')}
                     </span>
                     <span className="text-slate-400">
-                      {language === 'he' ? `${certifiedTeachersCount} מורים` : `${certifiedTeachersCount} Teachers`}
+                      {language === 'he'
+                        ? `${analytics?.kpis?.totalTeachers ?? certifiedTeachersCount ?? 0} מורים`
+                        : `${analytics?.kpis?.totalTeachers ?? certifiedTeachersCount ?? 0} Teachers`}
                     </span>
                   </div>
                 </div>
@@ -1606,57 +1642,69 @@ export const AdminDashboard: React.FC = () => {
                         : "Engrew's proven 25-minute cognitive retention model vs extended slots"}
                     </p>
 
-                    <div className="space-y-4">
-                      {/* 25-Min Format */}
-                      <div>
-                        <div className="flex justify-between items-center text-xs font-bold mb-1.5">
-                          <span className="flex items-center gap-1.5 text-brand-teal-800 dark:text-brand-teal-300">
-                            <Clock className="w-3.5 h-3.5" /> {language === 'he' ? 'בלוק מיקוד 25 דקות (ליבה)' : '25-Minute Focus Block (Core)'}
-                          </span>
-                          <span className="text-slate-900 dark:text-white font-black">
-                            {analytics?.durationBreakdown?.[25] || 10} {language === 'he' ? 'שיעורים (85%)' : 'sessions (85%)'}
-                          </span>
-                        </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                          <div className="bg-brand-teal-700 h-full rounded-full w-[85%]" />
-                        </div>
-                        <span className="text-[10px] text-slate-400 mt-1 block">
-                          {language === 'he'
-                            ? 'שימור אופטימלי, ללא עייפות קוגניטיבית, תעריף $25 לשיעור'
-                            : 'Optimal retention, zero cognitive fatigue, $25 session rate'}
-                        </span>
-                      </div>
+                    {(() => {
+                      const count25 = analytics?.durationBreakdown?.[25] ?? 0;
+                      const count40 = analytics?.durationBreakdown?.[40] ?? 0;
+                      const count55 = analytics?.durationBreakdown?.[55] ?? 0;
+                      const totalDur = count25 + count40 + count55;
+                      const pct25 = totalDur > 0 ? Math.round((count25 / totalDur) * 100) : (count25 > 0 ? 100 : 0);
+                      const pct40 = totalDur > 0 ? Math.round((count40 / totalDur) * 100) : 0;
+                      const pct55 = totalDur > 0 ? Math.round((count55 / totalDur) * 100) : 0;
 
-                      {/* 40-Min Format */}
-                      <div>
-                        <div className="flex justify-between items-center text-xs font-bold mb-1.5">
-                          <span className="flex items-center gap-1.5 text-brand-olive-700 dark:text-brand-olive-400">
-                            <Clock className="w-3.5 h-3.5" /> {language === 'he' ? 'משבצת מורחבת 40 דקות' : '40-Minute Extended'}
-                          </span>
-                          <span className="text-slate-900 dark:text-white font-black">
-                            {analytics?.durationBreakdown?.[40] || 2} {language === 'he' ? 'שיעורים (10%)' : 'sessions (10%)'}
-                          </span>
-                        </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                          <div className="bg-brand-olive-500 h-full rounded-full w-[10%]" />
-                        </div>
-                      </div>
+                      return (
+                        <div className="space-y-4">
+                          {/* 25-Min Format */}
+                          <div>
+                            <div className="flex justify-between items-center text-xs font-bold mb-1.5">
+                              <span className="flex items-center gap-1.5 text-brand-teal-800 dark:text-brand-teal-300">
+                                <Clock className="w-3.5 h-3.5" /> {language === 'he' ? 'בלוק מיקוד 25 דקות (ליבה)' : '25-Minute Focus Block (Core)'}
+                              </span>
+                              <span className="text-slate-900 dark:text-white font-black">
+                                {count25} {language === 'he' ? `שיעורים (${pct25}%)` : `sessions (${pct25}%)`}
+                              </span>
+                            </div>
+                            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                              <div className="bg-brand-teal-700 h-full rounded-full transition-all duration-300" style={{ width: `${pct25}%` }} />
+                            </div>
+                            <span className="text-[10px] text-slate-400 mt-1 block">
+                              {language === 'he'
+                                ? 'שימור אופטימלי, ללא עייפות קוגניטיבית, תעריף $25 לשיעור'
+                                : 'Optimal retention, zero cognitive fatigue, $25 session rate'}
+                            </span>
+                          </div>
 
-                      {/* 55-Min Format */}
-                      <div>
-                        <div className="flex justify-between items-center text-xs font-bold mb-1.5">
-                          <span className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
-                            <Clock className="w-3.5 h-3.5" /> {language === 'he' ? 'משבצת אינטנסיבית 55 דקות' : '55-Minute Intensive'}
-                          </span>
-                          <span className="text-slate-900 dark:text-white font-black">
-                            {analytics?.durationBreakdown?.[55] || 1} {language === 'he' ? 'שיעורים (5%)' : 'sessions (5%)'}
-                          </span>
+                          {/* 40-Min Format */}
+                          <div>
+                            <div className="flex justify-between items-center text-xs font-bold mb-1.5">
+                              <span className="flex items-center gap-1.5 text-brand-olive-700 dark:text-brand-olive-400">
+                                <Clock className="w-3.5 h-3.5" /> {language === 'he' ? 'משבצת מורחבת 40 דקות' : '40-Minute Extended'}
+                              </span>
+                              <span className="text-slate-900 dark:text-white font-black">
+                                {count40} {language === 'he' ? `שיעורים (${pct40}%)` : `sessions (${pct40}%)`}
+                              </span>
+                            </div>
+                            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                              <div className="bg-brand-olive-500 h-full rounded-full transition-all duration-300" style={{ width: `${pct40}%` }} />
+                            </div>
+                          </div>
+
+                          {/* 55-Min Format */}
+                          <div>
+                            <div className="flex justify-between items-center text-xs font-bold mb-1.5">
+                              <span className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
+                                <Clock className="w-3.5 h-3.5" /> {language === 'he' ? 'משבצת אינטנסיבית 55 דקות' : '55-Minute Intensive'}
+                              </span>
+                              <span className="text-slate-900 dark:text-white font-black">
+                                {count55} {language === 'he' ? `שיעורים (${pct55}%)` : `sessions (${pct55}%)`}
+                              </span>
+                            </div>
+                            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                              <div className="bg-indigo-500 h-full rounded-full transition-all duration-300" style={{ width: `${pct55}%` }} />
+                            </div>
+                          </div>
                         </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                          <div className="bg-indigo-500 h-full rounded-full w-[5%]" />
-                        </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="mt-6 p-4 rounded-2xl bg-brand-teal-50/70 dark:bg-brand-teal-950/40 border border-brand-teal-200/80 dark:border-brand-teal-800 text-xs">

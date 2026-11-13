@@ -189,36 +189,54 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
         ? Math.round(((revenueMTD - revenuePrevMonth) / revenuePrevMonth) * 100)
         : revenueMTD > 0
         ? 100
-        : 18.4;
+        : 0;
 
-    // Calculate average rating
+    // Calculate average rating across teacher ratings & survey/feedback entries
     const feedbackRatings = allFeedback.map((f) => f.qualityRating);
     const surveyRatings = allSurveys.map((s) => s.overallRating);
     const allRatings = [...feedbackRatings, ...surveyRatings];
+
+    const teacherReviewTotal = allTeachersRaw.reduce(
+      (sum, t) => sum + (t.ratingCount || 0),
+      0
+    );
+    const teacherRatingWeightedSum = allTeachersRaw.reduce(
+      (sum, t) => sum + (t.ratingAvg * Math.max(1, t.ratingCount || 1)),
+      0
+    );
+    const teacherRatingAvg =
+      teacherReviewTotal > 0
+        ? Number((teacherRatingWeightedSum / teacherReviewTotal).toFixed(2))
+        : (allTeachersRaw.length > 0
+            ? Number((allTeachersRaw.reduce((sum, t) => sum + t.ratingAvg, 0) / allTeachersRaw.length).toFixed(2))
+            : 5.0);
+
     const avgSatisfaction =
       allRatings.length > 0
         ? Number((allRatings.reduce((a, b) => a + b, 0) / allRatings.length).toFixed(2))
-        : 4.95;
+        : teacherRatingAvg;
 
-    // Lesson utilization
+    const totalVerifiedReviews = allRatings.length > 0 ? allRatings.length : teacherReviewTotal;
+
+    // Lesson slot utilization (real ratio of scheduled + completed lessons to total available time slots)
     const lessonUtilization =
       timeSlotsCount > 0
-        ? Math.min(100, Math.round(((scheduledLessons + completedLessons) / Math.max(1, timeSlotsCount * 4)) * 100))
-        : 82;
+        ? Math.min(100, Math.round(((scheduledLessons + completedLessons) / timeSlotsCount) * 100))
+        : (totalLessons > 0 ? 100 : 0);
 
     // Homework completion rate
     const homeworkCompletionRate =
-      totalHomework > 0 ? Math.round((submittedOrReviewedHw / totalHomework) * 100) : 92;
+      totalHomework > 0 ? Math.round((submittedOrReviewedHw / totalHomework) * 100) : 0;
 
-    // 6-Month Trend Data Generation
+    // 6-Month Trend Data Generation based on real metrics
     const months = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'];
     const monthlyTrends = months.map((month, idx) => {
-      const multiplier = 0.5 + (idx + 1) * 0.1;
+      const isCurrentMonth = idx === months.length - 1;
       return {
         month,
-        revenue: Math.round(totalRevenue > 0 ? (totalRevenue / 6) * multiplier : 450 + idx * 210),
-        lessons: Math.round(totalLessons > 0 ? (totalLessons / 6) * multiplier : 12 + idx * 5),
-        students: Math.round(totalStudents > 0 ? (totalStudents / 6) * multiplier : 3 + idx * 2),
+        revenue: isCurrentMonth ? revenueMTD : Math.round(totalRevenue > revenueMTD ? (totalRevenue - revenueMTD) / (months.length - 1) : 0),
+        lessons: isCurrentMonth ? (scheduledLessons + completedLessons) : 0,
+        students: isCurrentMonth ? activePackagesCount : 0,
       };
     });
 
@@ -314,9 +332,9 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
 
     res.json({
       kpis: {
-        totalRevenue: totalRevenue || 1420,
-        revenueMTD: revenueMTD || 540,
-        revenueGrowth: revenueGrowth || 18.4,
+        totalRevenue,
+        revenueMTD,
+        revenueGrowth,
         totalLessons,
         completedLessons,
         scheduledLessons,
@@ -326,7 +344,11 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
         totalTeachers,
         totalPackages,
         avgSatisfaction,
+        totalVerifiedReviews,
         lessonUtilization,
+        totalTimeSlots: timeSlotsCount,
+        totalHomework,
+        submittedOrReviewedHw,
         homeworkCompletionRate,
         totalStudentSessions: Number(studentBalanceAgg._sum?.balance || 0),
         totalStudentBalance: Number(studentBalanceAgg._sum?.balance || 0),
