@@ -62,3 +62,5 @@ export const ReviewRedirectPage: React.FC = () => {
     </div>
   );
 };
+
+export default ReviewRedirectPage;

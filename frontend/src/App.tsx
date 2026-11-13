@@ -12,30 +12,38 @@ import { EnterpriseQuickAccessFloatingBar } from './components/common/Enterprise
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 
-// Lazy loaded routes
+// Lazy loaded routes with resilient named + default fallback
+const resolveRoute = (m: any, name: string) => {
+  const component = m.default || m[name];
+  if (!component) {
+    console.error(`[App] Failed to load route component "${name}". Available exports:`, Object.keys(m));
+  }
+  return { default: component };
+};
+
 const LandingPage = React.lazy(() =>
-  import('./pages/LandingPage').then((m) => ({ default: m.LandingPage }))
+  import('./pages/LandingPage').then((m) => resolveRoute(m, 'LandingPage'))
 );
 const LoginPage = React.lazy(() =>
-  import('./pages/LoginPage').then((m) => ({ default: m.LoginPage }))
+  import('./pages/LoginPage').then((m) => resolveRoute(m, 'LoginPage'))
 );
 const StudentDashboard = React.lazy(() =>
-  import('./pages/student/StudentDashboard').then((m) => ({ default: m.StudentDashboard }))
+  import('./pages/student/StudentDashboard').then((m) => resolveRoute(m, 'StudentDashboard'))
 );
 const TeacherDashboard = React.lazy(() =>
-  import('./pages/teacher/TeacherDashboard').then((m) => ({ default: m.TeacherDashboard }))
+  import('./pages/teacher/TeacherDashboard').then((m) => resolveRoute(m, 'TeacherDashboard'))
 );
 const AdminDashboard = React.lazy(() =>
-  import('./pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+  import('./pages/admin/AdminDashboard').then((m) => resolveRoute(m, 'AdminDashboard'))
 );
 const SalesDashboard = React.lazy(() =>
-  import('./pages/sales/SalesDashboard').then((m) => ({ default: m.SalesDashboard }))
+  import('./pages/sales/SalesDashboard').then((m) => resolveRoute(m, 'SalesDashboard'))
 );
 const CSDashboard = React.lazy(() =>
-  import('./pages/cs/CSDashboard').then((m) => ({ default: m.CSDashboard }))
+  import('./pages/cs/CSDashboard').then((m) => resolveRoute(m, 'CSDashboard'))
 );
 const ReviewRedirectPage = React.lazy(() =>
-  import('./pages/shared/ReviewRedirectPage').then((m) => ({ default: m.ReviewRedirectPage }))
+  import('./pages/shared/ReviewRedirectPage').then((m) => resolveRoute(m, 'ReviewRedirectPage'))
 );
 
 const queryClient = new QueryClient({

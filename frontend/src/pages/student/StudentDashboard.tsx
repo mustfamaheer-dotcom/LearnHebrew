@@ -95,7 +95,9 @@ const HomeIslandIcon: React.FC<{ className?: string }> = ({ className }) => (
 );
 
 const StudentProgressTab = React.lazy(() =>
-  import('../../components/student/StudentProgressTab').then((m) => ({ default: m.StudentProgressTab }))
+  import('../../components/student/StudentProgressTab').then((m) => ({
+    default: m.default || m.StudentProgressTab,
+  }))
 );
 
 export const StudentDashboard: React.FC = () => {
@@ -4349,3 +4351,5 @@ export const StudentDashboard: React.FC = () => {
     </div>
   );
 };
+
+export default StudentDashboard;

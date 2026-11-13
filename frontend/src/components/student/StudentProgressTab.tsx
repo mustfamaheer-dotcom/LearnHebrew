@@ -731,3 +731,5 @@ export const StudentProgressTab: React.FC<StudentProgressTabProps> = ({ studentI
     </div>
   );
 };
+
+export default StudentProgressTab;
