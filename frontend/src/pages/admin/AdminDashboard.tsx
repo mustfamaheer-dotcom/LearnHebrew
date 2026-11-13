@@ -21,6 +21,7 @@ import { LevelExamsTab } from '../../components/admin/LevelExamsTab';
 import { ReviewLinksTab } from '../../components/admin/ReviewLinksTab';
 import { PointRulesTab } from '../../components/admin/PointRulesTab';
 import { LanguagesTab } from '../../components/admin/LanguagesTab';
+import { PlatformSettingsNavModal } from '../../components/admin/PlatformSettingsNavModal';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { sessionTypesApi } from '../../lib/enterpriseApi';
 import { PriceDisplay } from '../../components/common/PriceDisplay';
@@ -232,6 +233,7 @@ export const AdminDashboard: React.FC = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
+  const [isPlatformSettingsModalOpen, setIsPlatformSettingsModalOpen] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState<string>('ALL');
 
@@ -4404,6 +4406,9 @@ export const AdminDashboard: React.FC = () => {
                   haptics.tap();
                   if (item.id === 'more') {
                     setIsMobileMoreOpen(true);
+                  } else if (item.id === 'enterprise') {
+                    setIsPlatformSettingsModalOpen(true);
+                    setIsMobileMoreOpen(false);
                   } else {
                     setActiveTab(item.id as any);
                     setIsMobileMoreOpen(false);
@@ -4610,9 +4615,8 @@ export const AdminDashboard: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setActiveTab('enterprise');
                   setIsMobileMoreOpen(false);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  setIsPlatformSettingsModalOpen(true);
                 }}
                 className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
                   activeTab === 'enterprise' ||
@@ -4683,6 +4687,28 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Platform Settings Mobile Navigation Window */}
+      <PlatformSettingsNavModal
+        isOpen={isPlatformSettingsModalOpen}
+        onClose={() => setIsPlatformSettingsModalOpen(false)}
+        currentTab={
+          activeTab === 'levels' ||
+          activeTab === 'session_types' ||
+          activeTab === 'roles' ||
+          activeTab === 'payments' ||
+          activeTab === 'exams' ||
+          activeTab === 'review_links' ||
+          activeTab === 'point_rules' ||
+          activeTab === 'languages'
+            ? (activeTab as any)
+            : 'levels'
+        }
+        onSelectTab={(subTab) => {
+          setActiveTab(subTab as any);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     </div>
   );
 };

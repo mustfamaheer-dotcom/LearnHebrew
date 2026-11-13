@@ -9,15 +9,11 @@ import { ReviewLinksTab } from './ReviewLinksTab';
 import { PointRulesTab } from './PointRulesTab';
 import { LanguagesTab } from './LanguagesTab';
 import {
-  Layers,
-  Clock,
-  ShieldCheck,
-  Receipt,
-  Award,
-  Link2,
-  Coins,
-  Globe,
-  Settings,
+  PlatformSettingsNavModal,
+  PLATFORM_SETTINGS_MODULES,
+} from './PlatformSettingsNavModal';
+import {
+  ChevronDown,
 } from 'lucide-react';
 
 export type EnterpriseSubTab =
@@ -41,6 +37,7 @@ export const EnterpriseTabsContainer: React.FC<EnterpriseTabsContainerProps> = (
 }) => {
   const { language } = useTranslation();
   const [internalTab, setInternalTab] = useState<EnterpriseSubTab>(currentTab || 'levels');
+  const [isNavModalOpen, setIsNavModalOpen] = useState(false);
 
   useEffect(() => {
     if (currentTab && currentTab !== internalTab) {
@@ -57,37 +54,49 @@ export const EnterpriseTabsContainer: React.FC<EnterpriseTabsContainerProps> = (
     }
   };
 
-  const tabs = [
-    { id: 'levels', label: 'Levels', labelHe: 'רמות לימוד', icon: Layers },
-    { id: 'session_types', label: 'Session Types', labelHe: 'סוגי שיעורים', icon: Clock },
-    { id: 'roles', label: 'Roles & RBAC', labelHe: 'תפקידים והרשאות', icon: ShieldCheck },
-    { id: 'payments', label: 'Payments Review', labelHe: 'בדיקת תשלומים', icon: Receipt },
-    { id: 'exams', label: 'Level Exams', labelHe: 'מבחני מעבר רמה', icon: Award },
-    { id: 'review_links', label: 'Review Links', labelHe: 'קישורי משוב', icon: Link2 },
-    { id: 'point_rules', label: 'Point Rules', labelHe: 'חוקי נקודות', icon: Coins },
-    { id: 'languages', label: 'Languages', labelHe: 'שפות', icon: Globe },
-  ] as const;
+  const currentModuleItem = PLATFORM_SETTINGS_MODULES.find((m) => m.id === activeSubTab) || PLATFORM_SETTINGS_MODULES[0];
+  const CurrentIcon = currentModuleItem?.icon;
 
   return (
     <div className="space-y-6">
-      {/* Mobile-Optimized Sub-tab Navigation Header & Bar */}
+      {/* Sub-tab Navigation: Mobile Window Trigger & Desktop Tab Bar */}
       <div className="sticky top-16 sm:top-20 z-20 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md py-2.5 -mx-4 px-4 sm:mx-0 sm:px-0 border-b border-slate-200/80 dark:border-slate-800 transition-colors">
-        <div className="flex items-center justify-between gap-3 mb-2 sm:hidden">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-brand-teal-100 dark:bg-brand-teal-900/60 text-brand-teal-800 dark:text-brand-teal-200">
-              <Settings className="w-4 h-4" />
+        {/* Mobile View: High-End Capsule Trigger Bar that opens the Navigation Window */}
+        <div className="sm:hidden">
+          <button
+            type="button"
+            onClick={() => setIsNavModalOpen(true)}
+            className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white shadow-xl border border-white/15 flex items-center justify-between gap-3 active:scale-[0.98] transition-all"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-brand-olive-400/20 text-brand-olive-300 border border-brand-olive-400/30 flex items-center justify-center shrink-0 shadow-xs">
+                {CurrentIcon && <CurrentIcon className="w-5 h-5 text-brand-olive-300" />}
+              </div>
+              <div className="min-w-0 text-start">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-brand-olive-300">
+                    {language === 'he' ? 'הגדרות פלטפורמה' : 'Platform Settings'}
+                  </span>
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-white/10 text-white/90">
+                    8
+                  </span>
+                </div>
+                <h3 className="font-black text-sm text-white truncate">
+                  {currentModuleItem ? (language === 'he' ? currentModuleItem.labelHe : currentModuleItem.label) : ''}
+                </h3>
+              </div>
             </div>
-            <span className="font-extrabold text-xs text-slate-900 dark:text-white">
-              {language === 'he' ? 'הגדרות פלטפורמה (8 מודולים)' : 'Platform Settings (8 Modules)'}
-            </span>
-          </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-brand-teal-900 text-brand-teal-900 dark:text-teal-200">
-            {tabs.find((t) => t.id === activeSubTab)?.[language === 'he' ? 'labelHe' : 'label']}
-          </span>
+
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white text-brand-teal-950 font-black text-xs shrink-0 shadow-md">
+              <span>{language === 'he' ? 'החלף מודול' : 'Navigate'}</span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </div>
+          </button>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none touch-pan-x">
-          {tabs.map((t) => {
+        {/* Desktop View: Full Tab Strip */}
+        <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none">
+          {PLATFORM_SETTINGS_MODULES.map((t) => {
             const Icon = t.icon;
             const isActive = activeSubTab === t.id;
             return (
@@ -107,6 +116,14 @@ export const EnterpriseTabsContainer: React.FC<EnterpriseTabsContainerProps> = (
           })}
         </div>
       </div>
+
+      {/* Navigation Window Modal on Mobile */}
+      <PlatformSettingsNavModal
+        isOpen={isNavModalOpen}
+        onClose={() => setIsNavModalOpen(false)}
+        currentTab={activeSubTab}
+        onSelectTab={handleSelectTab}
+      />
 
       {/* Render selected configuration subtab */}
       <div>
