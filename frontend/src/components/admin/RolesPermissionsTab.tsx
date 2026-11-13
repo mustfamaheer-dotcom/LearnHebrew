@@ -4,6 +4,7 @@ import { rolesApi } from '../../lib/enterpriseApi';
 import { RoleDefinitionModel } from '../../types';
 import { toast } from '../../store/toastStore';
 import { ShieldCheck, Plus, Check, Save, Lock, AlertTriangle } from 'lucide-react';
+import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const RolesPermissionsTab: React.FC = () => {
   const queryClient = useQueryClient();
@@ -67,25 +68,22 @@ export const RolesPermissionsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            Dynamic RBAC Role & Permission Matrix
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Configure granular action permissions for each role (Sales, CS, Teachers, Students) or create custom roles.
-          </p>
-        </div>
-        <button
-          onClick={() => setIsCreatingRole(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white rounded-xl font-bold text-xs transition shadow-sm active:scale-95"
-        >
-          <Plus className="w-4 h-4 text-brand-olive-300" /> Create Custom Role
-        </button>
-      </div>
+      <PageHeaderBanner
+        badgeIcon={ShieldCheck}
+        badgeText="Granular RBAC System"
+        statusText="Active"
+        title="Role & Permission Matrix"
+        description="Configure granular action permissions for each role (Sales, CS, Teachers, Students) or define custom platform roles."
+        action={
+          <button
+            onClick={() => setIsCreatingRole(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm transition shadow-lg active:scale-95"
+          >
+            <Plus className="w-4 h-4 text-slate-950" />
+            <span>Create Custom Role</span>
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Roles List */}

@@ -18,6 +18,7 @@ import { haptics } from '../../utils/haptics';
 import { triggerConfetti } from '../../utils/confetti';
 import { getGoogleCalendarUrl, downloadIcsFile } from '../../utils/calendarSync';
 import { StructuredNotesViewer } from '../../components/lessons/StructuredNotesViewer';
+import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { CertificateModal, CertificateData } from '../../components/common/CertificateModal';
 import { isGoogleDriveUrl, getVideoEmbedUrl } from '../../lib/driveUtils';
 import {
@@ -1302,28 +1303,26 @@ export const StudentDashboard: React.FC = () => {
 
           {/* TAB 2: BOOK SESSION (25 / 40 / 55 MIN) */}
           {activeTab === 'booking' && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-6 h-6 text-brand-teal-800 dark:text-brand-teal-400" />
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                      {language === 'he' ? 'הזמנת שיעור חי (25 / 40 / 55 דקות)' : 'Book a Live Session (25 / 40 / 55 Min)'}
-                    </h2>
+            <div className="space-y-6">
+              <PageHeaderBanner
+                badgeIcon={Clock}
+                badgeText={language === 'he' ? 'שעון ישראל IST • 12 שעות' : 'Israel Time (IST) • 12-Hour'}
+                statusText="Live"
+                title={language === 'he' ? 'הזמנת שיעור חי (25 / 40 / 55 דקות)' : 'Book a Live Session (25 / 40 / 55 Min)'}
+                description={
+                  language === 'he'
+                    ? 'בחר משך שיעור, מורה מוסמך, תאריך ושעה זמינה בפורמט 12 שעות לפי שעון ישראל מתוך יתרת החבילה שלך.'
+                    : 'Select session duration, certified teacher, date, and available slot in Israel Standard Time (12-hour AM/PM).'
+                }
+                action={
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-white font-bold text-xs shadow-xs">
+                    <Wallet className="w-4 h-4 text-emerald-400" />
+                    <span>{language === 'he' ? 'יתרת חשבון:' : 'Your Balance:'} ${currentBalance.toFixed(2)}</span>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {language === 'he'
-                      ? 'בחר משך שיעור, מורה מוסמך, תאריך ושעה זמינה בפורמט 12 שעות לפי שעון ישראל.'
-                      : 'Select session duration, certified teacher, date, and available slot in Israel Standard Time (12-hour AM/PM).'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800">
-                  <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                    {language === 'he' ? 'יתרת חשבון:' : 'Your Balance:'} ${currentBalance.toFixed(2)}
-                  </span>
-                </div>
-              </div>
+                }
+              />
+
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6">
 
               {/* Insufficient balance warning banner */}
               {!hasEnoughBalance && (
@@ -1642,6 +1641,7 @@ export const StudentDashboard: React.FC = () => {
                   </span>
                 </button>
               </div>
+            </div>
             </div>
           )}
 
@@ -2883,24 +2883,22 @@ export const StudentDashboard: React.FC = () => {
 
           {/* TAB 5: HEBREW GAMES */}
           {activeTab === 'games' && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Gamepad2 className="w-6 h-6 text-brand-teal-800 dark:text-brand-teal-400" />
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                      {t('games.title')}
-                    </h2>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {t('games.subtitle')}
-                  </p>
-                </div>
-                <span className="text-xs font-semibold px-3 py-1 bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 rounded-full self-start sm:self-auto border border-brand-teal-200 dark:border-brand-teal-800">
-                  {language === 'he' ? 'מותאם לרמתך:' : 'Filtered for your level:'}{' '}
-                  {t(`levels.${student?.level || 'BEGINNER'}`)}
-                </span>
-              </div>
+            <div className="space-y-6">
+              <PageHeaderBanner
+                badgeIcon={Gamepad2}
+                badgeText={language === 'he' ? 'משחקי לימוד וחידונים' : 'Interactive Hebrew Learning Games'}
+                statusText="Active"
+                title={t('games.title')}
+                description={t('games.subtitle')}
+                action={
+                  <span className="text-xs font-bold px-3.5 py-1.5 bg-white/15 backdrop-blur-md text-white rounded-full border border-white/20">
+                    {language === 'he' ? 'מותאם לרמתך:' : 'Filtered for your level:'}{' '}
+                    {t(`levels.${student?.level || 'BEGINNER'}`)}
+                  </span>
+                }
+              />
+
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors">
 
               {/* Active Game Modal / Container */}
               {activeGame ? (
@@ -3060,6 +3058,7 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
             </div>
           )}
 

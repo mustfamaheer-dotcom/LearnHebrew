@@ -21,6 +21,7 @@ import { LevelExamsTab } from '../../components/admin/LevelExamsTab';
 import { ReviewLinksTab } from '../../components/admin/ReviewLinksTab';
 import { PointRulesTab } from '../../components/admin/PointRulesTab';
 import { LanguagesTab } from '../../components/admin/LanguagesTab';
+import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { haptics } from '../../utils/haptics';
 import {
   formatSlotRange12Hour,
@@ -1758,36 +1759,34 @@ export const AdminDashboard: React.FC = () => {
           {/* TAB 2: LANDING PAGE CMS / LIVE CUSTOMIZER */}
           {activeTab === 'landing_cms' && (
             <div className="space-y-8">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-olive-50 dark:bg-brand-olive-950/60 text-brand-olive-800 dark:text-brand-olive-300 text-xs font-bold mb-2 border border-brand-olive-200 dark:border-brand-olive-800">
-                    <Sliders className="w-3.5 h-3.5" />
-                    <span>Full Live Landing Page CMS</span>
+              <PageHeaderBanner
+                badgeIcon={Sliders}
+                badgeText="Full Live Landing Page CMS"
+                statusText="Live"
+                title={language === 'he' ? 'ניהול תוכן עמוד הבית בזמן אמת' : 'Customize Any Content on the Landing Page'}
+                description={
+                  language === 'he'
+                    ? 'שליטה ישירה בבאנרים, כותרות ראשיות, תגיות, כפתורי קריאה לפעולה וכרטיסי תוכן בעברית ובאנגלית.'
+                    : 'Direct real-time control over banners, hero headlines, badges, call-to-actions, and feature cards in both English and Hebrew.'
+                }
+                action={
+                  <div className="flex items-center gap-3">
+                    {cmsSaveSuccess && (
+                      <span className="flex items-center gap-1 text-xs font-bold text-emerald-300 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-emerald-400/30 animate-fade-in">
+                        <Check className="w-4 h-4 text-emerald-400" /> Changes Published Live!
+                      </span>
+                    )}
+                    <button
+                      onClick={() => updateCmsMutation.mutate(cmsForm)}
+                      disabled={updateCmsMutation.isPending || !cmsForm}
+                      className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{updateCmsMutation.isPending ? 'Publishing...' : 'Save & Publish Live'}</span>
+                    </button>
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                    Customize Any Content on the Landing Page
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Direct real-time control over banners, hero headlines, badges, call-to-actions, and feature cards in both English and Hebrew.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {cmsSaveSuccess && (
-                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 animate-fade-in">
-                      <Check className="w-4 h-4" /> Changes Published Live!
-                    </span>
-                  )}
-                  <button
-                    onClick={() => updateCmsMutation.mutate(cmsForm)}
-                    disabled={updateCmsMutation.isPending || !cmsForm}
-                    className="px-6 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center gap-2"
-                  >
-                    <Save className="w-4 h-4 text-brand-olive-300" />
-                    <span>{updateCmsMutation.isPending ? 'Publishing...' : 'Save & Publish Live'}</span>
-                  </button>
-                </div>
-              </div>
+                }
+              />
 
               {cmsForm && (
                 <div className="grid lg:grid-cols-2 gap-8">
@@ -2101,29 +2100,26 @@ export const AdminDashboard: React.FC = () => {
           {activeTab === 'users' && (
             <div className="space-y-6">
               {/* Header Banner */}
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 text-xs font-bold text-brand-teal-900 dark:text-brand-teal-300 mb-2">
-                    <ShieldCheck className="w-3.5 h-3.5 text-brand-olive-500" />
-                    <span>{language === 'he' ? 'ניהול משתמשים והרשאות' : 'Master User & Role Governance'}</span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                    {language === 'he' ? 'חשבונות משתמשים והרשאות מערכת' : 'User Accounts & Roles'}
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    {language === 'he'
-                      ? 'ניהול מלא של תלמידים, מורים מוסמכים והרשאות פלטפורמה, יתרות כספיות, הגדרות רמה ואיפוס סיסמאות.'
-                      : 'Comprehensive access control to inspect, edit, adjust balances, configure Hebrew levels, and manage all accounts.'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsCreatingUser(true)}
-                  className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
-                >
-                  <Plus className="w-4 h-4 text-brand-olive-300" />
-                  <span>{t('admin.createUserBtn')}</span>
-                </button>
-              </div>
+              <PageHeaderBanner
+                badgeIcon={ShieldCheck}
+                badgeText={language === 'he' ? 'ניהול משתמשים והרשאות' : 'Master User & Role Governance'}
+                statusText={language === 'he' ? 'פעיל' : 'Active'}
+                title={language === 'he' ? 'חשבונות משתמשים והרשאות מערכת' : 'User Accounts & Roles'}
+                description={
+                  language === 'he'
+                    ? 'ניהול מלא של תלמידים, מורים מוסמכים והרשאות פלטפורמה, יתרות כספיות, הגדרות רמה ואיפוס סיסמאות.'
+                    : 'Comprehensive access control to inspect, edit, adjust balances, configure Hebrew levels, and manage all accounts.'
+                }
+                action={
+                  <button
+                    onClick={() => setIsCreatingUser(true)}
+                    className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4 text-slate-950" />
+                    <span>{t('admin.createUserBtn')}</span>
+                  </button>
+                }
+              />
 
               {/* KPI Summary Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2446,21 +2442,17 @@ export const AdminDashboard: React.FC = () => {
           {/* TAB 4: TEACHERS & 25-MIN SLOTS */}
           {activeTab === 'teachers' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs transition-colors">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                      Certified Teachers & 25-Minute Slot Schedules
-                    </h1>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                      Each teacher offers strictly 25-minute lesson blocks configured into the PostgreSQL database.
-                    </p>
-                  </div>
-                  <span className="px-3 py-1 rounded-full bg-brand-olive-100 dark:bg-brand-olive-950/60 text-brand-olive-900 dark:text-brand-olive-300 font-bold text-xs border border-brand-olive-200 dark:border-brand-olive-800">
-                    25-Min Interval Engine Active
-                  </span>
-                </div>
-              </div>
+              <PageHeaderBanner
+                badgeIcon={GraduationCap}
+                badgeText="25-Min Interval Engine Active"
+                statusText="Active"
+                title={language === 'he' ? 'מורים מוסמכים ויומן משבצות 25 דקות' : 'Certified Teachers & 25-Minute Slot Schedules'}
+                description={
+                  language === 'he'
+                    ? 'כל מורה פותח משבצות זמן זמינות למשך עד 45 יום קדימה, והתלמידים קובעים שיעורים מתוך יתרת החבילה שלהם.'
+                    : 'Each teacher offers open availability blocks up to 45 days in advance. Students book sessions using their active balance.'
+                }
+              />
 
               <div className="grid md:grid-cols-2 gap-6">
                 {(teachersData || []).map((t: any) => {
@@ -2524,33 +2516,34 @@ export const AdminDashboard: React.FC = () => {
           {/* TAB 5: PACKAGES & PRICING */}
           {activeTab === 'packages' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                    {language === 'he' ? 'חבילות שיעורים ותוכניות לימוד' : 'Lesson Packages & Student Allocations'}
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    {language === 'he'
-                      ? 'חבילות לימוד ומסלולים מובנים להוראת עברית בהתאמה אישית.'
-                      : 'Curriculum bundles and lesson packages for structured Hebrew learning paths.'}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setIsAssigningPkg(true)}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold text-xs rounded-xl shadow-xs"
-                  >
-                    Assign to Student
-                  </button>
-                  <button
-                    onClick={() => setIsCreatingPackage(true)}
-                    className="px-4 py-2 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5"
-                  >
-                    <Plus className="w-4 h-4 text-brand-olive-300" />
-                    <span>Create Package</span>
-                  </button>
-                </div>
-              </div>
+              <PageHeaderBanner
+                badgeIcon={Layers}
+                badgeText={language === 'he' ? 'חבילות ומחירון' : 'Curriculum & Packages'}
+                statusText="Active"
+                title={language === 'he' ? 'חבילות שיעורים ותוכניות לימוד' : 'Lesson Packages & Student Allocations'}
+                description={
+                  language === 'he'
+                    ? 'חבילות לימוד ומסלולים מובנים להוראת עברית בהתאמה אישית, מבצעים, ומחירון רב-מטבעי (דולר / ש״ח).'
+                    : 'Curriculum bundles and lesson packages for structured Hebrew learning paths with multi-currency support (USD / ILS).'
+                }
+                action={
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => setIsAssigningPkg(true)}
+                      className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/20 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
+                    >
+                      Assign to Student
+                    </button>
+                    <button
+                      onClick={() => setIsCreatingPackage(true)}
+                      className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
+                    >
+                      <Plus className="w-4 h-4 text-slate-950" />
+                      <span>Create Package</span>
+                    </button>
+                  </div>
+                }
+              />
 
               {/* Session Booking Rates by Duration (25m / 40m / 55m) */}
               <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-5 transition-colors">
@@ -2739,29 +2732,26 @@ export const AdminDashboard: React.FC = () => {
           {activeTab === 'bookings' && (
             <div className="space-y-6">
               {/* Header Banner */}
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 text-xs font-bold text-brand-teal-900 dark:text-brand-teal-300 mb-2">
-                    <Calendar className="w-3.5 h-3.5 text-brand-olive-500" />
-                    <span>{language === 'he' ? 'יומן שיעורים אינטראקטיבי' : 'Multi-Duration Live Session Command Center'}</span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-                    {language === 'he' ? 'כל השיעורים המתוזמנים (25 / 40 / 55 דק׳)' : 'All Scheduled Lessons (25 / 40 / 55 Min)'}
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    {language === 'he'
-                      ? 'ניהול, מעקב וביטול שיעורים עם החזר כספי אוטומטי ליתרת התלמיד. כל הזמנים מוצגים לפי שעון ישראל (פורמט 12 שעות AM/PM).'
-                      : 'Live schedule monitoring, Zoom classroom links, and instant cancellations with automated student balance refunds. All times formatted in Israel Time (12-Hour AM/PM).'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsBookingLesson(true)}
-                  className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-colors"
-                >
-                  <Plus className="w-4 h-4 text-brand-olive-300" />
-                  <span>{language === 'he' ? 'קביעת שיעור חי' : 'Book Live Session'}</span>
-                </button>
-              </div>
+              <PageHeaderBanner
+                badgeIcon={Calendar}
+                badgeText={language === 'he' ? 'יומן שיעורים אינטראקטיבי' : 'Multi-Duration Live Session Command Center'}
+                statusText="Live"
+                title={language === 'he' ? 'כל השיעורים המתוזמנים (25 / 40 / 55 דק׳)' : 'All Scheduled Lessons (25 / 40 / 55 Min)'}
+                description={
+                  language === 'he'
+                    ? 'ניהול, מעקב וביטול שיעורים עם החזר כספי אוטומטי ליתרת התלמיד. כל הזמנים מוצגים לפי שעון ישראל (פורמט 12 שעות AM/PM).'
+                    : 'Live schedule monitoring, Zoom classroom links, and instant cancellations with automated student balance refunds. All times formatted in Israel Time (12-Hour AM/PM).'
+                }
+                action={
+                  <button
+                    onClick={() => setIsBookingLesson(true)}
+                    className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4 text-slate-950" />
+                    <span>{language === 'he' ? 'קביעת שיעור חי' : 'Book Live Session'}</span>
+                  </button>
+                }
+              />
 
               {/* KPI Metrics Summary Bar */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">

@@ -4,6 +4,7 @@ import { levelsApi } from '../../lib/enterpriseApi';
 import { LevelModel } from '../../types';
 import { toast } from '../../store/toastStore';
 import { Plus, Trash2, Edit2, Check, X, Layers, AlertCircle } from 'lucide-react';
+import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const LevelsTab: React.FC = () => {
   const queryClient = useQueryClient();
@@ -57,25 +58,22 @@ export const LevelsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center">
-              <Layers className="w-4 h-4" />
-            </div>
-            Custom Platform Levels Management
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Define custom academic proficiency levels with dynamic Hebrew/English labels, ordering, and theme accents.
-          </p>
-        </div>
-        <button
-          onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white rounded-xl font-bold text-xs transition shadow-sm active:scale-95"
-        >
-          <Plus className="w-4 h-4 text-brand-olive-300" /> Add Level
-        </button>
-      </div>
+      <PageHeaderBanner
+        badgeIcon={Layers}
+        badgeText="Custom Platform Levels Management"
+        statusText="Active"
+        title="Hebrew Proficiency Levels"
+        description="Define custom academic proficiency levels with dynamic Hebrew/English labels, ordering, and theme accents."
+        action={
+          <button
+            onClick={() => setIsCreating(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm transition shadow-lg active:scale-95"
+          >
+            <Plus className="w-4 h-4 text-slate-950" />
+            <span>Add Level</span>
+          </button>
+        }
+      />
 
       {isCreating && (
         <div className="p-6 bg-brand-teal-50/40 dark:bg-slate-850/60 border border-brand-teal-200/70 dark:border-brand-teal-800/70 rounded-3xl space-y-4">

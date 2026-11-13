@@ -9,6 +9,7 @@ import { toast } from '../../store/toastStore';
 import { haptics } from '../../utils/haptics';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { PriceDisplay } from '../../components/common/PriceDisplay';
+import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import {
   BarChart2,
   Users,
@@ -528,6 +529,27 @@ export const SalesDashboard: React.FC = () => {
           {/* TAB 2: STUDENTS DIRECTORY */}
           {activeTab === 'students' && (
             <div className="space-y-6">
+              <PageHeaderBanner
+                badgeIcon={Users}
+                badgeText={language === 'he' ? 'מאגר תלמידים ומכירות' : 'Student Lead & Account Directory'}
+                statusText="Live"
+                title={language === 'he' ? 'רישום תלמידים וניהול לקוחות' : 'Student Directory & Accounts'}
+                description={
+                  language === 'he'
+                    ? 'רישום תלמידים חדשים, הגדרת שפת אם ושפת לימוד, מעקב רמות, וצפייה ביתרות המפגשים הפעילות.'
+                    : 'Onboard new students, configure language preferences, track Hebrew proficiency levels, and inspect active session balances.'
+                }
+                action={
+                  <button
+                    onClick={() => setIsCreatingStudent(true)}
+                    className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4 text-slate-950" />
+                    <span>{language === 'he' ? 'תלמיד חדש' : 'Add Student'}</span>
+                  </button>
+                }
+              />
+
               {/* Filter and Search Bar */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="relative flex-1 max-w-md">
@@ -654,6 +676,27 @@ export const SalesDashboard: React.FC = () => {
           {/* TAB 3: PAYMENTS SUBMISSIONS */}
           {activeTab === 'payments' && (
             <div className="space-y-6">
+              <PageHeaderBanner
+                badgeIcon={Wallet}
+                badgeText={language === 'he' ? 'מעקב ואישור תשלומים' : 'Package Payment Pipeline'}
+                statusText="Active"
+                title={language === 'he' ? 'תשלומים ואסמכתאות WebP' : 'Payment Submissions & Receipts'}
+                description={
+                  language === 'he'
+                    ? 'העלאת אסמכתאות תשלום המומרות אוטומטית ל-WebP, מעקב סטטוס אישור המנהל, והפעלת חבילות ל-30 יום.'
+                    : 'Submit proof screenshots automatically converted to WebP for audit, track admin approvals, and credit 30-day session balances.'
+                }
+                action={
+                  <button
+                    onClick={() => setIsRegisteringPayment(true)}
+                    className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4 text-slate-950" />
+                    <span>{language === 'he' ? 'צרף תשלום חדש' : 'Submit New Payment'}</span>
+                  </button>
+                }
+              />
+
               {/* Filter Tabs */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800">
@@ -758,6 +801,18 @@ export const SalesDashboard: React.FC = () => {
           {/* TAB 4: PACKAGES CATALOG */}
           {activeTab === 'packages' && (
             <div className="space-y-6">
+              <PageHeaderBanner
+                badgeIcon={Layers}
+                badgeText={language === 'he' ? 'מחירון וחבילות תקפות ל-30 יום' : '30-Day Session Quota Packages'}
+                statusText="Live"
+                title={language === 'he' ? 'קטלוג חבילות ומחירון מכירות' : 'Session Packages & Pricing Catalog'}
+                description={
+                  language === 'he'
+                    ? 'חבילות שיעורים מותאמות (25, 40 ו-55 דק׳). מחירים במטבעות USD ו-ILS עם מבצעים והנחות מובלטות.'
+                    : 'Curated session balance packages (25, 40, and 55m). Multi-currency rates (USD & ILS) with clear strikethrough sale prices.'
+                }
+              />
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {safePackages.map((pkg: any) => (
                   <div

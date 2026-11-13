@@ -4,6 +4,7 @@ import { levelExamsApi, levelsApi } from '../../lib/enterpriseApi';
 import { LevelExamModel } from '../../types';
 import { toast } from '../../store/toastStore';
 import { Award, Plus, UserCheck, RefreshCw, CheckCircle, FileText } from 'lucide-react';
+import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const LevelExamsTab: React.FC = () => {
   const queryClient = useQueryClient();
@@ -61,28 +62,25 @@ export const LevelExamsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center">
-              <Award className="w-4 h-4" />
-            </div>
-            Level Progression Exams Management
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Teachers unlock these exams for students after finishing their level curricula. Students have exactly 1 attempt to pass. Admins can reset attempts.
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            if (levels.length > 0) setForm({ ...form, levelId: levels[0].id });
-            setIsCreating(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white rounded-xl font-bold text-xs transition shadow-sm active:scale-95"
-        >
-          <Plus className="w-4 h-4 text-brand-olive-300" /> Create Exam Template
-        </button>
-      </div>
+      <PageHeaderBanner
+        badgeIcon={Award}
+        badgeText="1-Attempt Exam Engine"
+        statusText="Active"
+        title="Level Progression Exams"
+        description="Teachers unlock these exams for students after finishing their level curricula. Students have exactly 1 attempt to pass. Admins can reset attempts."
+        action={
+          <button
+            onClick={() => {
+              if (levels.length > 0) setForm({ ...form, levelId: levels[0].id });
+              setIsCreating(true);
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm transition shadow-lg active:scale-95"
+          >
+            <Plus className="w-4 h-4 text-slate-950" />
+            <span>Create Exam Template</span>
+          </button>
+        }
+      />
 
       {isCreating && (
         <div className="p-6 bg-brand-teal-50/40 dark:bg-slate-850/60 border border-brand-teal-200/70 dark:border-brand-teal-800/70 rounded-3xl space-y-4">

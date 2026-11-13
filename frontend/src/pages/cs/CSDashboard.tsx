@@ -7,6 +7,7 @@ import { useSidebarStore } from '../../store/sidebarStore';
 import { toast } from '../../store/toastStore';
 import { haptics } from '../../utils/haptics';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
+import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { formatIsraelDateTime, formatSlotRange12Hour, ISRAEL_TZ_LABEL } from '../../lib/timeUtils';
 import {
   BarChart2,
@@ -405,6 +406,18 @@ export const CSDashboard: React.FC = () => {
           {/* TAB 2: STUDENTS & BALANCES */}
           {activeTab === 'students' && (
             <div className="space-y-6">
+              <PageHeaderBanner
+                badgeIcon={Users}
+                badgeText={language === 'he' ? 'יתרות שיעורים ותמיכת תלמידים' : 'Student Quotas & Retention'}
+                statusText="Active"
+                title={language === 'he' ? 'תלמידים, יתרות מפגשים ותפוגה' : 'Student Quotas & Expiry Tracking'}
+                description={
+                  language === 'he'
+                    ? 'מעקב אחר יתרות שיעורים (25 / 40 / 55 דק׳) שתוקפן 30 יום, תיאום מפגשים ישיר עבור התלמיד, ואיתור יתרות קרובות לפוג.'
+                    : 'Track 30-day session balances (25 / 40 / 55m), audit expiring quotas, and book live lessons directly on behalf of students.'
+                }
+              />
+
               {/* Search Bar */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="relative flex-1 max-w-md">
@@ -532,18 +545,19 @@ export const CSDashboard: React.FC = () => {
           {/* TAB 3: BOOKINGS & CALENDAR */}
           {activeTab === 'bookings' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                      {language === 'he' ? 'כל השיעורים במערכת' : 'All Platform Sessions'}
-                    </h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {language === 'he' ? 'כל המועדים מוצגים לפי שעון ישראל (12 שעות AM/PM)' : 'All times in Israel Time (12h AM/PM)'}
-                    </p>
-                  </div>
-                </div>
+              <PageHeaderBanner
+                badgeIcon={Calendar}
+                badgeText={language === 'he' ? 'יומן ותיאום שיעורים' : 'Session Schedule & Coordination'}
+                statusText="Live"
+                title={language === 'he' ? 'יומן השיעורים המרכזי' : 'All Platform Sessions'}
+                description={
+                  language === 'he'
+                    ? 'צפייה בכל השיעורים המתואמים, קישורי Zoom לחדרי הלימוד, סטטוסי מפגש ומועדים לפי שעון ישראל.'
+                    : 'Overview of all scheduled 1-on-1 lessons, live Zoom classroom links, session durations, and Israel Time dates.'
+                }
+              />
 
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-start text-xs">
                     <thead className="bg-slate-50/70 dark:bg-slate-850/50 border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
@@ -611,10 +625,19 @@ export const CSDashboard: React.FC = () => {
           {/* TAB 4: ATTENDANCE & LOGS */}
           {activeTab === 'attendance' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-                <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                  {language === 'he' ? 'מעקב נוכחות וביצועי תלמידים' : 'Attendance & Attendance Audit'}
-                </h2>
+              <PageHeaderBanner
+                badgeIcon={CheckCircle2}
+                badgeText={language === 'he' ? 'נוכחות ואימות שיעורים' : 'Session Attendance Auditing'}
+                statusText="Live"
+                title={language === 'he' ? 'מעקב נוכחות וביצועי תלמידים' : 'Attendance & Attendance Audit'}
+                description={
+                  language === 'he'
+                    ? 'מעקב נוכחות מורים ותלמידים (התייצב / נעדר), בדיקת הערכות המורה, ושימור איכות ההוראה.'
+                    : 'Real-time record of student attendance (Attended / Absent) marked by teachers with notes and points tracking.'
+                }
+              />
+
+              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-start text-xs">
                     <thead className="bg-slate-50/70 dark:bg-slate-850/50 border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
@@ -673,19 +696,19 @@ export const CSDashboard: React.FC = () => {
           {/* TAB 5: SURVEYS & REVIEWS */}
           {activeTab === 'surveys' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                      {language === 'he' ? 'משובי תלמידים על מורים (נעילה לאחר שבוע)' : 'Teacher Reviews & Surveys (7-Day Lock)'}
-                    </h2>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {language === 'he' ? 'תלמיד יכול לערוך משוב רק במהלך 7 ימים ממועד הגשתו' : 'Students can only edit their survey within 7 days of submission'}
-                    </p>
-                  </div>
-                </div>
+              <PageHeaderBanner
+                badgeIcon={MessageSquare}
+                badgeText={language === 'he' ? 'נעילת עריכה לאחר 7 ימים' : '7-Day Edit Lock Rule'}
+                statusText="Active"
+                title={language === 'he' ? 'משובי תלמידים על מורים' : 'Teacher Reviews & Surveys'}
+                description={
+                  language === 'he'
+                    ? 'סקירת הערכות תלמידים על איכות ההוראה. התלמיד יכול לערוך משוב רק במהלך 7 ימים ממועד הגשתו.'
+                    : 'Monitor student feedback on teacher performance. Submissions are permanently locked from editing 7 days after submission.'
+                }
+              />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {safeSurveys.map((s: any) => {
                     const daysAgo = Math.floor((Date.now() - new Date(s.createdAt).getTime()) / (1000 * 60 * 60 * 24));
                     const isLocked = daysAgo > 7;
@@ -739,7 +762,6 @@ export const CSDashboard: React.FC = () => {
                   )}
                 </div>
               </div>
-            </div>
           )}
         </main>
       </div>

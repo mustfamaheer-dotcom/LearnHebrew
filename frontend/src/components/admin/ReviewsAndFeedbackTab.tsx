@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { toast } from '../../store/toastStore';
+import { PageHeaderBanner } from '../common/PageHeaderBanner';
 import {
   Star,
   Award,
@@ -220,31 +221,27 @@ export const ReviewsAndFeedbackTab: React.FC = () => {
   return (
     <div className="space-y-6 text-start">
       {/* 1. Header Banner */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-xs font-bold text-amber-800 dark:text-amber-300 mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>{isHe ? 'מרכז ניהול משובים וסקרים' : 'Review & Survey Management Hub'}</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-            {isHe ? 'משובי שיעורים והערכות מורים' : 'Student Lesson Reviews & Teacher Feedback'}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            {isHe
-              ? 'לוח בקרה מקיף לניהול כל המשובים על השיעורים והמורים, ניתוח איכות, כיול קצב ורמת קושי, ודוחות ביצועים.'
-              : 'Monitor lesson quality ratings, teacher evaluations, pace and difficulty calibration, and manage student reviews across the platform.'}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleRefreshAll}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-bold shadow-2xs transition-all active:scale-95"
-        >
-          <RefreshCw className="w-3.5 h-3.5 text-amber-500" />
-          <span>{isHe ? 'רענן נתונים' : 'Refresh Data'}</span>
-        </button>
-      </div>
+      <PageHeaderBanner
+        badgeIcon={Sparkles}
+        badgeText={isHe ? 'מרכז ניהול משובים וסקרים' : 'Review & Survey Management Hub'}
+        statusText={isHe ? 'פעיל' : 'Live'}
+        title={isHe ? 'משובי שיעורים והערכות מורים' : 'Student Lesson Reviews & Teacher Feedback'}
+        description={
+          isHe
+            ? 'לוח בקרה מקיף לניהול כל המשובים על השיעורים והמורים, ניתוח איכות, כיול קצב ורמת קושי, ודוחות ביצועים.'
+            : 'Monitor lesson quality ratings, teacher evaluations, pace and difficulty calibration, and manage student reviews across the platform.'
+        }
+        action={
+          <button
+            type="button"
+            onClick={handleRefreshAll}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-bold shadow-md backdrop-blur-md transition-all active:scale-95"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-brand-olive-300" />
+            <span>{isHe ? 'רענן נתונים' : 'Refresh Data'}</span>
+          </button>
+        }
+      />
 
       {/* 2. Top Analytics KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

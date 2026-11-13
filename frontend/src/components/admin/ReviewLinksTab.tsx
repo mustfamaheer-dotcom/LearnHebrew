@@ -4,6 +4,7 @@ import { reviewLinksApi } from '../../lib/enterpriseApi';
 import { ReviewLinkModel } from '../../types';
 import { toast } from '../../store/toastStore';
 import { Link2, Plus, Copy, Trash2, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const ReviewLinksTab: React.FC = () => {
   const queryClient = useQueryClient();
@@ -41,25 +42,22 @@ export const ReviewLinksTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center">
-              <Link2 className="w-4 h-4" />
-            </div>
-            Single-Use Review Links (Admin Managed)
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Generate one-time use platform review links. Once opened by a user or verified IP, the token is permanently consumed to prevent spam and link duplication.
-          </p>
-        </div>
-        <button
-          onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white rounded-xl font-bold text-xs transition shadow-sm active:scale-95"
-        >
-          <Plus className="w-4 h-4 text-brand-olive-300" /> Generate Single-Use Link
-        </button>
-      </div>
+      <PageHeaderBanner
+        badgeIcon={Link2}
+        badgeText="Anti-Fraud Tokenized Reviews"
+        statusText="Active"
+        title="Single-Use Review Links"
+        description="Generate private, one-time platform review URLs. The token is irreversibly consumed upon submission to prevent spam and manipulation."
+        action={
+          <button
+            onClick={() => setIsCreating(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm transition shadow-lg active:scale-95"
+          >
+            <Plus className="w-4 h-4 text-slate-950" />
+            <span>Generate Single-Use Link</span>
+          </button>
+        }
+      />
 
       {isCreating && (
         <div className="p-6 bg-brand-teal-50/40 dark:bg-slate-850/60 border border-brand-teal-200/70 dark:border-brand-teal-800/70 rounded-3xl space-y-4">

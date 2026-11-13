@@ -4,6 +4,7 @@ import { pointRulesApi } from '../../lib/enterpriseApi';
 import { PointRuleModel } from '../../types';
 import { toast } from '../../store/toastStore';
 import { Coins, Save, Edit3 } from 'lucide-react';
+import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const PointRulesTab: React.FC = () => {
   const queryClient = useQueryClient();
@@ -27,17 +28,13 @@ export const PointRulesTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
-        <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center">
-            <Coins className="w-4 h-4" />
-          </div>
-          Gamification & Reward Point Rules (Admin Managed)
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Adjust the points economy across the platform. Control points awarded per completed session, practice games, streaks, and homework.
-        </p>
-      </div>
+      <PageHeaderBanner
+        badgeIcon={Coins}
+        badgeText="Gamification Economy Engine"
+        statusText="Active"
+        title="Reward & Point Rules"
+        description="Fine-tune the points economy across the platform. Control points awarded per completed session, educational games, learning streaks, and homework."
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {rules.map((r) => {

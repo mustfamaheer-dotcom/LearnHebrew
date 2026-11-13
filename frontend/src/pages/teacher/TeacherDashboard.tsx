@@ -21,6 +21,7 @@ import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { LiveLessonCountdownIsland } from '../../components/lessons/LiveLessonCountdownIsland';
 import { TeacherShareModal } from '../../components/teacher/TeacherShareModal';
+import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { haptics } from '../../utils/haptics';
 import { getGoogleCalendarUrl, downloadIcsFile } from '../../utils/calendarSync';
 import { isGoogleDriveUrl, detectAttachmentType } from '../../lib/driveUtils';
@@ -1973,51 +1974,42 @@ export const TeacherDashboard: React.FC = () => {
           {activeTab === 'games' && (
             <div className="space-y-6">
               {/* Header Banner */}
-              <div className="p-6 sm:p-8 rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden transition-colors">
-                {/* Frosted ambient glow */}
-                <div className="absolute -top-12 -end-12 w-44 h-44 bg-brand-teal-500/10 dark:bg-brand-teal-500/15 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-12 -start-12 w-44 h-44 bg-brand-olive-400/10 dark:bg-brand-olive-400/15 rounded-full blur-3xl pointer-events-none" />
-
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1.5">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-olive-100/80 dark:bg-brand-olive-950/70 border border-brand-olive-300/70 dark:border-brand-olive-800 text-xs font-bold text-brand-olive-900 dark:text-brand-olive-300 shadow-2xs">
-                      <Sparkles className="w-3.5 h-3.5 text-brand-olive-600 dark:text-brand-olive-400" />
-                      <span>{language === 'he' ? 'משחקים מותאמים אישית' : 'Interactive Hebrew Learning Games'}</span>
-                    </div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                      {language === 'he' ? 'ניהול משחקים ותרגילים אינטראקטיביים' : 'Custom Games & Exercises Manager'}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
-                      {language === 'he'
-                        ? 'צור והתאם כרטיסיות מילים, משחקי התאמה וחידונים לפי רמת התלמיד או קשר אותם ישירות לשיעור ספציפי.'
-                        : 'Design and customize flashcards, word matching, and timed quizzes tailored by Hebrew proficiency level and linked directly to specific student lessons.'}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2.5">
+              <PageHeaderBanner
+                badgeIcon={Sparkles}
+                badgeText={language === 'he' ? 'משחקים מותאמים אישית' : 'Interactive Hebrew Learning Games'}
+                statusText="Live"
+                title={language === 'he' ? 'ניהול משחקים ותרגילים אינטראקטיביים' : 'Custom Games & Exercises Manager'}
+                description={
+                  language === 'he'
+                    ? 'צור והתאם כרטיסיות מילים, משחקי התאמה וחידונים לפי רמת התלמיד או קשר אותם ישירות לשיעור ספציפי.'
+                    : 'Design and customize flashcards, word matching, and timed quizzes tailored by Hebrew proficiency level and linked directly to specific student lessons.'
+                }
+                action={
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => openNewGameModal('FLASHCARD')}
-                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-bold text-xs rounded-xl shadow-2xs border border-slate-200/80 dark:border-slate-700 transition-colors flex items-center gap-2"
+                      className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl shadow-xs border border-white/20 transition-all flex items-center gap-1.5"
                     >
-                      <Plus className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
+                      <Plus className="w-3.5 h-3.5 text-brand-olive-300" />
                       <span>{language === 'he' ? 'כרטיסיות מילים' : 'Flashcards'}</span>
                     </button>
                     <button
                       onClick={() => openNewGameModal('MATCHING')}
-                      className="px-4 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2"
+                      className="px-3.5 py-2 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
                     >
-                      <Plus className="w-4 h-4 text-slate-950" />
+                      <Plus className="w-3.5 h-3.5" />
                       <span>{language === 'he' ? 'התאמת מילים' : 'Word Match'}</span>
                     </button>
                     <button
                       onClick={() => openNewGameModal('QUIZ')}
-                      className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2"
+                      className="px-3.5 py-2 bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-bold text-xs rounded-xl shadow-xs border border-brand-teal-600 transition-all flex items-center gap-1.5"
                     >
-                      <Plus className="w-4 h-4 text-brand-olive-300" />
+                      <Plus className="w-3.5 h-3.5 text-brand-olive-300" />
                       <span>{language === 'he' ? 'חידון אמריקאי' : 'Timed Quiz'}</span>
                     </button>
                   </div>
-                </div>
-              </div>
+                }
+              />
 
               {/* Stats Overview */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
