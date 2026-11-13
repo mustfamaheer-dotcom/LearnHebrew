@@ -113,17 +113,17 @@ export const Navbar: React.FC = () => {
               className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 hover:bg-brand-teal-50/60 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 transition-all shadow-2xs group shrink-0 cursor-pointer"
               title={
                 language === 'he'
-                  ? 'שפה פעילה: עברית (לחץ להחלפה לאנגלית / Switch to English)'
-                  : 'Active language: English (Click to switch to Hebrew / החלף לעברית)'
+                  ? 'Switch language to English / החלף לאנגלית'
+                  : 'החלף שפה לעברית / Switch to Hebrew'
               }
               aria-label="Toggle language between English and Hebrew"
             >
               <Globe className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400 group-hover:rotate-45 transition-transform" />
               <span className="font-bold hidden sm:inline">
-                {language === 'he' ? '🇮🇱 עברית' : '🇺🇸 English'}
+                {language === 'en' ? '🇮🇱 עברית' : '🇺🇸 English'}
               </span>
               <span className="font-black sm:hidden">
-                {language === 'he' ? 'עב' : 'EN'}
+                {language === 'en' ? '🇮🇱 עב' : '🇺🇸 EN'}
               </span>
               <span className="text-[10px] text-slate-400 group-hover:text-brand-teal-600 dark:group-hover:text-brand-teal-400 font-mono transition-colors">
                 ⇄
