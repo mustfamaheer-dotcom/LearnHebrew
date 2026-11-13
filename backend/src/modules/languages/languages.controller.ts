@@ -15,3 +15,13 @@ export async function toggleLanguage(req: Request, res: Response) {
   const lang = await service.toggleLanguage(req.params.id, req.body.isActive);
   res.json(lang);
 }
+
+export async function updateLanguage(req: Request, res: Response) {
+  const lang = await service.updateLanguage(req.params.id, req.body);
+  res.json(lang);
+}
+
+export async function deleteLanguage(req: Request, res: Response) {
+  await service.deleteLanguage(req.params.id);
+  res.status(204).send();
+}

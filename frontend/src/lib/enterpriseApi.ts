@@ -39,6 +39,13 @@ export const languagesApi = {
     const res = await api.post('/languages', data);
     return res.data;
   },
+  update: async (id: string, data: Partial<LanguageModel>): Promise<LanguageModel> => {
+    const res = await api.put(`/languages/${id}`, data);
+    return res.data;
+  },
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/languages/${id}`);
+  },
   toggle: async (id: string, isActive: boolean): Promise<LanguageModel> => {
     const res = await api.patch(`/languages/${id}/toggle`, { isActive });
     return res.data;
