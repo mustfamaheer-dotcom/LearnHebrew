@@ -344,7 +344,7 @@ export const LandingPage: React.FC = () => {
                   href="#packages"
                   className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-800/90 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 backdrop-blur-md transition-all shadow-2xs hover:shadow-md text-center"
                 >
-                  {language === 'he' ? 'צפייה בחבילות 25 דקות' : 'Explore 25-Min Packages'}
+                  {language === 'he' ? 'צפייה במסלולים וחבילות לימוד' : 'Explore Learning Packages'}
                 </a>
               </div>
 
@@ -744,11 +744,27 @@ export const LandingPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {((packagesData || []).filter((p: any) => p.isActive !== false)).map((pkg: any, idx: number) => {
             const isFeatured = pkg.isPopular || idx === 1;
             const name = language === 'he' && pkg.nameHe ? pkg.nameHe : pkg.name;
             const desc = language === 'he' && pkg.descriptionHe ? pkg.descriptionHe : pkg.description;
+            const items = pkg.sessionItems || [];
+            const sessionSummary =
+              items.length > 0
+                ? items
+                    .map(
+                      (si: any) =>
+                        `${si.quantity}x ${
+                          language === 'he'
+                            ? si.sessionType?.labelHe || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25} דק׳`
+                            : si.sessionType?.labelEn || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25}m`
+                        }`
+                    )
+                    .join(' + ')
+                : language === 'he'
+                ? `${pkg.totalLessons} שיעורים פרטיים 1-על-1`
+                : `${pkg.totalLessons} Private 1-on-1 Lessons`;
 
             if (isFeatured) {
               return (
@@ -781,11 +797,9 @@ export const LandingPage: React.FC = () => {
                       </span>
                     </div>
                     <ul className="space-y-3 text-xs sm:text-sm text-brand-teal-100 mb-8">
-                      <li className="flex items-center gap-2">
+                      <li className="flex items-center gap-2 font-semibold">
                         <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
-                        {language === 'he'
-                          ? `${pkg.totalLessons} שיעורים ממוקדים של 25 דקות`
-                          : `${pkg.totalLessons} Focused 25-min sessions`}
+                        <span>{sessionSummary}</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
@@ -806,9 +820,9 @@ export const LandingPage: React.FC = () => {
                     </ul>
                   </div>
                   <Link
-                    to="/login"
+                    to={`/login?packageId=${pkg.id}&pkgName=${encodeURIComponent(name)}`}
                     onClick={() => haptics.tap()}
-                    className="w-full py-3.5 text-center bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-black text-xs sm:text-sm rounded-2xl transition-all shadow-md hover:scale-[1.02]"
+                    className="w-full py-3.5 text-center bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-black text-xs sm:text-sm rounded-2xl transition-all shadow-md hover:scale-[1.02] block"
                   >
                     {t('landing.getStarted')}
                   </Link>
@@ -844,11 +858,9 @@ export const LandingPage: React.FC = () => {
                     </span>
                   </div>
                   <ul className="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-8">
-                    <li className="flex items-center gap-2">
+                    <li className="flex items-center gap-2 font-semibold">
                       <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
-                      {language === 'he'
-                        ? `${pkg.totalLessons} שיעורים ממוקדים של 25 דקות`
-                        : `${pkg.totalLessons} Focused 25-min sessions`}
+                      <span>{sessionSummary}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
@@ -865,9 +877,9 @@ export const LandingPage: React.FC = () => {
                   </ul>
                 </div>
                 <Link
-                  to="/login"
+                  to={`/login?packageId=${pkg.id}&pkgName=${encodeURIComponent(name)}`}
                   onClick={() => haptics.tap()}
-                  className="w-full py-3.5 text-center bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm rounded-2xl transition-colors shadow-xs"
+                  className="w-full py-3.5 text-center bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm rounded-2xl transition-colors shadow-xs block"
                 >
                   {t('landing.getStarted')}
                 </Link>

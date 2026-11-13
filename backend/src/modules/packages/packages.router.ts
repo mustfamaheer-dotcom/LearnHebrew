@@ -16,13 +16,15 @@ import { Role } from '@prisma/client';
 
 const router = Router();
 
-router.use(authenticate);
+// Public package catalog (Accessible on Landing Page and by unauthenticated visitors)
+router.get('/', listPackagesHandler);
 
 // Public / Student Coupon Validation for package purchase & session checkout
 router.post('/validate-coupon', validateCouponHandler);
 
-// Package catalog & management
-router.get('/', listPackagesHandler);
+// Authenticated administrative & student actions
+router.use(authenticate);
+
 router.post('/grant-credits', requireRoles(Role.ADMIN, Role.SUPER_ADMIN), grantCreditsHandler);
 router.post('/', requireRoles(Role.ADMIN, Role.SUPER_ADMIN), createPackageHandler);
 router.patch('/:id', requireRoles(Role.ADMIN, Role.SUPER_ADMIN), updatePackageHandler);

@@ -2706,6 +2706,16 @@ export const AdminDashboard: React.FC = () => {
                 }
                 action={
                   <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href="/#packages"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
+                      title={language === 'he' ? 'פתח את דף הנחיתה הציבורי להצגת החבילות' : 'Open the public landing page package pricing'}
+                    >
+                      <ExternalLink className="w-4 h-4 text-brand-teal-300" />
+                      <span>{language === 'he' ? 'צפה בדף הנחיתה' : 'View on Landing Page'}</span>
+                    </a>
                     <button
                       onClick={() => setIsAssigningPkg(true)}
                       className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/20 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
