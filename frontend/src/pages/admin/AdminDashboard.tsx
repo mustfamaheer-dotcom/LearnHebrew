@@ -61,6 +61,8 @@ import {
   MessageSquare,
   Coins,
   Wallet,
+  Package,
+  Receipt,
   UserCheck,
   UserX,
   Link2,
@@ -313,32 +315,6 @@ export const AdminDashboard: React.FC = () => {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error || 'Failed to update session rates');
-    },
-  });
-
-  // Student Balance Management State
-  const [isAdjustingBalance, setIsAdjustingBalance] = useState(false);
-  const [adjustStudent, setAdjustStudent] = useState<any | null>(null);
-  const [adjustAmount, setAdjustAmount] = useState<number | string>(50);
-  const [adjustMode, setAdjustMode] = useState<'add' | 'set'>('add');
-  const [adjustReason, setAdjustReason] = useState('Top-up by Admin');
-
-  const adjustBalanceMutation = useMutation({
-    mutationFn: async ({ studentId, amount, mode, reason }: any) => {
-      return api.post(`/users/${studentId}/balance`, { amount, mode, reason });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
-      queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
-      setIsAdjustingBalance(false);
-      setAdjustStudent(null);
-      toast.success(
-        language === 'he' ? 'יתרת התלמיד עודכנה בהצלחה!' : 'Student balance updated successfully!',
-        language === 'he' ? 'עודכן' : 'Success'
-      );
-    },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to update balance');
     },
   });
 
@@ -622,8 +598,8 @@ export const AdminDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       toast.info(
         language === 'he'
-          ? 'השיעור בוטל והתשלום הוחזר במלואו ליתרת התלמיד.'
-          : 'Lesson cancelled successfully and full session fee refunded to student balance.'
+          ? 'השיעור בוטל בהצלחה והמפגש הוחזר למכסת השיעורים של התלמיד.'
+          : 'Lesson cancelled successfully and session returned to student package balance.'
       );
     },
     onError: (err: any) => {
@@ -721,28 +697,30 @@ export const AdminDashboard: React.FC = () => {
     return matchesRole && matchesStatus && matchesSearch;
   });
 
-  const totalPlatformBalance = (usersData || [])
-    .filter((u: any) => u.role === 'STUDENT' && u.studentProfile)
-    .reduce((sum: number, u: any) => sum + Number(u.studentProfile?.balance || 0), 0);
+  const totalActivePackageSessions = (usersData || [])
+    .filter((u: any) => u.role === 'STUDENT' && u.studentProfile?.sessionBalances)
+    .reduce((sum: number, u: any) => {
+      const sbs = u.studentProfile?.sessionBalances || [];
+      return sum + sbs.reduce((bSum: number, sb: any) => bSum + Number(sb.balance || 0), 0);
+    }, 0);
   const activeStudentsCount = (usersData || []).filter((u: any) => u.role === 'STUDENT' && u.isActive !== false).length;
   const certifiedTeachersCount = (usersData || []).filter((u: any) => u.role === 'TEACHER').length;
   const platformOwnersCount = (usersData || []).filter((u: any) => u.role === 'SUPER_ADMIN' || u.role === 'ADMIN').length;
-  const lowBalanceStudentsList = (usersData || []).filter(
-    (u: any) => u.role === 'STUDENT' && Number(u.studentProfile?.balance || 0) < 25
-  );
+  const lowQuotaStudentsList = (usersData || [])
+    .filter((u: any) => {
+      if (u.role !== 'STUDENT' || !u.studentProfile) return false;
+      const sbs = u.studentProfile?.sessionBalances || [];
+      const totalSessions = sbs.reduce((bSum: number, sb: any) => bSum + Number(sb.balance || 0), 0);
+      return totalSessions <= 1;
+    });
 
-  const handleOpenBalanceModal = (student?: any) => {
-    if (student) {
-      setAdjustStudent(student);
-    } else if (studentsList.length > 0) {
-      setAdjustStudent(studentsList[0]);
-    } else {
-      setAdjustStudent(null);
+  const handleOpenAssignPackage = (student?: any) => {
+    if (student?.studentProfile?.id) {
+      setAssignStudentId(student.studentProfile.id);
+    } else if (studentsList.length > 0 && studentsList[0].studentProfile?.id) {
+      setAssignStudentId(studentsList[0].studentProfile.id);
     }
-    setAdjustAmount(50);
-    setAdjustMode('add');
-    setAdjustReason('Balance top-up by Platform Owner');
-    setIsAdjustingBalance(true);
+    setIsAssigningPkg(true);
   };
 
   const filteredLessons = (lessonsData || []).filter((l: any) => {
@@ -853,7 +831,7 @@ export const AdminDashboard: React.FC = () => {
           id: 'payments',
           label: 'Payments Review',
           labelHe: 'בדיקת תשלומי חבילות',
-          icon: Wallet,
+          icon: Receipt,
         },
         {
           id: 'exams',
@@ -944,8 +922,8 @@ export const AdminDashboard: React.FC = () => {
                     </h1>
                     <p className="text-brand-teal-100/90 text-xs sm:text-sm mt-1.5 max-w-2xl font-medium leading-relaxed">
                       {language === 'he'
-                        ? 'מדדי ביצוע בזמן אמת, יתרות חשבונות תלמידים, שיעורי 25 דקות, נתוני הכנסות ופעולות מהירות למנהל המערכת.'
-                        : 'Real-time financial telemetry, student wallet reserves, 25-minute lesson utilization, revenue reporting, and one-click administrator actions.'}
+                        ? 'מדדי ביצוע בזמן אמת, מכסות שיעורים וחבילות פעילות, שיעורי 25 דקות, נתוני פעילות ופעולות מהירות למנהל המערכת.'
+                        : 'Real-time pedagogical telemetry, student package sessions, 25-minute lesson utilization, activity reporting, and one-click administrator actions.'}
                     </p>
                   </div>
                 </div>
@@ -963,7 +941,7 @@ export const AdminDashboard: React.FC = () => {
                         {language === 'he' ? 'מרכז פעולות מהירות למנהל' : 'Administrator Quick Actions'}
                       </h2>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {language === 'he' ? 'פעולות ישירות בלחיצה אחת לניהול שוטף' : 'One-click shortcuts to update balances, schedule lessons, and govern users'}
+                        {language === 'he' ? 'פעולות ישירות בלחיצה אחת לניהול שוטף' : 'One-click shortcuts to assign packages, schedule lessons, and govern users'}
                       </p>
                     </div>
                   </div>
@@ -974,20 +952,20 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {/* Action 1: Add Balance */}
+                  {/* Action 1: Assign Package */}
                   <button
-                    onClick={() => handleOpenBalanceModal()}
+                    onClick={() => handleOpenAssignPackage()}
                     className="group p-3.5 rounded-2xl bg-gradient-to-b from-emerald-50/80 to-white dark:from-emerald-950/20 dark:to-slate-900 border border-emerald-200/70 dark:border-emerald-800/50 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-md transition-all text-start flex flex-col justify-between"
                   >
                     <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold mb-2 group-hover:scale-110 transition-transform">
-                      <Wallet className="w-4 h-4" />
+                      <Package className="w-4 h-4" />
                     </div>
                     <div>
                       <span className="block text-xs font-black text-slate-900 dark:text-white leading-tight">
-                        {language === 'he' ? 'טעינת יתרה' : 'Top Up Balance'}
+                        {language === 'he' ? 'הקצאת חבילה' : 'Assign Package'}
                       </span>
                       <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
-                        {language === 'he' ? '+ הוסף לתלמיד' : '+ Credit Student'}
+                        {language === 'he' ? '+ הקצה לתלמיד' : '+ Assign to Student'}
                       </span>
                     </div>
                   </button>
@@ -1109,25 +1087,25 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* KPI 2: Outstanding Student Balances */}
+                {/* KPI 2: Active Student Session Units */}
                 <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-2">
                       <span className="text-[11px] font-bold uppercase tracking-wider">
-                        {language === 'he' ? 'ארנקי יתרות תלמידים' : 'Student Wallet Pool'}
+                        {language === 'he' ? 'יתרות שיעורים פעילות' : 'Active Package Sessions'}
                       </span>
-                      <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                      ${(analytics?.kpis?.totalStudentBalance !== undefined ? analytics.kpis.totalStudentBalance : totalPlatformBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {totalActivePackageSessions || analytics?.kpis?.totalStudentSessions || 0}
                     </div>
                   </div>
                   <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                     <span className="text-slate-500 dark:text-slate-400">
-                      {language === 'he' ? 'ממוצע:' : 'Avg:'} ${(studentsList.length > 0 ? ((analytics?.kpis?.totalStudentBalance || totalPlatformBalance) / studentsList.length) : 0).toFixed(2)}
+                      {language === 'he' ? 'בכל החבילות' : 'Across All Packages'}
                     </span>
                     <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      {language === 'he' ? 'עתודה פעילה' : 'Active Reserve'}
+                      {language === 'he' ? 'תוקף עד 30 יום' : '30-Day Quotas'}
                     </span>
                   </div>
                 </div>
@@ -1237,71 +1215,75 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                         <div>
                           <h2 className="text-sm font-black text-slate-900 dark:text-white">
-                            {language === 'he' ? 'תלמידים הזקוקים לטעינת יתרה (< $25)' : 'Students Needing Balance Top-Up (< $25)'}
+                            {language === 'he' ? 'תלמידים עם מכסת שיעורים נמוכה (≤ 1)' : 'Students with Low Session Quotas (≤ 1 remaining)'}
                           </h2>
                           <p className="text-[11px] text-slate-500 dark:text-slate-400">
                             {language === 'he'
-                              ? 'יתרה שאינה מספיקה להזמנת שיעור 25 דקות ($25). לחץ לטעינה מיידית.'
-                              : 'Balance insufficient to book a 25-min session ($25). One-click credit action available.'}
+                              ? 'למדו וסיימו את מכסת החבילה שלהם. לחץ להקצאת חבילה חדשה.'
+                              : 'Session balance low or exhausted. One-click package assignment available.'}
                           </p>
                         </div>
                       </div>
                       <span className="px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 font-extrabold text-[11px]">
-                        {lowBalanceStudentsList.length} {language === 'he' ? 'תלמידים' : 'Students'}
+                        {lowQuotaStudentsList.length} {language === 'he' ? 'תלמידים' : 'Students'}
                       </span>
                     </div>
 
-                    {lowBalanceStudentsList.length > 0 ? (
+                    {lowQuotaStudentsList.length > 0 ? (
                       <div className="space-y-2.5">
-                        {lowBalanceStudentsList.slice(0, 5).map((s: any) => (
-                          <div
-                            key={s.id}
-                            className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-3 hover:border-amber-400 transition-colors"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center text-xs shrink-0">
-                                {s.firstName?.[0] || 'S'}{s.lastName?.[0] || ''}
+                        {lowQuotaStudentsList.slice(0, 5).map((s: any) => {
+                          const sbs = s.studentProfile?.sessionBalances || [];
+                          const totalS = sbs.reduce((sum: number, sb: any) => sum + Number(sb.balance || 0), 0);
+                          return (
+                            <div
+                              key={s.id}
+                              className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-3 hover:border-amber-400 transition-colors"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center text-xs shrink-0">
+                                  {s.firstName?.[0] || 'S'}{s.lastName?.[0] || ''}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                                    {s.firstName} {s.lastName}
+                                  </h4>
+                                  <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
+                                    {s.email}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <h4 className="font-bold text-xs text-slate-900 dark:text-white truncate">
-                                  {s.firstName} {s.lastName}
-                                </h4>
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate block">
-                                  {s.email}
-                                </span>
-                              </div>
-                            </div>
 
-                            <div className="flex items-center gap-3 shrink-0">
-                              <div className="text-right">
-                                <span className="text-[10px] text-slate-400 block font-medium">
-                                  {language === 'he' ? 'יתרה' : 'Balance'}
-                                </span>
-                                <span className="text-xs font-black text-rose-600 dark:text-rose-400">
-                                  ${Number(s.studentProfile?.balance || 0).toFixed(2)}
-                                </span>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <div className="text-right">
+                                  <span className="text-[10px] text-slate-400 block font-medium">
+                                    {language === 'he' ? 'שיעורים' : 'Sessions'}
+                                  </span>
+                                  <span className="text-xs font-black text-rose-600 dark:text-rose-400">
+                                    {totalS} {language === 'he' ? 'נותרו' : 'left'}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => handleOpenAssignPackage(s)}
+                                  className="px-3 py-1.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-black text-[11px] shadow-xs flex items-center gap-1 transition-all hover:scale-105 active:scale-95"
+                                >
+                                  <Plus className="w-3.5 h-3.5 text-brand-olive-300" />
+                                  <span>{language === 'he' ? 'הקצה חבילה' : 'Assign Pkg'}</span>
+                                </button>
                               </div>
-                              <button
-                                onClick={() => handleOpenBalanceModal(s)}
-                                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] shadow-xs flex items-center gap-1 transition-all hover:scale-105 active:scale-95"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                                <span>{language === 'he' ? 'הוסף יתרה' : 'Top Up'}</span>
-                              </button>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="p-8 text-center bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-dashed border-emerald-200 dark:border-emerald-800">
                         <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mx-auto mb-2" />
                         <h4 className="text-xs font-black text-emerald-800 dark:text-emerald-300">
-                          {language === 'he' ? 'כל התלמידים עם יתרה מספקת' : 'All Student Wallets Well Funded'}
+                          {language === 'he' ? 'כל התלמידים עם מכסות שיעורים פעילות' : 'All Students Have Active Session Packages'}
                         </h4>
                         <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80 mt-1 max-w-sm mx-auto">
                           {language === 'he'
-                            ? 'כל התלמידים מחזיקים ביתרה של $25 ומעלה המאפשרת קביעת שיעורים חופשית.'
-                            : 'Every active student has at least $25 balance for seamless 25-minute lesson booking.'}
+                            ? 'לכל התלמידים הפעילים יש שיעורים זמינים בחבילה לקביעת מפגשים חופשית.'
+                            : 'Every active student has session credits available in their 30-day package.'}
                         </p>
                       </div>
                     )}
@@ -1309,14 +1291,14 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                     <span className="text-slate-500 dark:text-slate-400">
-                      {language === 'he' ? 'עלות מינימלית לשיעור 25 דק׳:' : 'Minimum 25-min booking cost:'} <strong className="text-slate-800 dark:text-slate-200">$25.00</strong>
+                      {language === 'he' ? 'תוקף חבילות שיעורים:' : 'Package validity period:'} <strong className="text-slate-800 dark:text-slate-200">{language === 'he' ? 'עד 30 יום' : 'Up to 30 days'}</strong>
                     </span>
                     <button
-                      onClick={() => handleOpenBalanceModal()}
-                      className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                      onClick={() => handleOpenAssignPackage()}
+                      className="font-bold text-brand-teal-700 dark:text-brand-teal-300 hover:underline flex items-center gap-1"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>{language === 'he' ? 'טעינה לתלמיד אחר' : 'Credit Any Student'}</span>
+                      <span>{language === 'he' ? 'הקצה חבילה לתלמיד' : 'Assign Package to Student'}</span>
                     </button>
                   </div>
                 </div>
@@ -1352,8 +1334,8 @@ export const AdminDashboard: React.FC = () => {
                         },
                         {
                           type: 'warning',
-                          title: language === 'he' ? 'החזר כספי אוטומטי בביטול מופעל' : 'Auto-Refund on Cancellation Enabled',
-                          desc: language === 'he' ? 'תלמידים ומנהלים מקבלים החזר כספי מלא ומיידי ליתרת החשבון בעת ביטול שיעור מראש.' : 'Admins and students receive instant dollar-for-dollar wallet refunds when sessions are cancelled ahead of time.'
+                          title: language === 'he' ? 'החזרת מכסה אוטומטית בביטול מופעלת' : 'Auto-Quota Restoral on Cancellation Enabled',
+                          desc: language === 'he' ? 'תלמידים ומנהלים מקבלים החזרה מלאה ומיידית של מכסת השיעורים לחבילה הפעילה בעת ביטול שיעור מראש.' : 'Admins and students receive instant quota restoral back to their active session package when lessons are cancelled ahead of time.'
                         },
                         {
                           type: 'info',
@@ -1571,29 +1553,29 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* 6. Live Balance & Deposit Audit Trail */}
+              {/* 6. Live Package Sessions & Quota Audit Trail */}
               {analytics?.recentBalanceTransactions && analytics.recentBalanceTransactions.length > 0 && (
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                        <Wallet className="w-4 h-4" />
+                        <Package className="w-4 h-4" />
                       </div>
                       <div>
                         <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                          {language === 'he' ? 'יומן תנועות יתרה וטעינות אחרונות' : 'Recent Balance Ledger & Deposit Activity'}
+                          {language === 'he' ? 'יומן הקצאות ושימוש במכסות שיעורים' : 'Recent Package Allocations & Quota Activity'}
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {language === 'he' ? 'רישום חי של הפקדות כספיות, חיובים וזיכויים' : 'Live audit trail of student wallet credits, booking deductions, and refunds'}
+                          {language === 'he' ? 'רישום חי של הקצאות חבילות, שימוש בשיעורים והחזרות מכסה' : 'Live audit trail of package assignments, session deductions, and quota restorals'}
                         </p>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleOpenBalanceModal()}
+                      onClick={() => handleOpenAssignPackage()}
                       className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>{language === 'he' ? 'הוסף יתרה' : 'Top Up Student'}</span>
+                      <span>{language === 'he' ? 'הקצה חבילה' : 'Assign Package'}</span>
                     </button>
                   </div>
 
@@ -1635,14 +1617,14 @@ export const AdminDashboard: React.FC = () => {
                             </td>
                             <td className="py-3 px-4 font-black">
                               <span className={tx.amount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
-                                {tx.amount >= 0 ? `+$${Number(tx.amount).toFixed(2)}` : `-$${Math.abs(Number(tx.amount)).toFixed(2)}`}
+                                {tx.amount >= 0 ? `+${Number(tx.amount)}` : `${Number(tx.amount)}`} {language === 'he' ? 'שיעורים' : 'units'}
                               </span>
                             </td>
                             <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                              ${Number(tx.balanceAfter).toFixed(2)}
+                              {Number(tx.balanceAfter)} {language === 'he' ? 'שיעורים' : 'units'}
                             </td>
                             <td className="py-3 px-4 text-slate-500 dark:text-slate-400 truncate max-w-xs">
-                              {tx.description || (language === 'he' ? 'עדכון יתרה במערכת' : 'System balance update')}
+                              {tx.description || (language === 'he' ? 'עדכון מכסת חבילה' : 'Package session update')}
                             </td>
                             <td className="py-3 px-4 text-slate-400 text-[11px]">
                               {formatIsraelDateTime(tx.createdAt, {
@@ -2107,8 +2089,8 @@ export const AdminDashboard: React.FC = () => {
                 title={language === 'he' ? 'חשבונות משתמשים והרשאות מערכת' : 'User Accounts & Roles'}
                 description={
                   language === 'he'
-                    ? 'ניהול מלא של תלמידים, מורים מוסמכים והרשאות פלטפורמה, יתרות כספיות, הגדרות רמה ואיפוס סיסמאות.'
-                    : 'Comprehensive access control to inspect, edit, adjust balances, configure Hebrew levels, and manage all accounts.'
+                    ? 'ניהול מלא של תלמידים, מורים מוסמכים והרשאות פלטפורמה, חבילות שיעורים, הגדרות רמה ואיפוס סיסמאות.'
+                    : 'Comprehensive access control to inspect, edit, assign packages, configure Hebrew levels, and manage all accounts.'
                 }
                 action={
                   <button
@@ -2140,14 +2122,14 @@ export const AdminDashboard: React.FC = () => {
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
                       {language === 'he' ? 'תלמידים פעילים' : 'Active Students'}
                     </span>
-                    <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div className="flex items-baseline gap-2 mt-2">
                     <p className="text-2xl font-black text-slate-900 dark:text-white">
                       {activeStudentsCount}
                     </p>
                     <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-                      (${totalPlatformBalance.toFixed(2)} {language === 'he' ? 'ביתרות' : 'funds'})
+                      ({totalActivePackageSessions} {language === 'he' ? 'שיעורים בחבילות' : 'package sessions'})
                     </span>
                   </div>
                 </div>
@@ -2251,7 +2233,7 @@ export const AdminDashboard: React.FC = () => {
                         <th className="py-3.5 px-4">{language === 'he' ? 'משתמש' : 'User'}</th>
                         <th className="py-3.5 px-4">{language === 'he' ? 'תפקיד' : 'Role'}</th>
                         <th className="py-3.5 px-4">{language === 'he' ? 'רמה / התמחות' : 'Hebrew Level / Specialty'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'יתרת חשבון' : 'Account Balance'}</th>
+                        <th className="py-3.5 px-4">{language === 'he' ? 'חבילות ומפגשים' : 'Session Packages'}</th>
                         <th className="py-3.5 px-4">{language === 'he' ? 'הישגים ופעילות' : 'Gamification / Stats'}</th>
                         <th className="py-3.5 px-4">{language === 'he' ? 'שפה' : 'Lang'}</th>
                         <th className="py-3.5 px-4">{language === 'he' ? 'סטטוס' : 'Status'}</th>
@@ -2329,25 +2311,38 @@ export const AdminDashboard: React.FC = () => {
                                 )}
                               </td>
 
-                              {/* Account Balance */}
+                              {/* Session Packages & Units */}
                               <td className="py-3.5 px-4">
                                 {isStudent && u.studentProfile ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm">
-                                      ${Number(u.studentProfile.balance || 0).toFixed(2)}
-                                    </span>
+                                  <div className="flex flex-col gap-1">
+                                    {(u.studentProfile?.sessionBalances || []).length > 0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {u.studentProfile.sessionBalances.map((sb: any) => (
+                                          <span
+                                            key={sb.id}
+                                            className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                                              sb.balance > 0
+                                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                                : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
+                                            }`}
+                                          >
+                                            {sb.balance}x {sb.sessionType?.name || `${sb.sessionType?.durationMinutes || 25}m`}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-[11px] text-slate-400 font-medium">
+                                        {language === 'he' ? 'אין חבילה פעילה' : 'No active package'}
+                                      </span>
+                                    )}
                                     <button
                                       onClick={() => {
-                                        setAdjustStudent(u);
-                                        setAdjustAmount(50);
-                                        setAdjustMode('add');
-                                        setAdjustReason('Admin balance adjustment');
-                                        setIsAdjustingBalance(true);
+                                        setAssignStudentId(u.studentProfile.id);
+                                        setIsAssigningPkg(true);
                                       }}
-                                      title={language === 'he' ? 'התאם יתרה' : 'Quick Adjust Balance'}
-                                      className="p-1 rounded-md text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60"
+                                      className="text-[10px] text-brand-teal-700 dark:text-brand-teal-400 hover:underline font-bold text-start"
                                     >
-                                      <Wallet className="w-3.5 h-3.5" />
+                                      {language === 'he' ? '+ הקצה חבילה' : '+ Assign Package'}
                                     </button>
                                   </div>
                                 ) : (
@@ -2449,8 +2444,8 @@ export const AdminDashboard: React.FC = () => {
                 title={language === 'he' ? 'מורים מוסמכים ויומן משבצות 25 דקות' : 'Certified Teachers & 25-Minute Slot Schedules'}
                 description={
                   language === 'he'
-                    ? 'כל מורה פותח משבצות זמן זמינות למשך עד 45 יום קדימה, והתלמידים קובעים שיעורים מתוך יתרת החבילה שלהם.'
-                    : 'Each teacher offers open availability blocks up to 45 days in advance. Students book sessions using their active balance.'
+                    ? 'כל מורה פותח משבצות זמן זמינות למשך עד 45 יום קדימה, והתלמידים קובעים שיעורים מתוך מכסת החבילה הפעילה שלהם.'
+                    : 'Each teacher offers open availability blocks up to 45 days in advance. Students book sessions using their active package quotas.'
                 }
               />
 
@@ -2550,16 +2545,16 @@ export const AdminDashboard: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                      <Wallet className="w-5 h-5" />
+                      <Layers className="w-5 h-5" />
                     </div>
                     <div>
                       <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                        {language === 'he' ? 'תמחור שיעורים לפי משך מפגש' : 'Session Booking Rates by Duration'}
+                        {language === 'he' ? 'ערכי חבילות לפי משך מפגש' : 'Session Duration Reference Rates'}
                       </h2>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         {language === 'he'
-                          ? 'קבע את התעריף שינוכה אוטומטית מיתרת התלמיד בעת תיאום שיעור'
-                          : 'Set the automatic balance deduction amount when students book each session duration'}
+                          ? 'הגדר את ערך הבסיס של משכי השיעורים (25, 40 ו-55 דקות) עבור חבילות ומכסות'
+                          : 'Set the base reference values for 25, 40, and 55-minute session package configurations'}
                       </p>
                     </div>
                   </div>
@@ -2739,8 +2734,8 @@ export const AdminDashboard: React.FC = () => {
                 title={language === 'he' ? 'כל השיעורים המתוזמנים (25 / 40 / 55 דק׳)' : 'All Scheduled Lessons (25 / 40 / 55 Min)'}
                 description={
                   language === 'he'
-                    ? 'ניהול, מעקב וביטול שיעורים עם החזר כספי אוטומטי ליתרת התלמיד. כל הזמנים מוצגים לפי שעון ישראל (פורמט 12 שעות AM/PM).'
-                    : 'Live schedule monitoring, Zoom classroom links, and instant cancellations with automated student balance refunds. All times formatted in Israel Time (12-Hour AM/PM).'
+                    ? 'ניהול, מעקב וביטול שיעורים עם החזרת מפגש אוטומטית למכסת החבילה של התלמיד. כל הזמנים מוצגים לפי שעון ישראל (פורמט 12 שעות AM/PM).'
+                    : 'Live schedule monitoring, Zoom classroom links, and instant cancellations with automated session quota returns. All times formatted in Israel Time (12-Hour AM/PM).'
                 }
                 action={
                   <button
@@ -3048,8 +3043,8 @@ export const AdminDashboard: React.FC = () => {
                                     onClick={() => {
                                       const confirmMsg =
                                         language === 'he'
-                                          ? `האם לבטל שיעור זה? תעריף המפגש ($${rate}) יוחזר אוטומטית ליתרת התלמיד.`
-                                          : `Cancel this scheduled lesson? The full session fee ($${rate}) will be refunded immediately to the student balance.`;
+                                          ? `האם לבטל שיעור זה? המפגש יוחזר אוטומטית למכסת החבילה של התלמיד.`
+                                          : `Cancel this scheduled lesson? The reserved session will be returned immediately to the student's package balance.`;
                                       if (window.confirm(confirmMsg)) {
                                         cancelLessonMutation.mutate({
                                           id: l.id,
@@ -3537,7 +3532,7 @@ export const AdminDashboard: React.FC = () => {
                 <div className="space-y-3 p-4 rounded-2xl bg-brand-teal-50/50 dark:bg-brand-teal-950/30 border border-brand-teal-200/70 dark:border-brand-teal-900/60">
                   <h3 className="font-extrabold text-sm text-brand-teal-900 dark:text-brand-teal-200 flex items-center gap-2">
                     <GraduationCap className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-300" />
-                    <span>{language === 'he' ? 'פרופיל תלמיד ויתרה כספית' : 'Student Academic Profile & Balance'}</span>
+                    <span>{language === 'he' ? 'פרופיל אקדמי ומכסת שיעורים' : 'Student Academic Profile & Package Quota'}</span>
                   </h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -3561,25 +3556,30 @@ export const AdminDashboard: React.FC = () => {
 
                     <div>
                       <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        {language === 'he' ? 'יתרת חשבון נוכחית' : 'Current Account Balance'}
+                        {language === 'he' ? 'חבילות ומפגשים זמינים' : 'Available Package Sessions'}
                       </label>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-emerald-600 dark:text-emerald-400 font-black text-sm">
-                          ${Number(selectedUserForEdit.studentProfile?.balance || 0).toFixed(2)} USD
+                        <div className="flex-1 px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-extrabold text-xs">
+                          {(selectedUserForEdit.studentProfile?.sessionBalances || []).length > 0 ? (
+                            selectedUserForEdit.studentProfile.sessionBalances
+                              .map((sb: any) => `${sb.balance}x ${sb.sessionType?.name || `${sb.sessionType?.durationMinutes || 25}m`}`)
+                              .join(' • ')
+                          ) : (
+                            <span className="text-slate-400">{language === 'he' ? 'אין חבילה פעילה' : 'No active package'}</span>
+                          )}
                         </div>
                         <button
                           type="button"
                           onClick={() => {
-                            setAdjustStudent(selectedUserForEdit);
-                            setAdjustAmount(50);
-                            setAdjustMode('add');
-                            setAdjustReason('Admin balance adjustment');
-                            setIsAdjustingBalance(true);
+                            if (selectedUserForEdit.studentProfile?.id) {
+                              setAssignStudentId(selectedUserForEdit.studentProfile.id);
+                              setIsAssigningPkg(true);
+                            }
                           }}
-                          className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs"
+                          className="px-3 py-2 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs"
                         >
-                          <Wallet className="w-3.5 h-3.5" />
-                          <span>{language === 'he' ? 'התאם יתרה' : 'Top Up / Adjust'}</span>
+                          <Layers className="w-3.5 h-3.5 text-brand-olive-300" />
+                          <span>{language === 'he' ? 'הקצה חבילה' : 'Assign Package'}</span>
                         </button>
                       </div>
                     </div>
@@ -3843,215 +3843,6 @@ export const AdminDashboard: React.FC = () => {
                 {bookLessonMutation.isPending
                   ? (language === 'he' ? 'מתאם...' : 'Scheduling...')
                   : (language === 'he' ? `אישור (${bookDuration} דק׳)` : `Confirm ${bookDuration}m Session`)}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* ADJUST STUDENT BALANCE MODAL */}
-      {isAdjustingBalance && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                  <Wallet className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 dark:text-white text-base">
-                    {language === 'he' ? 'עדכון יתרת חשבון תלמיד' : 'Adjust Student Account Balance'}
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {adjustStudent
-                      ? `${adjustStudent.firstName} ${adjustStudent.lastName} (${adjustStudent.email})`
-                      : (language === 'he' ? 'בחר תלמיד לטעינת יתרה' : 'Select a student to credit balance')}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setIsAdjustingBalance(false);
-                  setAdjustStudent(null);
-                }}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Student Picker: Allows selecting or switching students freely */}
-            <div>
-              <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1 text-xs">
-                {language === 'he' ? 'בחר תלמיד' : 'Select Student to Credit'}
-              </label>
-              <select
-                value={adjustStudent?.id || ''}
-                onChange={(e) => {
-                  const targetUser = studentsList.find((s: any) => s.id === e.target.value);
-                  if (targetUser) setAdjustStudent(targetUser);
-                }}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              >
-                <option value="">{language === 'he' ? '-- בחר תלמיד --' : '-- Choose a student --'}</option>
-                {studentsList.map((s: any) => (
-                  <option key={s.id} value={s.id}>
-                    {s.firstName} {s.lastName} ({s.email}) — Balance: ${Number(s.studentProfile?.balance || 0).toFixed(2)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {adjustStudent ? (
-              <>
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 block font-semibold">
-                      {language === 'he' ? 'יתרה נוכחית:' : 'Current Balance:'}
-                    </span>
-                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
-                      ${Number(adjustStudent.studentProfile?.balance || 0).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-slate-500 dark:text-slate-400 block font-semibold">
-                      {language === 'he' ? 'יתרה משוערת לאחר עדכון:' : 'Projected Balance:'}
-                    </span>
-                    <span className="text-xl font-black text-slate-900 dark:text-white">
-                      ${(
-                        adjustMode === 'add'
-                          ? Number(adjustStudent.studentProfile?.balance || 0) + (Number(adjustAmount) || 0)
-                          : Number(adjustAmount) || 0
-                      ).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-4 text-xs">
-                  <div>
-                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                      {language === 'he' ? 'אופן העדכון' : 'Adjustment Mode'}
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setAdjustMode('add')}
-                        className={`py-2 rounded-xl font-extrabold text-xs border transition-all ${
-                          adjustMode === 'add'
-                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        + {language === 'he' ? 'הוסף ליתרה' : 'Add to Balance'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setAdjustMode('set')}
-                        className={`py-2 rounded-xl font-extrabold text-xs border transition-all ${
-                          adjustMode === 'set'
-                            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
-                            : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        {language === 'he' ? 'קבע יתרה מדויקת' : 'Set Exact Balance'}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="font-bold text-slate-700 dark:text-slate-300 block">
-                        {language === 'he' ? 'סכום ($ USD)' : 'Amount ($ USD)'}
-                      </label>
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        $25 = 1 Lesson (25 Min)
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {[
-                        { amt: 25, label: '+$25 (1x)' },
-                        { amt: 50, label: '+$50 (2x)' },
-                        { amt: 100, label: '+$100 (4x)' },
-                        { amt: 150, label: '+$150' },
-                        { amt: 250, label: '+$250' },
-                      ].map(({ amt, label }) => (
-                        <button
-                          key={amt}
-                          type="button"
-                          onClick={() => setAdjustAmount(amt)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
-                            Number(adjustAmount) === amt
-                              ? 'bg-brand-teal-800 text-white border-brand-teal-800 shadow-xs'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={adjustAmount}
-                      onChange={(e) => setAdjustAmount(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-black text-sm"
-                      placeholder="50.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                      {language === 'he' ? 'סיבת העדכון / הערה' : 'Reason / Note'}
-                    </label>
-                    <input
-                      type="text"
-                      value={adjustReason}
-                      onChange={(e) => setAdjustReason(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                      placeholder="Manual balance top-up by admin"
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-                {language === 'he'
-                  ? 'אנא בחר תלמיד מהתפריט למעלה כדי להמשיך'
-                  : 'Please select a student from the dropdown above to adjust their balance.'}
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAdjustingBalance(false);
-                  setAdjustStudent(null);
-                }}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-              >
-                {language === 'he' ? 'ביטול' : 'Cancel'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!adjustStudent) return;
-                  adjustBalanceMutation.mutate({
-                    studentId: adjustStudent.studentProfile?.id || adjustStudent.id,
-                    amount: Number(adjustAmount),
-                    mode: adjustMode,
-                    reason: adjustReason,
-                  });
-                }}
-                disabled={adjustBalanceMutation.isPending || !adjustAmount || !adjustStudent}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
-              >
-                <Check className="w-4 h-4" />
-                <span>
-                  {adjustBalanceMutation.isPending
-                    ? (language === 'he' ? 'מעדכן יתרה...' : 'Updating Balance...')
-                    : (language === 'he' ? 'אישור עדכון יתרה' : 'Confirm Balance')}
-                </span>
               </button>
             </div>
           </div>

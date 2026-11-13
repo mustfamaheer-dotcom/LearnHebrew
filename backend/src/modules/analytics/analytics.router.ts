@@ -135,10 +135,9 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
           package: { select: { name: true, price: true } },
         },
       }),
-      // Total student wallet balances aggregated
-      prisma.student.aggregate({
+      // Total active package session units across all students
+      prisma.studentSessionBalance.aggregate({
         _sum: { balance: true },
-        _avg: { balance: true },
       }),
       // Duration breakdown (25m / 40m / 55m)
       prisma.lesson.groupBy({
@@ -157,13 +156,17 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
           },
         },
       }),
-      // Students with low balance (< $25, unable to book a 25-min session)
-      prisma.student.findMany({
-        where: { balance: { lt: 25 } },
+      // Students with low session balances
+      prisma.studentSessionBalance.findMany({
+        where: { balance: { lte: 1 } },
         take: 8,
-        orderBy: { balance: 'asc' },
         include: {
-          user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true } },
+          student: {
+            include: {
+              user: { select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true } },
+            },
+          },
+          sessionType: true,
         },
       }),
     ]);
@@ -300,12 +303,12 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       durationBreakdown[g.durationMinutes] = g._count.id;
     });
 
-    // Low balance alert for students unable to book $25 lessons
+    // Low session quota alert
     if (lowBalanceStudents.length > 0) {
       alerts.unshift({
         type: 'warning',
-        title: `${lowBalanceStudents.length} Students Have Low Balance (<$25)`,
-        desc: `${lowBalanceStudents.length} student(s) have less than $25 balance and need a top-up to book their next session.`,
+        title: `${lowBalanceStudents.length} Students Have Low Session Quotas (≤1 remaining)`,
+        desc: `${lowBalanceStudents.length} student(s) have 1 or fewer package sessions remaining and may need renewal.`,
       });
     }
 
@@ -325,16 +328,18 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
         avgSatisfaction,
         lessonUtilization,
         homeworkCompletionRate,
+        totalStudentSessions: Number(studentBalanceAgg._sum?.balance || 0),
         totalStudentBalance: Number(studentBalanceAgg._sum?.balance || 0),
-        avgStudentBalance: Number((studentBalanceAgg._avg?.balance || 0).toFixed(2)),
+        avgStudentBalance: Number(studentBalanceAgg._sum?.balance || 0),
       },
       durationBreakdown,
       lowBalanceStudents: lowBalanceStudents.map((s) => ({
-        studentId: s.id,
-        userId: s.userId,
-        name: `${s.user.firstName} ${s.user.lastName}`,
-        email: s.user.email,
-        avatarUrl: s.user.avatarUrl,
+        studentId: s.studentId,
+        userId: s.student.userId,
+        name: `${s.student.user.firstName} ${s.student.user.lastName}`,
+        email: s.student.user.email,
+        avatarUrl: s.student.user.avatarUrl,
+        sessionType: s.sessionType?.name || 'Lesson',
         balance: Number(s.balance || 0),
       })),
       recentBalanceTransactions: recentBalanceTransactions.map((tx) => ({

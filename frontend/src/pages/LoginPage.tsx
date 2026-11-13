@@ -149,7 +149,7 @@ export const LoginPage: React.FC = () => {
               <div>
                 <span className="text-2xl font-black tracking-tight text-white block">Engrew</span>
                 <span className="text-[11px] text-brand-olive-300 font-semibold tracking-wider uppercase block">
-                  {language === 'he' ? 'אקדמיה לעברית' : 'Hebrew Language Academy'}
+                  {language === 'he' ? 'אקדמיה לעברית ואנגלית' : 'Hebrew & English Academy'}
                 </span>
               </div>
             </Link>

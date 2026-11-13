@@ -378,7 +378,7 @@ export const SalesDashboard: React.FC = () => {
                   {packages.length}
                 </span>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  {language === 'he' ? 'תוקף מרבי 30 יום' : 'Max 30-day session balance'}
+                  {language === 'he' ? 'תוקף מרבי 30 יום לחבילה' : '30-day package validity'}
                 </p>
               </div>
             </div>
@@ -809,7 +809,7 @@ export const SalesDashboard: React.FC = () => {
                 description={
                   language === 'he'
                     ? 'חבילות שיעורים מותאמות (25, 40 ו-55 דק׳). מחירים במטבעות USD ו-ILS עם מבצעים והנחות מובלטות.'
-                    : 'Curated session balance packages (25, 40, and 55m). Multi-currency rates (USD & ILS) with clear strikethrough sale prices.'
+                    : 'Curated session quota packages (25, 40, and 55m). Multi-currency rates (USD & ILS) with clear strikethrough sale prices.'
                 }
               />
 

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { levelExamsApi } from '../../lib/enterpriseApi';
 import { api } from '../../lib/api';
 import { toast } from '../../store/toastStore';
-import { Award, Wallet, Clock, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Award, Layers, Clock, CheckCircle, AlertCircle, X } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -62,7 +62,7 @@ export const StudentExamsAndWalletModal: React.FC<Props> = ({ isOpen, onClose })
                 activeTab === 'wallet' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              Session Wallet & Balances
+              Session Packages & Quotas
             </button>
             <button
               onClick={() => setActiveTab('exams')}
@@ -78,15 +78,15 @@ export const StudentExamsAndWalletModal: React.FC<Props> = ({ isOpen, onClose })
           </button>
         </div>
 
-        {/* Tab 1: Session Wallet */}
+        {/* Tab 1: Session Packages */}
         {activeTab === 'wallet' && (
           <div className="space-y-4">
             <div>
               <h3 className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-emerald-500" /> Active Session Quotas
+                <Layers className="w-5 h-5 text-emerald-500" /> Active Session Quotas
               </h3>
               <p className="text-xs text-slate-500 mt-1">
-                Your lessons are deducted from your balance of sessions. Packages remain valid for up to 30 days.
+                Your lessons are deducted from your active package sessions. Packages remain valid for up to 30 days.
               </p>
             </div>
 

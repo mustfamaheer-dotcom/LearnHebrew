@@ -350,11 +350,10 @@ export const StudentDashboard: React.FC = () => {
       setSelectedSlotTime('');
       setBookingError(null);
       const dur = vars.durationMinutes || 25;
-      const price = Number(sessionPricing?.[String(dur)] ?? (dur === 55 ? 55 : dur === 40 ? 40 : 25));
       toast.success(
         language === 'he'
-          ? `שיעור (${dur} דקות) הוזמן בהצלחה! נוכו $${price.toFixed(2)} מיתרת חשבונך.`
-          : `${dur}-Minute Lesson booked successfully! $${price.toFixed(2)} deducted from balance.`,
+          ? `שיעור (${dur} דקות) הוזמן בהצלחה! נוכה שיעור 1 מחבילת השיעורים שלך.`
+          : `${dur}-Minute Lesson booked successfully! 1 session deducted from your package quota.`,
         language === 'he' ? 'ההזמנה אושרה' : 'Booking Confirmed'
       );
     },
@@ -363,8 +362,8 @@ export const StudentDashboard: React.FC = () => {
         err.response?.data?.message ||
         err.response?.data?.error ||
         (language === 'he'
-          ? 'שגיאה בהזמנת השיעור. אנא ודא שיתרת החשבון מספקת.'
-          : 'Failed to book lesson. Please verify your account balance.');
+          ? 'שגיאה בהזמנת השיעור. אנא ודא שיש לך מכסת שיעורים פעילה בחבילה.'
+          : 'Failed to book lesson. Please verify your session package quota.');
       setBookingError(msg);
       toast.error(msg, language === 'he' ? 'שגיאה בהזמנה' : 'Booking Error');
     },
@@ -528,12 +527,15 @@ export const StudentDashboard: React.FC = () => {
     ? Math.round((activePackage.lessonsUsed / activePackage.lessonsTotal) * 100)
     : 0;
 
-  const currentBalance = Number(student?.balance || 0);
-  const currentDurationPrice = Number(
-    sessionPricing?.[String(selectedDuration)] ??
-      (selectedDuration === 55 ? 55 : selectedDuration === 40 ? 40 : 25)
+  const sessionBalances = dashboard?.sessionBalances || [];
+  const totalAvailableSessions = sessionBalances.reduce(
+    (sum: number, sb: any) => sum + Number(sb.balance || 0),
+    0
   );
-  const hasEnoughBalance = currentBalance >= currentDurationPrice;
+  const selectedSessionBalance = sessionBalances.find(
+    (sb: any) => sb.sessionType?.durationMinutes === selectedDuration
+  );
+  const hasEnoughBalance = (selectedSessionBalance?.balance || 0) > 0;
 
   const selectedTeacher = (teachersData || []).find(
     (t: any) => t.id === selectedTeacherId
@@ -563,7 +565,9 @@ export const StudentDashboard: React.FC = () => {
       label: 'Book Session',
       labelHe: 'הזמנת שיעור',
       icon: Clock,
-      badge: hasEnoughBalance ? (language === 'he' ? `$${currentBalance.toFixed(0)} זמין` : `$${currentBalance.toFixed(0)} ok`) : (language === 'he' ? 'יתרה נמוכה' : 'Low balance'),
+      badge: totalAvailableSessions > 0
+        ? (language === 'he' ? `${totalAvailableSessions} שיעורים` : `${totalAvailableSessions} left`)
+        : (language === 'he' ? '0 שיעורים' : '0 left'),
     },
     {
       id: 'lessons',
@@ -602,10 +606,10 @@ export const StudentDashboard: React.FC = () => {
     },
     {
       id: 'balance',
-      label: 'Account Balance & History',
-      labelHe: 'יתרה והיסטוריית עסקאות',
-      icon: Wallet,
-      badge: `$${currentBalance.toFixed(0)}`,
+      label: 'Session Packages & Balances',
+      labelHe: 'חבילות ומכסת שיעורים',
+      icon: Layers,
+      badge: `${totalAvailableSessions} ${language === 'he' ? 'שיעורים' : 'units'}`,
     },
   ];
 
@@ -653,8 +657,8 @@ export const StudentDashboard: React.FC = () => {
     if (!hasEnoughBalance) {
       const err =
         language === 'he'
-          ? `יתרתך ($${currentBalance.toFixed(2)}) אינה מספיקה לשיעור זה ($${currentDurationPrice.toFixed(2)}). אנא פנה למנהל להטענת יתרה.`
-          : `Your balance ($${currentBalance.toFixed(2)}) is insufficient for this lesson ($${currentDurationPrice.toFixed(2)}). Please contact Engrew admin to top up your balance.`;
+          ? `אין לך שיעורים זמינים בחבילה עבור שיעור של ${selectedDuration} דקות. אנא פנה לצוות Engrew להוספת חבילת שיעורים.`
+          : `You have 0 available sessions for ${selectedDuration}-minute lessons in your active package. Please contact Engrew support to assign a lesson package.`;
       setBookingError(err);
       toast.warning(err);
       return;
@@ -712,7 +716,7 @@ export const StudentDashboard: React.FC = () => {
           customSlot={
             isCollapsed ? (
               <div className="flex flex-col items-center gap-2 w-full py-1">
-                {/* Collapsed Wallet Balance Capsule */}
+                {/* Collapsed Session Quota Capsule */}
                 <div className="relative group flex justify-center w-full">
                   <button
                     type="button"
@@ -720,20 +724,20 @@ export const StudentDashboard: React.FC = () => {
                       setActiveTab('balance');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="w-11 py-2 px-1 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-all flex flex-col items-center justify-center cursor-pointer shadow-xs active:scale-95"
-                    aria-label={language === 'he' ? `יתרת חשבון: $${currentBalance.toFixed(2)}` : `Account Balance: $${currentBalance.toFixed(2)}`}
+                    className="w-11 py-2 px-1 rounded-2xl bg-brand-teal-50 dark:bg-brand-teal-950/60 border border-brand-teal-300 dark:border-brand-teal-800 hover:bg-brand-teal-100 dark:hover:bg-brand-teal-900/60 transition-all flex flex-col items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                    aria-label={language === 'he' ? `מכסת שיעורים: ${totalAvailableSessions}` : `Session Units: ${totalAvailableSessions}`}
                   >
-                    <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-300 mt-1 leading-none truncate max-w-full">
-                      ${currentBalance >= 1000 ? `${(currentBalance / 1000).toFixed(1)}k` : currentBalance.toFixed(0)}
+                    <Layers className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-300 shrink-0" />
+                    <span className="text-[10px] font-black text-brand-teal-900 dark:text-brand-teal-200 mt-1 leading-none truncate max-w-full">
+                      {totalAvailableSessions}x
                     </span>
                   </button>
 
                   {/* Floating Tooltip Pill on Hover */}
                   <div className="hidden lg:flex absolute start-[calc(100%+0.65rem)] top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 items-center gap-2">
-                    <Wallet className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{language === 'he' ? 'יתרת חשבון:' : 'Balance:'}</span>
-                    <span className="text-emerald-300 font-black">${currentBalance.toFixed(2)}</span>
+                    <Layers className="w-3.5 h-3.5 text-brand-olive-400" />
+                    <span>{language === 'he' ? 'שיעורים זמינים:' : 'Sessions Left:'}</span>
+                    <span className="text-emerald-300 font-black">{totalAvailableSessions}</span>
                   </div>
                 </div>
 
@@ -763,17 +767,17 @@ export const StudentDashboard: React.FC = () => {
                     setMobileMenuOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition-colors text-start cursor-pointer"
-                  title={language === 'he' ? 'צפה בהיסטוריית עסקאות ויתרה' : 'View Balance & Transaction History'}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 border border-brand-teal-200/80 dark:border-brand-teal-800/80 hover:bg-brand-teal-100 dark:hover:bg-brand-teal-900/60 transition-colors text-start cursor-pointer"
+                  title={language === 'he' ? 'צפה במכסת השיעורים והחבילות' : 'View Session Packages & Balances'}
                 >
                   <div className="flex items-center gap-1.5">
-                    <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <Layers className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-300 shrink-0" />
                     <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                      {language === 'he' ? 'יתרת חשבון' : 'Balance'}
+                      {language === 'he' ? 'שיעורים זמינים' : 'Sessions Left'}
                     </span>
                   </div>
-                  <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">
-                    ${currentBalance.toFixed(2)}
+                  <span className="text-xs font-black text-brand-teal-900 dark:text-brand-teal-200">
+                    {totalAvailableSessions} {language === 'he' ? 'שיעורים' : 'units'}
                   </span>
                 </button>
                 <div className="text-center p-2 rounded-xl bg-slate-50/60 dark:bg-slate-800/40">
@@ -833,14 +837,14 @@ export const StudentDashboard: React.FC = () => {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       className="bg-white/10 hover:bg-white/20 transition-all cursor-pointer backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[110px] border border-white/15 group"
-                      title={language === 'he' ? 'צפה בהיסטוריית עסקאות ויתרה' : 'View Balance & Transaction History'}
+                      title={language === 'he' ? 'צפה בחבילות ומכסת שיעורים' : 'View Session Packages & Balances'}
                     >
                       <div className="flex items-center justify-center gap-1 text-emerald-300 font-extrabold text-lg sm:text-xl group-hover:scale-105 transition-transform">
-                        <Wallet className="w-5 h-5 text-emerald-300 shrink-0" />
-                        <span>${currentBalance.toFixed(2)}</span>
+                        <Layers className="w-5 h-5 text-emerald-300 shrink-0" />
+                        <span>{totalAvailableSessions}</span>
                       </div>
                       <p className="text-[10px] sm:text-[11px] font-semibold text-brand-teal-100 uppercase mt-0.5">
-                        {language === 'he' ? 'יתרת חשבון' : 'Balance'}
+                        {language === 'he' ? 'מפגשים זמינים' : 'Sessions Left'}
                       </p>
                     </button>
 
@@ -1316,8 +1320,12 @@ export const StudentDashboard: React.FC = () => {
                 }
                 action={
                   <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-white font-bold text-xs shadow-xs">
-                    <Wallet className="w-4 h-4 text-emerald-400" />
-                    <span>{language === 'he' ? 'יתרת חשבון:' : 'Your Balance:'} ${currentBalance.toFixed(2)}</span>
+                    <Layers className="w-4 h-4 text-emerald-400" />
+                    <span>
+                      {language === 'he' ? 'מכסה זמינה:' : 'Available Quota:'}{' '}
+                      {selectedSessionBalance?.balance || 0}{' '}
+                      {language === 'he' ? `שיעורי ${selectedDuration} דק׳` : `${selectedDuration}m sessions`}
+                    </span>
                   </div>
                 }
               />
@@ -1330,12 +1338,12 @@ export const StudentDashboard: React.FC = () => {
                   <AlertCircle className="w-5 h-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
                   <div>
                     <p className="font-bold">
-                      {language === 'he' ? 'יתרת החשבון אינה מספקת' : 'Insufficient Account Balance'}
+                      {language === 'he' ? 'אין שיעורים זמינים בחבילה למשך זה' : 'No Available Sessions in Package'}
                     </p>
                     <p className="mt-0.5 opacity-90 leading-relaxed">
                       {language === 'he'
-                        ? `עלות שיעור של ${selectedDuration} דקות הינה $${currentDurationPrice.toFixed(2)}, אך יתרתך הינה $${currentBalance.toFixed(2)}. יש לפנות למנהל המערכת לטעינת יתרה.`
-                        : `A ${selectedDuration}-minute session costs $${currentDurationPrice.toFixed(2)}, but your current balance is $${currentBalance.toFixed(2)}. Please contact your administrator to add balance.`}
+                        ? `מכסת השיעורים הזמינים שלך עבור שיעור של ${selectedDuration} דקות הינה 0. יש לרכוש חבילת שיעורים חדשה או לפנות לצוות Engrew להוספת חבילה.`
+                        : `Your active quota for ${selectedDuration}-minute sessions is 0. Please acquire a session package or contact Engrew support to assign a new package.`}
                     </p>
                   </div>
                 </div>
@@ -1348,12 +1356,12 @@ export const StudentDashboard: React.FC = () => {
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>
                       {language === 'he'
-                        ? `יתרה מספקת: ינוכו $${currentDurationPrice.toFixed(2)} עבור שיעור של ${selectedDuration} דקות`
-                        : `Balance confirmed: $${currentDurationPrice.toFixed(2)} will be deducted for ${selectedDuration} min`}
+                        ? `מכסה מאושרת: ינוכה שיעור 1 (${selectedDuration} דק׳) מחבילת השיעורים שלך`
+                        : `Quota confirmed: 1 session (${selectedDuration} min) will be deducted from your package`}
                     </span>
                   </div>
                   <span className="font-bold text-emerald-700 dark:text-emerald-300 shrink-0">
-                    {language === 'he' ? 'יתרה לאחר הזמנה:' : 'Balance after:'} ${(currentBalance - currentDurationPrice).toFixed(2)}
+                    {language === 'he' ? 'מכסה לאחר הזמנה:' : 'Quota after booking:'} {Math.max(0, (selectedSessionBalance?.balance || 0) - 1)} {language === 'he' ? 'שיעורים' : 'sessions'}
                   </span>
                 </div>
               )}
@@ -1368,7 +1376,7 @@ export const StudentDashboard: React.FC = () => {
               {/* Step 1: Select Session Duration */}
               <div className="space-y-3">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  {language === 'he' ? '1. בחר משך שיעור ומחיר' : '1. Select Session Duration & Price'}
+                  {language === 'he' ? '1. בחר משך שיעור' : '1. Select Session Duration'}
                 </label>
                 <div className="grid grid-cols-3 gap-3">
                   {[
@@ -1376,7 +1384,7 @@ export const StudentDashboard: React.FC = () => {
                     { dur: 40, labelEn: '40 Minutes', labelHe: '40 דקות', color: 'sky' },
                     { dur: 55, labelEn: '55 Minutes', labelHe: '55 דקות', color: 'purple' },
                   ].map((item) => {
-                    const price = Number(sessionPricing?.[String(item.dur)] ?? (item.dur === 55 ? 55 : item.dur === 40 ? 40 : 25));
+                    const quota = sessionBalances.find((sb: any) => sb.sessionType?.durationMinutes === item.dur)?.balance || 0;
                     return (
                       <button
                         key={item.dur}
@@ -1398,10 +1406,14 @@ export const StudentDashboard: React.FC = () => {
                         <span className="block text-sm font-extrabold">
                           {language === 'he' ? item.labelHe : item.labelEn}
                         </span>
-                        <span className={`text-xs font-extrabold block mt-1 px-2.5 py-0.5 rounded-lg inline-block ${
-                          selectedDuration === item.dur ? 'bg-white/25 text-white' : 'bg-slate-100 dark:bg-slate-700 text-brand-teal-800 dark:text-brand-teal-300'
+                        <span className={`text-[11px] font-extrabold block mt-1 px-2 py-0.5 rounded-lg inline-block ${
+                          selectedDuration === item.dur
+                            ? 'bg-white/25 text-white'
+                            : quota > 0
+                            ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
                         }`}>
-                          ${price.toFixed(2)}
+                          {quota} {language === 'he' ? 'שיעורים' : 'left'}
                         </span>
                       </button>
                     );
@@ -1620,12 +1632,12 @@ export const StudentDashboard: React.FC = () => {
               {/* Submit Booking */}
               <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold">{language === 'he' ? 'עלות שיעור:' : 'Session Fee:'}</span>{' '}
-                  <span className="font-extrabold text-slate-900 dark:text-white">${currentDurationPrice.toFixed(2)}</span>
+                  <span className="font-semibold">{language === 'he' ? 'ניכוי מחבילה:' : 'Package Deduction:'}</span>{' '}
+                  <span className="font-extrabold text-slate-900 dark:text-white">1 {language === 'he' ? 'שיעור' : 'session'}</span>
                   {' · '}
-                  <span className="font-semibold">{language === 'he' ? 'יתרתך:' : 'Balance:'}</span>{' '}
+                  <span className="font-semibold">{language === 'he' ? 'יתרתך:' : 'Available Quota:'}</span>{' '}
                   <span className={`font-bold ${hasEnoughBalance ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                    ${currentBalance.toFixed(2)}
+                    {selectedSessionBalance?.balance || 0} {language === 'he' ? 'שיעורים' : 'sessions'}
                   </span>
                 </div>
                 <button
@@ -1636,8 +1648,8 @@ export const StudentDashboard: React.FC = () => {
                   <CheckCircle className="w-4 h-4 text-brand-olive-300" />
                   <span>
                     {bookLessonMutation.isPending
-                      ? (language === 'he' ? 'מאשר ומנכה יתרה...' : 'Confirming & Deducting...')
-                      : (language === 'he' ? `אישור הזמנה (${selectedDuration} דק׳ - $${currentDurationPrice.toFixed(2)})` : `Confirm ${selectedDuration}-Min Booking ($${currentDurationPrice.toFixed(2)})`)}
+                      ? (language === 'he' ? 'מאשר ומנכה מחבילה...' : 'Confirming & Deducting...')
+                      : (language === 'he' ? `אישור הזמנה (${selectedDuration} דק׳ - ניכוי 1 מפגש)` : `Confirm ${selectedDuration}-Min Booking (1 Session)`)}
                   </span>
                 </button>
               </div>
@@ -3277,156 +3289,132 @@ export const StudentDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 8: ACCOUNT BALANCE & TRANSACTIONS HISTORY */}
+          {/* TAB 8: SESSION PACKAGES & BALANCES */}
           {activeTab === 'balance' && (
             <div className="space-y-6">
               {/* Header Banner */}
-              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-2">
-                    <Wallet className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>{language === 'he' ? 'מרכז יתרה ועסקאות אישי' : 'Student Wallet & Ledger'}</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                    {language === 'he' ? 'יתרת חשבון והיסטוריית עסקאות' : 'Account Balance & Transactions History'}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-                    {language === 'he'
-                      ? 'פירוט מלא של יתרת הארנק האישי שלך, חיובים עבור הזמנת שיעורים, טעינות כספיות, וזיכויים אוטומטיים במקרה של ביטול שיעור מראש.'
-                      : 'Complete transparent ledger of your wallet balance, lesson booking debits, deposits, and automated refunds.'}
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 shrink-0 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => refetchTransactions()}
-                    className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 transition-colors shadow-2xs"
-                    title={language === 'he' ? 'רענן נתוני עסקאות' : 'Refresh ledger'}
-                  >
-                    <RefreshCw className={`w-4 h-4 ${isTransactionsRefetching ? 'animate-spin text-brand-teal-500' : ''}`} />
-                  </button>
-
+              <PageHeaderBanner
+                badgeIcon={Layers}
+                badgeText={language === 'he' ? 'חבילות ומכסת שיעורים' : 'Session Packages & Availability'}
+                statusText="Active Packages"
+                title={language === 'he' ? 'חבילות שיעורים ומכסת מפגשים' : 'My Session Packages & Availability'}
+                description={
+                  language === 'he'
+                    ? 'כל חבילת לימוד כוללת מספר מוגדר של שיעורים (25, 40 או 55 דקות) בתוקף של עד 30 יום. בהזמנת שיעור מנוכה שיעור 1, ובביטול בזמן הוא מוחזר מידית לחבילה.'
+                    : 'Your lesson packages provide session quotas for 25m, 40m, and 55m sessions valid for up to 30 days. Timely cancellations instantly credit the session back.'
+                }
+                action={
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedDuration(25);
                       setIsBookingModalOpen(true);
                     }}
-                    className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 text-white text-xs font-extrabold rounded-xl transition-all shadow-sm flex items-center gap-2"
+                    className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
                   >
-                    <Plus className="w-4 h-4 text-brand-olive-300" />
-                    <span>{language === 'he' ? 'הזמן שיעור 25 דק׳ ($25)' : 'Book 25-Min Lesson ($25)'}</span>
+                    <Clock className="w-4 h-4" />
+                    <span>{language === 'he' ? 'הזמן שיעור מהחבילה' : 'Book a Session'}</span>
                   </button>
-                </div>
-              </div>
+                }
+              />
 
-              {/* 4 Summary Cards */}
+              {/* 4 Session Quota Cards: Total, 25m, 40m, 55m */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                {/* Available Balance Card */}
-                <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-950/40 dark:via-emerald-900/20 dark:to-transparent border border-emerald-500/30 dark:border-emerald-500/40 shadow-xs flex flex-col justify-between">
+                {/* Total Available Card */}
+                <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-brand-teal-950/20 via-brand-teal-900/10 to-transparent border border-brand-teal-500/30 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                      {language === 'he' ? 'יתרה זמינה בארנק' : 'Available Balance'}
+                      {language === 'he' ? 'סך שיעורים זמינים' : 'Total Sessions Available'}
                     </span>
-                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                      <Wallet className="w-5 h-5" />
+                    <div className="w-9 h-9 rounded-xl bg-brand-teal-500/20 text-brand-teal-700 dark:text-brand-teal-300 flex items-center justify-center">
+                      <Layers className="w-5 h-5" />
                     </div>
                   </div>
                   <div className="mt-4">
-                    <div className="text-3xl sm:text-4xl font-black text-emerald-700 dark:text-emerald-400 tracking-tight">
-                      ${currentBalance.toFixed(2)}
+                    <div className="text-3xl sm:text-4xl font-black text-brand-teal-900 dark:text-brand-teal-200 tracking-tight">
+                      {totalAvailableSessions}
                     </div>
                     <div className="mt-2 flex items-center gap-2">
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                        hasEnoughBalance
-                          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                          : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
-                      }`}>
-                        {hasEnoughBalance
-                          ? (language === 'he' ? `מספיק ל-${Math.floor(currentBalance / 25)} שיעורים` : `${Math.floor(currentBalance / 25)} lessons ready`)
-                          : (language === 'he' ? 'יתרה נמוכה' : 'Low balance')}
-                      </span>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {language === 'he' ? 'תעריף: $25' : 'Rate: $25/lesson'}
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                        {language === 'he' ? 'תוקף 30 יום' : '30-Day Quotas'}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Total Top-ups & Added */}
+                {/* 25-Min Quota */}
                 <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {language === 'he' ? 'סך הפקדות וטעינות' : 'Total Top-ups'}
+                      {language === 'he' ? 'מפגשי 25 דקות' : '25-Min Sessions'}
                     </span>
-                    <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/70 text-teal-600 dark:text-teal-400 flex items-center justify-center">
-                      <ArrowDownLeft className="w-5 h-5" />
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <Clock className="w-5 h-5" />
                     </div>
                   </div>
                   <div className="mt-4">
                     <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                      +${transactionsSummary.totalDeposited.toFixed(2)}
+                      {sessionBalances.find((s: any) => s.sessionType?.durationMinutes === 25)?.balance || 0}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      {language === 'he' ? 'סך הכל כספים שנטענו לחשבון' : 'Direct deposits & admin credits'}
+                      {language === 'he' ? 'שיעורים קצרים וממוקדים' : 'High-retention sessions'}
                     </p>
                   </div>
                 </div>
 
-                {/* Total Spent on Bookings */}
+                {/* 40-Min Quota */}
                 <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {language === 'he' ? 'שיעורים שהוזמנו' : 'Lessons Booked'}
+                      {language === 'he' ? 'מפגשי 40 דקות' : '40-Min Sessions'}
                     </span>
-                    <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                      <ArrowUpRight className="w-5 h-5" />
+                    <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                      <Clock className="w-5 h-5" />
                     </div>
                   </div>
                   <div className="mt-4">
-                    <div className="text-2xl sm:text-3xl font-black text-rose-600 dark:text-rose-400 tracking-tight">
-                      -${transactionsSummary.totalSpent.toFixed(2)}
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                      {sessionBalances.find((s: any) => s.sessionType?.durationMinutes === 40)?.balance || 0}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      {language === 'he' ? 'חיובים שבוצעו עבור שיעורים' : 'Deductions for booked lessons'}
+                      {language === 'he' ? 'שיעורי העמקה ותרגול' : 'In-depth practice sessions'}
                     </p>
                   </div>
                 </div>
 
-                {/* Total Auto-Refunds */}
+                {/* 55-Min Quota */}
                 <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {language === 'he' ? 'החזרים וזיכויים' : 'Auto-Refunds'}
+                      {language === 'he' ? 'מפגשי 55 דקות' : '55-Min Sessions'}
                     </span>
-                    <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-950/70 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
-                      <RefreshCw className="w-5 h-5" />
+                    <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                      <Clock className="w-5 h-5" />
                     </div>
                   </div>
                   <div className="mt-4">
-                    <div className="text-2xl sm:text-3xl font-black text-cyan-600 dark:text-cyan-400 tracking-tight">
-                      +${transactionsSummary.totalRefunded.toFixed(2)}
+                    <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                      {sessionBalances.find((s: any) => s.sessionType?.durationMinutes === 55)?.balance || 0}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      {language === 'he' ? 'זיכוי מלא על ביטול שיעורים מראש' : 'Instant 100% cancellation refunds'}
+                      {language === 'he' ? 'שיעור מלא ומקיף' : 'Comprehensive immersive'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Engrew Transparent Wallet Policy */}
+              {/* Engrew Package Policy */}
               <div className="p-4 sm:p-5 rounded-3xl bg-slate-50/80 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-xl bg-brand-teal-100 dark:bg-brand-teal-950/80 text-brand-teal-800 dark:text-brand-teal-300 shrink-0">
-                    <Receipt className="w-4 h-4" />
+                    <Layers className="w-4 h-4" />
                   </div>
                   <div>
                     <h4 className="font-black text-slate-900 dark:text-white">
-                      {language === 'he' ? 'תמחור שיעורים שקוף' : 'Transparent Pricing'}
+                      {language === 'he' ? 'חבילות שיעורים מוגדרות' : 'Package Quotas'}
                     </h4>
                     <p className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                      {language === 'he' ? 'שיעור 25 דקות מחויב ב-$25 בדיוק ללא עמלות נסתרות.' : '$25 per 25-minute lesson flat with certified teachers.'}
+                      {language === 'he' ? 'התשלום מומר מידית למכסת שיעורים מדויקת לפי משך המפגש.' : 'Purchases directly activate a quota of lesson sessions.'}
                     </p>
                   </div>
                 </div>
@@ -3437,10 +3425,10 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-black text-slate-900 dark:text-white">
-                      {language === 'he' ? 'זיכוי אוטומטי מיידי' : 'Automated Refunds'}
+                      {language === 'he' ? 'החזר שיעור אוטומטי' : '100% Session Return'}
                     </h4>
                     <p className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                      {language === 'he' ? 'ביטול שיעור מראש מזכה את הארנק מידית ב-$25 מלאים.' : 'Early cancellations refund 100% of the rate instantly.'}
+                      {language === 'he' ? 'ביטול שיעור מראש מחזיר את המפגש למכסת החבילה מידית.' : 'Early cancellations restore your session unit to your package immediately.'}
                     </p>
                   </div>
                 </div>
@@ -3451,10 +3439,10 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-black text-slate-900 dark:text-white">
-                      {language === 'he' ? 'יתרה ללא תוקף' : 'Permanent Balance'}
+                      {language === 'he' ? 'תוקף 30 יום מובטח' : '30-Day Validity'}
                     </h4>
                     <p className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                      {language === 'he' ? 'כספי היתרה שמורים עבורך לצמיתות ואינם פגים לעולם.' : 'Funds remain valid indefinitely until you choose to book.'}
+                      {language === 'he' ? 'חבילות השיעורים תקפות ל-30 יום ומאפשרות תכנון למידה רציף.' : 'Packages are valid for 30 days from activation date.'}
                     </p>
                   </div>
                 </div>
@@ -3653,8 +3641,8 @@ export const StudentDashboard: React.FC = () => {
                           <thead className="bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
                             <tr>
                               <th className="py-3.5 px-4 text-start">{language === 'he' ? 'סוג פעולה' : 'Type'}</th>
-                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'סכום' : 'Amount'}</th>
-                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'יתרה לאחר פעולה' : 'Balance After'}</th>
+                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'שינוי מכסה' : 'Quota Change'}</th>
+                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'יתרה לאחר פעולה' : 'Quota After'}</th>
                               <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תיאור ופרטים' : 'Description / Note'}</th>
                               <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תאריך ושעה' : 'Date & Time'}</th>
                               <th className="py-3.5 px-4 text-center">{language === 'he' ? 'סטטוס' : 'Status'}</th>
@@ -3691,8 +3679,8 @@ export const StudentDashboard: React.FC = () => {
                                         {isBooking
                                           ? (language === 'he' ? 'הזמנת שיעור' : 'Lesson Booking')
                                           : isRefund
-                                          ? (language === 'he' ? 'זיכוי שיעור' : 'Auto-Refund')
-                                          : (amt > 0 ? (language === 'he' ? 'טעינת יתרה' : 'Wallet Top-up') : (language === 'he' ? 'עדכון יתרה' : 'Adjustment'))}
+                                          ? (language === 'he' ? 'החזר שיעור לחבילה' : 'Session Restored')
+                                          : (amt > 0 ? (language === 'he' ? 'הפעלת חבילה' : 'Package Activation') : (language === 'he' ? 'עדכון מכסה' : 'Quota Update'))}
                                       </span>
                                     </div>
                                   </td>
@@ -3704,19 +3692,19 @@ export const StudentDashboard: React.FC = () => {
                                         ? 'text-emerald-600 dark:text-emerald-400'
                                         : 'text-rose-600 dark:text-rose-400'
                                     }`}>
-                                      {isPositive ? `+$${amt.toFixed(2)}` : `-$${Math.abs(amt).toFixed(2)}`}
+                                      {isPositive ? `+${Math.abs(amt)}` : `-${Math.abs(amt)}`} {language === 'he' ? 'שיעורים' : 'units'}
                                     </span>
                                   </td>
 
                                   {/* Balance After */}
                                   <td className="py-3.5 px-4 whitespace-nowrap font-bold text-slate-900 dark:text-white">
-                                    ${Number(tx.balanceAfter || 0).toFixed(2)}
+                                    {Number(tx.balanceAfter || 0)} {language === 'he' ? 'שיעורים' : 'units'}
                                   </td>
 
                                   {/* Description */}
                                   <td className="py-3.5 px-4 max-w-xs text-slate-600 dark:text-slate-300">
                                     <div className="line-clamp-2 leading-relaxed">
-                                      {tx.description || (language === 'he' ? 'פעולת יתרה במערכת' : 'Balance adjustment')}
+                                      {tx.description || (language === 'he' ? 'עדכון מכסת שיעורים' : 'Package session update')}
                                     </div>
                                   </td>
 
@@ -3844,9 +3832,9 @@ export const StudentDashboard: React.FC = () => {
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 flex items-center gap-1">
-                  <Wallet className="w-3.5 h-3.5" />
-                  <span>${currentBalance.toFixed(2)}</span>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 text-brand-teal-800 dark:text-brand-teal-300 flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>{totalAvailableSessions} {language === 'he' ? 'שיעורים' : 'sessions'}</span>
                 </span>
                 <button
                   onClick={() => {
@@ -3861,12 +3849,12 @@ export const StudentDashboard: React.FC = () => {
             </div>
 
             {!hasEnoughBalance && (
-              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs font-semibold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
                 <span>
                   {language === 'he'
-                    ? `יתרתך ($${currentBalance.toFixed(2)}) אינה מספקת לשיעור של ${selectedDuration} דק׳ ($${currentDurationPrice.toFixed(2)}).`
-                    : `Balance ($${currentBalance.toFixed(2)}) is insufficient for a ${selectedDuration}-min session ($${currentDurationPrice.toFixed(2)}).`}
+                    ? `אין לך שיעורים זמינים של ${selectedDuration} דק׳ בחבילה. אנא פנה למכירות להפעלת חבילה חדשה.`
+                    : `No available sessions for ${selectedDuration}-min lessons in your package. Please contact Sales to activate a package.`}
                 </span>
               </div>
             )}
@@ -3882,11 +3870,12 @@ export const StudentDashboard: React.FC = () => {
               {/* Step 1: Duration Selection */}
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {language === 'he' ? '1. בחר משך שיעור ומחיר' : '1. Choose Duration & Price'}
+                  {language === 'he' ? '1. בחר משך שיעור' : '1. Choose Session Duration'}
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[25, 40, 55].map((d) => {
-                    const price = Number(sessionPricing?.[String(d)] ?? (d === 55 ? 55 : d === 40 ? 40 : 25));
+                    const sb = sessionBalances.find((s: any) => s.sessionType?.durationMinutes === d);
+                    const count = sb?.balance || 0;
                     return (
                       <button
                         key={d}
@@ -3897,16 +3886,14 @@ export const StudentDashboard: React.FC = () => {
                         }}
                         className={`py-2 px-3 rounded-xl font-bold text-center border transition-all ${
                           selectedDuration === d
-                            ? d === 55
-                              ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-400 shadow-xs'
-                              : d === 40
-                              ? 'bg-sky-600 text-white border-sky-600 ring-2 ring-sky-400 shadow-xs'
-                              : 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-400 shadow-xs'
+                            ? 'bg-brand-teal-800 text-white border-brand-teal-800 ring-2 ring-brand-teal-400 shadow-xs'
                             : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                         }`}
                       >
                         <div>{d} {language === 'he' ? 'דק׳' : 'Min'}</div>
-                        <div className="text-[10px] opacity-90 font-extrabold mt-0.5">${price.toFixed(2)}</div>
+                        <div className={`text-[10px] font-extrabold mt-0.5 ${count > 0 ? 'text-brand-olive-300' : 'text-slate-400'}`}>
+                          {count} {language === 'he' ? 'זמינים' : 'left'}
+                        </div>
                       </button>
                     );
                   })}
@@ -4044,7 +4031,7 @@ export const StudentDashboard: React.FC = () => {
                 <span>
                   {bookLessonMutation.isPending
                     ? (language === 'he' ? 'מאשר...' : 'Confirming...')
-                    : (language === 'he' ? `אישור ($${currentDurationPrice.toFixed(2)})` : `Confirm ($${currentDurationPrice.toFixed(2)})`)}
+                    : (language === 'he' ? `אישור קביעת שיעור (${selectedDuration} דק׳ - ניכוי 1 מפגש)` : `Confirm ${selectedDuration}m Session (1 Unit)`)}
                 </span>
               </button>
             </div>
@@ -4269,7 +4256,7 @@ export const StudentDashboard: React.FC = () => {
                 </div>
               </button>
 
-              {/* Card 4: Balance & Transactions History */}
+              {/* Card 4: Session Packages & Quotas */}
               <button
                 type="button"
                 onClick={() => {
@@ -4279,26 +4266,26 @@ export const StudentDashboard: React.FC = () => {
                 }}
                 className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
                   activeTab === 'balance'
-                    ? 'border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-500/20 dark:ring-emerald-400/20'
-                    : !hasEnoughBalance
-                    ? 'border-rose-400 ring-2 ring-rose-400/20'
+                    ? 'border-brand-teal-500 dark:border-brand-teal-400 ring-2 ring-brand-teal-500/20 dark:ring-brand-teal-400/20'
+                    : totalAvailableSessions <= 0
+                    ? 'border-amber-400 ring-2 ring-amber-400/20'
                     : 'border-slate-200/90 dark:border-slate-700/60'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40">
-                    <Wallet className="w-5 h-5" />
+                  <div className="p-2 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-700 dark:text-brand-teal-300 border border-brand-teal-200/60 dark:border-brand-teal-800/40">
+                    <Layers className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-900 dark:text-emerald-200 border border-emerald-300/70 dark:border-emerald-700/50">
-                    ${currentBalance.toFixed(2)}
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-900 dark:text-brand-teal-200 border border-brand-teal-300/70 dark:border-brand-teal-700/50">
+                    {totalAvailableSessions} {language === 'he' ? 'שיעורים' : 'units'}
                   </span>
                 </div>
                 <div>
                   <p className="font-extrabold text-xs text-slate-900 dark:text-white">
-                    {language === 'he' ? 'יתרת חשבון והיסטוריה' : 'Account Balance & History'}
+                    {language === 'he' ? 'חבילות ומכסת שיעורים' : 'Session Packages & Quotas'}
                   </p>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {language === 'he' ? 'פירוט עסקאות, טעינות וזיכויים' : 'Transactions, top-ups & refunds'}
+                    {language === 'he' ? 'מכסות מפגשים, חבילות ותוקף' : 'Session units, packages & validity'}
                   </p>
                 </div>
               </button>

@@ -293,9 +293,9 @@ export const CommandPaletteModal: React.FC<Props> = ({ isOpen, onClose, onNaviga
         id: 'balance',
         category: 'Navigation',
         categoryHe: 'ניווט',
-        title: 'Wallet Balance & Top-Up',
-        titleHe: 'יתרת ארנק ורכישת חבילות',
-        icon: Wallet,
+        title: 'Session Packages & Availability',
+        titleHe: 'חבילות שיעורים ומכסה',
+        icon: Layers,
         action: () => handleNavigate('balance'),
       },
       {

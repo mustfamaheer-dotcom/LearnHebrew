@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { paymentsApi } from '../../lib/enterpriseApi';
 import { PaymentModel } from '../../types';
 import { toast } from '../../store/toastStore';
-import { Wallet, CheckCircle, XCircle, Image, ExternalLink, Clock, ShieldCheck } from 'lucide-react';
+import { Receipt, CheckCircle, XCircle, Image, ExternalLink, Clock, ShieldCheck } from 'lucide-react';
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const PaymentsReviewTab: React.FC = () => {
@@ -19,7 +19,7 @@ export const PaymentsReviewTab: React.FC = () => {
     mutationFn: (id: string) => paymentsApi.approve(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments-list'] });
-      toast.success('Payment approved and session quotas credited to student wallet!');
+      toast.success('Payment approved and session package quotas assigned to student!');
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Approval failed'),
   });
@@ -36,11 +36,11 @@ export const PaymentsReviewTab: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeaderBanner
-        badgeIcon={Wallet}
+        badgeIcon={Receipt}
         badgeText="Sales Payment Auditing & WebP Proofs"
         statusText="Live"
         title="Proof-of-Payment Reviews"
-        description="Review payments submitted by the Sales team with automatic WebP screenshots. Approving instantly credits 30-day session balance to the student."
+        description="Review package purchase payments submitted by the Sales team with automatic WebP screenshots. Approving instantly credits 30-day session package quotas to the student."
       />
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">

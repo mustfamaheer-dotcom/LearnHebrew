@@ -60,7 +60,7 @@ export const SessionTypesTab: React.FC = () => {
         badgeText="Multi-Duration Session System"
         statusText="Active"
         title="Session Types & Durations"
-        description="Teachers add open availability slots. Session durations (25, 40, 55 mins) are defined here and booked by students using their balance units."
+        description="Teachers add open availability slots. Session durations (25, 40, 55 mins) are defined here and booked by students using their active package session quotas."
         action={
           <button
             onClick={() => setIsCreating(true)}
