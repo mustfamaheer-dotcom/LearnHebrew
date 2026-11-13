@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import { Prisma, SlotType, LessonStatus, PointsEventType } from '@prisma/client';
+import { Prisma, SlotType, LessonStatus, AttendanceStatus, PointsEventType } from '@prisma/client';
 import { logAuditEvent } from '../../utils/audit';
 import { notificationService } from '../notifications/notifications.service';
 
@@ -48,6 +48,7 @@ export async function listLessons(filters: {
       student: {
         include: {
           user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
+          levelModel: true,
         },
       },
       teacher: {
@@ -55,6 +56,7 @@ export async function listLessons(filters: {
           user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
         },
       },
+      sessionType: true,
       studentPackage: { include: { package: true } },
       homework: true,
       feedback: true,
@@ -63,10 +65,15 @@ export async function listLessons(filters: {
   });
 }
 
+/**
+ * Books a lesson strictly from student's session type quota balance.
+ * Validates 30-day package expiry, checks teacher open slot, and deducts 1 session atomicity.
+ */
 export async function bookLesson(data: {
   studentId: string;
   teacherId: string;
   scheduledAt: Date;
+  sessionTypeId?: string;
   durationMinutes?: number;
   timeSlotId?: string;
   lessonType?: SlotType;
@@ -75,6 +82,7 @@ export async function bookLesson(data: {
 }) {
   const student = await prisma.student.findFirst({
     where: { OR: [{ id: data.studentId }, { userId: data.studentId }] },
+    include: { user: true },
   });
   if (!student) throw { status: 404, message: 'Student not found' };
 
@@ -86,54 +94,64 @@ export async function bookLesson(data: {
   const booker = await prisma.user.findUnique({
     where: { id: data.bookedById },
   });
-  const isAdmin = booker?.role === 'ADMIN' || booker?.role === 'SUPER_ADMIN';
+  const isPrivileged = ['ADMIN', 'SUPER_ADMIN', 'SALES', 'CS'].includes(booker?.role || '');
 
-  // Anti-IDOR: Prevent students from booking lessons on behalf of another student's account/wallet
-  if (!isAdmin && student.userId !== data.bookedById) {
+  if (!isPrivileged && student.userId !== data.bookedById) {
     throw {
       status: 403,
-      message: 'Access denied: You cannot book lessons using another student profile or wallet.',
+      message: 'Access denied: You cannot book lessons using another student account.',
     };
   }
 
-  // 1. Fetch Session Pricing configuration
-  const pricingSetting = await prisma.systemSetting.findUnique({
-    where: { key: 'session_pricing' },
-  });
-  const duration = data.durationMinutes || 25;
-  const pricingMap: Record<string, any> = (pricingSetting?.valueJson as Record<string, any>) || {
-    '25': 25,
-    '40': 40,
-    '55': 55,
-    currency: 'USD',
-  };
-  const durationPrice = Number(pricingMap[String(duration)] ?? (duration === 55 ? 55 : duration === 40 ? 40 : 25));
-  const currency = pricingMap.currency || 'USD';
-
-  // 2. Balance Verification
-  const studentBalance = Number(student.balance || 0);
-
-  if (!isAdmin && studentBalance < durationPrice) {
-    throw {
-      status: 400,
-      message: `Insufficient balance to book this ${duration}-minute session. Session cost: ${durationPrice} ${currency}, your current balance: ${studentBalance.toFixed(2)} ${currency}. Please contact the administrator to add balance.`,
-      requiredPrice: durationPrice,
-      currentBalance: studentBalance,
-      currency,
-    };
+  // 1. Resolve SessionType (or fallback to duration matching session type)
+  let sessionType = null;
+  if (data.sessionTypeId) {
+    sessionType = await prisma.sessionType.findUnique({ where: { id: data.sessionTypeId } });
+  } else {
+    const dur = data.durationMinutes || 25;
+    sessionType = await prisma.sessionType.findFirst({
+      where: { durationMinutes: dur, isActive: true },
+    });
   }
 
-  // Check if student has an active package to associate
-  let activePackage = await prisma.studentPackage.findFirst({
-    where: {
-      studentId: student.id,
-      status: 'ACTIVE',
-      endDate: { gte: new Date() },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  if (!sessionType) {
+    sessionType = await prisma.sessionType.findFirst({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } });
+  }
 
-  // Conflict prevention: check if teacher already booked at this exact time
+  const duration = sessionType?.durationMinutes || 25;
+
+  // 2. Validate Session Balance Quota
+  let userSessionBalance = null;
+  if (sessionType) {
+    userSessionBalance = await prisma.studentSessionBalance.findUnique({
+      where: {
+        studentId_sessionTypeId: {
+          studentId: student.id,
+          sessionTypeId: sessionType.id,
+        },
+      },
+    });
+  }
+
+  const hasSessionBalance = (userSessionBalance?.balance || 0) > 0;
+  const isExpired = userSessionBalance?.expiresAt && new Date() > userSessionBalance.expiresAt;
+
+  if (!isPrivileged) {
+    if (isExpired) {
+      throw {
+        status: 400,
+        message: 'Your session package balance has expired (packages have a 30-day maximum validity). Please purchase a new package to continue booking.',
+      };
+    }
+    if (!hasSessionBalance) {
+      throw {
+        status: 400,
+        message: `Insufficient session balance for ${sessionType?.labelEn || `${duration}-min`} sessions. Current balance: 0. Please contact your sales advisor or purchase a session package.`,
+      };
+    }
+  }
+
+  // Conflict prevention
   const existingLesson = await prisma.lesson.findFirst({
     where: {
       teacherId: teacher.id,
@@ -145,48 +163,33 @@ export async function bookLesson(data: {
     throw { status: 409, message: 'Teacher already has a lesson scheduled at this time' };
   }
 
-  // Database transaction: create lesson, deduct balance, mark slot unavailable
   return prisma.$transaction(async (tx) => {
-    // Deduct session price from student balance
-    const newBalance = Math.max(0, studentBalance - durationPrice);
-    await tx.student.update({
-      where: { id: student.id },
-      data: { balance: newBalance },
-    });
+    // Deduct 1 session from balance if available
+    if (userSessionBalance && userSessionBalance.balance > 0 && sessionType) {
+      const newBal = userSessionBalance.balance - 1;
+      await tx.studentSessionBalance.update({
+        where: { id: userSessionBalance.id },
+        data: { balance: newBal },
+      });
 
-    await tx.balanceTransaction.create({
-      data: {
-        studentId: student.id,
-        amount: -durationPrice,
-        balanceAfter: newBalance,
-        type: 'SESSION_BOOKING',
-        description: `Booked ${duration}-Minute Session with ${teacher.userId ? 'Teacher' : ''} (${durationPrice} ${currency})`,
-        createdById: data.bookedById,
-      },
-    });
+      await tx.sessionBalanceLedger.create({
+        data: {
+          studentId: student.id,
+          sessionTypeId: sessionType.id,
+          delta: -1,
+          balanceAfter: newBal,
+          reason: 'LESSON_BOOKING',
+          createdById: data.bookedById,
+        },
+      });
+    }
 
-    // Resolve Zoom Link: prioritize explicitly passed link, then slot zoom link, then teacher default zoom link
+    // Resolve Zoom Link
     let resolvedZoomLink = data.zoomLink?.trim();
     if (!resolvedZoomLink || resolvedZoomLink === 'https://zoom.us/j/engrew-live') {
       if (data.timeSlotId) {
         const slot = await tx.timeSlot.findUnique({ where: { id: data.timeSlotId } });
         if (slot?.zoomLink) resolvedZoomLink = slot.zoomLink;
-      }
-      if (!resolvedZoomLink) {
-        const scheduled = new Date(data.scheduledAt);
-        const dayOfWeek = scheduled.getDay();
-        const h = String(scheduled.getHours()).padStart(2, '0');
-        const m = String(scheduled.getMinutes()).padStart(2, '0');
-        const timeStr = `${h}:${m}`;
-        const matchingSlot = await tx.timeSlot.findFirst({
-          where: {
-            teacherId: teacher.id,
-            dayOfWeek,
-            startTime: timeStr,
-            zoomLink: { not: null },
-          },
-        });
-        if (matchingSlot?.zoomLink) resolvedZoomLink = matchingSlot.zoomLink;
       }
       if (!resolvedZoomLink && teacher.defaultZoomLink) {
         resolvedZoomLink = teacher.defaultZoomLink;
@@ -201,7 +204,7 @@ export async function bookLesson(data: {
         studentId: student.id,
         teacherId: teacher.id,
         timeSlotId: data.timeSlotId,
-        studentPackageId: activePackage ? activePackage.id : undefined,
+        sessionTypeId: sessionType?.id,
         scheduledAt: data.scheduledAt,
         durationMinutes: duration,
         lessonType: data.lessonType || SlotType.REGULAR,
@@ -211,48 +214,91 @@ export async function bookLesson(data: {
       include: {
         student: { include: { user: true } },
         teacher: { include: { user: true } },
+        sessionType: true,
       },
     });
-
-    // If active package exists, record usage
-    if (activePackage) {
-      const nextUsed = activePackage.lessonsUsed + 1;
-      const isCompletedPkg = nextUsed >= activePackage.lessonsTotal;
-      await tx.studentPackage.update({
-        where: { id: activePackage.id },
-        data: {
-          lessonsUsed: nextUsed,
-          status: isCompletedPkg ? 'COMPLETED' : 'ACTIVE',
-        },
-      });
-    }
 
     if (data.timeSlotId) {
       await tx.timeSlot.update({
         where: { id: data.timeSlotId },
-        data: { isAvailable: false },
+        data: { isAvailable: false, isBooked: true },
       });
     }
 
     await logAuditEvent({
       userId: data.bookedById,
-      action: 'LESSON_BOOKED',
+      action: 'LESSON_BOOKED_SESSION_BALANCE',
       entityType: 'Lesson',
       entityId: lesson.id,
       metaJson: {
+        sessionType: sessionType?.name,
         duration,
-        durationPrice,
-        remainingBalance: newBalance,
+        scheduledAt: data.scheduledAt,
       },
     });
 
-    // Fire real-time notification dispatch to student & teacher
-    notificationService.notifyBookingCreated(lesson).catch((err) =>
+    notificationService.notifyBookingCreated(lesson as any).catch((err) =>
       console.error('[Notification Trigger Error - notifyBookingCreated]', err)
     );
 
     return lesson;
   });
+}
+
+/**
+ * Teachers mark student attendance (ATTENDED or ABSENT)
+ * Automatically triggers real-time notification to the student
+ */
+export async function markAttendance(
+  lessonId: string,
+  teacherUserId: string,
+  status: AttendanceStatus
+) {
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    include: {
+      student: { include: { user: true } },
+      teacher: { include: { user: true } },
+    },
+  });
+
+  if (!lesson) throw { status: 404, message: 'Lesson not found' };
+
+  const updated = await prisma.lesson.update({
+    where: { id: lessonId },
+    data: {
+      attendanceStatus: status,
+      attendanceMarkedAt: new Date(),
+      attendanceMarkedById: teacherUserId,
+    },
+    include: {
+      student: { include: { user: true } },
+      teacher: { include: { user: true } },
+    },
+  });
+
+  // Real-time notification dispatch
+  const isAttended = status === AttendanceStatus.ATTENDED;
+  await prisma.notification.create({
+    data: {
+      userId: lesson.student.userId,
+      type: 'ATTENDANCE_MARKED',
+      title: isAttended ? 'Attendance Confirmed ✅' : 'Marked Absent ⚠️',
+      titleEn: isAttended ? 'Attendance Confirmed ✅' : 'Marked Absent ⚠️',
+      titleHe: isAttended ? 'נוכחותך בשיעור אושרה בהצלחה ✅' : 'סומנת כנעדר מהשיעור ⚠️',
+      body: isAttended
+        ? `Your attendance for session with ${lesson.teacher.user.firstName} on ${new Date(lesson.scheduledAt).toLocaleDateString()} was marked as Attended.`
+        : `You were marked absent for the session with ${lesson.teacher.user.firstName} on ${new Date(lesson.scheduledAt).toLocaleDateString()}.`,
+      bodyEn: isAttended
+        ? `Your attendance for session with ${lesson.teacher.user.firstName} on ${new Date(lesson.scheduledAt).toLocaleDateString()} was marked as Attended.`
+        : `You were marked absent for the session with ${lesson.teacher.user.firstName} on ${new Date(lesson.scheduledAt).toLocaleDateString()}.`,
+      bodyHe: isAttended
+        ? `נוכחותך בשיעור עם ${lesson.teacher.user.firstName} אושרה בהצלחה.`
+        : `סומנת כנעדר משיעורך עם ${lesson.teacher.user.firstName}.`,
+    },
+  });
+
+  return updated;
 }
 
 export async function getLessonById(id: string) {
@@ -262,6 +308,7 @@ export async function getLessonById(id: string) {
       student: { include: { user: true } },
       teacher: { include: { user: true } },
       studentPackage: { include: { package: true } },
+      sessionType: true,
       homework: true,
       feedback: true,
     },
@@ -271,76 +318,17 @@ export async function getLessonById(id: string) {
   return lesson;
 }
 
-async function syncLessonRecordingToSession(lessonId: string, recordingUrl: string) {
-  if (!recordingUrl || !recordingUrl.trim()) return;
-  try {
-    const url = recordingUrl.trim();
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-      include: {
-        student: { include: { user: true } },
-        teacher: { include: { user: true } },
-      },
-    });
-
-    if (!lesson) return;
-
-    const studentName = lesson.student?.user
-      ? `${lesson.student.user.firstName} ${lesson.student.user.lastName}`
-      : 'Student';
-    const teacherName = lesson.teacher?.user
-      ? `${lesson.teacher.user.firstName} ${lesson.teacher.user.lastName}`
-      : 'Teacher';
-    const dateStr = lesson.scheduledAt
-      ? new Date(lesson.scheduledAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        })
-      : '';
-
-    const sessionTitle = `1-on-1 Lesson - ${studentName} (${dateStr})`;
-    const sessionTitleHe = `שיעור פרטי - ${studentName} (${dateStr})`;
-
-    const existing = await prisma.recordedSession.findFirst({
-      where: { lessonId: lesson.id },
-    });
-
-    if (existing) {
-      await prisma.recordedSession.update({
-        where: { id: existing.id },
-        data: {
-          videoUrl: url,
-          teacherId: lesson.teacherId,
-          studentId: lesson.studentId,
-          title: sessionTitle,
-          titleHe: sessionTitleHe,
-          isPublished: true,
-        },
-      });
-    } else {
-      await prisma.recordedSession.create({
-        data: {
-          lessonId: lesson.id,
-          teacherId: lesson.teacherId,
-          studentId: lesson.studentId,
-          title: sessionTitle,
-          titleHe: sessionTitleHe,
-          description: `Live 25-minute recorded session with ${teacherName}. Review notes, grammar focus, and vocabulary.`,
-          videoUrl: url,
-          category: 'Private Sessions',
-          durationMinutes: 25,
-          isPublished: true,
-        },
-      });
-    }
-  } catch (err) {
-    console.error('Failed to auto-sync recorded session from lesson notes:', err);
+export async function updateLesson(
+  id: string,
+  data: {
+    scheduledAt?: Date;
+    zoomLink?: string | null;
+    recordingUrl?: string | null;
+    teacherNotes?: string | null;
+    status?: LessonStatus;
   }
-}
-
-export async function updateLesson(id: string, data: any) {
-  const updated = await prisma.lesson.update({
+) {
+  return prisma.lesson.update({
     where: { id },
     data,
     include: {
@@ -348,12 +336,6 @@ export async function updateLesson(id: string, data: any) {
       teacher: { include: { user: true } },
     },
   });
-
-  if (data.recordingUrl) {
-    await syncLessonRecordingToSession(id, data.recordingUrl);
-  }
-
-  return updated;
 }
 
 export async function cancelLesson(id: string, cancelledById: string, cancelReason?: string) {
@@ -371,72 +353,53 @@ export async function cancelLesson(id: string, cancelledById: string, cancelReas
       },
     });
 
-    // Make slot available again if attached
     if (lesson.timeSlotId) {
       await tx.timeSlot.update({
         where: { id: lesson.timeSlotId },
-        data: { isAvailable: true },
+        data: { isAvailable: true, isBooked: false },
       });
     }
 
-    // Restore session count to student package if previously scheduled
-    if (lesson.studentPackageId && lesson.status === LessonStatus.SCHEDULED) {
-      await tx.studentPackage.update({
-        where: { id: lesson.studentPackageId },
-        data: {
-          lessonsUsed: { decrement: 1 },
-          status: 'ACTIVE',
+    // Refund session back into student's session wallet if scheduled
+    if (lesson.status === LessonStatus.SCHEDULED && lesson.sessionTypeId) {
+      const balanceRec = await tx.studentSessionBalance.findUnique({
+        where: {
+          studentId_sessionTypeId: {
+            studentId: lesson.studentId,
+            sessionTypeId: lesson.sessionTypeId,
+          },
         },
       });
-    }
 
-    // Refund session fee back to student's balance if cancelled
-    if (lesson.status === LessonStatus.SCHEDULED) {
-      const duration = lesson.durationMinutes || 25;
-      const pricingSetting = await tx.systemSetting.findUnique({
-        where: { key: 'session_pricing' },
+      const newBal = (balanceRec?.balance || 0) + 1;
+
+      await tx.studentSessionBalance.upsert({
+        where: {
+          studentId_sessionTypeId: {
+            studentId: lesson.studentId,
+            sessionTypeId: lesson.sessionTypeId,
+          },
+        },
+        update: { balance: { increment: 1 } },
+        create: {
+          studentId: lesson.studentId,
+          sessionTypeId: lesson.sessionTypeId,
+          balance: 1,
+        },
       });
-      const pricingMap: Record<string, any> = (pricingSetting?.valueJson as Record<string, any>) || { '25': 25, '40': 40, '55': 55 };
-      const refundAmount = Number(pricingMap[String(duration)] ?? (duration === 55 ? 55 : duration === 40 ? 40 : 25));
 
-      const updatedStudent = await tx.student.update({
-        where: { id: lesson.studentId },
-        data: { balance: { increment: refundAmount } },
-      });
-
-      await tx.balanceTransaction.create({
+      await tx.sessionBalanceLedger.create({
         data: {
           studentId: lesson.studentId,
-          amount: refundAmount,
-          balanceAfter: updatedStudent.balance,
-          type: 'SESSION_REFUND',
-          description: `Refund for cancelled ${duration}-minute lesson`,
+          sessionTypeId: lesson.sessionTypeId,
+          delta: 1,
+          balanceAfter: newBal,
+          reason: 'LESSON_REFUND',
+          referenceId: lesson.id,
           createdById: cancelledById,
         },
       });
     }
-
-    // Fire real-time notification dispatch to other party
-    prisma.lesson.findUnique({
-      where: { id },
-      include: {
-        student: { include: { user: true } },
-        teacher: { include: { user: true } },
-      },
-    }).then(async (l) => {
-      if (l) {
-        const canceller = await prisma.user.findUnique({ where: { id: cancelledById } });
-        const cancelledByName = canceller ? `${canceller.firstName} ${canceller.lastName}` : 'System Admin';
-        notificationService.notifyLessonCancelled({
-          id: l.id,
-          scheduledAt: l.scheduledAt,
-          cancelledByUserId: cancelledById,
-          cancelledByName,
-          student: l.student,
-          teacher: l.teacher,
-        }).catch((err) => console.error('[Notification Cancel Error]', err));
-      }
-    }).catch(() => {});
 
     return updated;
   });
@@ -448,22 +411,23 @@ export async function completeLesson(id: string) {
     include: { studentPackage: true },
   });
   if (!lesson) throw { status: 404, message: 'Lesson not found' };
-  if (lesson.status === LessonStatus.COMPLETED) {
-    return lesson;
-  }
+  if (lesson.status === LessonStatus.COMPLETED) return lesson;
+
+  const rule = await prisma.pointRule.findUnique({
+    where: { eventType: PointsEventType.LESSON_COMPLETED },
+  });
+  const pointsToAward = rule?.isActive ? rule.points : 50;
 
   return prisma.$transaction(async (tx) => {
-    // 1. Mark lesson completed
     const updatedLesson = await tx.lesson.update({
       where: { id },
       data: { status: LessonStatus.COMPLETED },
     });
 
-    // 2. Award +50 points to student
     await tx.student.update({
       where: { id: lesson.studentId },
       data: {
-        totalPoints: { increment: 50 },
+        totalPoints: { increment: pointsToAward },
         lastLessonAt: new Date(),
       },
     });
@@ -472,23 +436,14 @@ export async function completeLesson(id: string) {
       data: {
         studentId: lesson.studentId,
         eventType: PointsEventType.LESSON_COMPLETED,
-        points: 50,
+        points: pointsToAward,
         referenceId: lesson.id,
-        description: `Completed ${lesson.durationMinutes || 25}-Minute Hebrew Lesson`,
+        description: `Completed ${lesson.durationMinutes || 25}-Minute Hebrew Session`,
       },
     });
 
     return updatedLesson;
   });
-}
-
-export async function saveRecording(id: string, recordingUrl: string) {
-  const updated = await prisma.lesson.update({
-    where: { id },
-    data: { recordingUrl },
-  });
-  await syncLessonRecordingToSession(id, recordingUrl);
-  return updated;
 }
 
 export async function rescheduleLesson(
@@ -499,113 +454,35 @@ export async function rescheduleLesson(
 ) {
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
-    include: {
-      student: { include: { user: true } },
-      teacher: { include: { user: true } },
-    },
+    include: { student: { include: { user: true } }, teacher: { include: { user: true } } },
   });
 
-  if (!lesson) {
-    throw { status: 404, message: 'Lesson not found' };
-  }
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw { status: 401, message: 'Unauthorized' };
-
-  if (user.role === 'STUDENT' && lesson.student.userId !== userId) {
-    throw { status: 403, message: 'You are not authorized to reschedule this lesson' };
-  }
-
-  if (lesson.status !== LessonStatus.SCHEDULED) {
-    throw { status: 400, message: `Only scheduled lessons can be rescheduled (current: ${lesson.status})` };
-  }
-
-  const newSlot = await prisma.timeSlot.findUnique({
-    where: { id: newTimeSlotId },
-  });
-
-  if (!newSlot) {
-    throw { status: 404, message: 'Selected time slot does not exist' };
-  }
-
-  if (newSlot.teacherId !== lesson.teacherId) {
-    throw { status: 400, message: 'Rescheduled lesson must be with the same teacher' };
-  }
-
-  if (!newSlot.isAvailable) {
-    throw { status: 400, message: 'Selected time slot is no longer available' };
-  }
-
-  const existingConflict = await prisma.lesson.findFirst({
-    where: {
-      teacherId: lesson.teacherId,
-      scheduledAt: newScheduledAt,
-      status: LessonStatus.SCHEDULED,
-    },
-  });
-
-  if (existingConflict) {
-    throw { status: 400, message: 'Teacher is already booked for this specific time' };
-  }
-
-  const duration = lesson.durationMinutes || 25;
-  const zoomLink = newSlot.zoomLink || lesson.zoomLink || lesson.teacher.defaultZoomLink || 'https://zoom.us/j/engrew-live';
+  if (!lesson) throw { status: 404, message: 'Lesson not found' };
 
   return prisma.$transaction(async (tx) => {
-    // 1. Release previous slot
     if (lesson.timeSlotId) {
-      await tx.timeSlot.update({
-        where: { id: lesson.timeSlotId },
-        data: { isAvailable: true },
-      });
+      await tx.timeSlot.update({ where: { id: lesson.timeSlotId }, data: { isAvailable: true, isBooked: false } });
     }
 
-    // 2. Mark previous lesson as CANCELLED with reschedule note
-    await tx.lesson.update({
-      where: { id: lesson.id },
+    await tx.timeSlot.update({ where: { id: newTimeSlotId }, data: { isAvailable: false, isBooked: true } });
+
+    return tx.lesson.update({
+      where: { id: lessonId },
       data: {
-        status: LessonStatus.CANCELLED,
-        cancelledAt: new Date(),
-        cancelledById: userId,
-        cancelReason: `Rescheduled to ${newScheduledAt.toISOString()}`,
+        timeSlotId: newTimeSlotId,
+        scheduledAt: newScheduledAt,
       },
-    });
-
-    // 3. Mark new slot unavailable
-    await tx.timeSlot.update({
-      where: { id: newSlot.id },
-      data: { isAvailable: false },
-    });
-
-    // 4. Create new lesson linked with rescheduledFromId without deducting additional balance
-    const newLessonData: Prisma.LessonUncheckedCreateInput = {
-      studentId: lesson.studentId,
-      teacherId: lesson.teacherId,
-      timeSlotId: newSlot.id,
-      studentPackageId: lesson.studentPackageId,
-      scheduledAt: newScheduledAt,
-      durationMinutes: duration,
-      lessonType: lesson.lessonType,
-      zoomLink,
-      status: LessonStatus.SCHEDULED,
-      rescheduledFromId: lesson.id,
-    };
-
-    const newLesson = await tx.lesson.create({
-      data: newLessonData,
       include: {
         student: { include: { user: true } },
         teacher: { include: { user: true } },
       },
     });
-
-    // Fire real-time notification
-    notificationService.notifyBookingCreated(newLesson).catch((err) =>
-      console.error('[Notification Trigger Error - notifyBookingCreated on reschedule]', err)
-    );
-
-    return newLesson;
   });
 }
 
-
+export async function saveRecording(id: string, recordingUrl: string) {
+  return prisma.lesson.update({
+    where: { id },
+    data: { recordingUrl },
+  });
+}

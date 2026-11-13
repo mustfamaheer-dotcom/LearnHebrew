@@ -16,7 +16,9 @@ export async function listTeachers() {
             languagePref: true,
           },
         },
-        timeSlots: true,
+        timeSlots: {
+          where: { isAvailable: true },
+        },
         lessons: {
           where: {
             status: 'SCHEDULED',
@@ -37,7 +39,6 @@ export async function listTeachers() {
 }
 
 export async function getTeacherById(id: string) {
-  // Support lookup by teacherId or userId
   const teacher = await prisma.teacher.findFirst({
     where: {
       OR: [{ id }, { userId: id }],
@@ -72,12 +73,13 @@ export async function getTeacherCalendar(teacherIdOrUserId: string) {
             user: { select: { firstName: true, lastName: true, email: true } },
           },
         },
+        sessionType: true,
       },
       orderBy: { scheduledAt: 'asc' },
     }),
     prisma.timeSlot.findMany({
       where: { teacherId: teacher.id },
-      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+      orderBy: [{ date: 'asc' }, { dayOfWeek: 'asc' }, { startTime: 'asc' }],
     }),
   ]);
 
@@ -88,37 +90,42 @@ export async function getTeacherSlots(teacherIdOrUserId: string) {
   const teacher = await getTeacherById(teacherIdOrUserId);
   return prisma.timeSlot.findMany({
     where: { teacherId: teacher.id },
-    orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+    orderBy: [{ date: 'asc' }, { dayOfWeek: 'asc' }, { startTime: 'asc' }],
   });
 }
 
+/**
+ * Teachers plan open available slots up to 45 coming days ahead.
+ * No duration locked here; students choose duration/sessionType during booking.
+ */
 export async function addSlot(
   teacherIdOrUserId: string,
   data: {
-    dayOfWeek: number;
+    date?: string | Date;
+    dayOfWeek?: number;
     startTime: string;
     endTime?: string;
     durationMinutes?: number;
     slotType?: SlotType;
-    zoomLink: string;
+    zoomLink?: string;
     saveAsDefault?: boolean;
   }
 ) {
   const teacher = await getTeacherById(teacherIdOrUserId);
 
-  let endTime = data.endTime;
-  const duration = data.durationMinutes || 25;
-  if (!endTime) {
-    const [h, m] = data.startTime.split(':').map(Number);
-    const totalMin = h * 60 + m + duration;
-    const endH = Math.floor(totalMin / 60) % 24;
-    const endM = totalMin % 60;
-    endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+  let slotDate: Date | null = null;
+  if (data.date) {
+    slotDate = new Date(data.date);
+    const now = new Date();
+    const maxDate = new Date(now.getTime() + 45 * 24 * 60 * 60 * 1000); // Strict 45 days limit
+
+    if (slotDate > maxDate) {
+      throw { status: 400, message: 'Open time slots can only be planned up to 45 days in advance.' };
+    }
   }
 
-  const zoomUrl = data.zoomLink.trim();
+  const zoomUrl = data.zoomLink?.trim() || teacher.defaultZoomLink || 'https://zoom.us/j/engrew-live';
 
-  // If requested or if teacher has no default Zoom link, save as default
   if (data.saveAsDefault || !teacher.defaultZoomLink) {
     await prisma.teacher.update({
       where: { id: teacher.id },
@@ -129,14 +136,17 @@ export async function addSlot(
   const created = await prisma.timeSlot.create({
     data: {
       teacherId: teacher.id,
-      dayOfWeek: data.dayOfWeek,
+      date: slotDate,
+      dayOfWeek: data.dayOfWeek !== undefined ? Number(data.dayOfWeek) : (slotDate ? slotDate.getDay() : 0),
       startTime: data.startTime,
-      endTime,
+      endTime: data.endTime || null,
       slotType: data.slotType || SlotType.REGULAR,
       isAvailable: true,
+      isBooked: false,
       zoomLink: zoomUrl,
     },
   });
+
   await cacheInvalidatePrefix('teachers:');
   return created;
 }
@@ -152,33 +162,29 @@ export async function deleteSlot(slotId: string) {
 export async function getTeacherStudents(teacherIdOrUserId: string) {
   const teacher = await getTeacherById(teacherIdOrUserId);
 
-  // Get all students enrolled in the system
   const allStudents = await prisma.student.findMany({
     include: {
       user: {
         select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true, createdAt: true },
       },
-      packages: {
-        where: { status: 'ACTIVE' },
-        include: { package: true },
-        orderBy: { createdAt: 'desc' },
+      levelModel: true,
+      sessionBalances: {
+        include: { sessionType: true },
       },
       lessons: {
         where: { teacherId: teacher.id },
+        include: { sessionType: true },
         orderBy: { scheduledAt: 'desc' },
       },
       homeworks: {
         where: { teacherId: teacher.id },
         orderBy: { createdAt: 'desc' },
       },
-      gameSessions: {
-        take: 5,
-        orderBy: { playedAt: 'desc' },
-        include: { game: { select: { title: true, gameType: true } } },
+      gameUnlocks: {
+        include: { game: true },
       },
-      feedback: {
-        take: 3,
-        orderBy: { submittedAt: 'desc' },
+      examAttempts: {
+        include: { exam: true },
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -192,78 +198,16 @@ export async function getTeacherStudents(teacherIdOrUserId: string) {
     const scheduledLessons = teacherLessons.filter(
       (l) => l.status === 'SCHEDULED' && new Date(l.scheduledAt) >= now
     );
-    const pastLessons = teacherLessons.filter(
-      (l) => l.status === 'COMPLETED' || new Date(l.scheduledAt) < now
-    );
-
-    const nextLesson = scheduledLessons.sort(
-      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
-    )[0] || null;
-
-    const lastLesson = pastLessons[0] || null;
-
-    const hw = s.homeworks || [];
-    const pendingHw = hw.filter((h) => h.status === 'PENDING').length;
-    const submittedHw = hw.filter((h) => h.status === 'SUBMITTED').length;
-    const reviewedHw = hw.filter((h) => h.status === 'REVIEWED').length;
-
-    // Remaining lessons calculation
-    const activePkg = s.packages[0];
-    const lessonsRemaining = activePkg
-      ? Math.max(0, activePkg.lessonsTotal - activePkg.lessonsUsed)
-      : 0;
+    const nextLesson = scheduledLessons[0] || null;
 
     return {
-      id: s.id,
-      userId: s.userId,
-      user: s.user,
-      level: s.level,
-      totalPoints: s.totalPoints,
-      streakDays: s.streakDays,
-      createdAt: s.createdAt,
+      student: s,
       stats: {
-        completedLessonsCount: completedLessons.length,
-        scheduledLessonsCount: scheduledLessons.length,
-        totalLessonsWithTeacher: teacherLessons.length,
-        lessonsRemaining,
-        homework: {
-          total: hw.length,
-          pending: pendingHw,
-          submitted: submittedHw,
-          reviewed: reviewedHw,
-        },
-        gamesPlayed: s.gameSessions?.length || 0,
+        totalLessons: teacherLessons.length,
+        completedLessons: completedLessons.length,
+        scheduledLessons: scheduledLessons.length,
+        nextLesson,
       },
-      nextLesson: nextLesson
-        ? {
-            id: nextLesson.id,
-            scheduledAt: nextLesson.scheduledAt,
-            durationMinutes: nextLesson.durationMinutes,
-            status: nextLesson.status,
-          }
-        : null,
-      lastLesson: lastLesson
-        ? {
-            id: lastLesson.id,
-            scheduledAt: lastLesson.scheduledAt,
-            durationMinutes: lastLesson.durationMinutes,
-            status: lastLesson.status,
-            teacherNotes: lastLesson.teacherNotes,
-          }
-        : null,
-      activePackage: activePkg
-        ? {
-            id: activePkg.id,
-            name: activePkg.package.name,
-            nameHe: activePkg.package.nameHe,
-            lessonsTotal: activePkg.lessonsTotal,
-            lessonsUsed: activePkg.lessonsUsed,
-            endDate: activePkg.endDate,
-          }
-        : null,
-      recentHomework: hw.slice(0, 3),
-      recentFeedback: s.feedback,
     };
   });
 }
-

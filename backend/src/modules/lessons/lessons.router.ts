@@ -8,6 +8,7 @@ import {
   rescheduleLessonHandler,
   completeLessonHandler,
   saveRecordingHandler,
+  markAttendanceHandler,
 } from './lessons.controller';
 import { authenticate } from '../../middleware/auth';
 
@@ -23,6 +24,6 @@ router.delete('/:id', cancelLessonHandler);
 router.post('/:id/reschedule', rescheduleLessonHandler);
 router.post('/:id/complete', completeLessonHandler);
 router.post('/:id/recording', saveRecordingHandler);
+router.put('/:id/attendance', markAttendanceHandler);
 
 export default router;
-

@@ -125,3 +125,26 @@ export async function recordGameSessionHandler(req: AuthRequest, res: Response, 
   }
 }
 
+
+export async function unlockGameHandler(req: any, res: any, next: any) {
+  try {
+    const unlock = await gamesService.unlockGameForStudent({
+      gameId: req.params.id,
+      studentId: req.body.studentId,
+      lessonId: req.body.lessonId,
+      teacherUserId: req.user.userId,
+    });
+    res.json({ unlock, message: 'Game unlocked for student' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function checkAccessHandler(req: any, res: any, next: any) {
+  try {
+    const access = await gamesService.checkGameAccess(req.params.id, req.user.userId);
+    res.json(access);
+  } catch (error) {
+    next(error);
+  }
+}

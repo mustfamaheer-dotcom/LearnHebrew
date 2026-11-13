@@ -3,7 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
 import path from 'path';
 
 import authRouter from './modules/auth/auth.router';
@@ -21,6 +20,16 @@ import settingsRouter from './modules/settings/settings.router';
 import recordedSessionsRouter from './modules/recorded-sessions/recorded-sessions.router';
 import systemLogsRouter from './modules/system-logs/system-logs.router';
 
+// 2026 Enterprise Feature Routers
+import levelsRouter from './modules/levels/levels.router';
+import languagesRouter from './modules/languages/languages.router';
+import sessionTypesRouter from './modules/session-types/session-types.router';
+import rolesRouter from './modules/roles/roles.router';
+import paymentsRouter from './modules/payments/payments.router';
+import levelExamsRouter from './modules/level-exams/level-exams.router';
+import reviewLinksRouter from './modules/review-links/review-links.router';
+import pointRulesRouter from './modules/point-rules/point-rules.router';
+
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
 import { requestLogger } from './middleware/requestLogger';
@@ -30,11 +39,11 @@ export const app = express();
 // Security Headers (OWASP Hardening)
 app.use(
   helmet({
-    contentSecurityPolicy: false, // SPA handles CSP
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
-    frameguard: { action: 'sameorigin' }, // Anti-clickjacking
-    noSniff: true, // Prevent MIME sniffing
-    xssFilter: true, // Cross-site scripting filter
+    frameguard: { action: 'sameorigin' },
+    noSniff: true,
+    xssFilter: true,
     hsts:
       process.env.NODE_ENV === 'production'
         ? { maxAge: 31536000, includeSubDomains: true, preload: true }
@@ -42,10 +51,8 @@ app.use(
   })
 );
 
-// Compression
 app.use(compression());
 
-// CORS Whitelisting
 const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
@@ -56,11 +63,10 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow non-browser requests or verified origins
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else if (process.env.NODE_ENV !== 'production') {
-        callback(null, true); // Dev convenience only
+        callback(null, true);
       } else {
         callback(new Error('Cross-Origin Request Blocked by CORS Security Policy'));
       }
@@ -69,26 +75,22 @@ app.use(
   })
 );
 
-// Global API Rate Limiter
 app.use('/api/', apiLimiter);
 
-// Parsers with generous limit for WebP avatars
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(cookieParser());
 
-// Static Uploads Serving (Avatars & media)
+// Static Uploads Serving (Avatars, Screenshots, WebP)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-// HTTP Request & Telemetry Logger
 app.use(requestLogger);
 
-// Health Check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'LearnHebrew API', timestamp: new Date().toISOString() });
 });
 
-// API Routes
+// Existing Core API Routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/students', studentsRouter);
@@ -104,6 +106,14 @@ app.use('/api/v1/settings', settingsRouter);
 app.use('/api/v1/recorded-sessions', recordedSessionsRouter);
 app.use('/api/v1/system-logs', systemLogsRouter);
 
-// Global Error Handler
-app.use(errorHandler);
+// New Feature Routers
+app.use('/api/v1/levels', levelsRouter);
+app.use('/api/v1/languages', languagesRouter);
+app.use('/api/v1/session-types', sessionTypesRouter);
+app.use('/api/v1/roles', rolesRouter);
+app.use('/api/v1/payments', paymentsRouter);
+app.use('/api/v1/level-exams', levelExamsRouter);
+app.use('/api/v1/review-links', reviewLinksRouter);
+app.use('/api/v1/point-rules', pointRulesRouter);
 
+app.use(errorHandler);

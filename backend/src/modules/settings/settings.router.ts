@@ -180,3 +180,44 @@ router.put(
 
 export default router;
 
+
+// GET / PUT Platform Currency Configuration (USD or ILS)
+router.get('/currency', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: 'platform_currency' },
+    });
+    res.json({
+      currency: (setting?.valueJson as any)?.currency || 'USD',
+      symbol: (setting?.valueJson as any)?.currency === 'ILS' ? '₪' : '$',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put(
+  '/currency',
+  authenticate,
+  requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const currency = req.body.currency === 'ILS' ? 'ILS' : 'USD';
+      const setting = await prisma.systemSetting.upsert({
+        where: { key: 'platform_currency' },
+        update: { valueJson: { currency } },
+        create: {
+          key: 'platform_currency',
+          valueJson: { currency },
+        },
+      });
+      res.json({
+        message: `Platform default currency set to ${currency}`,
+        currency,
+        symbol: currency === 'ILS' ? '₪' : '$',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);

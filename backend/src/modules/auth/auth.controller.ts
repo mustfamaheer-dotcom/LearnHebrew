@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import fs from 'fs';
-import path from 'path';
 import * as authService from './auth.service';
 import { AuthRequest } from '../../middleware/auth';
+import { processAndSaveWebP } from '../../utils/imageProcessor';
+import path from 'path';
+import fs from 'fs';
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -11,37 +12,35 @@ const loginSchema = z.object({
 });
 
 const changePasswordSchema = z.object({
-  oldPassword: z.string(),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+  oldPassword: z.string().min(1),
+  newPassword: z.string().min(8),
 });
 
 const updateProfileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required').max(50).optional(),
-  lastName: z.string().min(1, 'Last name is required').max(50).optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
   languagePref: z.enum(['en', 'he']).optional(),
   avatarUrl: z.string().nullable().optional(),
 });
 
 export async function loginHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = loginSchema.parse(req.body);
-    const ip = req.ip || req.socket.remoteAddress;
+    const { email, password } = loginSchema.parse(req.body);
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
 
-    const result = await authService.login(data.email, data.password, ip, userAgent);
+    const result = await authService.login(email, password, ipAddress, userAgent);
 
-    // Set refresh token in HTTP-only cookie
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.json({
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
       user: result.user,
+      accessToken: result.accessToken,
     });
   } catch (error) {
     next(error);
@@ -50,26 +49,24 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
 
 export async function refreshHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const token = req.cookies?.refreshToken || req.body?.refreshToken;
-    if (!token) {
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (!refreshToken) {
       return res.status(401).json({ error: 'Refresh token required' });
     }
 
-    const ip = req.ip || req.socket.remoteAddress;
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
-    const result = await authService.refreshToken(token, ip, userAgent);
+
+    const result = await authService.refreshToken(refreshToken, ipAddress, userAgent);
 
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-    });
+    res.json({ accessToken: result.accessToken });
   } catch (error) {
     next(error);
   }
@@ -77,10 +74,11 @@ export async function refreshHandler(req: Request, res: Response, next: NextFunc
 
 export async function logoutHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const token = req.cookies?.refreshToken || req.body?.refreshToken;
-    if (token) {
-      await authService.logout(token, req.user?.userId);
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (refreshToken) {
+      await authService.logout(refreshToken, req.user?.userId);
     }
+
     res.clearCookie('refreshToken');
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
@@ -90,9 +88,37 @@ export async function logoutHandler(req: AuthRequest, res: Response, next: NextF
 
 export async function changePasswordHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const data = changePasswordSchema.parse(req.body);
-    await authService.changePassword(req.user!.userId, data.oldPassword, data.newPassword);
+    const { oldPassword, newPassword } = changePasswordSchema.parse(req.body);
+    await authService.changePassword(req.user!.userId, oldPassword, newPassword);
     res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateProfileHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const data = updateProfileSchema.parse(req.body);
+    const userId = req.user!.userId;
+
+    // Students, Teachers, Sales, and Admins can now customize their profile images.
+    // If avatarUrl is a Base64 data URL (accepts any image extension: png, jpeg, gif, svg, bmp),
+    // backend converts it through sharp into lightweight WebP for high performance and minimal storage footprint.
+    if (data.avatarUrl !== undefined && data.avatarUrl !== null && data.avatarUrl.trim() !== '') {
+      if (data.avatarUrl.startsWith('data:image/')) {
+        try {
+          const base64Data = data.avatarUrl.replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Buffer.from(base64Data, 'base64');
+          const { relativePath } = await processAndSaveWebP(buffer, 'avatars', 85);
+          data.avatarUrl = relativePath;
+        } catch (fileErr) {
+          console.error('Failed to process image buffer to WebP:', fileErr);
+        }
+      }
+    }
+
+    const user = await authService.updateProfile(userId, data);
+    res.json({ user, message: 'Profile updated successfully' });
   } catch (error) {
     next(error);
   }
@@ -106,46 +132,3 @@ export async function meHandler(req: AuthRequest, res: Response, next: NextFunct
     next(error);
   }
 }
-
-export async function updateProfileHandler(req: AuthRequest, res: Response, next: NextFunction) {
-  try {
-    const data = updateProfileSchema.parse(req.body);
-    const userId = req.user!.userId;
-    const userRole = req.user!.role;
-
-    // Permissions: Only Teachers and Platform Owners (ADMIN / SUPER_ADMIN) can set avatar images
-    if (data.avatarUrl !== undefined && data.avatarUrl !== null && data.avatarUrl.trim() !== '') {
-      const allowedRoles = ['TEACHER', 'ADMIN', 'SUPER_ADMIN'];
-      if (!allowedRoles.includes(userRole)) {
-        return res.status(403).json({
-          error: 'Forbidden',
-          message: 'Students are not permitted to set profile images. Only Teachers and Platform Owners can customize avatar images.',
-        });
-      }
-
-      // If avatarUrl is a Base64 data URL (e.g. data:image/webp;base64,...), persist it as a .webp file on disk
-      if (data.avatarUrl.startsWith('data:image/')) {
-        try {
-          const uploadsDir = path.join(process.cwd(), 'uploads', 'avatars');
-          if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-          }
-          const base64Data = data.avatarUrl.replace(/^data:image\/\w+;base64,/, '');
-          const buffer = Buffer.from(base64Data, 'base64');
-          const filename = `avatar-${userId}-${Date.now()}.webp`;
-          const filePath = path.join(uploadsDir, filename);
-          fs.writeFileSync(filePath, buffer);
-          data.avatarUrl = `/uploads/avatars/${filename}`;
-        } catch (fileErr) {
-          console.error('Failed to write WebP avatar to disk, persisting data URL directly:', fileErr);
-        }
-      }
-    }
-
-    const user = await authService.updateProfile(userId, data);
-    res.json({ user, message: 'Profile updated successfully' });
-  } catch (error) {
-    next(error);
-  }
-}
-

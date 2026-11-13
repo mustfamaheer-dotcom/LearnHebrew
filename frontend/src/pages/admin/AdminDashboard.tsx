@@ -11,6 +11,8 @@ import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { SystemLogsTab } from '../../components/admin/SystemLogsTab';
 import { ReminderNotificationHubTab } from '../../components/admin/ReminderNotificationHubTab';
 import { ReviewsAndFeedbackTab } from '../../components/admin/ReviewsAndFeedbackTab';
+import { PackagesManagementTab } from '../../components/admin/PackagesManagementTab';
+import { EnterpriseTabsContainer } from '../../components/admin/EnterpriseTabsContainer';
 import { haptics } from '../../utils/haptics';
 import {
   formatSlotRange12Hour,
@@ -102,10 +104,10 @@ export const AdminDashboard: React.FC = () => {
 
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'landing_cms' | 'reminders_hub' | 'users' | 'teachers' | 'packages' | 'bookings' | 'surveys' | 'system_logs'
+    'overview' | 'landing_cms' | 'enterprise' | 'reminders_hub' | 'users' | 'teachers' | 'packages' | 'bookings' | 'surveys' | 'system_logs'
   >(() => {
     const searchTab = new URLSearchParams(window.location.search).get('tab');
-    if (searchTab && ['overview', 'landing_cms', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(searchTab)) {
+    if (searchTab && ['overview', 'landing_cms', 'enterprise', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(searchTab)) {
       return searchTab as any;
     }
     return 'overview';
@@ -113,7 +115,7 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const handleNavEvent = (e: any) => {
-      if (e.detail?.tab && ['overview', 'landing_cms', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(e.detail.tab)) {
+      if (e.detail?.tab && ['overview', 'landing_cms', 'enterprise', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(e.detail.tab)) {
         setActiveTab(e.detail.tab);
       }
     };
@@ -704,6 +706,14 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'חבילות ומחירים',
       icon: Layers,
       badge: packagesData?.length || 0,
+    },
+    {
+      id: 'enterprise',
+      label: 'Levels & Roles (Enterprise)',
+      labelHe: 'רמות, תפקידים והרשאות',
+      icon: ShieldCheck,
+      badge: 'New',
+      badgeColor: 'bg-blue-500 text-white',
     },
     {
       id: 'bookings',
@@ -2567,6 +2577,11 @@ export const AdminDashboard: React.FC = () => {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* TAB 5B: ENTERPRISE LEVELS, ROLES & PLATFORM HUB */}
+          {activeTab === 'enterprise' && (
+            <EnterpriseTabsContainer />
           )}
 
           {/* TAB 6: BOOKINGS & LESSONS */}

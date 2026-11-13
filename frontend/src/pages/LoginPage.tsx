@@ -18,6 +18,8 @@ import {
   CheckCircle2,
   Globe2,
   Users,
+  Briefcase,
+  Headphones,
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -78,6 +80,10 @@ export const LoginPage: React.FC = () => {
       const role = res.data.user.role;
       if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
         navigate('/admin');
+      } else if (role === 'SALES') {
+        navigate('/sales');
+      } else if (role === 'CS') {
+        navigate('/cs');
       } else if (role === 'TEACHER') {
         navigate('/teacher');
       } else {
@@ -391,50 +397,85 @@ export const LoginPage: React.FC = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+              <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
                 {/* Admin Button */}
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('admin@learnhebrew.com', 'Admin@2026!')}
-                  className="p-2 sm:p-3 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-teal-500 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
+                  className="p-2 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
+                  title="Super Admin"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center mb-1 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
-                    <ShieldCheck className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200/60 dark:border-purple-800/60 flex items-center justify-center mb-1 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                  <span className="font-bold text-slate-900 dark:text-white text-[11px] sm:text-xs block">
                     {language === 'he' ? 'מנהל' : 'Admin'}
                   </span>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">admin@...</p>
+                  <p className="text-[9px] text-slate-400 font-mono truncate hidden sm:block">admin@</p>
+                </button>
+
+                {/* Sales Button (NEW) */}
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('sales@learnhebrew.com', 'Admin@2026!')}
+                  className="p-2 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
+                  title="Sales Representative"
+                >
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200/60 dark:border-blue-800/60 flex items-center justify-center mb-1 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                    <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <span className="font-bold text-slate-900 dark:text-white text-[11px] sm:text-xs block">
+                    {language === 'he' ? 'מכירות' : 'Sales'}
+                  </span>
+                  <p className="text-[9px] text-slate-400 font-mono truncate hidden sm:block">sales@</p>
+                </button>
+
+                {/* CS Button (NEW) */}
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('cs@learnhebrew.com', 'Admin@2026!')}
+                  className="p-2 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-teal-500 dark:hover:border-teal-400 hover:bg-teal-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
+                  title="Customer Service"
+                >
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200/60 dark:border-teal-800/60 flex items-center justify-center mb-1 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform">
+                    <Headphones className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <span className="font-bold text-slate-900 dark:text-white text-[11px] sm:text-xs block">
+                    {language === 'he' ? 'שירות' : 'CS'}
+                  </span>
+                  <p className="text-[9px] text-slate-400 font-mono truncate hidden sm:block">cs@</p>
                 </button>
 
                 {/* Teacher Button */}
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('mona.khalil@learnhebrew.com', 'Teacher@2026!')}
-                  className="p-2 sm:p-3 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-olive-500 dark:hover:border-brand-olive-400 hover:bg-brand-olive-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
+                  className="p-2 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
+                  title="Teacher Mona"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-brand-olive-50 dark:bg-brand-olive-950/60 border border-brand-olive-200/60 dark:border-brand-olive-800/60 flex items-center justify-center mb-1 text-brand-olive-700 dark:text-brand-olive-400 group-hover:scale-110 transition-transform">
-                    <GraduationCap className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-center mb-1 text-emerald-700 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                    <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                  <span className="font-bold text-slate-900 dark:text-white text-[11px] sm:text-xs block">
                     {language === 'he' ? 'מורה' : 'Teacher'}
                   </span>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">mona@...</p>
+                  <p className="text-[9px] text-slate-400 font-mono truncate hidden sm:block">mona@</p>
                 </button>
 
                 {/* Student Button */}
                 <button
                   type="button"
                   onClick={() => handleQuickLogin('omar.farouk@gmail.com', 'Student@2026!')}
-                  className="p-2 sm:p-3 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-teal-500 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
+                  className="p-2 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-cyan-500 dark:hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
+                  title="Student Omar"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 border border-brand-teal-200/60 dark:border-brand-teal-800/60 flex items-center justify-center mb-1 text-brand-teal-700 dark:text-brand-teal-400 group-hover:scale-110 transition-transform">
-                    <Users className="w-4 h-4" />
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200/60 dark:border-cyan-800/60 flex items-center justify-center mb-1 text-cyan-700 dark:text-cyan-400 group-hover:scale-110 transition-transform">
+                    <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-                  <span className="font-bold text-slate-900 dark:text-white text-xs block">
+                  <span className="font-bold text-slate-900 dark:text-white text-[11px] sm:text-xs block">
                     {language === 'he' ? 'תלמיד' : 'Student'}
                   </span>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">omar@...</p>
+                  <p className="text-[9px] text-slate-400 font-mono truncate hidden sm:block">omar@</p>
                 </button>
               </div>
             </div>

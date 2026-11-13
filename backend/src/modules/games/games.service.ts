@@ -303,3 +303,85 @@ export async function recordGameSession(
   });
 }
 
+
+/**
+ * Teachers unlock games for a student after a session.
+ * Student can play 1 time; then locked until next session unlock.
+ */
+export async function unlockGameForStudent(params: {
+  gameId: string;
+  studentId: string;
+  lessonId: string;
+  teacherUserId: string;
+}) {
+  const student = await prisma.student.findFirst({
+    where: { OR: [{ id: params.studentId }, { userId: params.studentId }] },
+    include: { user: true },
+  });
+  if (!student) throw { status: 404, message: 'Student not found' };
+
+  const game = await prisma.game.findUnique({ where: { id: params.gameId } });
+  if (!game) throw { status: 404, message: 'Game not found' };
+
+  const unlock = await prisma.studentGameUnlock.upsert({
+    where: {
+      studentId_gameId_lessonId: {
+        studentId: student.id,
+        gameId: game.id,
+        lessonId: params.lessonId,
+      },
+    },
+    update: {
+      isPlayed: false,
+      unlockedAt: new Date(),
+    },
+    create: {
+      studentId: student.id,
+      gameId: game.id,
+      lessonId: params.lessonId,
+      unlockedById: params.teacherUserId,
+      isPlayed: false,
+    },
+    include: { game: true },
+  });
+
+  // Notify student
+  await prisma.notification.create({
+    data: {
+      userId: student.userId,
+      type: 'GAME_UNLOCKED',
+      title: `Practice Game Unlocked: ${game.title} 🎮`,
+      titleEn: `Practice Game Unlocked: ${game.title} 🎮`,
+      titleHe: `נפתח משחק תרגול: ${game.titleHe} 🎮`,
+      body: 'Your teacher unlocked a custom game for you following your lesson. Complete it to earn points!',
+      bodyEn: 'Your teacher unlocked a custom game for you following your lesson. Complete it to earn points!',
+      bodyHe: 'המורה פתח עבורך משחק תרגול בעקבות השיעור. שחק עכשיו וצבור נקודות!',
+    },
+  });
+
+  return unlock;
+}
+
+export async function checkGameAccess(gameId: string, studentUserId: string) {
+  const student = await prisma.student.findUnique({ where: { userId: studentUserId } });
+  if (!student) return { canPlay: false, reason: 'Only students can play' };
+
+  // Check if an active unplayed unlock exists for this game
+  const activeUnlock = await prisma.studentGameUnlock.findFirst({
+    where: {
+      studentId: student.id,
+      gameId,
+      isPlayed: false,
+    },
+    orderBy: { unlockedAt: 'desc' },
+  });
+
+  if (!activeUnlock) {
+    return {
+      canPlay: false,
+      reason: 'LOCKED: This game is locked. Your teacher can unlock it for you after your private session.',
+    };
+  }
+
+  return { canPlay: true, unlockId: activeUnlock.id };
+}

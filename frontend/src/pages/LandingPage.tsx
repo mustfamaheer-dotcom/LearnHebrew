@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useTranslation } from '../hooks/useTranslation';
 import { useAuthStore } from '../store/authStore';
+import { PriceDisplay } from '../components/common/PriceDisplay';
 import { haptics } from '../utils/haptics';
 import {
   WhatsAppIcon,
@@ -821,9 +822,16 @@ export const LandingPage: React.FC = () => {
                     </span>
                     <h3 className="text-xl sm:text-2xl font-bold text-white mt-1 mb-2">{name}</h3>
                     <p className="text-xs sm:text-sm text-brand-teal-100 mb-6">{desc}</p>
-                    <div className="text-3xl sm:text-4xl font-extrabold text-white mb-6">
-                      ${Number(pkg.price)}{' '}
-                      <span className="text-xs font-normal text-brand-teal-200">
+                    <div className="mb-6">
+                      <PriceDisplay
+                        price={pkg.price}
+                        originalPrice={pkg.originalPrice}
+                        onSale={pkg.onSale}
+                        currency={pkg.currency || 'USD'}
+                        size="xl"
+                        isLightOnDark={true}
+                      />
+                      <span className="text-xs font-normal text-brand-teal-200 block mt-1">
                         {language === 'he'
                           ? `/ תוקף ל-${pkg.validityDays} יום`
                           : `/ ${pkg.validityDays} days validity`}
@@ -878,9 +886,15 @@ export const LandingPage: React.FC = () => {
                     {name}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6">{desc}</p>
-                  <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mb-6">
-                    ${Number(pkg.price)}{' '}
-                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                  <div className="mb-6">
+                    <PriceDisplay
+                      price={pkg.price}
+                      originalPrice={pkg.originalPrice}
+                      onSale={pkg.onSale}
+                      currency={pkg.currency || 'USD'}
+                      size="xl"
+                    />
+                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400 block mt-1">
                       {language === 'he'
                         ? `/ תוקף ל-${pkg.validityDays} יום`
                         : `/ ${pkg.validityDays} days validity`}

@@ -7,10 +7,11 @@ import { ProfileSettingsModal } from './components/common/ProfileSettingsModal';
 import { CommandPaletteModal } from './components/common/CommandPaletteModal';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { PageLoader } from './components/common/PageLoader';
+import { EnterpriseQuickAccessFloatingBar } from './components/common/EnterpriseQuickAccessFloatingBar';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 
-// Dynamic lazy-loaded route chunks for instant page delivery & performance
+// Lazy loaded routes
 const LandingPage = React.lazy(() =>
   import('./pages/LandingPage').then((m) => ({ default: m.LandingPage }))
 );
@@ -25,6 +26,15 @@ const TeacherDashboard = React.lazy(() =>
 );
 const AdminDashboard = React.lazy(() =>
   import('./pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+);
+const SalesDashboard = React.lazy(() =>
+  import('./pages/sales/SalesDashboard').then((m) => ({ default: m.SalesDashboard }))
+);
+const CSDashboard = React.lazy(() =>
+  import('./pages/cs/CSDashboard').then((m) => ({ default: m.CSDashboard }))
+);
+const ReviewRedirectPage = React.lazy(() =>
+  import('./pages/shared/ReviewRedirectPage').then((m) => ({ default: m.ReviewRedirectPage }))
 );
 
 const queryClient = new QueryClient({
@@ -54,11 +64,9 @@ export const App: React.FC = () => {
     }
   }, [theme]);
 
-  // Global Command Palette (⌘+K / Ctrl+K) & Custom Event Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        // Do not trigger on landing page or when not logged in
         if (window.location.pathname === '/' || !useAuthStore.getState().user) {
           return;
         }
@@ -90,6 +98,7 @@ export const App: React.FC = () => {
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/review/:token" element={<ReviewRedirectPage />} />
 
                 {/* Student Routes */}
                 <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
@@ -101,6 +110,16 @@ export const App: React.FC = () => {
                 {/* Teacher Routes */}
                 <Route element={<ProtectedRoute allowedRoles={['TEACHER']} />}>
                   <Route path="/teacher" element={<TeacherDashboard />} />
+                </Route>
+
+                {/* Sales Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['SALES', 'ADMIN', 'SUPER_ADMIN']} />}>
+                  <Route path="/sales" element={<SalesDashboard />} />
+                </Route>
+
+                {/* CS Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['CS', 'ADMIN', 'SUPER_ADMIN']} />}>
+                  <Route path="/cs" element={<CSDashboard />} />
                 </Route>
 
                 {/* Admin Routes */}
@@ -115,6 +134,7 @@ export const App: React.FC = () => {
               </Routes>
             </Suspense>
           </main>
+          <EnterpriseQuickAccessFloatingBar />
           <CommandPaletteModal
             isOpen={isCommandPaletteOpen}
             onClose={() => setIsCommandPaletteOpen(false)}

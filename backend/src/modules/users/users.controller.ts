@@ -6,14 +6,17 @@ import { Role, HebrewLevel } from '@prisma/client';
 
 const createUserSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(6),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   role: z.nativeEnum(Role),
   languagePref: z.enum(['en', 'he']).optional(),
-  level: z.nativeEnum(HebrewLevel).optional(), // For students
-  bio: z.string().optional(), // For teachers
-  specialties: z.array(z.string()).optional(), // For teachers
+  nativeLanguageId: z.string().optional(),
+  learningLanguageId: z.string().optional(),
+  levelId: z.string().optional(),
+  level: z.nativeEnum(HebrewLevel).optional(),
+  bio: z.string().optional(),
+  specialties: z.array(z.string()).optional(),
 });
 
 const updateUserSchema = z.object({
@@ -23,6 +26,9 @@ const updateUserSchema = z.object({
   role: z.nativeEnum(Role).optional(),
   isActive: z.boolean().optional(),
   languagePref: z.enum(['en', 'he']).optional(),
+  nativeLanguageId: z.string().nullable().optional(),
+  learningLanguageId: z.string().nullable().optional(),
+  levelId: z.string().nullable().optional(),
   level: z.nativeEnum(HebrewLevel).optional(),
   notes: z.string().optional(),
   totalPoints: z.number().int().min(0).optional(),
@@ -95,22 +101,12 @@ export async function resetPasswordHandler(req: AuthRequest, res: Response, next
   }
 }
 
-export async function adjustStudentBalanceHandler(req: AuthRequest, res: Response, next: NextFunction) {
+export async function updateNotificationPreferencesHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const { amount, mode, reason } = req.body;
-    if (amount === undefined || isNaN(Number(amount))) {
-      return res.status(400).json({ error: 'Valid numeric amount is required' });
-    }
-    const student = await usersService.adjustStudentBalance(
-      req.params.id,
-      Number(amount),
-      mode || 'add',
-      reason,
-      req.user!.userId
-    );
-    res.json({ message: 'Student balance updated successfully', student });
+    const targetUserId = req.params.id === 'me' ? req.user!.userId : req.params.id;
+    const updated = await usersService.updateNotificationPreferences(targetUserId, req.body);
+    res.json({ preferences: updated });
   } catch (error) {
     next(error);
   }
 }
-

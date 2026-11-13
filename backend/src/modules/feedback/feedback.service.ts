@@ -44,16 +44,8 @@ export async function listLessonFeedbacks(params?: {
   search?: string;
 }) {
   const where: any = {};
-
-  if (params?.studentId) {
-    where.studentId = params.studentId;
-  }
-
-  if (params?.teacherId) {
-    where.lesson = {
-      teacherId: params.teacherId,
-    };
-  }
+  if (params?.studentId) where.studentId = params.studentId;
+  if (params?.teacherId) where.lesson = { teacherId: params.teacherId };
 
   if (params?.minRating || params?.maxRating) {
     where.qualityRating = {};
@@ -62,10 +54,7 @@ export async function listLessonFeedbacks(params?: {
   }
 
   if (params?.search && params.search.trim()) {
-    where.comments = {
-      contains: params.search.trim(),
-      mode: 'insensitive',
-    };
+    where.comments = { contains: params.search.trim(), mode: 'insensitive' };
   }
 
   return prisma.lessonFeedback.findMany({
@@ -95,11 +84,14 @@ export async function listLessonFeedbacks(params?: {
 }
 
 export async function deleteLessonFeedback(id: string) {
-  return prisma.lessonFeedback.delete({
-    where: { id },
-  });
+  return prisma.lessonFeedback.delete({ where: { id } });
 }
 
+/**
+ * Teacher Survey submission:
+ * Strictly 1 survey per teacher with a 7-day editing window.
+ * After 7 days, editing is permanently locked.
+ */
 export async function submitTeacherSurvey(
   teacherId: string,
   userId: string,
@@ -119,37 +111,70 @@ export async function submitTeacherSurvey(
   });
   if (!teacher) throw { status: 404, message: 'Teacher not found' };
 
-  const survey = await prisma.teacherSurvey.upsert({
+  const existingSurvey = await prisma.teacherSurvey.findUnique({
     where: {
       studentId_teacherId: {
         studentId: student.id,
         teacherId: teacher.id,
       },
     },
-    update: data,
-    create: {
+  });
+
+  const now = new Date();
+
+  // If editing an existing survey, check 7-day window
+  if (existingSurvey) {
+    const lockTime = existingSurvey.editLockedAt || new Date(existingSurvey.submittedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+    if (now > lockTime) {
+      throw {
+        status: 403,
+        message: 'Review window has expired. Student surveys can only be edited within 1 week of submission.',
+      };
+    }
+
+    const updated = await prisma.teacherSurvey.update({
+      where: { id: existingSurvey.id },
+      data: {
+        ...data,
+        lastEditedAt: now,
+      },
+    });
+
+    await updateTeacherRating(teacher.id);
+    return updated;
+  }
+
+  // Create new survey with 7-day editLock window
+  const editLockedAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const survey = await prisma.teacherSurvey.create({
+    data: {
       studentId: student.id,
       teacherId: teacher.id,
       ...data,
+      submittedAt: now,
+      editLockedAt,
     },
   });
 
-  // Re-calculate teacher average rating
+  await updateTeacherRating(teacher.id);
+  return survey;
+}
+
+async function updateTeacherRating(teacherId: string) {
   const allSurveys = await prisma.teacherSurvey.findMany({
-    where: { teacherId: teacher.id },
+    where: { teacherId },
   });
   const avg =
     allSurveys.reduce((sum, s) => sum + s.overallRating, 0) / (allSurveys.length || 1);
 
   await prisma.teacher.update({
-    where: { id: teacher.id },
+    where: { id: teacherId },
     data: {
       ratingAvg: parseFloat(avg.toFixed(2)),
       ratingCount: allSurveys.length,
     },
   });
-
-  return survey;
 }
 
 export async function listTeacherSurveys(params?: {
@@ -165,15 +190,9 @@ export async function listTeacherSurveys(params?: {
     if (teacher) where.teacherId = teacher.id;
   }
 
-  if (params?.minRating) {
-    where.overallRating = { gte: params.minRating };
-  }
-
+  if (params?.minRating) where.overallRating = { gte: params.minRating };
   if (params?.search && params.search.trim()) {
-    where.comments = {
-      contains: params.search.trim(),
-      mode: 'insensitive',
-    };
+    where.comments = { contains: params.search.trim(), mode: 'insensitive' };
   }
 
   return prisma.teacherSurvey.findMany({
@@ -181,16 +200,12 @@ export async function listTeacherSurveys(params?: {
     include: {
       teacher: {
         include: {
-          user: {
-            select: { firstName: true, lastName: true, email: true, avatarUrl: true },
-          },
+          user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
         },
       },
       student: {
         include: {
-          user: {
-            select: { firstName: true, lastName: true, email: true, avatarUrl: true },
-          },
+          user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
         },
       },
     },
@@ -199,48 +214,23 @@ export async function listTeacherSurveys(params?: {
 }
 
 export async function deleteTeacherSurvey(id: string) {
-  const survey = await prisma.teacherSurvey.delete({
-    where: { id },
-  });
-
-  // Recalculate teacher ratingAvg & ratingCount
-  const remainingSurveys = await prisma.teacherSurvey.findMany({
-    where: { teacherId: survey.teacherId },
-  });
-  const avg =
-    remainingSurveys.length > 0
-      ? remainingSurveys.reduce((sum, s) => sum + s.overallRating, 0) / remainingSurveys.length
-      : 0;
-
-  await prisma.teacher.update({
-    where: { id: survey.teacherId },
-    data: {
-      ratingAvg: parseFloat(avg.toFixed(2)),
-      ratingCount: remainingSurveys.length,
-    },
-  });
-
-  return survey;
+  return prisma.teacherSurvey.delete({ where: { id } });
 }
 
-export async function getFeedbackAnalytics() {
+export async function getReviewsAnalytics() {
   const [lessonFeedbacks, teacherSurveys, teachers] = await Promise.all([
     prisma.lessonFeedback.findMany({
       include: {
         student: {
           include: {
-            user: {
-              select: { firstName: true, lastName: true, email: true, avatarUrl: true },
-            },
+            user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
           },
         },
         lesson: {
           include: {
             teacher: {
               include: {
-                user: {
-                  select: { firstName: true, lastName: true, email: true, avatarUrl: true },
-                },
+                user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
               },
             },
           },
@@ -252,16 +242,12 @@ export async function getFeedbackAnalytics() {
       include: {
         teacher: {
           include: {
-            user: {
-              select: { firstName: true, lastName: true, email: true, avatarUrl: true },
-            },
+            user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
           },
         },
         student: {
           include: {
-            user: {
-              select: { firstName: true, lastName: true, email: true, avatarUrl: true },
-            },
+            user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
           },
         },
       },
@@ -274,89 +260,17 @@ export async function getFeedbackAnalytics() {
     }),
   ]);
 
-  // Lesson stats
   const totalLessonReviews = lessonFeedbacks.length;
   const avgLessonQuality =
     totalLessonReviews > 0
       ? Number((lessonFeedbacks.reduce((sum, f) => sum + f.qualityRating, 0) / totalLessonReviews).toFixed(2))
       : 0;
 
-  const qualityDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  const paceDistribution = { slow: 0, justRight: 0, fast: 0 };
-  const difficultyDistribution = { easy: 0, balanced: 0, challenging: 0 };
-
-  lessonFeedbacks.forEach((f) => {
-    if (f.qualityRating >= 1 && f.qualityRating <= 5) {
-      qualityDistribution[f.qualityRating] = (qualityDistribution[f.qualityRating] || 0) + 1;
-    }
-    if (f.paceRating <= 2) paceDistribution.slow++;
-    else if (f.paceRating === 3) paceDistribution.justRight++;
-    else paceDistribution.fast++;
-
-    if (f.difficulty <= 2) difficultyDistribution.easy++;
-    else if (f.difficulty === 3) difficultyDistribution.balanced++;
-    else difficultyDistribution.challenging++;
-  });
-
-  // Teacher survey stats
   const totalTeacherSurveys = teacherSurveys.length;
   const avgTeacherOverall =
     totalTeacherSurveys > 0
       ? Number((teacherSurveys.reduce((sum, s) => sum + s.overallRating, 0) / totalTeacherSurveys).toFixed(2))
       : 0;
-  const avgCommunication =
-    totalTeacherSurveys > 0
-      ? Number((teacherSurveys.reduce((sum, s) => sum + s.communication, 0) / totalTeacherSurveys).toFixed(2))
-      : 0;
-  const avgKnowledge =
-    totalTeacherSurveys > 0
-      ? Number((teacherSurveys.reduce((sum, s) => sum + s.knowledge, 0) / totalTeacherSurveys).toFixed(2))
-      : 0;
-  const avgPunctuality =
-    totalTeacherSurveys > 0
-      ? Number((teacherSurveys.reduce((sum, s) => sum + s.punctuality, 0) / totalTeacherSurveys).toFixed(2))
-      : 0;
-
-  const teacherRatingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  teacherSurveys.forEach((s) => {
-    if (s.overallRating >= 1 && s.overallRating <= 5) {
-      teacherRatingDistribution[s.overallRating] = (teacherRatingDistribution[s.overallRating] || 0) + 1;
-    }
-  });
-
-  // Teacher performance breakdown
-  const teacherPerformance = teachers.map((t) => {
-    const surveysForTeacher = teacherSurveys.filter((s) => s.teacherId === t.id);
-    const count = surveysForTeacher.length;
-    const avgOverall =
-      count > 0
-        ? Number((surveysForTeacher.reduce((sum, s) => sum + s.overallRating, 0) / count).toFixed(2))
-        : Number(t.ratingAvg || 0);
-    const avgComm =
-      count > 0
-        ? Number((surveysForTeacher.reduce((sum, s) => sum + s.communication, 0) / count).toFixed(2))
-        : 0;
-    const avgKnow =
-      count > 0
-        ? Number((surveysForTeacher.reduce((sum, s) => sum + s.knowledge, 0) / count).toFixed(2))
-        : 0;
-    const avgPunc =
-      count > 0
-        ? Number((surveysForTeacher.reduce((sum, s) => sum + s.punctuality, 0) / count).toFixed(2))
-        : 0;
-
-    return {
-      teacherId: t.id,
-      name: `${t.user?.firstName || ''} ${t.user?.lastName || ''}`.trim() || 'Teacher',
-      email: t.user?.email || '',
-      avatarUrl: t.user?.avatarUrl || null,
-      reviewCount: count,
-      avgOverall,
-      avgCommunication: avgComm,
-      avgKnowledge: avgKnow,
-      avgPunctuality: avgPunc,
-    };
-  }).sort((a, b) => b.avgOverall - a.avgOverall || b.reviewCount - a.reviewCount);
 
   return {
     summary: {
@@ -364,16 +278,12 @@ export async function getFeedbackAnalytics() {
       avgLessonQuality,
       totalTeacherSurveys,
       avgTeacherOverall,
-      avgCommunication,
-      avgKnowledge,
-      avgPunctuality,
     },
-    qualityDistribution,
-    teacherRatingDistribution,
-    paceDistribution,
-    difficultyDistribution,
-    teacherPerformance,
     recentLessonFeedbacks: lessonFeedbacks.slice(0, 10),
     recentTeacherSurveys: teacherSurveys.slice(0, 10),
   };
+}
+
+export async function getFeedbackAnalytics() {
+  return getReviewsAnalytics();
 }

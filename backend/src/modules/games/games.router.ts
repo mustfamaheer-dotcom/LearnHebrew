@@ -8,6 +8,8 @@ import {
   updateGameHandler,
   deleteGameHandler,
   recordGameSessionHandler,
+  unlockGameHandler,
+  checkAccessHandler,
 } from './games.controller';
 import { authenticate, requireRoles } from '../../middleware/auth';
 import { Role } from '@prisma/client';
@@ -20,6 +22,8 @@ router.get('/', listGamesHandler);
 router.get('/leaderboard', getLeaderboardHandler);
 router.post('/leaderboard/reset-season', requireRoles(Role.ADMIN, Role.SUPER_ADMIN), resetSeasonHandler);
 router.get('/:id', getGameHandler);
+router.get('/:id/access', checkAccessHandler);
+router.post('/:id/unlock', requireRoles(Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN), unlockGameHandler);
 router.post('/', requireRoles(Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN), createGameHandler);
 router.put('/:id', requireRoles(Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN), updateGameHandler);
 router.patch('/:id', requireRoles(Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN), updateGameHandler);
@@ -27,4 +31,3 @@ router.delete('/:id', requireRoles(Role.TEACHER, Role.ADMIN, Role.SUPER_ADMIN), 
 router.post('/:id/play', recordGameSessionHandler);
 
 export default router;
-

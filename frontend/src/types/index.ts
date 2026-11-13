@@ -1,4 +1,4 @@
-export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'TEACHER' | 'STUDENT';
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'SALES' | 'CS' | 'TEACHER' | 'STUDENT';
 export type LanguagePref = 'en' | 'he';
 export type HebrewLevel =
   | 'BEGINNER'
@@ -49,8 +49,16 @@ export interface Package {
   totalLessons: number;
   validityDays: number;
   price: number;
+  originalPrice?: number | null;
+  onSale?: boolean;
   currency: string;
   isActive: boolean;
+  sessionItems?: Array<{
+    id?: string;
+    sessionTypeId: string;
+    quantity: number;
+    sessionType?: { id: string; name: string; durationMinutes: number; labelEn: string; labelHe: string };
+  }>;
 }
 
 export interface StudentPackage {
@@ -166,3 +174,139 @@ export interface LeaderboardEntry {
   streakDays: number;
 }
 
+
+// 2026 Enterprise Plan Additions
+export type ExtendedRole = 'SUPER_ADMIN' | 'ADMIN' | 'SALES' | 'CS' | 'TEACHER' | 'STUDENT';
+
+export interface LevelModel {
+  id: string;
+  code: string;
+  labelEn: string;
+  labelHe: string;
+  sortOrder: number;
+  isActive: boolean;
+  color?: string;
+  description?: string;
+  _count?: { students: number; games: number; levelExams: number };
+}
+
+export interface LanguageModel {
+  id: string;
+  code: string;
+  labelEn: string;
+  labelNative: string;
+  isActive: boolean;
+  flagEmoji?: string;
+}
+
+export interface SessionTypeModel {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  labelEn: string;
+  labelHe: string;
+  isActive: boolean;
+  sortOrder: number;
+  _count?: { lessons: number; packageItems: number };
+}
+
+export interface StudentSessionBalance {
+  id: string;
+  studentId: string;
+  sessionTypeId: string;
+  sessionType: SessionTypeModel;
+  balance: number;
+  expiresAt?: string;
+}
+
+export interface PackageSessionItem {
+  id: string;
+  packageId: string;
+  sessionTypeId: string;
+  sessionType: SessionTypeModel;
+  quantity: number;
+}
+
+export interface PaymentModel {
+  id: string;
+  studentId: string;
+  student: { user: { firstName: string; lastName: string; email: string } };
+  packageId: string;
+  package: { name: string; nameHe: string; sessionItems: PackageSessionItem[] };
+  createdById: string;
+  createdBy: { firstName: string; lastName: string; role: string; email: string };
+  screenshotUrl: string;
+  screenshotOriginalName?: string;
+  notes?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvedBy?: { firstName: string; lastName: string };
+  approvedAt?: string;
+  rejectedReason?: string;
+  createdAt: string;
+}
+
+export interface LevelExamModel {
+  id: string;
+  levelId: string;
+  level: LevelModel;
+  title: string;
+  titleHe: string;
+  description?: string;
+  passingScore: number;
+  questions: any[];
+  isActive: boolean;
+  _count?: { studentAttempts: number };
+}
+
+export interface StudentLevelExamModel {
+  id: string;
+  studentId: string;
+  examId: string;
+  exam: LevelExamModel;
+  openedById: string;
+  openedAt: string;
+  score?: number;
+  passed?: boolean;
+  newLevelId?: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'SUBMITTED' | 'GRADED' | 'RESET';
+}
+
+export interface ReviewLinkModel {
+  id: string;
+  token: string;
+  createdById: string;
+  createdBy: { firstName: string; lastName: string; email: string };
+  targetUrl: string;
+  label?: string;
+  usedAt?: string;
+  usedByIp?: string;
+  isUsed: boolean;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+export interface PointRuleModel {
+  id: string;
+  eventType: string;
+  points: number;
+  isActive: boolean;
+  description?: string;
+  updatedAt: string;
+}
+
+export interface PermissionModel {
+  id: string;
+  code: string;
+  group: string;
+  description: string;
+}
+
+export interface RoleDefinitionModel {
+  id: string;
+  name: string;
+  labelEn: string;
+  labelHe: string;
+  isSystem: boolean;
+  isActive: boolean;
+  permissions: Array<{ permission: PermissionModel; granted: boolean }>;
+}

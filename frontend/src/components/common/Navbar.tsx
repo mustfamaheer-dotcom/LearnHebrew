@@ -128,11 +128,19 @@ export const Navbar: React.FC = () => {
                           ? 'בעלים ומנהל ראשי'
                           : user.role === 'ADMIN'
                           ? 'מנהל מערכת'
+                          : user.role === 'SALES'
+                          ? 'נציג מכירות'
+                          : user.role === 'CS'
+                          ? 'שירות לקוחות'
                           : user.role === 'TEACHER'
                           ? 'מורה'
                           : 'תלמיד'
                         : user.role === 'SUPER_ADMIN'
                         ? 'Platform Owner'
+                        : user.role === 'SALES'
+                        ? 'Sales Representative'
+                        : user.role === 'CS'
+                        ? 'Customer Service'
                         : user.role}
                     </span>
                   </div>

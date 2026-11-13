@@ -33,8 +33,7 @@ export const ProfileSettingsModal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'info' | 'password'>('info');
 
   // Permission: ONLY Teachers and Platform Owners (SUPER_ADMIN / ADMIN) can add or customize their avatar image
-  const canCustomizeAvatar =
-    user?.role === 'TEACHER' || user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+  const canCustomizeAvatar = Boolean(user);
 
   // Form states - Info
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -269,7 +268,7 @@ export const ProfileSettingsModal: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <Camera className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                      <span>{isHe ? 'תמונת פרופיל (מורים ומנהלי מערכת)' : 'Profile Photo (Teachers & Platform Owners)'}</span>
+                      <span>{isHe ? 'תמונת פרופיל (העלאת כל סוג תמונה - מומר אוטומטית ל-WebP)' : 'Profile Photo (Accepts any image format - auto optimized to WebP)'}</span>
                     </span>
                     {avatarPreview && (
                       <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/70 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">

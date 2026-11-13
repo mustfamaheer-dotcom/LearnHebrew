@@ -135,3 +135,17 @@ export async function saveRecordingHandler(req: AuthRequest, res: Response, next
   }
 }
 
+
+export async function markAttendanceHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const status = z.enum(['ATTENDED', 'ABSENT', 'EXCUSED']).parse(req.body.status);
+    const updated = await lessonsService.markAttendance(
+      req.params.id,
+      req.user!.userId,
+      status as any
+    );
+    res.json({ lesson: updated, message: 'Attendance status recorded' });
+  } catch (error) {
+    next(error);
+  }
+}

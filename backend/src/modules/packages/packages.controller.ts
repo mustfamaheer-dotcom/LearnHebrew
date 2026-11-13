@@ -8,10 +8,20 @@ const createPackageSchema = z.object({
   nameHe: z.string().min(1),
   description: z.string().optional(),
   descriptionHe: z.string().optional(),
-  totalLessons: z.number().int().positive(),
-  validityDays: z.number().int().positive(),
-  price: z.number().positive(),
-  currency: z.string().default('USD'),
+  totalLessons: z.number().int().optional(),
+  validityDays: z.number().int().positive().optional().default(30),
+  price: z.number().min(0),
+  originalPrice: z.number().min(0).optional().nullable(),
+  onSale: z.boolean().optional(),
+  currency: z.enum(['USD', 'ILS']).default('USD'),
+  sessionItems: z
+    .array(
+      z.object({
+        sessionTypeId: z.string(),
+        quantity: z.number().int().positive(),
+      })
+    )
+    .optional(),
 });
 
 const updatePackageSchema = createPackageSchema.partial().extend({
@@ -93,25 +103,19 @@ export async function grantCreditsHandler(req: AuthRequest, res: Response, next:
       reason: data.reason,
       assignedById: req.user!.userId,
     });
-    res.status(200).json({
-      message: 'Credits granted successfully',
-      studentPackage,
-    });
+    res.status(201).json({ studentPackage });
   } catch (error) {
     next(error);
   }
 }
 
-
-
 export async function validateCouponHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { code, amount } = req.body;
-    if (!code) {
-      return res.status(400).json({ error: 'Coupon code is required' });
-    }
+    if (!code) return res.status(400).json({ error: 'Coupon code is required' });
+
     const result = await packagesService.validateCoupon(code, Number(amount) || 0);
-    res.status(200).json(result);
+    res.json(result);
   } catch (error) {
     next(error);
   }
@@ -120,7 +124,7 @@ export async function validateCouponHandler(req: AuthRequest, res: Response, nex
 export async function listCouponsHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const coupons = await packagesService.listCoupons();
-    res.status(200).json({ coupons });
+    res.json({ coupons });
   } catch (error) {
     next(error);
   }
@@ -138,7 +142,7 @@ export async function createCouponHandler(req: AuthRequest, res: Response, next:
 export async function deleteCouponHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     await packagesService.deleteCoupon(req.params.id);
-    res.status(200).json({ message: 'Coupon deleted successfully' });
+    res.json({ message: 'Coupon deleted successfully' });
   } catch (error) {
     next(error);
   }

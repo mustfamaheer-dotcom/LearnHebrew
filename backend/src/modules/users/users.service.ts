@@ -29,6 +29,11 @@ export async function listUsers(filters: {
       lastName: true,
       role: true,
       languagePref: true,
+      nativeLanguageId: true,
+      learningLanguageId: true,
+      nativeLanguage: true,
+      learningLanguage: true,
+      roleDefinition: true,
       avatarUrl: true,
       isActive: true,
       mustChangePw: true,
@@ -36,21 +41,13 @@ export async function listUsers(filters: {
       studentProfile: {
         select: {
           id: true,
+          levelId: true,
+          levelModel: true,
           level: true,
           totalPoints: true,
           streakDays: true,
-          balance: true,
-          packages: {
-            where: { status: 'ACTIVE' },
-            select: {
-              id: true,
-              lessonsTotal: true,
-              lessonsUsed: true,
-              status: true,
-              package: {
-                select: { id: true, name: true, nameHe: true },
-              },
-            },
+          sessionBalances: {
+            include: { sessionType: true },
           },
         },
       },
@@ -68,6 +65,9 @@ export async function listUsers(filters: {
   return users;
 }
 
+/**
+ * Creates user with Native Language and Language To Learn selections
+ */
 export async function createUser(data: {
   email: string;
   password: string;
@@ -75,6 +75,9 @@ export async function createUser(data: {
   lastName: string;
   role: Role;
   languagePref?: 'en' | 'he';
+  nativeLanguageId?: string;
+  learningLanguageId?: string;
+  levelId?: string;
   level?: HebrewLevel;
   bio?: string;
   specialties?: string[];
@@ -89,6 +92,11 @@ export async function createUser(data: {
 
   const passwordHash = await hashPassword(data.password);
 
+  // Link to RoleDefinition
+  const roleDef = await prisma.roleDefinition.findFirst({
+    where: { name: data.role },
+  });
+
   const user = await prisma.user.create({
     data: {
       email: data.email.toLowerCase(),
@@ -96,12 +104,22 @@ export async function createUser(data: {
       firstName: data.firstName,
       lastName: data.lastName,
       role: data.role,
+      roleDefinitionId: roleDef?.id,
       languagePref: data.languagePref || 'en',
+      nativeLanguageId: data.nativeLanguageId || null,
+      learningLanguageId: data.learningLanguageId || null,
       createdById: data.createdById,
       mustChangePw: true,
+      notificationPreference: {
+        create: {
+          reminder24hEnabled: true,
+          reminder1hEnabled: true,
+        },
+      },
       ...(data.role === Role.STUDENT && {
         studentProfile: {
           create: {
+            levelId: data.levelId || null,
             level: data.level || HebrewLevel.BEGINNER,
           },
         },
@@ -110,7 +128,7 @@ export async function createUser(data: {
         teacherProfile: {
           create: {
             bio: data.bio || '',
-            specialties: data.specialties || ['Modern Hebrew', 'Biblical Hebrew', 'Conversation'],
+            specialties: data.specialties || ['Conversational Hebrew', 'Grammar'],
           },
         },
       }),
@@ -118,6 +136,8 @@ export async function createUser(data: {
     include: {
       studentProfile: true,
       teacherProfile: true,
+      nativeLanguage: true,
+      learningLanguage: true,
     },
   });
 
@@ -137,8 +157,13 @@ export async function getUserById(id: string) {
   const user = await prisma.user.findUnique({
     where: { id },
     include: {
+      nativeLanguage: true,
+      learningLanguage: true,
+      notificationPreference: true,
       studentProfile: {
         include: {
+          levelModel: true,
+          sessionBalances: { include: { sessionType: true } },
           packages: { include: { package: true } },
           lessons: { take: 10, orderBy: { scheduledAt: 'desc' } },
         },
@@ -158,7 +183,7 @@ export async function getUserById(id: string) {
 }
 
 export async function updateUser(id: string, data: any) {
-  const { level, notes, totalPoints, streakDays, bio, specialties, ...userData } = data;
+  const { levelId, level, notes, totalPoints, streakDays, bio, specialties, ...userData } = data;
 
   const existing = await prisma.user.findUnique({
     where: { id },
@@ -166,43 +191,26 @@ export async function updateUser(id: string, data: any) {
   });
   if (!existing) throw { status: 404, message: 'User not found' };
 
-  const hasStudentUpdates =
-    level !== undefined || notes !== undefined || totalPoints !== undefined || streakDays !== undefined;
-  const hasTeacherUpdates = bio !== undefined || specialties !== undefined;
-
   const user = await prisma.user.update({
     where: { id },
     data: {
       ...userData,
-      ...(hasStudentUpdates && {
+      ...(existing.studentProfile && {
         studentProfile: {
-          upsert: {
-            create: {
-              level: level || 'BEGINNER',
-              notes: notes || '',
-              totalPoints: totalPoints || 0,
-              streakDays: streakDays || 0,
-            },
-            update: {
-              ...(level !== undefined && { level }),
-              ...(notes !== undefined && { notes }),
-              ...(totalPoints !== undefined && { totalPoints }),
-              ...(streakDays !== undefined && { streakDays }),
-            },
+          update: {
+            ...(levelId !== undefined && { levelId }),
+            ...(level !== undefined && { level }),
+            ...(notes !== undefined && { notes }),
+            ...(totalPoints !== undefined && { totalPoints }),
+            ...(streakDays !== undefined && { streakDays }),
           },
         },
       }),
-      ...(hasTeacherUpdates && {
+      ...(existing.teacherProfile && {
         teacherProfile: {
-          upsert: {
-            create: {
-              bio: bio || '',
-              specialties: specialties || [],
-            },
-            update: {
-              ...(bio !== undefined && { bio }),
-              ...(specialties !== undefined && { specialties }),
-            },
+          update: {
+            ...(bio !== undefined && { bio }),
+            ...(specialties !== undefined && { specialties }),
           },
         },
       }),
@@ -210,6 +218,8 @@ export async function updateUser(id: string, data: any) {
     include: {
       studentProfile: true,
       teacherProfile: true,
+      nativeLanguage: true,
+      learningLanguage: true,
     },
   });
 
@@ -232,62 +242,22 @@ export async function forceResetPassword(id: string, newPass: string) {
   });
 }
 
-export async function adjustStudentBalance(
-  studentIdOrUserId: string,
-  amount: number,
-  mode: 'add' | 'set' = 'add',
-  reason?: string,
-  adminUserId?: string
+export async function updateNotificationPreferences(
+  userId: string,
+  data: {
+    reminder24hEnabled?: boolean;
+    reminder1hEnabled?: boolean;
+    reminder24hMinutes?: number;
+    reminder1hMinutes?: number;
+    mutedCategories?: string[];
+  }
 ) {
-  const student = await prisma.student.findFirst({
-    where: { OR: [{ id: studentIdOrUserId }, { userId: studentIdOrUserId }] },
-    include: { user: true },
-  });
-  if (!student) throw { status: 404, message: 'Student not found' };
-
-  return prisma.$transaction(async (tx) => {
-    const currentBalance = Number(student.balance || 0);
-    const newBalance = mode === 'set' ? amount : currentBalance + amount;
-    if (newBalance < 0) {
-      throw { status: 400, message: 'Balance cannot be negative' };
-    }
-
-    const updated = await tx.student.update({
-      where: { id: student.id },
-      data: { balance: newBalance },
-      include: {
-        user: {
-          select: { id: true, firstName: true, lastName: true, email: true },
-        },
-      },
-    });
-
-    const netAmount = mode === 'set' ? newBalance - currentBalance : amount;
-    await tx.balanceTransaction.create({
-      data: {
-        studentId: student.id,
-        amount: netAmount,
-        balanceAfter: newBalance,
-        type: 'ADMIN_ADJUSTMENT',
-        description: reason || `Admin adjusted balance (${mode === 'set' ? 'Set to' : 'Added'} $${amount})`,
-        createdById: adminUserId,
-      },
-    });
-
-    await logAuditEvent({
-      userId: adminUserId || 'system',
-      action: 'STUDENT_BALANCE_ADJUSTED',
-      entityType: 'Student',
-      entityId: student.id,
-      metaJson: {
-        previousBalance: currentBalance,
-        newBalance,
-        netAmount,
-        reason,
-      },
-    });
-
-    return updated;
+  return prisma.userNotificationPreference.upsert({
+    where: { userId },
+    update: data,
+    create: {
+      userId,
+      ...data,
+    },
   });
 }
-
