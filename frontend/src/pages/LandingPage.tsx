@@ -274,35 +274,35 @@ export const LandingPage: React.FC = () => {
         ];
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden space-y-12 sm:space-y-24 pb-20">
+    <div className="w-full max-w-full overflow-x-hidden space-y-10 sm:space-y-20 pb-20">
       {/* HERO SECTION */}
-      <section className="relative pt-6 sm:pt-14 pb-10 sm:pb-20 overflow-hidden w-full max-w-full">
-        {/* Layered Atmospheric Glows - Contained to prevent mobile horizontal canvas expansion */}
+      <section className="relative pt-4 sm:pt-14 pb-8 sm:pb-20 overflow-hidden w-full max-w-full">
+        {/* Layered Atmospheric Glows - Contained to desktop to prevent mobile horizontal expansion */}
         <div className="hidden sm:block absolute top-0 start-1/2 -translate-x-1/2 w-[54rem] h-[30rem] bg-gradient-to-tr from-brand-teal-500/15 via-emerald-500/10 to-brand-olive-500/15 rounded-full blur-3xl pointer-events-none" />
         <div className="hidden sm:block absolute -top-12 -end-12 w-96 h-96 bg-brand-olive-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="hidden sm:block absolute top-1/2 -start-24 w-80 h-80 bg-brand-teal-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="sm:hidden absolute inset-0 bg-gradient-to-b from-teal-500/5 via-transparent to-transparent pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-          <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10 w-full min-w-0">
+          <div className="grid lg:grid-cols-12 gap-6 lg:gap-12 items-center w-full min-w-0">
             
             {/* Left Column: Core Value Proposition & CTAs */}
-            <div className="lg:col-span-7 text-start space-y-4 sm:space-y-6">
+            <div className="lg:col-span-7 text-start space-y-3.5 sm:space-y-5 w-full min-w-0">
               {/* Real-time CMS Announcement Pill */}
               {announcement && (
-                <div className="inline-flex max-w-full items-center gap-2 px-3 py-1 rounded-full bg-brand-teal-50/90 dark:bg-brand-teal-950/80 border border-brand-teal-200/80 dark:border-brand-teal-800/80 text-brand-teal-950 dark:text-brand-teal-200 text-[11px] sm:text-xs font-semibold shadow-2xs backdrop-blur-md">
-                  <Sparkles className="w-3.5 h-3.5 text-brand-olive-600 dark:text-brand-olive-400 shrink-0" />
+                <div className="inline-flex max-w-full items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-teal-50/90 dark:bg-brand-teal-950/80 border border-brand-teal-200/80 dark:border-brand-teal-800/80 text-brand-teal-950 dark:text-brand-teal-200 text-[10px] sm:text-xs font-semibold shadow-2xs backdrop-blur-md">
+                  <Sparkles className="w-3 h-3 text-brand-olive-600 dark:text-brand-olive-400 shrink-0" />
                   <span className="truncate">{announcement}</span>
                 </div>
               )}
 
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-brand-olive-100 to-brand-olive-50 dark:from-brand-olive-950/90 dark:to-brand-olive-900/80 text-brand-olive-900 dark:text-brand-olive-300 text-[10px] sm:text-[11px] font-black uppercase rounded-full tracking-wider border border-brand-olive-300/70 dark:border-brand-olive-800 shadow-2xs mb-2.5 sm:mb-4">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-gradient-to-r from-brand-olive-100 to-brand-olive-50 dark:from-brand-olive-950/90 dark:to-brand-olive-900/80 text-brand-olive-900 dark:text-brand-olive-300 text-[10px] sm:text-[11px] font-black uppercase rounded-full tracking-wider border border-brand-olive-300/70 dark:border-brand-olive-800 shadow-2xs mb-2 sm:mb-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>{badge}</span>
                 </div>
 
-                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug sm:leading-[1.12]">
+                <h1 className="text-xl sm:text-3xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug sm:leading-[1.15] break-words whitespace-normal">
                   {heroTitle}
                 </h1>
               </div>
@@ -312,7 +312,7 @@ export const LandingPage: React.FC = () => {
               </p>
 
               {/* Action Buttons */}
-              <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3.5">
+              <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full">
                 {user ? (
                   <Link
                     to={
@@ -323,7 +323,7 @@ export const LandingPage: React.FC = () => {
                         : '/student'
                     }
                     onClick={() => haptics.tap()}
-                    className="px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-black text-white bg-gradient-to-r from-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-700 hover:to-brand-teal-900 rounded-2xl shadow-md hover:shadow-xl transition-all flex items-center justify-center gap-2 group ring-2 ring-brand-teal-600/30 text-center"
+                    className="w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3.5 text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-700 hover:to-brand-teal-900 rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all flex items-center justify-center gap-2 group ring-2 ring-brand-teal-600/30 text-center"
                   >
                     <span>{ctaStudent}</span>
                     <ArrowRight className="w-4 h-4 rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
@@ -332,7 +332,7 @@ export const LandingPage: React.FC = () => {
                   <Link
                     to="/login"
                     onClick={() => haptics.tap()}
-                    className="px-6 sm:px-8 py-3 sm:py-3.5 text-xs sm:text-sm font-black text-white bg-gradient-to-r from-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-700 hover:to-brand-teal-900 rounded-2xl shadow-md hover:shadow-xl transition-all flex items-center justify-center gap-2 group ring-2 ring-brand-teal-600/30 text-center"
+                    className="w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3.5 text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-700 hover:to-brand-teal-900 rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all flex items-center justify-center gap-2 group ring-2 ring-brand-teal-600/30 text-center"
                   >
                     <span>{ctaLogin}</span>
                     <ArrowRight className="w-4 h-4 rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
@@ -341,7 +341,7 @@ export const LandingPage: React.FC = () => {
 
                 <a
                   href="#packages"
-                  className="px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-800 backdrop-blur-md transition-all shadow-2xs hover:shadow-md text-center"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-800/90 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 backdrop-blur-md transition-all shadow-2xs hover:shadow-md text-center"
                 >
                   {language === 'he' ? 'צפייה בחבילות 25 דקות' : 'Explore 25-Min Packages'}
                 </a>
@@ -349,20 +349,20 @@ export const LandingPage: React.FC = () => {
 
               {/* Social Media Floating Channels Bar */}
               {hasAnySocials && (
-                <div className="pt-1 flex items-center gap-2.5">
-                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <div className="pt-1 flex items-center gap-2">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     {language === 'he' ? 'קהילה ברשתות:' : 'Community:'}
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {hasSocialLink(socials.whatsapp) && (
                       <a
                         href={socials.whatsapp}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-800/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:scale-110 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-all shadow-2xs"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-800/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:scale-110 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-all shadow-2xs"
                         title="WhatsApp"
                       >
-                        <WhatsAppIcon className="w-4 h-4" />
+                        <WhatsAppIcon className="w-3.5 h-3.5" />
                       </a>
                     )}
                     {hasSocialLink(socials.instagram) && (
@@ -370,10 +370,10 @@ export const LandingPage: React.FC = () => {
                         href={socials.instagram}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-8 h-8 rounded-xl bg-pink-50 dark:bg-pink-950/70 border border-pink-200/80 dark:border-pink-800/80 text-pink-600 dark:text-pink-400 flex items-center justify-center hover:scale-110 hover:bg-pink-100 dark:hover:bg-pink-900 transition-all shadow-2xs"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-pink-50 dark:bg-pink-950/70 border border-pink-200/80 dark:border-pink-800/80 text-pink-600 dark:text-pink-400 flex items-center justify-center hover:scale-110 hover:bg-pink-100 dark:hover:bg-pink-900 transition-all shadow-2xs"
                         title="Instagram"
                       >
-                        <InstagramIcon className="w-4 h-4" />
+                        <InstagramIcon className="w-3.5 h-3.5" />
                       </a>
                     )}
                     {hasSocialLink(socials.youtube) && (
@@ -381,10 +381,10 @@ export const LandingPage: React.FC = () => {
                         href={socials.youtube}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200/80 dark:border-rose-800/80 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:scale-110 hover:bg-rose-100 dark:hover:bg-rose-900 transition-all shadow-2xs"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-50 dark:bg-rose-950/70 border border-rose-200/80 dark:border-rose-800/80 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:scale-110 hover:bg-rose-100 dark:hover:bg-rose-900 transition-all shadow-2xs"
                         title="YouTube"
                       >
-                        <YouTubeIcon className="w-4 h-4" />
+                        <YouTubeIcon className="w-3.5 h-3.5" />
                       </a>
                     )}
                     {hasSocialLink(socials.telegram) && (
@@ -392,10 +392,10 @@ export const LandingPage: React.FC = () => {
                         href={socials.telegram}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/70 border border-sky-200/80 dark:border-sky-800/80 text-sky-600 dark:text-sky-400 flex items-center justify-center hover:scale-110 hover:bg-sky-100 dark:hover:bg-sky-900 transition-all shadow-2xs"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-sky-50 dark:bg-sky-950/70 border border-sky-200/80 dark:border-sky-800/80 text-sky-600 dark:text-sky-400 flex items-center justify-center hover:scale-110 hover:bg-sky-100 dark:hover:bg-sky-900 transition-all shadow-2xs"
                         title="Telegram"
                       >
-                        <TelegramIcon className="w-4 h-4" />
+                        <TelegramIcon className="w-3.5 h-3.5" />
                       </a>
                     )}
                   </div>
@@ -403,48 +403,48 @@ export const LandingPage: React.FC = () => {
               )}
 
               {/* Trust Guarantees Row - Wrapped in Responsive Chip Pills */}
-              <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/70 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <div className="pt-2.5 border-t border-slate-200/60 dark:border-slate-800 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 text-[10px] sm:text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
                   <span>{language === 'he' ? 'מורים מוסמכים מישראל' : 'Native Certified Tutors'}</span>
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/70 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
-                  <Clock className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 text-[10px] sm:text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
+                  <Clock className="w-3 h-3 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
                   <span>{language === 'he' ? '25 דק׳ למיקוד שיא' : '25-Min Focused Slots'}</span>
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/70 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
-                  <Globe2 className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 text-[10px] sm:text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
+                  <Globe2 className="w-3 h-3 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
                   <span>{language === 'he' ? 'שעון ישראל (IST/IDT)' : 'Israel Timing (IST)'}</span>
                 </span>
               </div>
             </div>
 
             {/* Right Column: Interactive Live Session Experience Card */}
-            <div className="lg:col-span-5 w-full">
-              <div className="relative rounded-3xl bg-gradient-to-br from-white/95 via-white/85 to-teal-50/60 dark:from-slate-900/95 dark:via-slate-900/85 dark:to-teal-950/40 p-3.5 sm:p-7 border border-slate-200/90 dark:border-slate-800 shadow-xl backdrop-blur-2xl space-y-3.5 sm:space-y-5 w-full max-w-full overflow-hidden">
-                {/* Specular Ambient Glow */}
-                <div className="absolute -top-10 -end-10 w-44 h-44 rounded-full bg-emerald-400/15 blur-2xl pointer-events-none" />
+            <div className="lg:col-span-5 w-full min-w-0">
+              <div className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/95 via-white/85 to-teal-50/60 dark:from-slate-900/95 dark:via-slate-900/85 dark:to-teal-950/40 p-3 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xl backdrop-blur-2xl space-y-3 sm:space-y-4 w-full max-w-full overflow-hidden">
+                {/* Specular Ambient Glow - Hidden on mobile */}
+                <div className="hidden sm:block absolute -top-10 -end-10 w-44 h-44 rounded-full bg-emerald-400/15 blur-2xl pointer-events-none" />
 
                 {/* Card Top: Live Badge & Session Meta */}
-                <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2.5 w-2.5">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-slate-800">
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
-                    <span className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
                       {language === 'he' ? 'שיעור 1-על-1 אינטראקטיבי' : 'Live 1-on-1 Session'}
                     </span>
                   </div>
-                  <div className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">
+                  <div className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] sm:text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">
                     25 MIN
                   </div>
                 </div>
 
                 {/* Tutor Profile Preview */}
-                <div className="flex items-center justify-between gap-2.5 p-2.5 sm:p-3 rounded-2xl bg-white/70 dark:bg-slate-850/70 border border-slate-200/60 dark:border-slate-750 w-full">
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-brand-teal-700 to-emerald-700 text-white font-black flex items-center justify-center text-xs sm:text-sm shadow-md shrink-0">
+                <div className="flex items-center justify-between gap-2 p-2 sm:p-2.5 rounded-xl bg-white/70 dark:bg-slate-850/70 border border-slate-200/60 dark:border-slate-750 w-full min-w-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-brand-teal-700 to-emerald-700 text-white font-black flex items-center justify-center text-xs sm:text-sm shadow-md shrink-0">
                       TC
                     </div>
                     <div className="min-w-0 flex-1">
@@ -452,32 +452,32 @@ export const LandingPage: React.FC = () => {
                         <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm truncate">
                           {language === 'he' ? 'תמר כהן' : 'Tamar Cohen'}
                         </h4>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
                       </div>
-                      <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      <p className="text-[9px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
                         {language === 'he' ? 'תל אביב · מורה מוסמכת' : 'Tel Aviv · Native Instructor'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[11px] sm:text-xs font-black shrink-0">
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[10px] sm:text-xs font-black shrink-0">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                     <span>5.0</span>
                   </div>
                 </div>
 
                 {/* Interactive Hebrew Soundboard */}
-                <div className="space-y-2 w-full">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
-                    <span className="flex items-center gap-1.5 text-brand-teal-800 dark:text-brand-teal-400 font-extrabold text-[11px] sm:text-xs truncate">
-                      <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-teal-600 dark:text-teal-400 shrink-0" />
+                <div className="space-y-1.5 w-full min-w-0">
+                  <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-1 text-brand-teal-800 dark:text-brand-teal-400 font-extrabold text-[10px] sm:text-xs truncate">
+                      <Volume2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-teal-600 dark:text-teal-400 shrink-0" />
                       <span>{language === 'he' ? 'לוח שמע חי — לחץ להגייה' : 'Live Audio — Tap to Listen'}</span>
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono shrink-0">
                       {language === 'he' ? 'הגייה ישראלית' : 'Native Israeli'}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2 w-full">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 w-full min-w-0">
                     {soundboardWords.map((word) => {
                       const isPlaying = playingWord === word.he;
                       return (
@@ -485,24 +485,24 @@ export const LandingPage: React.FC = () => {
                           key={word.he}
                           type="button"
                           onClick={() => playSampleAudio(word.he)}
-                          className={`p-2 sm:p-2.5 rounded-xl border text-center transition-all duration-200 flex flex-col items-center justify-center relative overflow-hidden group min-w-0 w-full ${
+                          className={`p-1.5 sm:p-2.5 rounded-xl border text-center transition-all duration-200 flex flex-col items-center justify-center relative overflow-hidden group min-w-0 w-full ${
                             isPlaying
                               ? 'bg-brand-teal-800 text-white border-brand-teal-800 scale-[1.02] shadow-md ring-2 ring-emerald-400/50'
                               : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80 shadow-2xs'
                           }`}
                         >
-                          <span className="font-hebrew text-sm sm:text-base font-bold block truncate max-w-full">
+                          <span className="font-hebrew text-xs sm:text-base font-bold block truncate max-w-full">
                             {word.he}
                           </span>
                           <span
-                            className={`text-[10px] font-semibold truncate block mt-0.5 max-w-full ${
+                            className={`text-[9px] sm:text-[10px] font-semibold truncate block mt-0.5 max-w-full ${
                               isPlaying ? 'text-brand-olive-300' : 'text-slate-500 dark:text-slate-400'
                             }`}
                           >
                             {word.phonetic}
                           </span>
                           <span
-                            className={`text-[9px] truncate block opacity-80 max-w-full ${
+                            className={`text-[8px] sm:text-[9px] truncate block opacity-75 max-w-full ${
                               isPlaying ? 'text-teal-100' : 'text-slate-400 dark:text-slate-500'
                             }`}
                           >
@@ -510,7 +510,7 @@ export const LandingPage: React.FC = () => {
                           </span>
 
                           {isPlaying && (
-                            <span className="absolute bottom-1 w-5 h-1 rounded-full bg-brand-olive-400 animate-pulse" />
+                            <span className="absolute bottom-0.5 w-4 h-0.5 rounded-full bg-brand-olive-400 animate-pulse" />
                           )}
                         </button>
                       );
@@ -519,14 +519,14 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 {/* Simulation Bottom Bar: Zoom Launcher Ready */}
-                <div className="p-2.5 sm:p-3.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/90 flex items-center justify-between gap-2 text-[10px] sm:text-xs w-full">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/90 flex items-center justify-between gap-1.5 text-[9px] sm:text-xs w-full min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <Video className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-                    <span className="font-bold text-slate-700 dark:text-slate-300 truncate">
+                    <Video className="w-3 h-3 text-teal-600 dark:text-teal-400 shrink-0" />
+                    <span className="font-bold text-slate-700 dark:text-slate-300 truncate text-[10px] sm:text-xs">
                       {language === 'he' ? 'חדר Zoom מאובטח + הקלטת Drive' : 'Zoom HD + Cloud Recording'}
                     </span>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-extrabold text-brand-teal-800 dark:text-brand-teal-400 font-mono shrink-0">
+                  <span className="text-[9px] sm:text-[10px] font-extrabold text-brand-teal-800 dark:text-brand-teal-400 font-mono shrink-0">
                     IST 12h AM/PM
                   </span>
                 </div>
@@ -538,9 +538,9 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* STATS COUNTERS BAR (CMS Managed) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-gradient-to-r from-brand-teal-900 via-brand-teal-950 to-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl border border-brand-teal-800/50 relative overflow-hidden">
-          <div className="absolute top-0 end-0 w-80 h-80 bg-brand-olive-500/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
+        <div className="bg-gradient-to-r from-brand-teal-900 via-brand-teal-950 to-slate-900 rounded-2xl sm:rounded-3xl p-5 sm:p-10 text-white shadow-xl border border-brand-teal-800/50 relative overflow-hidden w-full">
+          <div className="hidden sm:block absolute top-0 end-0 w-80 h-80 bg-brand-olive-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 relative z-10 text-center">
             {stats.map((st: any, idx: number) => {
@@ -561,7 +561,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 3-STEP LEARNING JOURNEY (HOW IT WORKS) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
         <div className="text-center mb-12 sm:mb-16">
           <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-400 uppercase tracking-wider block mb-2">
             {language === 'he' ? 'הדרך המהירה לשליטה בעברית' : 'The Fastest Route to Fluency'}
@@ -631,7 +631,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* CORE FEATURES (Live CMS Driven) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
         <div className="text-center mb-12 sm:mb-16">
           <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-400 uppercase tracking-wider block mb-2">
             {language === 'he' ? 'מותאם במיוחד ללמידה מודרנית' : 'Engineered for Modern Acquisition'}
@@ -684,9 +684,9 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* WHY 25-MINUTES MICRO-LESSONS SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-gradient-to-br from-brand-teal-950 via-brand-teal-900 to-brand-teal-800 rounded-3xl p-8 sm:p-12 lg:p-16 text-white relative overflow-hidden shadow-xl">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-olive-500/10 rounded-full blur-3xl pointer-events-none" />
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
+        <div className="bg-gradient-to-br from-brand-teal-950 via-brand-teal-900 to-brand-teal-800 rounded-2xl sm:rounded-3xl p-5 sm:p-12 lg:p-16 text-white relative overflow-hidden shadow-xl w-full max-w-full">
+          <div className="hidden sm:block absolute top-0 right-0 w-96 h-96 bg-brand-olive-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="grid lg:grid-cols-12 gap-8 items-center relative z-10">
             <div className="lg:col-span-7 space-y-4">
@@ -752,7 +752,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* PRICING PACKAGES (Driven dynamically from DB or default) */}
-      <section id="packages" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="packages" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
         <div className="text-center mb-12 sm:mb-16">
           <span className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 uppercase tracking-wider block mb-2">
             {language === 'he' ? 'מסלולי השקעה שקופים' : 'Transparent Investment'}
@@ -921,7 +921,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* STUDENT TESTIMONIALS (CMS Managed) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
         <div className="text-center mb-12">
           <span className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 uppercase tracking-wider block mb-2">
             {language === 'he' ? 'סיפורי הצלחה' : 'Learner Reviews'}
@@ -973,7 +973,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* FREQUENTLY ASKED QUESTIONS (FAQ Accordion - CMS Managed) */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
         <div className="text-center mb-10">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {language === 'he' ? 'שאלות נפוצות' : 'Frequently Asked Questions'}
@@ -1025,8 +1025,8 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-slate-200/80 dark:border-slate-800/80 pt-12 pb-8 bg-slate-50/50 dark:bg-slate-950/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="border-t border-slate-200/80 dark:border-slate-800/80 pt-10 sm:pt-12 pb-8 bg-slate-50/50 dark:bg-slate-950/40 w-full min-w-0">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-slate-200/60 dark:border-slate-800">
             <div className="flex items-center gap-3">
               <div className="p-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
