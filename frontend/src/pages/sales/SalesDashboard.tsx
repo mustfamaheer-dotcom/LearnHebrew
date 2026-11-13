@@ -1024,10 +1024,10 @@ export const SalesDashboard: React.FC = () => {
                   onChange={(e) => setStudentForm({ ...studentForm, levelId: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                 >
-                  <option value="">-- Choose Level --</option>
+                  <option value="">{language === 'he' ? '-- בחר רמת שליטה בעברית --' : '-- Choose Level --'}</option>
                   {safeLevels.map((lvl) => (
                     <option key={lvl.id} value={lvl.id}>
-                      {lvl.labelEn} ({lvl.code})
+                      {language === 'he' ? lvl.labelHe : lvl.labelEn} {lvl.code ? `(${lvl.code})` : ''}
                     </option>
                   ))}
                 </select>

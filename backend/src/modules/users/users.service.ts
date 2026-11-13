@@ -97,6 +97,33 @@ export async function createUser(data: {
     where: { name: data.role },
   });
 
+  // Resolve and synchronize dynamic Hebrew Proficiency Level (Level model)
+  let resolvedLevelId: string | null = data.levelId || null;
+  let resolvedLevelEnum: HebrewLevel = data.level || HebrewLevel.BEGINNER;
+
+  if (resolvedLevelId) {
+    const lvlRecord = await prisma.level.findUnique({ where: { id: resolvedLevelId } });
+    if (lvlRecord && Object.values(HebrewLevel).includes(lvlRecord.code as any)) {
+      resolvedLevelEnum = lvlRecord.code as HebrewLevel;
+    }
+  } else if (data.level) {
+    const lvlRecord = await prisma.level.findFirst({ where: { code: data.level } });
+    if (lvlRecord) {
+      resolvedLevelId = lvlRecord.id;
+    }
+  } else if (data.role === Role.STUDENT) {
+    const defaultLevel = await prisma.level.findFirst({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+    if (defaultLevel) {
+      resolvedLevelId = defaultLevel.id;
+      if (Object.values(HebrewLevel).includes(defaultLevel.code as any)) {
+        resolvedLevelEnum = defaultLevel.code as HebrewLevel;
+      }
+    }
+  }
+
   const user = await prisma.user.create({
     data: {
       email: data.email.toLowerCase(),
@@ -119,8 +146,8 @@ export async function createUser(data: {
       ...(data.role === Role.STUDENT && {
         studentProfile: {
           create: {
-            levelId: data.levelId || null,
-            level: data.level || HebrewLevel.BEGINNER,
+            levelId: resolvedLevelId,
+            level: resolvedLevelEnum,
           },
         },
       }),
@@ -191,6 +218,20 @@ export async function updateUser(id: string, data: any) {
   });
   if (!existing) throw { status: 404, message: 'User not found' };
 
+  let resolvedLevelId = levelId;
+  let resolvedLevelEnum = level;
+  if (resolvedLevelId) {
+    const lvlRecord = await prisma.level.findUnique({ where: { id: resolvedLevelId } });
+    if (lvlRecord && Object.values(HebrewLevel).includes(lvlRecord.code as any)) {
+      resolvedLevelEnum = lvlRecord.code as HebrewLevel;
+    }
+  } else if (level && !levelId) {
+    const lvlRecord = await prisma.level.findFirst({ where: { code: level } });
+    if (lvlRecord) {
+      resolvedLevelId = lvlRecord.id;
+    }
+  }
+
   const user = await prisma.user.update({
     where: { id },
     data: {
@@ -198,8 +239,8 @@ export async function updateUser(id: string, data: any) {
       ...(existing.studentProfile && {
         studentProfile: {
           update: {
-            ...(levelId !== undefined && { levelId }),
-            ...(level !== undefined && { level }),
+            ...(resolvedLevelId !== undefined && { levelId: resolvedLevelId }),
+            ...(resolvedLevelEnum !== undefined && { level: resolvedLevelEnum }),
             ...(notes !== undefined && { notes }),
             ...(totalPoints !== undefined && { totalPoints }),
             ...(streakDays !== undefined && { streakDays }),

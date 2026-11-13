@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
@@ -24,7 +24,7 @@ import { LanguagesTab } from '../../components/admin/LanguagesTab';
 import { PlatformSettingsNavModal } from '../../components/admin/PlatformSettingsNavModal';
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
-import { sessionTypesApi } from '../../lib/enterpriseApi';
+import { sessionTypesApi, levelsApi } from '../../lib/enterpriseApi';
 import { PriceDisplay } from '../../components/common/PriceDisplay';
 import { haptics } from '../../utils/haptics';
 import {
@@ -245,7 +245,7 @@ export const AdminDashboard: React.FC = () => {
   const [newUserFirst, setNewUserFirst] = useState('');
   const [newUserLast, setNewUserLast] = useState('');
   const [newUserRole, setNewUserRole] = useState<'STUDENT' | 'TEACHER' | 'ADMIN'>('STUDENT');
-  const [newUserLevel, setNewUserLevel] = useState('BEGINNER');
+  const [newUserLevelId, setNewUserLevelId] = useState('');
 
   // Modern Package Management State
   const [isCreatingPackage, setIsCreatingPackage] = useState(false);
@@ -331,7 +331,7 @@ export const AdminDashboard: React.FC = () => {
   const [editRole, setEditRole] = useState<'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN'>('STUDENT');
   const [editIsActive, setEditIsActive] = useState(true);
   const [editLanguagePref, setEditLanguagePref] = useState<'en' | 'he'>('en');
-  const [editLevel, setEditLevel] = useState<string>('BEGINNER');
+  const [editLevelId, setEditLevelId] = useState<string>('');
   const [editNotes, setEditNotes] = useState('');
   const [editTotalPoints, setEditTotalPoints] = useState(0);
   const [editBio, setEditBio] = useState('');
@@ -402,6 +402,25 @@ export const AdminDashboard: React.FC = () => {
       return res.data.surveys;
     },
   });
+
+  // 6.5. Hebrew Proficiency Levels List
+  const { data: levelsData = [] } = useQuery({
+    queryKey: ['levels'],
+    queryFn: async () => {
+      const res = await levelsApi.list();
+      return Array.isArray(res) ? res : ((res as any)?.levels || []);
+    },
+  });
+
+  const safeLevels = useMemo(() => {
+    return Array.isArray(levelsData) ? levelsData.filter((l: any) => l.isActive !== false) : [];
+  }, [levelsData]);
+
+  useEffect(() => {
+    if (safeLevels.length > 0 && !newUserLevelId) {
+      setNewUserLevelId(safeLevels[0].id);
+    }
+  }, [safeLevels, newUserLevelId]);
 
   // 7. Landing Page CMS Settings
   const { data: cmsSettings, isLoading: cmsLoading } = useQuery({
@@ -734,7 +753,7 @@ export const AdminDashboard: React.FC = () => {
     setEditRole(u.role || 'STUDENT');
     setEditIsActive(u.isActive !== false);
     setEditLanguagePref(u.languagePref || 'en');
-    setEditLevel(u.studentProfile?.level || 'BEGINNER');
+    setEditLevelId(u.studentProfile?.levelId || u.studentProfile?.levelModel?.id || '');
     setEditNotes(u.studentProfile?.notes || '');
     setEditTotalPoints(u.studentProfile?.totalPoints || 0);
     setEditBio(u.teacherProfile?.bio || '');
@@ -759,7 +778,7 @@ export const AdminDashboard: React.FC = () => {
         isActive: editIsActive,
         languagePref: editLanguagePref,
         ...(editRole === 'STUDENT' && {
-          level: editLevel,
+          levelId: editLevelId || undefined,
           notes: editNotes,
           totalPoints: Number(editTotalPoints) || 0,
         }),
@@ -2391,7 +2410,13 @@ export const AdminDashboard: React.FC = () => {
                               <td className="py-3.5 px-4 text-start">
                                 {isStudent ? (
                                   <bdi className="font-bold text-slate-700 dark:text-slate-300 inline-block">
-                                    {u.studentProfile?.level ? t(`levels.${u.studentProfile.level}`) : (language === 'he' ? 'מתחיל (רמה א׳)' : 'BEGINNER')}
+                                    {u.studentProfile?.levelModel ? (
+                                      language === 'he' ? u.studentProfile.levelModel.labelHe : u.studentProfile.levelModel.labelEn
+                                    ) : u.studentProfile?.level ? (
+                                      t(`levels.${u.studentProfile.level}`)
+                                    ) : (
+                                      language === 'he' ? 'רמה א׳' : 'Beginner'
+                                    )}
                                   </bdi>
                                 ) : isTeacher ? (
                                   <div className="space-y-0.5">
@@ -3293,13 +3318,19 @@ export const AdminDashboard: React.FC = () => {
                     {language === 'he' ? 'רמת עברית התחלתית' : 'Starting Hebrew Level'}
                   </label>
                   <select
-                    value={newUserLevel}
-                    onChange={(e) => setNewUserLevel(e.target.value)}
+                    value={newUserLevelId}
+                    onChange={(e) => setNewUserLevelId(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                   >
-                    <option value="BEGINNER">{language === 'he' ? '🌱 מתחילים (רמה אלף)' : '🌱 Beginner (Alef)'}</option>
-                    <option value="INTERMEDIATE">{language === 'he' ? '🌿 בינוני (רמה בית)' : '🌿 Intermediate (Bet)'}</option>
-                    <option value="ADVANCED">{language === 'he' ? '🌳 מתקדמים (רמה גימל)' : '🌳 Advanced (Gimel)'}</option>
+                    {safeLevels.length === 0 ? (
+                      <option value="">{language === 'he' ? '-- אין רמות מוגדרות --' : '-- No levels configured --'}</option>
+                    ) : (
+                      safeLevels.map((lvl: any) => (
+                        <option key={lvl.id} value={lvl.id}>
+                          {language === 'he' ? lvl.labelHe : lvl.labelEn} {lvl.code ? `(${lvl.code})` : ''}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
               </div>
@@ -3327,7 +3358,7 @@ export const AdminDashboard: React.FC = () => {
                     firstName: newUserFirst,
                     lastName: newUserLast,
                     role: newUserRole,
-                    level: newUserLevel,
+                    levelId: newUserLevelId,
                   });
                 }}
                 disabled={createUserMutation.isPending}
@@ -3882,19 +3913,19 @@ export const AdminDashboard: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        {language === 'he' ? 'רמת עברית' : 'Hebrew Proficiency Level'}
+                        {language === 'he' ? 'רמת עברית (רמות שליטה)' : 'Hebrew Proficiency Level'}
                       </label>
                       <select
-                        value={editLevel}
-                        onChange={(e) => setEditLevel(e.target.value)}
+                        value={editLevelId}
+                        onChange={(e) => setEditLevelId(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
                       >
-                        <option value="BEGINNER">Beginner (מתחילים - רמה א׳)</option>
-                        <option value="ELEMENTARY">Elementary (בסיסי)</option>
-                        <option value="INTERMEDIATE">Intermediate (בינוני - רמה ב׳)</option>
-                        <option value="UPPER_INTERMEDIATE">Upper Intermediate (מתקדם קל)</option>
-                        <option value="ADVANCED">Advanced (מתקדם - רמה ג׳)</option>
-                        <option value="FLUENT">Fluent (שוטף)</option>
+                        <option value="">{language === 'he' ? '-- בחר רמת שליטה --' : '-- Select Proficiency Level --'}</option>
+                        {safeLevels.map((lvl: any) => (
+                          <option key={lvl.id} value={lvl.id}>
+                            {language === 'he' ? lvl.labelHe : lvl.labelEn} {lvl.code ? `(${lvl.code})` : ''}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
