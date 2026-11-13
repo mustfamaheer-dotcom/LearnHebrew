@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { sessionTypesApi } from '../../lib/enterpriseApi';
 import { SessionTypeModel } from '../../types';
 import { toast } from '../../store/toastStore';
+import { confirmDialog } from '../../store/confirmDialogStore';
 import { Clock, Plus, Trash2, Edit2, Check, X, ShieldAlert } from 'lucide-react';
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
@@ -324,8 +325,17 @@ export const SessionTypesTab: React.FC = () => {
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(language === 'he' ? `האם למחוק את סוג השיעור ${st.name}?` : `Remove session type ${st.name}?`)) {
+                  onClick={async () => {
+                    const confirmed = await confirmDialog({
+                      title: 'Delete Session Type',
+                      titleHe: 'מחיקת סוג שיעור',
+                      message: `Are you sure you want to delete session type "${st.name}" (${st.durationMinutes} minutes)?`,
+                      messageHe: `האם למחוק את סוג השיעור "${st.labelHe || st.name}" (${st.durationMinutes} דק׳)?`,
+                      confirmText: 'Delete',
+                      confirmTextHe: 'מחק סוג שיעור',
+                      variant: 'danger',
+                    });
+                    if (confirmed) {
                       deleteMutation.mutate(st.id);
                     }
                   }}

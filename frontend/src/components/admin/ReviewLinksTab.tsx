@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { reviewLinksApi } from '../../lib/enterpriseApi';
 import { ReviewLinkModel } from '../../types';
 import { toast } from '../../store/toastStore';
+import { confirmDialog } from '../../store/confirmDialogStore';
 import { formatIsraelDateTime } from '../../lib/timeUtils';
 import {
   Link2,
@@ -318,8 +319,17 @@ export const ReviewLinksTab: React.FC = () => {
 
                     <td className="p-4 text-end">
                       <button
-                        onClick={() => {
-                          if (confirm(language === 'he' ? 'האם למחוק קישור זה?' : 'Delete this link?')) {
+                        onClick={async () => {
+                          const confirmed = await confirmDialog({
+                            title: 'Delete Review Link',
+                            titleHe: 'מחיקת קישור משוב',
+                            message: `Are you sure you want to delete this single-use review link?`,
+                            messageHe: `האם למחוק קישור משוב חד-פעמי זה לצמיתות?`,
+                            confirmText: 'Delete Link',
+                            confirmTextHe: 'מחק קישור',
+                            variant: 'danger',
+                          });
+                          if (confirmed) {
                             deleteMutation.mutate(l.id);
                           }
                         }}

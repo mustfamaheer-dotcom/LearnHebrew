@@ -22,6 +22,7 @@ import { ReviewLinksTab } from '../../components/admin/ReviewLinksTab';
 import { PointRulesTab } from '../../components/admin/PointRulesTab';
 import { LanguagesTab } from '../../components/admin/LanguagesTab';
 import { PlatformSettingsNavModal } from '../../components/admin/PlatformSettingsNavModal';
+import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { sessionTypesApi } from '../../lib/enterpriseApi';
 import { PriceDisplay } from '../../components/common/PriceDisplay';
@@ -2502,8 +2503,17 @@ export const AdminDashboard: React.FC = () => {
 
                                   {/* Deactivate / Delete */}
                                   <button
-                                    onClick={() => {
-                                      if (window.confirm(language === 'he' ? `האם למחוק את ${u.firstName} ${u.lastName}?` : `Permanently delete ${u.firstName} ${u.lastName}?`)) {
+                                    onClick={async () => {
+                                      const confirmed = await confirmDialog({
+                                        title: 'Delete User Account',
+                                        titleHe: 'מחיקת חשבון משתמש',
+                                        message: `Are you sure you want to permanently delete ${u.firstName} ${u.lastName} (${u.email})?`,
+                                        messageHe: `האם למחוק לצמיתות את המשתמש ${u.firstName} ${u.lastName} (${u.email})?`,
+                                        confirmText: 'Delete Account',
+                                        confirmTextHe: 'מחק משתמש',
+                                        variant: 'danger',
+                                      });
+                                      if (confirmed) {
                                         deleteUserMutation.mutate(u.id);
                                       }
                                     }}
@@ -2727,8 +2737,17 @@ export const AdminDashboard: React.FC = () => {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm(language === 'he' ? `האם להשבית את החבילה ${pkg.name}?` : `Deactivate package ${pkg.name}?`)) {
+                            onClick={async () => {
+                              const confirmed = await confirmDialog({
+                                title: 'Deactivate Package',
+                                titleHe: 'השבתת חבילת שיעורים',
+                                message: `Are you sure you want to deactivate package "${pkg.name}"?`,
+                                messageHe: `האם להשבית את חבילת השיעורים "${pkg.nameHe || pkg.name}"?`,
+                                confirmText: 'Deactivate',
+                                confirmTextHe: 'השבת חבילה',
+                                variant: 'warning',
+                              });
+                              if (confirmed) {
                                 deletePackageMutation.mutate(pkg.id);
                               }
                             }}
@@ -3079,12 +3098,17 @@ export const AdminDashboard: React.FC = () => {
                               <td className="py-3.5 px-4 text-end">
                                 {isScheduled ? (
                                   <button
-                                    onClick={() => {
-                                      const confirmMsg =
-                                        language === 'he'
-                                          ? `האם לבטל שיעור זה? המפגש יוחזר אוטומטית למכסת החבילה של התלמיד.`
-                                          : `Cancel this scheduled lesson? The reserved session will be returned immediately to the student's package balance.`;
-                                      if (window.confirm(confirmMsg)) {
+                                    onClick={async () => {
+                                      const confirmed = await confirmDialog({
+                                        title: 'Cancel Lesson & Refund Session',
+                                        titleHe: 'ביטול שיעור והחזרת מפגש',
+                                        message: `Cancel this scheduled lesson? The reserved session will be returned immediately to the student's package balance.`,
+                                        messageHe: `האם לבטל שיעור זה? המפגש שהוזמן יוחזר באופן מיידי למכסת החבילה של התלמיד.`,
+                                        confirmText: 'Cancel & Refund',
+                                        confirmTextHe: 'ביטול והחזר מפגש',
+                                        variant: 'danger',
+                                      });
+                                      if (confirmed) {
                                         cancelLessonMutation.mutate({
                                           id: l.id,
                                           reason: 'Admin cancelled session via command center',
@@ -3944,8 +3968,17 @@ export const AdminDashboard: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm(language === 'he' ? 'האם למחוק משתמש זה לצמיתות?' : 'Permanently delete this user account?')) {
+                  onClick={async () => {
+                    const confirmed = await confirmDialog({
+                      title: 'Delete User Account',
+                      titleHe: 'מחיקת חשבון משתמש לצמיתות',
+                      message: `Are you sure you want to permanently delete this user account? All associated sessions, logs, and profile records will be affected.`,
+                      messageHe: `האם למחוק משתמש זה לצמיתות? כל הנתונים, המפגשים והפרופיל של המשתמש יימחקו מהמערכת.`,
+                      confirmText: 'Permanently Delete',
+                      confirmTextHe: 'מחק לצמיתות',
+                      variant: 'danger',
+                    });
+                    if (confirmed) {
                       deleteUserMutation.mutate(selectedUserForEdit.id);
                       setIsEditingUser(false);
                       setSelectedUserForEdit(null);

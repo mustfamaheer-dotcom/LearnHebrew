@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { levelsApi } from '../../lib/enterpriseApi';
 import { LevelModel } from '../../types';
 import { toast } from '../../store/toastStore';
+import { confirmDialog } from '../../store/confirmDialogStore';
 import { Plus, Trash2, Edit2, Check, X, Layers, AlertCircle } from 'lucide-react';
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
@@ -377,8 +378,17 @@ export const LevelsTab: React.FC = () => {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => {
-                      if (confirm(language === 'he' ? `האם למחוק את רמה ${lvl.labelEn}?` : `Delete level ${lvl.labelEn}?`)) {
+                    onClick={async () => {
+                      const confirmed = await confirmDialog({
+                        title: 'Delete Level',
+                        titleHe: 'מחיקת רמת לימוד',
+                        message: `Are you sure you want to delete level "${lvl.labelEn}" (${lvl.code})?`,
+                        messageHe: `האם למחוק את רמת הלימוד "${lvl.labelHe || lvl.labelEn}" (${lvl.code})?`,
+                        confirmText: 'Delete Level',
+                        confirmTextHe: 'מחק רמה',
+                        variant: 'danger',
+                      });
+                      if (confirmed) {
                         deleteMutation.mutate(lvl.id);
                       }
                     }}

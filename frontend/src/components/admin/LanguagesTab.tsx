@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { languagesApi } from '../../lib/enterpriseApi';
 import { LanguageModel } from '../../types';
 import { toast } from '../../store/toastStore';
+import { confirmDialog } from '../../store/confirmDialogStore';
 import {
   Globe,
   Plus,
@@ -533,8 +534,17 @@ export const LanguagesTab: React.FC = () => {
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(language === 'he' ? `האם למחוק את השפה ${lng.labelEn}?` : `Delete language ${lng.labelEn}?`)) {
+                  onClick={async () => {
+                    const confirmed = await confirmDialog({
+                      title: 'Delete Language',
+                      titleHe: 'מחיקת שפה',
+                      message: `Are you sure you want to permanently delete the language "${lng.labelEn}" (${lng.code}) from the registry?`,
+                      messageHe: `האם למחוק לצמיתות את השפה "${lng.labelNative || lng.labelEn}" (${lng.code}) מרישום השפות במערכת?`,
+                      confirmText: 'Delete Language',
+                      confirmTextHe: 'מחק שפה',
+                      variant: 'danger',
+                    });
+                    if (confirmed) {
                       deleteMutation.mutate(lng.id);
                     }
                   }}

@@ -6,6 +6,7 @@ import { sessionTypesApi } from '../../lib/enterpriseApi';
 import { Package } from '../../types';
 import { PriceDisplay } from '../common/PriceDisplay';
 import { toast } from '../../store/toastStore';
+import { confirmDialog } from '../../store/confirmDialogStore';
 import {
   Layers,
   Plus,
@@ -493,8 +494,19 @@ export const PackagesManagementTab: React.FC = () => {
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(`Deactivate package ${pkg.name}?`)) deleteMutation.mutate(pkg.id);
+                  onClick={async () => {
+                    const confirmed = await confirmDialog({
+                      title: 'Deactivate Package',
+                      titleHe: 'השבתת חבילה',
+                      message: `Are you sure you want to deactivate package "${pkg.name}"?`,
+                      messageHe: `האם להשבית את החבילה "${pkg.nameHe || pkg.name}"?`,
+                      confirmText: 'Deactivate',
+                      confirmTextHe: 'השבת חבילה',
+                      variant: 'warning',
+                    });
+                    if (confirmed) {
+                      deleteMutation.mutate(pkg.id);
+                    }
                   }}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600"
                 >

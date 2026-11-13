@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navbar } from './components/common/Navbar';
 import { ToastContainer } from './components/common/ToastContainer';
+import { ConfirmDialogContainer } from './components/common/ConfirmDialogContainer';
 import { ProfileSettingsModal } from './components/common/ProfileSettingsModal';
 import { CommandPaletteModal } from './components/common/CommandPaletteModal';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
@@ -141,6 +142,7 @@ export const App: React.FC = () => {
           />
           <ProfileSettingsModal />
           <ToastContainer />
+          <ConfirmDialogContainer />
         </div>
       </BrowserRouter>
     </QueryClientProvider>
