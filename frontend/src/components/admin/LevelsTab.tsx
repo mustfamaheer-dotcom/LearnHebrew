@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { levelsApi } from '../../lib/enterpriseApi';
 import { LevelModel } from '../../types';
 import { toast } from '../../store/toastStore';
@@ -7,6 +8,7 @@ import { Plus, Trash2, Edit2, Check, X, Layers, AlertCircle } from 'lucide-react
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const LevelsTab: React.FC = () => {
+  const { language } = useTranslation();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -60,47 +62,59 @@ export const LevelsTab: React.FC = () => {
     <div className="space-y-6">
       <PageHeaderBanner
         badgeIcon={Layers}
-        badgeText="Custom Platform Levels Management"
-        statusText="Active"
-        title="Hebrew Proficiency Levels"
-        description="Define custom academic proficiency levels with dynamic Hebrew/English labels, ordering, and theme accents."
+        badgeText={language === 'he' ? 'ניהול רמות פלטפורמה מותאמות' : 'Custom Platform Levels Management'}
+        statusText={language === 'he' ? 'פעיל' : 'Active'}
+        title={language === 'he' ? 'רמות מיומנות ושליטה בעברית' : 'Hebrew Proficiency Levels'}
+        description={
+          language === 'he'
+            ? 'הגדרת רמות לימוד אקדמיות עם שמות בעברית ובאנגלית, סדר התקדמות וגווני הדגשה מותאמים.'
+            : 'Define custom academic proficiency levels with dynamic Hebrew/English labels, ordering, and theme accents.'
+        }
         action={
           <button
             onClick={() => setIsCreating(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm transition shadow-lg active:scale-95"
           >
             <Plus className="w-4 h-4 text-slate-950" />
-            <span>Add Level</span>
+            <span>{language === 'he' ? 'הוסף רמה' : 'Add Level'}</span>
           </button>
         }
       />
 
       {isCreating && (
         <div className="p-6 bg-brand-teal-50/40 dark:bg-slate-850/60 border border-brand-teal-200/70 dark:border-brand-teal-800/70 rounded-3xl space-y-4">
-          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Create New Proficiency Level</h3>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+            {language === 'he' ? 'יצירת רמת לימוד חדשה' : 'Create New Proficiency Level'}
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Code (Unique Key)</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {language === 'he' ? 'קוד ייחודי' : 'Code (Unique Key)'}
+              </label>
               <input
                 type="text"
-                placeholder="e.g. MASTERY_C1"
+                placeholder={language === 'he' ? 'לדוגמה: MASTERY_C1' : 'e.g. MASTERY_C1'}
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 className="w-full mt-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">English Label</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {language === 'he' ? 'שם באנגלית' : 'English Label'}
+              </label>
               <input
                 type="text"
-                placeholder="e.g. Advanced C1"
+                placeholder={language === 'he' ? 'לדוגמה: Advanced C1' : 'e.g. Advanced C1'}
                 value={formData.labelEn}
                 onChange={(e) => setFormData({ ...formData, labelEn: e.target.value })}
                 className="w-full mt-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Hebrew Label</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {language === 'he' ? 'שם בעברית' : 'Hebrew Label'}
+              </label>
               <input
                 type="text"
                 placeholder="לדוגמה: רמה ו׳ - שוטף"
@@ -110,7 +124,9 @@ export const LevelsTab: React.FC = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Progression Order</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {language === 'he' ? 'סדר התקדמות' : 'Progression Order'}
+              </label>
               <input
                 type="number"
                 value={formData.sortOrder}
@@ -119,7 +135,9 @@ export const LevelsTab: React.FC = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Accent Color</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {language === 'he' ? 'צבע הדגשה' : 'Accent Color'}
+              </label>
               <div className="flex items-center gap-2 mt-1">
                 <input
                   type="color"
@@ -131,10 +149,12 @@ export const LevelsTab: React.FC = () => {
               </div>
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Description</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {language === 'he' ? 'תיאור הרמה' : 'Description'}
+              </label>
               <input
                 type="text"
-                placeholder="Brief description of this stage"
+                placeholder={language === 'he' ? 'תיאור קצר של מטרות השלב' : 'Brief description of this stage'}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full mt-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
@@ -144,16 +164,16 @@ export const LevelsTab: React.FC = () => {
           <div className="flex justify-end gap-2 pt-2 border-t border-brand-teal-100 dark:border-slate-800">
             <button
               onClick={() => setIsCreating(false)}
-              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
             >
-              Cancel
+              {language === 'he' ? 'ביטול' : 'Cancel'}
             </button>
             <button
               onClick={() => createMutation.mutate(formData)}
               disabled={!formData.code || !formData.labelEn || !formData.labelHe}
               className="px-5 py-2 bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-xl text-xs font-bold shadow-xs disabled:opacity-50"
             >
-              Save Level
+              {language === 'he' ? 'שמור רמה' : 'Save Level'}
             </button>
           </div>
         </div>
@@ -172,10 +192,14 @@ export const LevelsTab: React.FC = () => {
             <div className="flex justify-between items-start mt-1">
               <div>
                 <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide uppercase bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                  Order #{lvl.sortOrder} • {lvl.code}
+                  {language === 'he' ? `סדר #${lvl.sortOrder} • ${lvl.code}` : `Order #${lvl.sortOrder} • ${lvl.code}`}
                 </span>
-                <h4 className="text-lg font-bold text-slate-900 dark:text-white mt-1.5">{lvl.labelEn}</h4>
-                <p className="text-sm text-slate-500 font-medium" dir="rtl">{lvl.labelHe}</p>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-white mt-1.5">
+                  {language === 'he' && lvl.labelHe ? lvl.labelHe : lvl.labelEn}
+                </h4>
+                <p className="text-sm text-slate-500 font-medium">
+                  {language === 'he' ? lvl.labelEn : lvl.labelHe}
+                </p>
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -184,15 +208,16 @@ export const LevelsTab: React.FC = () => {
                     lvl.isActive ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
                   }`}
                 >
-                  {lvl.isActive ? 'Active' : 'Inactive'}
+                  {lvl.isActive ? (language === 'he' ? 'פעיל' : 'Active') : (language === 'he' ? 'לא פעיל' : 'Inactive')}
                 </button>
                 <button
                   onClick={() => {
-                    if (confirm(`Delete level ${lvl.labelEn}?`)) {
+                    if (confirm(language === 'he' ? `האם למחוק את רמה ${lvl.labelEn}?` : `Delete level ${lvl.labelEn}?`)) {
                       deleteMutation.mutate(lvl.id);
                     }
                   }}
                   className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                  title={language === 'he' ? 'מחק' : 'Delete'}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -204,9 +229,9 @@ export const LevelsTab: React.FC = () => {
             )}
 
             <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs text-slate-500">
-              <span>{lvl._count?.students || 0} Students</span>
-              <span>{lvl._count?.games || 0} Games</span>
-              <span>{lvl._count?.levelExams || 0} Exams</span>
+              <span>{language === 'he' ? `${lvl._count?.students || 0} תלמידים` : `${lvl._count?.students || 0} Students`}</span>
+              <span>{language === 'he' ? `${lvl._count?.games || 0} משחקים` : `${lvl._count?.games || 0} Games`}</span>
+              <span>{language === 'he' ? `${lvl._count?.levelExams || 0} מבחנים` : `${lvl._count?.levelExams || 0} Exams`}</span>
             </div>
           </div>
         ))}

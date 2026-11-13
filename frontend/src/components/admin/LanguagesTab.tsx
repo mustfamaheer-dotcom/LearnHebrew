@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { languagesApi } from '../../lib/enterpriseApi';
 import { LanguageModel } from '../../types';
 import { toast } from '../../store/toastStore';
@@ -7,6 +8,7 @@ import { Globe, Plus, Check } from 'lucide-react';
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const LanguagesTab: React.FC = () => {
+  const { language } = useTranslation();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [form, setForm] = useState({ code: '', labelEn: '', labelNative: '', flagEmoji: '🌐' });
@@ -39,57 +41,71 @@ export const LanguagesTab: React.FC = () => {
     <div className="space-y-6">
       <PageHeaderBanner
         badgeIcon={Globe}
-        badgeText="Bilingual & Localization Engine"
-        statusText="Active"
-        title="Platform Multi-Language Registry"
-        description="Configure native mother tongues and target learning languages. Automatically adapts student onboarding, review flows, and default locale."
+        badgeText={language === 'he' ? 'מנוע לוקליזציה ורב-לשוניות' : 'Bilingual & Localization Engine'}
+        statusText={language === 'he' ? 'פעיל' : 'Active'}
+        title={language === 'he' ? 'מאגר השפות הנתמכות בפלטפורמה' : 'Platform Multi-Language Registry'}
+        description={
+          language === 'he'
+            ? 'הגדרת שפות אם ושפות יעד. מתאים אוטומטית את תהליך ההצטרפות של התלמיד, שאלוני המשוב ושפת הממשק.'
+            : 'Configure native mother tongues and target learning languages. Automatically adapts student onboarding, review flows, and default locale.'
+        }
         action={
           <button
             onClick={() => setIsCreating(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm transition shadow-lg active:scale-95"
           >
             <Plus className="w-4 h-4 text-slate-950" />
-            <span>Add Supported Language</span>
+            <span>{language === 'he' ? 'הוסף שפה נתמכת' : 'Add Supported Language'}</span>
           </button>
         }
       />
 
       {isCreating && (
         <div className="p-6 bg-brand-teal-50/40 dark:bg-slate-850/60 border border-brand-teal-200/70 dark:border-brand-teal-800/70 rounded-3xl space-y-4">
-          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Add New Language Option</h3>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+            {language === 'he' ? 'הוספת אפשרות שפה חדשה' : 'Add New Language Option'}
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Code (ISO)</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                {language === 'he' ? 'קוד שפה (ISO)' : 'Code (ISO)'}
+              </label>
               <input
                 type="text"
-                placeholder="e.g. es"
+                placeholder={language === 'he' ? 'לדוגמה: es' : 'e.g. es'}
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value })}
                 className="w-full mt-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">English Name</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                {language === 'he' ? 'שם באנגלית' : 'English Name'}
+              </label>
               <input
                 type="text"
-                placeholder="e.g. Spanish"
+                placeholder={language === 'he' ? 'לדוגמה: Spanish' : 'e.g. Spanish'}
                 value={form.labelEn}
                 onChange={(e) => setForm({ ...form, labelEn: e.target.value })}
                 className="w-full mt-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Native Name</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                {language === 'he' ? 'שם בשפת המקור' : 'Native Name'}
+              </label>
               <input
                 type="text"
-                placeholder="e.g. Español"
+                placeholder={language === 'he' ? 'לדוגמה: Español' : 'e.g. Español'}
                 value={form.labelNative}
                 onChange={(e) => setForm({ ...form, labelNative: e.target.value })}
                 className="w-full mt-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Flag Emoji</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                {language === 'he' ? 'אמוג׳י דגל' : 'Flag Emoji'}
+              </label>
               <input
                 type="text"
                 placeholder="🇪🇸"
@@ -104,13 +120,13 @@ export const LanguagesTab: React.FC = () => {
               onClick={() => setIsCreating(false)}
               className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-sm"
             >
-              Cancel
+              {language === 'he' ? 'ביטול' : 'Cancel'}
             </button>
             <button
               onClick={() => createMutation.mutate(form)}
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold"
+              className="px-5 py-2 bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-xl text-sm font-semibold"
             >
-              Save Language
+              {language === 'he' ? 'שמור שפה' : 'Save Language'}
             </button>
           </div>
         </div>

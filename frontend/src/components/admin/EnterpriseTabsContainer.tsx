@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { LevelsTab } from './LevelsTab';
 import { SessionTypesTab } from './SessionTypesTab';
 import { RolesPermissionsTab } from './RolesPermissionsTab';
@@ -19,19 +20,20 @@ import {
 } from 'lucide-react';
 
 export const EnterpriseTabsContainer: React.FC = () => {
+  const { language } = useTranslation();
   const [subTab, setSubTab] = useState<
     'levels' | 'session_types' | 'roles' | 'payments' | 'exams' | 'review_links' | 'point_rules' | 'languages'
   >('levels');
 
   const tabs = [
-    { id: 'levels', label: 'Levels', icon: Layers },
-    { id: 'session_types', label: 'Session Types', icon: Clock },
-    { id: 'roles', label: 'Roles & RBAC', icon: ShieldCheck },
-    { id: 'payments', label: 'Payments Review', icon: Receipt },
-    { id: 'exams', label: 'Level Exams', icon: Award },
-    { id: 'review_links', label: 'Review Links', icon: Link2 },
-    { id: 'point_rules', label: 'Point Rules', icon: Coins },
-    { id: 'languages', label: 'Languages', icon: Globe },
+    { id: 'levels', label: 'Levels', labelHe: 'רמות לימוד', icon: Layers },
+    { id: 'session_types', label: 'Session Types', labelHe: 'סוגי שיעורים', icon: Clock },
+    { id: 'roles', label: 'Roles & RBAC', labelHe: 'תפקידים והרשאות', icon: ShieldCheck },
+    { id: 'payments', label: 'Payments Review', labelHe: 'בדיקת תשלומים', icon: Receipt },
+    { id: 'exams', label: 'Level Exams', labelHe: 'מבחני מעבר רמה', icon: Award },
+    { id: 'review_links', label: 'Review Links', labelHe: 'קישורי משוב', icon: Link2 },
+    { id: 'point_rules', label: 'Point Rules', labelHe: 'חוקי נקודות', icon: Coins },
+    { id: 'languages', label: 'Languages', labelHe: 'שפות', icon: Globe },
   ] as const;
 
   return (
@@ -52,7 +54,7 @@ export const EnterpriseTabsContainer: React.FC = () => {
               }`}
             >
               <Icon className={`w-4 h-4 ${isActive ? 'text-brand-olive-300' : 'text-slate-400'}`} />
-              {t.label}
+              {language === 'he' ? t.labelHe : t.label}
             </button>
           );
         })}

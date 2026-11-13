@@ -1586,7 +1586,7 @@ export const AdminDashboard: React.FC = () => {
                           <th className="py-3 px-4">{language === 'he' ? 'תלמיד' : 'Student'}</th>
                           <th className="py-3 px-4">{language === 'he' ? 'סוג פעולה' : 'Type'}</th>
                           <th className="py-3 px-4">{language === 'he' ? 'סכום' : 'Amount'}</th>
-                          <th className="py-3 px-4">{language === 'he' ? 'יתרה לאחר פעולה' : 'Balance After'}</th>
+                          <th className="py-3 px-4">{language === 'he' ? 'מכסה לאחר פעולה' : 'Quota After'}</th>
                           <th className="py-3 px-4">{language === 'he' ? 'תיאור / הערה' : 'Description / Note'}</th>
                           <th className="py-3 px-4">{language === 'he' ? 'תאריך' : 'Date'}</th>
                         </tr>
@@ -1778,11 +1778,11 @@ export const AdminDashboard: React.FC = () => {
                     <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
                       <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-brand-olive-600 dark:text-brand-olive-400" />
-                        Top Announcement Banner
+                        {language === 'he' ? 'באנר הודעות עליון' : 'Top Announcement Banner'}
                       </h2>
                       <div>
                         <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                          Announcement Text (English)
+                          {language === 'he' ? 'טקסט הודעה (אנגלית)' : 'Announcement Text (English)'}
                         </label>
                         <input
                           type="text"
@@ -1793,7 +1793,7 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                          Announcement Text (Hebrew / עברית)
+                          {language === 'he' ? 'טקסט הודעה (עברית)' : 'Announcement Text (Hebrew / עברית)'}
                         </label>
                         <input
                           type="text"
@@ -1809,12 +1809,12 @@ export const AdminDashboard: React.FC = () => {
                     <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 transition-colors">
                       <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <Edit3 className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
-                        Hero Section
+                        {language === 'he' ? 'אזור פתיח ראשי (Hero)' : 'Hero Section'}
                       </h2>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                            Pill Badge (EN)
+                            {language === 'he' ? 'תגית ראשית (אנגלית)' : 'Pill Badge (EN)'}
                           </label>
                           <input
                             type="text"
@@ -1825,7 +1825,7 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                            Pill Badge (HE)
+                            {language === 'he' ? 'תגית ראשית (עברית)' : 'Pill Badge (HE)'}
                           </label>
                           <input
                             type="text"
@@ -3097,7 +3097,9 @@ export const AdminDashboard: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-transparent dark:border-slate-800 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Create New Account</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                {language === 'he' ? 'יצירת חשבון משתמש חדש' : 'Create New Account'}
+              </h2>
               <button onClick={() => setIsCreatingUser(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
@@ -3106,7 +3108,9 @@ export const AdminDashboard: React.FC = () => {
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">First Name</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    {language === 'he' ? 'שם פרטי' : 'First Name'}
+                  </label>
                   <input
                     type="text"
                     value={newUserFirst}
@@ -3115,7 +3119,9 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">Last Name</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    {language === 'he' ? 'שם משפחה' : 'Last Name'}
+                  </label>
                   <input
                     type="text"
                     value={newUserLast}
@@ -3126,7 +3132,9 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Email Address</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'he' ? 'כתובת אימייל' : 'Email Address'}
+                </label>
                 <input
                   type="email"
                   value={newUserEmail}
@@ -3136,7 +3144,9 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Temporary Password</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'he' ? 'סיסמה זמנית' : 'Temporary Password'}
+                </label>
                 <input
                   type="text"
                   value={newUserPass}
@@ -3147,28 +3157,32 @@ export const AdminDashboard: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">Role</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    {language === 'he' ? 'תפקיד' : 'Role'}
+                  </label>
                   <select
                     value={newUserRole}
                     onChange={(e) => setNewUserRole(e.target.value as any)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
                   >
-                    <option value="STUDENT">Student</option>
-                    <option value="TEACHER">Teacher</option>
-                    <option value="ADMIN">Admin</option>
+                    <option value="STUDENT">{language === 'he' ? 'תלמיד' : 'Student'}</option>
+                    <option value="TEACHER">{language === 'he' ? 'מורה' : 'Teacher'}</option>
+                    <option value="ADMIN">{language === 'he' ? 'מנהל' : 'Admin'}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">Hebrew Level</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    {language === 'he' ? 'רמת עברית' : 'Hebrew Level'}
+                  </label>
                   <select
                     value={newUserLevel}
                     onChange={(e) => setNewUserLevel(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
                   >
-                    <option value="BEGINNER">Beginner (Alef)</option>
-                    <option value="INTERMEDIATE">Intermediate (Bet)</option>
-                    <option value="ADVANCED">Advanced (Gimel)</option>
+                    <option value="BEGINNER">{language === 'he' ? 'מתחילים (אלף)' : 'Beginner (Alef)'}</option>
+                    <option value="INTERMEDIATE">{language === 'he' ? 'בינוני (בית)' : 'Intermediate (Bet)'}</option>
+                    <option value="ADVANCED">{language === 'he' ? 'מתקדמים (גימל)' : 'Advanced (Gimel)'}</option>
                   </select>
                 </div>
               </div>
@@ -3179,7 +3193,7 @@ export const AdminDashboard: React.FC = () => {
                 onClick={() => setIsCreatingUser(false)}
                 className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
-                Cancel
+                {language === 'he' ? 'ביטול' : 'Cancel'}
               </button>
               <button
                 onClick={() => {
@@ -3199,7 +3213,7 @@ export const AdminDashboard: React.FC = () => {
                 disabled={createUserMutation.isPending}
                 className="flex-1 py-2.5 rounded-xl bg-brand-teal-800 text-white text-xs font-bold hover:bg-brand-teal-900 shadow-sm"
               >
-                {createUserMutation.isPending ? 'Creating...' : 'Create Account'}
+                {createUserMutation.isPending ? (language === 'he' ? 'יוצר...' : 'Creating...') : (language === 'he' ? 'צור חשבון' : 'Create Account')}
               </button>
             </div>
           </div>
@@ -3211,7 +3225,9 @@ export const AdminDashboard: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-transparent dark:border-slate-800 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Create New Lesson Package</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                {language === 'he' ? 'יצירת חבילת שיעורים חדשה' : 'Create New Lesson Package'}
+              </h2>
               <button onClick={() => setIsCreatingPackage(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X className="w-5 h-5" />
               </button>
@@ -3219,10 +3235,12 @@ export const AdminDashboard: React.FC = () => {
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Package Name (English)</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'he' ? 'שם החבילה (אנגלית)' : 'Package Name (English)'}
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. Immersion Intensive"
+                  placeholder={language === 'he' ? 'לדוגמה: Immersion Intensive' : 'e.g. Immersion Intensive'}
                   value={pkgName}
                   onChange={(e) => setPkgName(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
@@ -3230,11 +3248,13 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">Package Name (Hebrew / עברית)</label>
+                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                  {language === 'he' ? 'שם החבילה (עברית)' : 'Package Name (Hebrew / עברית)'}
+                </label>
                 <input
                   type="text"
                   dir="rtl"
-                  placeholder="e.g. מסלול אינטנסיבי"
+                  placeholder="לדוגמה: מסלול אינטנסיבי"
                   value={pkgNameHe}
                   onChange={(e) => setPkgNameHe(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
@@ -3243,7 +3263,9 @@ export const AdminDashboard: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">25m Lessons</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    {language === 'he' ? 'שיעורי 25 דק׳' : '25m Lessons'}
+                  </label>
                   <input
                     type="number"
                     value={pkgLessons}
@@ -3252,7 +3274,9 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">Valid Days</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    {language === 'he' ? 'ימי תוקף' : 'Valid Days'}
+                  </label>
                   <input
                     type="number"
                     value={pkgDays}
@@ -3261,7 +3285,9 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">Price ($)</label>
+                  <label className="font-semibold text-slate-700 dark:text-slate-300">
+                    {language === 'he' ? 'מחיר ($)' : 'Price ($)'}
+                  </label>
                   <input
                     type="number"
                     value={pkgPrice}
@@ -3277,7 +3303,7 @@ export const AdminDashboard: React.FC = () => {
                 onClick={() => setIsCreatingPackage(false)}
                 className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
-                Cancel
+                {language === 'he' ? 'ביטול' : 'Cancel'}
               </button>
               <button
                 onClick={() => {
@@ -3298,7 +3324,7 @@ export const AdminDashboard: React.FC = () => {
                 disabled={createPackageMutation.isPending}
                 className="flex-1 py-2.5 rounded-xl bg-brand-teal-800 text-white text-xs font-bold hover:bg-brand-teal-900 shadow-sm"
               >
-                {createPackageMutation.isPending ? 'Creating...' : 'Create Package'}
+                {createPackageMutation.isPending ? (language === 'he' ? 'יוצר...' : 'Creating...') : (language === 'he' ? 'צור חבילה' : 'Create Package')}
               </button>
             </div>
           </div>
@@ -3875,6 +3901,15 @@ export const AdminDashboard: React.FC = () => {
               activeTab === 'landing_cms' ||
               activeTab === 'surveys' ||
               activeTab === 'reminders_hub' ||
+              activeTab === 'enterprise' ||
+              activeTab === 'levels' ||
+              activeTab === 'session_types' ||
+              activeTab === 'roles' ||
+              activeTab === 'payments' ||
+              activeTab === 'exams' ||
+              activeTab === 'review_links' ||
+              activeTab === 'point_rules' ||
+              activeTab === 'languages' ||
               activeTab === 'system_logs';
             const isActive =
               (item.id === 'more' && (isMobileMoreOpen || isHubSecondaryActive)) ||
@@ -4090,7 +4125,47 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </button>
 
-              {/* Card 5: System Logs (SUPER_ADMIN) */}
+              {/* Card 5: Platform Settings */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('enterprise');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
+                  activeTab === 'enterprise' ||
+                  activeTab === 'levels' ||
+                  activeTab === 'session_types' ||
+                  activeTab === 'roles' ||
+                  activeTab === 'payments' ||
+                  activeTab === 'exams' ||
+                  activeTab === 'review_links' ||
+                  activeTab === 'point_rules' ||
+                  activeTab === 'languages'
+                    ? 'border-brand-teal-600 dark:border-brand-teal-400 ring-2 ring-brand-teal-600/20 dark:ring-brand-teal-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-700 dark:text-brand-teal-300 border border-brand-teal-200/60 dark:border-brand-teal-800/40">
+                    <Settings className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-900 dark:text-brand-teal-200 border border-brand-teal-300/70 dark:border-brand-teal-700/50">
+                    8
+                  </span>
+                </div>
+                <div>
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
+                    {language === 'he' ? 'הגדרות פלטפורמה' : 'Platform Settings'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {language === 'he' ? 'רמות, סוגי מפגש, הרשאות ותשלומים' : 'Levels, sessions, RBAC & rules'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Card 6: System Logs (SUPER_ADMIN) */}
               {currentUser?.role === 'SUPER_ADMIN' && (
                 <button
                   type="button"

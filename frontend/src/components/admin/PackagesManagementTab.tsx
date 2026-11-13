@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { api } from '../../lib/api';
 import { sessionTypesApi } from '../../lib/enterpriseApi';
 import { Package } from '../../types';
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export const PackagesManagementTab: React.FC = () => {
+  const { language } = useTranslation();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   const [editingPkg, setEditingPkg] = useState<Package | null>(null);
@@ -150,10 +152,12 @@ export const PackagesManagementTab: React.FC = () => {
         <div>
           <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
             <Layers className="w-6 h-6 text-brand-teal-800 dark:text-brand-teal-400" />
-            Lesson Packages & Promotional Pricing
+            {language === 'he' ? 'חבילות שיעורים ומחירון מכירות' : 'Lesson Packages & Promotional Pricing'}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Build packages with session quotas, configure promotional strike-through sales prices, and toggle platform currency (USD / ILS).
+            {language === 'he'
+              ? 'יצירת חבילות עם מכסות שיעורים לפי משך, הגדרת מחירי מבצע והנחות, והחלפת מטבע פלטפורמה (USD / ILS).'
+              : 'Build packages with session quotas, configure promotional strike-through sales prices, and toggle platform currency (USD / ILS).'}
           </p>
         </div>
 
@@ -187,7 +191,7 @@ export const PackagesManagementTab: React.FC = () => {
             className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-xl text-xs font-bold shadow-xs transition"
           >
             <Plus className="w-4 h-4 text-brand-olive-300" />
-            <span>Create Package</span>
+            <span>{language === 'he' ? 'צור חבילה חדשה' : 'Create Package'}</span>
           </button>
         </div>
       </div>

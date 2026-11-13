@@ -941,7 +941,7 @@ export const StudentDashboard: React.FC = () => {
                             {language === 'he' ? 'אין חבילה פעילה' : 'No active package'}
                           </p>
                           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                            {language === 'he' ? 'פנה למנהל להטענת יתרה' : 'Contact admin to top up account balance'}
+                            {language === 'he' ? 'פנה למנהל לרכישת חבילת שיעורים' : 'Contact sales to acquire a session package'}
                           </p>
                         </div>
                       </div>
@@ -3765,8 +3765,8 @@ export const StudentDashboard: React.FC = () => {
                                       {isBooking
                                         ? (language === 'he' ? 'הזמנת שיעור' : 'Lesson Booking')
                                         : isRefund
-                                        ? (language === 'he' ? 'זיכוי שיעור' : 'Auto-Refund')
-                                        : (amt > 0 ? (language === 'he' ? 'טעינת יתרה' : 'Wallet Top-up') : (language === 'he' ? 'עדכון יתרה' : 'Adjustment'))}
+                                        ? (language === 'he' ? 'החזר שיעור לחבילה' : 'Session Restored')
+                                        : (amt > 0 ? (language === 'he' ? 'הפעלת חבילה' : 'Package Activation') : (language === 'he' ? 'עדכון מכסה' : 'Quota Update'))}
                                     </div>
                                     <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                                       {formatIsraelDateTime(tx.createdAt, {
@@ -3777,12 +3777,12 @@ export const StudentDashboard: React.FC = () => {
                                   </div>
                                 </div>
 
-                                <div className={`font-black text-base ${
+                                <div className={`font-black text-sm ${
                                   isPositive
                                     ? 'text-emerald-600 dark:text-emerald-400'
                                     : 'text-rose-600 dark:text-rose-400'
                                 }`}>
-                                  {isPositive ? `+$${amt.toFixed(2)}` : `-$${Math.abs(amt).toFixed(2)}`}
+                                  {isPositive ? `+${Math.abs(amt)}` : `-${Math.abs(amt)}`} {language === 'he' ? 'שיעורים' : 'units'}
                                 </div>
                               </div>
 
@@ -3794,10 +3794,10 @@ export const StudentDashboard: React.FC = () => {
 
                               <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60 dark:border-slate-800">
                                 <span className="text-slate-500 dark:text-slate-400 font-medium">
-                                  {language === 'he' ? 'יתרה לאחר פעולה:' : 'Balance after:'}
+                                  {language === 'he' ? 'מכסה לאחר פעולה:' : 'Quota after:'}
                                 </span>
                                 <span className="font-extrabold text-slate-900 dark:text-white">
-                                  ${Number(tx.balanceAfter || 0).toFixed(2)}
+                                  {Number(tx.balanceAfter || 0)} {language === 'he' ? 'שיעורים' : 'units'}
                                 </span>
                               </div>
                             </div>
@@ -4143,7 +4143,7 @@ export const StudentDashboard: React.FC = () => {
                   {language === 'he' ? 'פעולות ותכנים נוספים' : 'More Learning Tools'}
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {language === 'he' ? 'שיעורים מוקלטים, שיעורי בית, לוח דירוג ויתרה' : 'Recorded sessions, homework, rankings & balance'}
+                  {language === 'he' ? 'שיעורים מוקלטים, שיעורי בית, לוח דירוג וחבילות' : 'Recorded sessions, homework, rankings & packages'}
                 </p>
               </div>
               <button

@@ -279,8 +279,8 @@ export const SalesDashboard: React.FC = () => {
                 </h1>
                 <p className="text-brand-teal-100 text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed">
                   {language === 'he'
-                    ? 'רישום תלמידים חדשים, העלאת אסמכתאות תשלום בפורמט WebP מותאם, ומעקב אחר יתרות מפגשים תקפות ל-30 יום.'
-                    : 'Onboard new students, register package payments with auto-optimized WebP proof, and manage 30-day session balances.'}
+                    ? 'רישום תלמידים חדשים, העלאת אסמכתאות תשלום בפורמט WebP מותאם, ומעקב אחר חבילות ומכסות שיעורים תקפות ל-30 יום.'
+                    : 'Onboard new students, register package payments with auto-optimized WebP proof, and manage 30-day session packages.'}
                 </p>
               </div>
 
@@ -536,8 +536,8 @@ export const SalesDashboard: React.FC = () => {
                 title={language === 'he' ? 'רישום תלמידים וניהול לקוחות' : 'Student Directory & Accounts'}
                 description={
                   language === 'he'
-                    ? 'רישום תלמידים חדשים, הגדרת שפת אם ושפת לימוד, מעקב רמות, וצפייה ביתרות המפגשים הפעילות.'
-                    : 'Onboard new students, configure language preferences, track Hebrew proficiency levels, and inspect active session balances.'
+                    ? 'רישום תלמידים חדשים, הגדרת שפת אם ושפת לימוד, מעקב רמות, וצפייה במכסות השיעורים הפעילות.'
+                    : 'Onboard new students, configure language preferences, track Hebrew proficiency levels, and inspect active session quotas.'
                 }
                 action={
                   <button
@@ -586,7 +586,7 @@ export const SalesDashboard: React.FC = () => {
                         <th className="py-3.5 px-5 text-start font-bold">{language === 'he' ? 'תלמיד' : 'Student'}</th>
                         <th className="py-3.5 px-5 text-start font-bold">{language === 'he' ? 'שפות' : 'Languages'}</th>
                         <th className="py-3.5 px-5 text-start font-bold">{language === 'he' ? 'רמה' : 'Level'}</th>
-                        <th className="py-3.5 px-5 text-start font-bold">{language === 'he' ? 'יתרות שיעורים' : 'Session Balances'}</th>
+                        <th className="py-3.5 px-5 text-start font-bold">{language === 'he' ? 'מכסות שיעורים' : 'Session Quotas'}</th>
                         <th className="py-3.5 px-5 text-end font-bold">{language === 'he' ? 'פעולות' : 'Actions'}</th>
                       </tr>
                     </thead>
@@ -684,7 +684,7 @@ export const SalesDashboard: React.FC = () => {
                 description={
                   language === 'he'
                     ? 'העלאת אסמכתאות תשלום המומרות אוטומטית ל-WebP, מעקב סטטוס אישור המנהל, והפעלת חבילות ל-30 יום.'
-                    : 'Submit proof screenshots automatically converted to WebP for audit, track admin approvals, and credit 30-day session balances.'
+                    : 'Submit proof screenshots automatically converted to WebP for audit, track admin approvals, and credit 30-day session packages.'
                 }
                 action={
                   <button

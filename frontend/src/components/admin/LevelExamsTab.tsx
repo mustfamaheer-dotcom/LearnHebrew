@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { levelExamsApi, levelsApi } from '../../lib/enterpriseApi';
 import { LevelExamModel } from '../../types';
 import { toast } from '../../store/toastStore';
@@ -7,6 +8,7 @@ import { Award, Plus, UserCheck, RefreshCw, CheckCircle, FileText } from 'lucide
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const LevelExamsTab: React.FC = () => {
+  const { language } = useTranslation();
   const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
 
@@ -64,10 +66,14 @@ export const LevelExamsTab: React.FC = () => {
     <div className="space-y-6">
       <PageHeaderBanner
         badgeIcon={Award}
-        badgeText="1-Attempt Exam Engine"
-        statusText="Active"
-        title="Level Progression Exams"
-        description="Teachers unlock these exams for students after finishing their level curricula. Students have exactly 1 attempt to pass. Admins can reset attempts."
+        badgeText={language === 'he' ? 'מערכת מבחני מעבר רמה (הזדמנות אחת)' : '1-Attempt Exam Engine'}
+        statusText={language === 'he' ? 'פעיל' : 'Active'}
+        title={language === 'he' ? 'מבחני מעבר והתקדמות רמה' : 'Level Progression Exams'}
+        description={
+          language === 'he'
+            ? 'מורים פותחים מבחנים אלו לתלמידים בסיום סילבוס הרמה. לתלמיד יש ניסיון יחיד לעבור. מנהלים יכולים לאפס ניסיונות.'
+            : 'Teachers unlock these exams for students after finishing their level curricula. Students have exactly 1 attempt to pass. Admins can reset attempts.'
+        }
         action={
           <button
             onClick={() => {
@@ -77,17 +83,21 @@ export const LevelExamsTab: React.FC = () => {
             className="flex items-center gap-2 px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm transition shadow-lg active:scale-95"
           >
             <Plus className="w-4 h-4 text-slate-950" />
-            <span>Create Exam Template</span>
+            <span>{language === 'he' ? 'צור תבנית מבחן' : 'Create Exam Template'}</span>
           </button>
         }
       />
 
       {isCreating && (
         <div className="p-6 bg-brand-teal-50/40 dark:bg-slate-850/60 border border-brand-teal-200/70 dark:border-brand-teal-800/70 rounded-3xl space-y-4">
-          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">New Level Progression Exam</h3>
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+            {language === 'he' ? 'מבחן התקדמות רמה חדש' : 'New Level Progression Exam'}
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Target Level</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                {language === 'he' ? 'רמת יעד' : 'Target Level'}
+              </label>
               <select
                 value={form.levelId}
                 onChange={(e) => setForm({ ...form, levelId: e.target.value })}
@@ -95,23 +105,27 @@ export const LevelExamsTab: React.FC = () => {
               >
                 {levels.map((l) => (
                   <option key={l.id} value={l.id}>
-                    {l.labelEn} ({l.code})
+                    {language === 'he' && l.labelHe ? l.labelHe : l.labelEn} ({l.code})
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Exam Title (EN)</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                {language === 'he' ? 'כותרת המבחן (אנגלית)' : 'Exam Title (EN)'}
+              </label>
               <input
                 type="text"
-                placeholder="e.g. Beginner Alef Graduation Exam"
+                placeholder={language === 'he' ? 'לדוגמה: Beginner Alef Graduation Exam' : 'e.g. Beginner Alef Graduation Exam'}
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 className="w-full mt-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Exam Title (HE)</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                {language === 'he' ? 'כותרת המבחן (עברית)' : 'Exam Title (HE)'}
+              </label>
               <input
                 type="text"
                 placeholder="לדוגמה: מבחן סיום רמה א׳"
@@ -126,14 +140,14 @@ export const LevelExamsTab: React.FC = () => {
               onClick={() => setIsCreating(false)}
               className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-sm"
             >
-              Cancel
+              {language === 'he' ? 'ביטול' : 'Cancel'}
             </button>
             <button
               onClick={() => createMutation.mutate(form)}
               disabled={!form.levelId || !form.title}
-              className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-semibold disabled:opacity-50"
+              className="px-5 py-2 bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-xl text-sm font-semibold disabled:opacity-50"
             >
-              Save Exam Template
+              {language === 'he' ? 'שמור תבנית מבחן' : 'Save Exam Template'}
             </button>
           </div>
         </div>

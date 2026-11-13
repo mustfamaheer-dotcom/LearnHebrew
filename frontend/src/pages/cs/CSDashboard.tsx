@@ -476,12 +476,12 @@ export const CSDashboard: React.FC = () => {
                             <td className="py-4 px-5">
                               <div className="text-[11px] space-y-0.5">
                                 <div>
-                                  <span className="text-slate-400">Native: </span>
+                                  <span className="text-slate-400">{language === 'he' ? 'שפת אם: ' : 'Native: '}</span>
                                   <span className="font-bold">{u.nativeLanguage?.labelEn || 'English'}</span>
                                 </div>
                                 <div>
-                                  <span className="text-slate-400">Level: </span>
-                                  <span className="font-bold text-blue-600">{u.studentProfile?.levelModel?.labelEn || 'Beginner'}</span>
+                                  <span className="text-slate-400">{language === 'he' ? 'רמה: ' : 'Level: '}</span>
+                                  <span className="font-bold text-blue-600">{language === 'he' && u.studentProfile?.levelModel?.labelHe ? u.studentProfile?.levelModel?.labelHe : (u.studentProfile?.levelModel?.labelEn || 'Beginner')}</span>
                                 </div>
                               </div>
                             </td>
@@ -502,7 +502,9 @@ export const CSDashboard: React.FC = () => {
                                   ))}
                                 </div>
                               ) : (
-                                <span className="text-slate-400 italic text-[11px]">No active quotas</span>
+                                <span className="text-slate-400 italic text-[11px]">
+                                  {language === 'he' ? 'אין מכסות פעילות' : 'No active quotas'}
+                                </span>
                               )}
                             </td>
                             <td className="py-4 px-5">
@@ -607,7 +609,7 @@ export const CSDashboard: React.FC = () => {
                                 className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-bold underline"
                               >
                                 <Video className="w-3.5 h-3.5" />
-                                <span>Join</span>
+                                <span>{language === 'he' ? 'הצטרף' : 'Join'}</span>
                               </a>
                             ) : (
                               <span className="text-slate-400">-</span>
@@ -671,7 +673,11 @@ export const CSDashboard: React.FC = () => {
                                   : 'bg-slate-100 text-slate-600 dark:bg-slate-800'
                               }`}
                             >
-                              {l.attendanceStatus || 'UNRECORDED'}
+                              {l.attendanceStatus === 'ATTENDED'
+                                ? (language === 'he' ? 'התייצב' : 'ATTENDED')
+                                : l.attendanceStatus === 'ABSENT'
+                                ? (language === 'he' ? 'נעדר' : 'ABSENT')
+                                : (language === 'he' ? 'טרם נרשם' : (l.attendanceStatus || 'UNRECORDED'))}
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-slate-500 max-w-xs truncate">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { paymentsApi } from '../../lib/enterpriseApi';
 import { PaymentModel } from '../../types';
 import { toast } from '../../store/toastStore';
@@ -7,6 +8,7 @@ import { Receipt, CheckCircle, XCircle, Image, ExternalLink, Clock, ShieldCheck 
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const PaymentsReviewTab: React.FC = () => {
+  const { language } = useTranslation();
   const queryClient = useQueryClient();
   const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
 
@@ -37,10 +39,14 @@ export const PaymentsReviewTab: React.FC = () => {
     <div className="space-y-6">
       <PageHeaderBanner
         badgeIcon={Receipt}
-        badgeText="Sales Payment Auditing & WebP Proofs"
-        statusText="Live"
-        title="Proof-of-Payment Reviews"
-        description="Review package purchase payments submitted by the Sales team with automatic WebP screenshots. Approving instantly credits 30-day session package quotas to the student."
+        badgeText={language === 'he' ? 'בדיקת תשלומי חבילות ואישורי העברה' : 'Sales Payment Auditing & WebP Proofs'}
+        statusText={language === 'he' ? 'פעיל' : 'Live'}
+        title={language === 'he' ? 'אישור ובדיקת תשלומי מכירות' : 'Proof-of-Payment Reviews'}
+        description={
+          language === 'he'
+            ? 'בדיקת תשלומים שהוזנו על ידי צוות המכירות עם צילומי מסך בפורמט WebP. אישור התשלום מקצה מיידית את מכסת השיעורים לתלמיד לתוקף של 30 יום.'
+            : 'Review package purchase payments submitted by the Sales team with automatic WebP screenshots. Approving instantly credits 30-day session package quotas to the student.'
+        }
       />
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
@@ -48,12 +54,12 @@ export const PaymentsReviewTab: React.FC = () => {
           <table className="w-full text-start text-xs">
             <thead className="bg-slate-50/70 dark:bg-slate-850/50 border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="py-3.5 px-4 font-bold text-start">Student</th>
-                <th className="py-3.5 px-4 font-bold text-start">Package</th>
-                <th className="py-3.5 px-4 font-bold text-start">Submitted By</th>
-                <th className="py-3.5 px-4 font-bold text-start">Proof Screenshot</th>
-                <th className="py-3.5 px-4 font-bold text-start">Status</th>
-                <th className="py-3.5 px-4 font-bold text-end">Actions</th>
+                <th className="py-3.5 px-4 font-bold text-start">{language === 'he' ? 'תלמיד' : 'Student'}</th>
+                <th className="py-3.5 px-4 font-bold text-start">{language === 'he' ? 'חבילה' : 'Package'}</th>
+                <th className="py-3.5 px-4 font-bold text-start">{language === 'he' ? 'הוגש ע״י' : 'Submitted By'}</th>
+                <th className="py-3.5 px-4 font-bold text-start">{language === 'he' ? 'אסמכתת תשלום' : 'Proof Screenshot'}</th>
+                <th className="py-3.5 px-4 font-bold text-start">{language === 'he' ? 'סטטוס' : 'Status'}</th>
+                <th className="py-3.5 px-4 font-bold text-end">{language === 'he' ? 'פעולות' : 'Actions'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -79,7 +85,7 @@ export const PaymentsReviewTab: React.FC = () => {
                       onClick={() => setSelectedScreenshot(p.screenshotUrl)}
                       className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 underline"
                     >
-                      <Image className="w-4 h-4" /> View WebP Proof
+                      <Image className="w-4 h-4" /> {language === 'he' ? 'צפה באסמכתה' : 'View WebP Proof'}
                     </button>
                   </td>
                   <td className="p-4">
@@ -92,30 +98,34 @@ export const PaymentsReviewTab: React.FC = () => {
                           : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
                       }`}
                     >
-                      {p.status}
+                      {p.status === 'APPROVED'
+                        ? (language === 'he' ? 'אושר' : 'APPROVED')
+                        : p.status === 'REJECTED'
+                        ? (language === 'he' ? 'נדחה' : 'REJECTED')
+                        : (language === 'he' ? 'ממתין' : 'PENDING')}
                     </span>
                   </td>
-                  <td className="p-4 text-right space-x-2">
+                  <td className="p-4 text-end space-x-2 rtl:space-x-reverse">
                     {p.status === 'PENDING' ? (
                       <>
                         <button
                           onClick={() => approveMutation.mutate(p.id)}
                           className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold"
                         >
-                          Approve & Credit
+                          {language === 'he' ? 'אשר והקצה' : 'Approve & Credit'}
                         </button>
                         <button
                           onClick={() => {
-                            const reason = prompt('Rejection reason:');
+                            const reason = prompt(language === 'he' ? 'סיבת דחייה:' : 'Rejection reason:');
                             if (reason !== null) rejectMutation.mutate({ id: p.id, reason });
                           }}
                           className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-semibold"
                         >
-                          Reject
+                          {language === 'he' ? 'דחה' : 'Reject'}
                         </button>
                       </>
                     ) : (
-                      <span className="text-xs text-slate-400">Archived</span>
+                      <span className="text-xs text-slate-400">{language === 'he' ? 'בארכיון' : 'Archived'}</span>
                     )}
                   </td>
                 </tr>

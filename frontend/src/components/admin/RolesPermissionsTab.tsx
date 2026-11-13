@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { rolesApi } from '../../lib/enterpriseApi';
 import { RoleDefinitionModel } from '../../types';
 import { toast } from '../../store/toastStore';
@@ -7,6 +8,7 @@ import { ShieldCheck, Plus, Check, Save, Lock, AlertTriangle } from 'lucide-reac
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
 export const RolesPermissionsTab: React.FC = () => {
+  const { language } = useTranslation();
   const queryClient = useQueryClient();
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [selectedPermIds, setSelectedPermIds] = useState<string[]>([]);
@@ -70,17 +72,21 @@ export const RolesPermissionsTab: React.FC = () => {
     <div className="space-y-6">
       <PageHeaderBanner
         badgeIcon={ShieldCheck}
-        badgeText="Granular RBAC System"
-        statusText="Active"
-        title="Role & Permission Matrix"
-        description="Configure granular action permissions for each role (Sales, CS, Teachers, Students) or define custom platform roles."
+        badgeText={language === 'he' ? 'מערכת הרשאות ותפקידים מפורטת' : 'Granular RBAC System'}
+        statusText={language === 'he' ? 'פעיל' : 'Active'}
+        title={language === 'he' ? 'מטריצת תפקידים והרשאות' : 'Role & Permission Matrix'}
+        description={
+          language === 'he'
+            ? 'הגדרת הרשאות פעולה מפורטות לכל תפקיד (מכירות, שירות לקוחות, מורים, תלמידים) או יצירת תפקידים מותאמים אישית.'
+            : 'Configure granular action permissions for each role (Sales, CS, Teachers, Students) or define custom platform roles.'
+        }
         action={
           <button
             onClick={() => setIsCreatingRole(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black rounded-xl text-xs sm:text-sm transition shadow-lg active:scale-95"
           >
             <Plus className="w-4 h-4 text-slate-950" />
-            <span>Create Custom Role</span>
+            <span>{language === 'he' ? 'צור תפקיד מותאם' : 'Create Custom Role'}</span>
           </button>
         }
       />
@@ -88,7 +94,9 @@ export const RolesPermissionsTab: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Roles List */}
         <div className="space-y-2 lg:col-span-1">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">Platform Roles</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-2 mb-2">
+            {language === 'he' ? 'תפקידי מערכת' : 'Platform Roles'}
+          </h3>
           {roles.map((r) => (
             <button
               key={r.id}
@@ -96,14 +104,14 @@ export const RolesPermissionsTab: React.FC = () => {
                 setSelectedRoleId(r.id);
                 setSelectedPermIds(r.permissions.filter((p) => p.granted).map((p) => p.permission.id));
               }}
-              className={`w-full text-left p-3.5 rounded-2xl border font-medium text-xs flex items-center justify-between transition ${
+              className={`w-full text-start p-3.5 rounded-2xl border font-medium text-xs flex items-center justify-between transition ${
                 selectedRoleId === r.id
                   ? 'bg-brand-teal-50/90 dark:bg-brand-teal-950/60 border-brand-teal-500 text-brand-teal-950 dark:text-brand-teal-200 shadow-2xs font-extrabold'
                   : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-brand-teal-300'
               }`}
             >
               <div>
-                <div className="font-extrabold">{r.labelEn}</div>
+                <div className="font-extrabold">{language === 'he' && r.labelHe ? r.labelHe : r.labelEn}</div>
                 <div className="text-[10px] text-slate-400 font-mono mt-0.5">{r.name}</div>
               </div>
               {r.isSystem && <Lock className="w-3.5 h-3.5 text-slate-400" aria-label="System Protected Role" />}
@@ -116,16 +124,22 @@ export const RolesPermissionsTab: React.FC = () => {
           <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
               <h3 className="text-base font-black text-slate-900 dark:text-white">
-                Permissions for: <span className="text-brand-teal-700 dark:text-brand-teal-300">{activeRole?.labelEn}</span>
+                {language === 'he' ? 'הרשאות עבור: ' : 'Permissions for: '}
+                <span className="text-brand-teal-700 dark:text-brand-teal-300">
+                  {language === 'he' && activeRole?.labelHe ? activeRole.labelHe : activeRole?.labelEn}
+                </span>
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">Toggle checkboxes to grant or revoke specific actions</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {language === 'he' ? 'סמן או בטל סימון להענקת או שלילת הרשאות פעולה' : 'Toggle checkboxes to grant or revoke specific actions'}
+              </p>
             </div>
             <button
               onClick={() => updatePermissionsMutation.mutate()}
               disabled={updatePermissionsMutation.isPending}
               className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white rounded-xl text-xs font-bold transition shadow-xs active:scale-95 disabled:opacity-50"
             >
-              <Save className="w-4 h-4 text-brand-olive-300" /> Save Permissions
+              <Save className="w-4 h-4 text-brand-olive-300" />
+              <span>{language === 'he' ? (updatePermissionsMutation.isPending ? 'שומר...' : 'שמור הרשאות') : (updatePermissionsMutation.isPending ? 'Saving...' : 'Save Permissions')}</span>
             </button>
           </div>
 
