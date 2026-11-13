@@ -412,8 +412,8 @@ model StudentPackage {
   id           String        @id @default(uuid())
   studentId    String
   student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  packageId    String
-  package      Package       @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  packageId    String?
+  package      Package?      @relation(fields: [packageId], references: [id], onDelete: SetNull)
   assignedById String?
   assignedBy   User?         @relation("AssignedPackages", fields: [assignedById], references: [id])
   paymentId    String?       @unique
@@ -469,8 +469,8 @@ model Payment {
   id                     String        @id @default(uuid())
   studentId              String
   student                Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  packageId              String
-  package                Package       @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  packageId              String?
+  package                Package?      @relation(fields: [packageId], references: [id], onDelete: SetNull)
   createdById            String
   createdBy              User          @relation("CreatedPayments", fields: [createdById], references: [id])
   screenshotUrl          String // WebP path in uploads

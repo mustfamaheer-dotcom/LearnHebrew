@@ -146,7 +146,12 @@ export const PackagesManagementTab: React.FC = () => {
     mutationFn: (id: string) => api.delete(`/packages/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['packages'] });
-      toast.success('Package deactivated');
+      queryClient.invalidateQueries({ queryKey: ['adminPackages'] });
+      queryClient.invalidateQueries({ queryKey: ['landingPackages'] });
+      toast.success(language === 'he' ? 'החבילה נמחקה בהצלחה' : 'Package deleted successfully');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || (language === 'he' ? 'שגיאה במחיקת החבילה' : 'Failed to delete package'));
     },
   });
 
@@ -536,21 +541,22 @@ export const PackagesManagementTab: React.FC = () => {
                 <button
                   onClick={async () => {
                     const confirmed = await confirmDialog({
-                      title: 'Deactivate Package',
-                      titleHe: 'השבתת חבילה',
-                      message: `Are you sure you want to deactivate package "${pkg.name}"?`,
-                      messageHe: `האם להשבית את החבילה "${pkg.nameHe || pkg.name}"?`,
-                      confirmText: 'Deactivate',
-                      confirmTextHe: 'השבת חבילה',
-                      variant: 'warning',
+                      title: 'Delete Package',
+                      titleHe: 'מחיקת חבילת שיעורים',
+                      message: `Are you sure you want to permanently delete package "${pkg.name}"? It will be removed from all catalogs and the landing page.`,
+                      messageHe: `האם אתה בטוח שברצונך למחוק לצמיתות את החבילה "${pkg.nameHe || pkg.name}"? היא תוסר מכל הקטלוגים ומדף הנחיתה.`,
+                      confirmText: 'Delete Package',
+                      confirmTextHe: 'מחק חבילה',
+                      variant: 'danger',
                     });
                     if (confirmed) {
                       deleteMutation.mutate(pkg.id);
                     }
                   }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  title={language === 'he' ? 'מחק חבילה' : 'Delete Package'}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4 text-rose-500" />
                 </button>
               </div>
             </div>

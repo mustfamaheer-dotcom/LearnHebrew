@@ -745,42 +745,7 @@ export const LandingPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {(packagesData && packagesData.length > 0
-            ? packagesData
-            : [
-                {
-                  id: 'starter',
-                  name: 'Starter Hebrew',
-                  nameHe: 'עברית למתחילים',
-                  totalLessons: 4,
-                  validityDays: 30,
-                  price: 120,
-                  description: '4 private 1-on-1 focused 25-minute lessons with a native teacher.',
-                  descriptionHe: '4 שיעורים פרטיים ממוקדים של 25 דקות אחד-על-אחד עם מורה מוסמך.',
-                },
-                {
-                  id: 'progress',
-                  name: 'Progress Bundle',
-                  nameHe: 'חבילת התקדמות',
-                  totalLessons: 10,
-                  validityDays: 60,
-                  price: 270,
-                  isPopular: true,
-                  description: '10 comprehensive private 25-min sessions with recording links and custom homework.',
-                  descriptionHe: '10 שיעורים פרטיים ממוקדים של 25 דקות עם הקלטות וידאו ושיעורי בית מותאמים.',
-                },
-                {
-                  id: 'mastery',
-                  name: 'Fluency Mastery',
-                  nameHe: 'שליטה מלאה',
-                  totalLessons: 20,
-                  validityDays: 120,
-                  price: 480,
-                  description: '20 intensive 25-min sessions covering grammar, reading & idiom fluency.',
-                  descriptionHe: '20 שיעורים פרטיים מעמיקים ללימוד דקדוק מתקדם, קריאה, ניבים ושיחה חופשית.',
-                },
-              ]
-          ).map((pkg: any, idx: number) => {
+          {((packagesData || []).filter((p: any) => p.isActive !== false)).map((pkg: any, idx: number) => {
             const isFeatured = pkg.isPopular || idx === 1;
             const name = language === 'he' && pkg.nameHe ? pkg.nameHe : pkg.name;
             const desc = language === 'he' && pkg.descriptionHe ? pkg.descriptionHe : pkg.description;

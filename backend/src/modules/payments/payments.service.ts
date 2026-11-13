@@ -91,13 +91,17 @@ export async function approvePayment(paymentId: string, approvedById: string) {
   if (payment.status !== PaymentStatus.PENDING) {
     throw { status: 400, message: `Payment is already ${payment.status}` };
   }
+  if (!payment.package) {
+    throw { status: 400, message: 'The package associated with this payment no longer exists.' };
+  }
+  const pkg = payment.package;
 
   const startDate = new Date();
-  const validityDays = Math.min(payment.package.validityDays || 30, 30); // Max 30 days rule
+  const validityDays = Math.min(pkg.validityDays || 30, 30); // Max 30 days rule
   const endDate = new Date(startDate.getTime() + validityDays * 24 * 60 * 60 * 1000);
 
   // Compute total sessions
-  const totalLessons = payment.package.sessionItems.reduce(
+  const totalLessons = pkg.sessionItems.reduce(
     (acc, curr) => acc + curr.quantity,
     0
   );
@@ -117,7 +121,7 @@ export async function approvePayment(paymentId: string, approvedById: string) {
     const studentPackage = await tx.studentPackage.create({
       data: {
         studentId: payment.studentId,
-        packageId: payment.packageId,
+        packageId: pkg.id,
         assignedById: approvedById,
         paymentId: payment.id,
         lessonsTotal: totalLessons,
@@ -129,7 +133,7 @@ export async function approvePayment(paymentId: string, approvedById: string) {
     });
 
     // 3. For each session item in package, increment student session wallet & log ledger
-    for (const item of payment.package.sessionItems) {
+    for (const item of pkg.sessionItems) {
       const existingBalance = await tx.studentSessionBalance.findUnique({
         where: {
           studentId_sessionTypeId: {
@@ -181,9 +185,9 @@ export async function approvePayment(paymentId: string, approvedById: string) {
         title: 'Session Package Activated! 🚀',
         titleEn: 'Session Package Activated! 🚀',
         titleHe: 'חבילת השיעורים שלך הופעלה בהצלחה!',
-        body: `Your "${payment.package.name}" is now active with ${totalLessons} sessions valid until ${endDate.toLocaleDateString()}.`,
-        bodyEn: `Your "${payment.package.name}" is now active with ${totalLessons} sessions valid until ${endDate.toLocaleDateString()}.`,
-        bodyHe: `חבילת "${payment.package.nameHe}" הופעלה בהצלחה עם ${totalLessons} שיעורים בתוקף ל-30 יום.`,
+        body: `Your "${pkg.name}" is now active with ${totalLessons} sessions valid until ${endDate.toLocaleDateString()}.`,
+        bodyEn: `Your "${pkg.name}" is now active with ${totalLessons} sessions valid until ${endDate.toLocaleDateString()}.`,
+        bodyHe: `חבילת "${pkg.nameHe}" הופעלה בהצלחה עם ${totalLessons} שיעורים בתוקף ל-30 יום.`,
       },
     });
 

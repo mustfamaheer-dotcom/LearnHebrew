@@ -2,6 +2,7 @@ import { prisma } from '../../config/database';
 
 export async function listPackages() {
   return prisma.package.findMany({
+    where: { isActive: true },
     orderBy: { createdAt: 'desc' },
     include: {
       sessionItems: {
@@ -95,9 +96,22 @@ export async function updatePackage(id: string, data: any) {
 }
 
 export async function deletePackage(id: string) {
-  return prisma.package.update({
+  // 1. Delete associated session items
+  await prisma.packageSessionItem.deleteMany({ where: { packageId: id } });
+
+  // 2. Unlink any student packages and payments
+  await prisma.studentPackage.updateMany({
+    where: { packageId: id },
+    data: { packageId: null },
+  });
+  await prisma.payment.updateMany({
+    where: { packageId: id },
+    data: { packageId: null },
+  });
+
+  // 3. Delete the package permanently
+  return prisma.package.delete({
     where: { id },
-    data: { isActive: false },
   });
 }
 

@@ -253,7 +253,7 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       alerts.push({
         type: 'warning',
         title: 'Package Expiring Soon',
-        desc: `${p.student.user.firstName} ${p.student.user.lastName}'s package (${p.package.name}) expires on ${new Date(
+        desc: `${p.student.user.firstName} ${p.student.user.lastName}'s package (${p.package?.name || 'Package'}) expires on ${new Date(
           p.endDate
         ).toLocaleDateString()}.`,
       });
@@ -268,7 +268,7 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       alerts.push({
         type: 'info',
         title: 'Low Package Lessons Remaining',
-        desc: `${p.student.user.firstName} ${p.student.user.lastName} has ${remaining} lesson(s) remaining (${p.package.name}). Ready for renewal.`,
+        desc: `${p.student.user.firstName} ${p.student.user.lastName} has ${remaining} lesson(s) remaining (${p.package?.name || 'Package'}). Ready for renewal.`,
       });
     });
 
@@ -291,8 +291,8 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       })),
       ...recentPackages.map((p) => ({
         type: 'PACKAGE',
-        title: `Package Assigned: ${p.package.name}`,
-        desc: `${p.student.user.firstName} ${p.student.user.lastName} ($${p.package.price})`,
+        title: `Package Assigned: ${p.package?.name || 'Package'}`,
+        desc: `${p.student.user.firstName} ${p.student.user.lastName} ($${p.package?.price || 0})`,
         time: p.createdAt,
       })),
     ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
