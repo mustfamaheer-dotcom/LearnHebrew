@@ -264,129 +264,128 @@ export const SalesDashboard: React.FC = () => {
               : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
           } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8 pb-32 lg:pb-12`}
         >
-          {/* Executive Top Banner */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-white/10">
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-olive-300 text-xs font-bold mb-3 border border-white/15">
-                  <Sparkles className="w-4 h-4 text-brand-olive-400" />
-                  <span>{language === 'he' ? 'פורטל ניהול מכירות וחבילות' : 'Sales & Session Quotas Hub'}</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] text-white/70">{language === 'he' ? 'פעיל' : 'Active'}</span>
-                </div>
-                <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
-                  {language === 'he' ? 'ניהול תלמידים, תשלומים וחבילות' : 'Student Enrollment & Package Sales'}
-                </h1>
-                <p className="text-brand-teal-100 text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed">
-                  {language === 'he'
-                    ? 'רישום תלמידים חדשים, העלאת אסמכתאות תשלום בפורמט WebP מותאם, ומעקב אחר חבילות ומכסות שיעורים תקפות ל-30 יום.'
-                    : 'Onboard new students, register package payments with auto-optimized WebP proof, and manage 30-day session packages.'}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingStudent(true)}
-                  className="px-4 py-2.5 rounded-xl bg-white text-brand-teal-950 hover:bg-brand-olive-300 transition-all font-black text-xs shadow-md flex items-center gap-2 active:scale-95"
-                >
-                  <Plus className="w-4 h-4 text-brand-teal-900" />
-                  <span>{language === 'he' ? 'רישום תלמיד חדש' : 'New Student'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsRegisteringPayment(true)}
-                  className="px-4 py-2.5 rounded-xl bg-brand-olive-400/20 hover:bg-brand-olive-400/30 border border-brand-olive-300/40 text-brand-olive-200 transition-all font-black text-xs shadow-xs flex items-center gap-2 active:scale-95"
-                >
-                  <UploadCloud className="w-4 h-4 text-brand-olive-300" />
-                  <span>{language === 'he' ? 'הגשת אסמכתת תשלום' : 'Submit Payment Proof'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 4-Card KPI Stat Row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {language === 'he' ? 'סך תלמידים' : 'Total Students'}
-                </span>
-                <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Users className="w-4 h-4" />
-                </div>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                  {totalStudents}
-                </span>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {language === 'he' ? 'רשומים במערכת' : 'Active student profiles'}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {language === 'he' ? 'תשלומים שאושרו' : 'Approved Payments'}
-                </span>
-                <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                  {approvedPayments}
-                </span>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {language === 'he' ? 'יתרות הועברו לתלמידים' : 'Credited session quotas'}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {language === 'he' ? 'ממתינים לאישור' : 'Pending Review'}
-                </span>
-                <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                  <Clock className="w-4 h-4" />
-                </div>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
-                  {pendingPayments}
-                </span>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {language === 'he' ? 'בבדיקת מנהל מערכת' : 'Awaiting admin verification'}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {language === 'he' ? 'חבילות פעילות' : 'Active Packages'}
-                </span>
-                <div className="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                  <Layers className="w-4 h-4" />
-                </div>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400">
-                  {packages.length}
-                </span>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {language === 'he' ? 'תוקף מרבי 30 יום לחבילה' : '30-day package validity'}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* TAB 1: OVERVIEW & PIPELINE */}
           {activeTab === 'overview' && (
-            <div className="space-y-6">
+            <div className="space-y-8 animate-fade-in">
+              {/* Executive Top Banner */}
+              <div className="relative overflow-hidden bg-gradient-to-br from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-white/10">
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-olive-300 text-xs font-bold mb-3 border border-white/15">
+                      <Sparkles className="w-4 h-4 text-brand-olive-400" />
+                      <span>{language === 'he' ? 'פורטל ניהול מכירות וחבילות' : 'Sales & Session Quotas Hub'}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[10px] text-white/70">{language === 'he' ? 'פעיל' : 'Active'}</span>
+                    </div>
+                    <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
+                      {language === 'he' ? 'ניהול תלמידים, תשלומים וחבילות' : 'Student Enrollment & Package Sales'}
+                    </h1>
+                    <p className="text-brand-teal-100 text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed">
+                      {language === 'he'
+                        ? 'רישום תלמידים חדשים, העלאת אסמכתאות תשלום בפורמט WebP מותאם, ומעקב אחר חבילות ומכסות שיעורים תקפות ל-30 יום.'
+                        : 'Onboard new students, register package payments with auto-optimized WebP proof, and manage 30-day session packages.'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingStudent(true)}
+                      className="px-4 py-2.5 rounded-xl bg-white text-brand-teal-950 hover:bg-brand-olive-300 transition-all font-black text-xs shadow-md flex items-center gap-2 active:scale-95"
+                    >
+                      <Plus className="w-4 h-4 text-brand-teal-900" />
+                      <span>{language === 'he' ? 'רישום תלמיד חדש' : 'New Student'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsRegisteringPayment(true)}
+                      className="px-4 py-2.5 rounded-xl bg-brand-olive-400/20 hover:bg-brand-olive-400/30 border border-brand-olive-300/40 text-brand-olive-200 transition-all font-black text-xs shadow-xs flex items-center gap-2 active:scale-95"
+                    >
+                      <UploadCloud className="w-4 h-4 text-brand-olive-300" />
+                      <span>{language === 'he' ? 'הגשת אסמכתת תשלום' : 'Submit Payment Proof'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4-Card KPI Stat Row */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'he' ? 'סך תלמידים' : 'Total Students'}
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                      <Users className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                      {totalStudents}
+                    </span>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {language === 'he' ? 'רשומים במערכת' : 'Active student profiles'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'he' ? 'תשלומים שאושרו' : 'Approved Payments'}
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                      {approvedPayments}
+                    </span>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {language === 'he' ? 'יתרות הועברו לתלמידים' : 'Credited session quotas'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'he' ? 'ממתינים לאישור' : 'Pending Review'}
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                      <Clock className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+                      {pendingPayments}
+                    </span>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {language === 'he' ? 'בבדיקת מנהל מערכת' : 'Awaiting admin verification'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'he' ? 'חבילות פעילות' : 'Active Packages'}
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                      <Layers className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400">
+                      {packages.length}
+                    </span>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {language === 'he' ? 'תוקף מרבי 30 יום לחבילה' : '30-day package validity'}
+                    </p>
+                  </div>
+                </div>
+              </div>
               {/* Quick Actions Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">

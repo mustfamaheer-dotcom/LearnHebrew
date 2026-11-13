@@ -184,121 +184,120 @@ export const CSDashboard: React.FC = () => {
               : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
           } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8 pb-32 lg:pb-12`}
         >
-          {/* Executive Top Banner */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-white/10">
-            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-olive-300 text-xs font-bold mb-3 border border-white/15">
-                  <Headphones className="w-4 h-4 text-brand-olive-400" />
-                  <span>{language === 'he' ? 'מוקד תמיכה ושירות לקוחות' : 'Customer Support & Retention Command'}</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] text-white/70">{language === 'he' ? 'פעיל' : 'Active'}</span>
-                </div>
-                <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
-                  {language === 'he' ? 'תמיכת תלמידים, יתרות שיעורים ויומן' : 'Student Support & Schedule Coordination'}
-                </h1>
-                <p className="text-brand-teal-100 text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed">
-                  {language === 'he'
-                    ? 'סיוע בתיאום שיעורים מיתרות פעילות, מעקב אחר תפוגת חבילות ל-30 יום, בדיקת נוכחות ותגובה למשובי מורים.'
-                    : 'Assist students in session booking from active quotas, audit 30-day package expirations, and monitor teacher surveys.'}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('students')}
-                  className="px-4 py-2.5 rounded-xl bg-white text-brand-teal-950 hover:bg-brand-olive-300 transition-all font-black text-xs shadow-md flex items-center gap-2 active:scale-95"
-                >
-                  <Search className="w-4 h-4 text-brand-teal-900" />
-                  <span>{language === 'he' ? 'איתור יתרת תלמיד' : 'Search Student'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 4-Card KPI Stat Row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {language === 'he' ? 'תלמידים נתמכים' : 'Supported Students'}
-                </span>
-                <div className="w-9 h-9 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center">
-                  <Users className="w-4 h-4" />
-                </div>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                  {totalStudents}
-                </span>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {language === 'he' ? 'כלל התלמידים במערכת' : 'Total enrolled students'}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {language === 'he' ? 'שיעורים קרובים' : 'Upcoming Lessons'}
-                </span>
-                <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                  <Calendar className="w-4 h-4" />
-                </div>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
-                  {upcomingLessons.length}
-                </span>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {language === 'he' ? 'מתוזמנים לפי שעון ישראל' : 'Scheduled in Israel Time'}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {language === 'he' ? 'תפוגה קרובה (< 7 ימים)' : 'Expiring Soon (< 7d)'}
-                </span>
-                <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                  <AlertCircle className="w-4 h-4" />
-                </div>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
-                  {expiringStudents.length}
-                </span>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {language === 'he' ? 'דורשים תזכורת תיאום' : 'Require booking reminder'}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  {language === 'he' ? 'אחוז התייצבות' : 'Attendance Rate'}
-                </span>
-                <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-              <div>
-                <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
-                  {attendanceRate}%
-                </span>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  {language === 'he' ? 'שיעורים שהושלמו בהצלחה' : 'Completed sessions attendance'}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* TAB 1: OVERVIEW & RAPID SUPPORT */}
           {activeTab === 'overview' && (
-            <div className="space-y-6">
+            <div className="space-y-8 animate-fade-in">
+              {/* Executive Top Banner */}
+              <div className="relative overflow-hidden bg-gradient-to-br from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-white/10">
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-brand-olive-300 text-xs font-bold mb-3 border border-white/15">
+                      <Headphones className="w-4 h-4 text-brand-olive-400" />
+                      <span>{language === 'he' ? 'מוקד תמיכה ושירות לקוחות' : 'Customer Support & Retention Command'}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[10px] text-white/70">{language === 'he' ? 'פעיל' : 'Active'}</span>
+                    </div>
+                    <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-white">
+                      {language === 'he' ? 'תמיכת תלמידים, יתרות שיעורים ויומן' : 'Student Support & Schedule Coordination'}
+                    </h1>
+                    <p className="text-brand-teal-100 text-xs sm:text-sm mt-2 max-w-2xl leading-relaxed">
+                      {language === 'he'
+                        ? 'סיוע בתיאום שיעורים מיתרות פעילות, מעקב אחר תפוגת חבילות ל-30 יום, בדיקת נוכחות ותגובה למשובי מורים.'
+                        : 'Assist students in session booking from active quotas, audit 30-day package expirations, and monitor teacher surveys.'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('students')}
+                      className="px-4 py-2.5 rounded-xl bg-white text-brand-teal-950 hover:bg-brand-olive-300 transition-all font-black text-xs shadow-md flex items-center gap-2 active:scale-95"
+                    >
+                      <Search className="w-4 h-4 text-brand-teal-900" />
+                      <span>{language === 'he' ? 'איתור יתרת תלמיד' : 'Search Student'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4-Card KPI Stat Row */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'he' ? 'תלמידים נתמכים' : 'Supported Students'}
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                      <Users className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                      {totalStudents}
+                    </span>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {language === 'he' ? 'כלל התלמידים במערכת' : 'Total enrolled students'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'he' ? 'שיעורים קרובים' : 'Upcoming Lessons'}
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-blue-400">
+                      {upcomingLessons.length}
+                    </span>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {language === 'he' ? 'מתוזמנים לפי שעון ישראל' : 'Scheduled in Israel Time'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'he' ? 'תפוגה קרובה (< 7 ימים)' : 'Expiring Soon (< 7d)'}
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                      <AlertCircle className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
+                      {expiringStudents.length}
+                    </span>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {language === 'he' ? 'דורשים תזכורת תיאום' : 'Require booking reminder'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {language === 'he' ? 'אחוז התייצבות' : 'Attendance Rate'}
+                    </span>
+                    <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                      {attendanceRate}%
+                    </span>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {language === 'he' ? 'שיעורים שהושלמו בהצלחה' : 'Completed sessions attendance'}
+                    </p>
+                  </div>
+                </div>
+              </div>
               {/* Expiring Soon Alert Banner */}
               {expiringStudents.length > 0 && (
                 <div className="p-5 rounded-3xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
