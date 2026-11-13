@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useSidebarStore } from '../../store/sidebarStore';
 import {
   Globe,
   LogOut,
@@ -11,7 +10,6 @@ import {
   Moon,
   Settings,
   Search,
-  Menu,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { getAvatarUrl } from '../../utils/avatar';
@@ -20,7 +18,6 @@ export const Navbar: React.FC = () => {
   const { user, logout, openProfileModal } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const { t, language, setLanguage } = useTranslation();
-  const { toggleMobileOpen } = useSidebarStore();
   const navigate = useNavigate();
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
@@ -39,20 +36,8 @@ export const Navbar: React.FC = () => {
       <header className="fixed top-0 inset-x-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/80 shadow-xs transition-colors duration-200">
         <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
-          {/* Logo & Brand Name (with mobile menu toggle for authenticated users) */}
+          {/* Logo & Brand Name */}
           <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 shrink">
-            {!isLandingPage && user && (
-              <button
-                type="button"
-                onClick={toggleMobileOpen}
-                className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
-                aria-label="Toggle navigation menu"
-                title={language === 'he' ? 'פתח תפריט ניווט' : 'Toggle navigation menu'}
-              >
-                <Menu className="w-5 h-5 text-slate-700 dark:text-slate-200" />
-              </button>
-            )}
-
             <Link to="/" className="flex items-center gap-2 sm:gap-3.5 group py-1 min-w-0 shrink">
               <div className="relative flex items-center justify-center p-1 sm:p-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-brand-teal-50 to-brand-olive-50 dark:from-brand-teal-950/50 dark:to-slate-900 border border-brand-teal-100/60 dark:border-brand-teal-800/50 shadow-xs group-hover:shadow-sm transition-all group-hover:scale-105 duration-200 shrink-0">
                 <img
