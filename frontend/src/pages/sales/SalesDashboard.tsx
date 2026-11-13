@@ -857,133 +857,151 @@ export const SalesDashboard: React.FC = () => {
         </main>
       </div>
 
-      {/* MODAL: Register Student Profile */}
+      {/* MODAL: Register Student Profile - MODERNIZED */}
       {isCreatingStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200/80 dark:border-slate-800 space-y-5 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center font-bold">
-                  <Users className="w-4 h-4" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-xl my-8 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden flex flex-col">
+            {/* Executive Gradient Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white p-6 sm:p-7">
+              <div className="absolute top-0 end-0 -mt-8 -me-8 w-44 h-44 bg-brand-olive-500/15 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-olive-400/20 text-brand-olive-300 border border-brand-olive-400/30 flex items-center justify-center shrink-0 shadow-xs">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-brand-olive-300 text-[10px] font-black uppercase tracking-wider mb-1 border border-white/10">
+                      <Sparkles className="w-3 h-3 text-brand-olive-400" />
+                      <span>{language === 'he' ? 'קליטת תלמיד חדש' : 'Student Onboarding'}</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-black text-white">
+                      {language === 'he' ? 'רישום תלמיד חדש' : 'Register New Student Profile'}
+                    </h3>
+                    <p className="text-xs text-brand-teal-100/80 font-medium mt-0.5">
+                      {language === 'he'
+                        ? 'הזן פרטים אישיים, שפת אם, שפת יעד ורמת לימוד'
+                        : 'Enter personal details, native & target languages, and initial level'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                    {language === 'he' ? 'רישום תלמיד חדש' : 'Register New Student'}
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    {language === 'he' ? 'הזן פרטים אישיים והגדרת שפות' : 'Enter personal details & language setup'}
-                  </p>
-                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingStudent(false)}
+                  className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => setIsCreatingStudent(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'שם פרטי' : 'First Name'}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={studentForm.firstName}
-                  onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
-                  placeholder="e.g. David"
-                />
+            {/* Modal Body */}
+            <div className="p-6 sm:p-7 space-y-4 text-xs max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'שם פרטי' : 'First Name'} <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={studentForm.firstName}
+                    onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                    placeholder="e.g. David"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'שם משפחה' : 'Last Name'} <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={studentForm.lastName}
+                    onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                    placeholder="e.g. Cohen"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'שם משפחה' : 'Last Name'}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={studentForm.lastName}
-                  onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
-                  placeholder="e.g. Cohen"
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'כתובת אימייל' : 'Email Address'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'he' ? 'כתובת אימייל' : 'Email Address'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="email"
                   required
                   value={studentForm.email}
                   onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                   placeholder="student@example.com"
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'סיסמה ראשונית' : 'Initial Password'}
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1.5">
+                  <span>{language === 'he' ? 'סיסמה ראשונית' : 'Initial Password'} <span className="text-rose-500">*</span></span>
+                  <span className="text-[10px] text-slate-400">Min 6 characters</span>
                 </label>
                 <input
                   type="password"
                   required
                   value={studentForm.password}
                   onChange={(e) => setStudentForm({ ...studentForm, password: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
-                  placeholder="Minimum 6 characters"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                  placeholder="••••••••"
                 />
               </div>
 
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'שפת אם' : 'Native Mother Tongue'}
-                </label>
-                <select
-                  value={studentForm.nativeLanguageId}
-                  onChange={(e) => setStudentForm({ ...studentForm, nativeLanguageId: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
-                >
-                  <option value="">-- Choose Language --</option>
-                  {safeLanguages.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.flagEmoji} {l.labelEn} ({l.labelNative})
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'שפת אם' : 'Native Mother Tongue'}
+                  </label>
+                  <select
+                    value={studentForm.nativeLanguageId}
+                    onChange={(e) => setStudentForm({ ...studentForm, nativeLanguageId: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                  >
+                    <option value="">-- Choose Language --</option>
+                    {safeLanguages.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.flagEmoji} {l.labelEn} ({l.labelNative})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'שפת יעד ללמידה' : 'Target Language'}
+                  </label>
+                  <select
+                    value={studentForm.learningLanguageId}
+                    onChange={(e) => setStudentForm({ ...studentForm, learningLanguageId: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                  >
+                    <option value="">-- Choose Language --</option>
+                    {safeLanguages.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.flagEmoji} {l.labelEn} ({l.labelNative})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'שפת יעד ללמידה' : 'Language to Learn'}
-                </label>
-                <select
-                  value={studentForm.learningLanguageId}
-                  onChange={(e) => setStudentForm({ ...studentForm, learningLanguageId: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
-                >
-                  <option value="">-- Choose Language --</option>
-                  {safeLanguages.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.flagEmoji} {l.labelEn} ({l.labelNative})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'רמת לימוד התחלתית' : 'Starting Level'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'he' ? 'רמת לימוד התחלתית' : 'Starting Hebrew Level'}
                 </label>
                 <select
                   value={studentForm.levelId}
                   onChange={(e) => setStudentForm({ ...studentForm, levelId: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                 >
                   <option value="">-- Choose Level --</option>
                   {safeLevels.map((lvl) => (
@@ -995,11 +1013,12 @@ export const SalesDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+            {/* Modal Actions Footer */}
+            <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-850/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => setIsCreatingStudent(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 {language === 'he' ? 'ביטול' : 'Cancel'}
               </button>
@@ -1007,58 +1026,74 @@ export const SalesDashboard: React.FC = () => {
                 type="button"
                 onClick={() => createStudentMutation.mutate(studentForm)}
                 disabled={!studentForm.email || !studentForm.firstName || !studentForm.password || createStudentMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
               >
-                {createStudentMutation.isPending
-                  ? (language === 'he' ? 'יוצר תלמיד...' : 'Creating...')
-                  : (language === 'he' ? 'צור חשבון תלמיד' : 'Register Student')}
+                <Users className="w-4 h-4 text-slate-950" />
+                <span>
+                  {createStudentMutation.isPending
+                    ? (language === 'he' ? 'יוצר תלמיד...' : 'Creating...')
+                    : (language === 'he' ? 'צור חשבון תלמיד' : 'Register Student')}
+                </span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL: Submit Payment Proof (WebP) */}
+      {/* MODAL: Submit Payment Proof (WebP) - MODERNIZED */}
       {isRegisteringPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200/80 dark:border-slate-800 space-y-5 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center font-bold">
-                  <Wallet className="w-4 h-4" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-xl my-8 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden flex flex-col">
+            {/* Executive Gradient Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white p-6 sm:p-7">
+              <div className="absolute top-0 end-0 -mt-8 -me-8 w-44 h-44 bg-brand-olive-500/15 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-olive-400/20 text-brand-olive-300 border border-brand-olive-400/30 flex items-center justify-center shrink-0 shadow-xs">
+                    <Wallet className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-brand-olive-300 text-[10px] font-black uppercase tracking-wider mb-1 border border-white/10">
+                      <UploadCloud className="w-3 h-3 text-brand-olive-400" />
+                      <span>{language === 'he' ? 'קליטת תשלום' : 'Payment Pipeline'}</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-black text-white">
+                      {language === 'he' ? 'הגשת אסמכתת תשלום' : 'Submit Package Payment Proof'}
+                    </h3>
+                    <p className="text-xs text-brand-teal-100/80 font-medium mt-0.5">
+                      {language === 'he'
+                        ? 'העלאת אישור תשלום עם אופטימיזציה אוטומטית לפורמט WebP'
+                        : 'Upload receipt with automatic client-side WebP optimization'}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                    {language === 'he' ? 'הגשת אסמכתת תשלום' : 'Submit Package Payment Proof'}
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    {language === 'he' ? 'העלה צילום מסך של ההעברה הבנקאית או האשראי' : 'Upload bank receipt or credit transfer proof'}
-                  </p>
-                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegisteringPayment(false);
+                    setScreenshotFile(null);
+                    setScreenshotPreview(null);
+                  }}
+                  className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setIsRegisteringPayment(false);
-                  setScreenshotFile(null);
-                  setScreenshotPreview(null);
-                }}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
-            <div className="space-y-4 text-xs">
+            {/* Modal Body */}
+            <div className="p-6 sm:p-7 space-y-4 text-xs max-h-[70vh] overflow-y-auto">
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'בחר תלמיד' : 'Select Student'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'he' ? 'בחר תלמיד' : 'Select Student'} <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={paymentForm.studentId}
                   onChange={(e) => setPaymentForm({ ...paymentForm, studentId: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                 >
-                  <option value="">-- Choose Student --</option>
+                  <option value="">-- {language === 'he' ? 'בחר תלמיד מהרשימה' : 'Choose Student'} --</option>
                   {safeUsers.map((u: any) => (
                     <option key={u.id} value={u.id}>
                       {u.firstName} {u.lastName} ({u.email})
@@ -1068,42 +1103,73 @@ export const SalesDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'בחר חבילת שיעורים' : 'Select Session Package'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'he' ? 'בחר חבילת שיעורים' : 'Select Session Package'} <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={paymentForm.packageId}
                   onChange={(e) => setPaymentForm({ ...paymentForm, packageId: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                 >
-                  <option value="">-- Choose Package --</option>
+                  <option value="">-- {language === 'he' ? 'בחר חבילה' : 'Choose Package'} --</option>
                   {safePackages.map((pkg: any) => (
                     <option key={pkg.id} value={pkg.id}>
-                      {pkg.name} — {pkg.currency === 'ILS' ? '₪' : '$'}{pkg.price} (Max 30 days)
+                      {pkg.name} — {pkg.currency === 'ILS' ? '₪' : '$'}{pkg.price} (30 days validity)
                     </option>
                   ))}
                 </select>
               </div>
 
+              {/* Upload Proof Area */}
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'צילום מסך / אסמכתה (מומר ל-WebP)' : 'Payment Screenshot Proof (Auto-WebP)'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'he' ? 'אסמכתת תשלום / צילום מסך (מומר אוטומטית ל-WebP)' : 'Payment Screenshot Proof (Auto-WebP)'} <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleScreenshotChange(e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs file:me-3 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-brand-teal-50 file:text-brand-teal-800"
-                />
-                {screenshotPreview && (
-                  <div className="mt-2 p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 max-h-36 overflow-hidden flex items-center justify-center">
-                    <img src={screenshotPreview} alt="Preview" className="max-h-32 object-contain rounded-lg" />
-                  </div>
-                )}
+                
+                <div className="p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-850/60 hover:border-brand-teal-400 transition-colors text-center space-y-3">
+                  <input
+                    type="file"
+                    id="payment-proof-upload"
+                    accept="image/*"
+                    onChange={(e) => handleScreenshotChange(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                  
+                  {screenshotPreview ? (
+                    <div className="space-y-3">
+                      <div className="relative inline-block max-h-48 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 shadow-md">
+                        <img src={screenshotPreview} alt="Payment Proof Preview" className="max-h-44 object-contain mx-auto" />
+                        <span className="absolute bottom-2 start-2 px-2 py-0.5 rounded-md bg-emerald-600 text-white font-black text-[10px] shadow-xs">
+                          WebP Ready
+                        </span>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="payment-proof-upload"
+                          className="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs cursor-pointer hover:bg-slate-300 transition-colors"
+                        >
+                          {language === 'he' ? 'החלף קובץ' : 'Replace Image'}
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <label htmlFor="payment-proof-upload" className="cursor-pointer block space-y-2 py-3">
+                      <div className="w-12 h-12 rounded-2xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-700 dark:text-brand-teal-300 flex items-center justify-center mx-auto shadow-2xs">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <p className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
+                        {language === 'he' ? 'לחץ להעלאת צילום מסך או העברה בנקאית' : 'Click to select receipt screenshot or transfer proof'}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        PNG, JPG, WEBP &bull; Max 10MB &bull; Auto-optimized to WebP
+                      </p>
+                    </label>
+                  )}
+                </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
                   {language === 'he' ? 'הערות נוספות ומספר אסמכתה' : 'Internal Notes / Reference #'}
                 </label>
                 <textarea
@@ -1111,12 +1177,13 @@ export const SalesDashboard: React.FC = () => {
                   value={paymentForm.notes}
                   onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
                   placeholder="e.g. Bank transfer ref #98234, cash receipt..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                 />
               </div>
             </div>
 
-            <div className="flex gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+            {/* Modal Actions Footer */}
+            <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-850/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -1124,7 +1191,7 @@ export const SalesDashboard: React.FC = () => {
                   setScreenshotFile(null);
                   setScreenshotPreview(null);
                 }}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 {language === 'he' ? 'ביטול' : 'Cancel'}
               </button>
@@ -1132,11 +1199,14 @@ export const SalesDashboard: React.FC = () => {
                 type="button"
                 onClick={() => createPaymentMutation.mutate()}
                 disabled={!paymentForm.studentId || !paymentForm.packageId || !screenshotFile || createPaymentMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
               >
-                {createPaymentMutation.isPending
-                  ? (language === 'he' ? 'מעבד אסמכתה (WebP)...' : 'Processing...')
-                  : (language === 'he' ? 'שלח אסמכתה לבדיקה' : 'Submit Proof')}
+                <UploadCloud className="w-4 h-4 text-slate-950" />
+                <span>
+                  {createPaymentMutation.isPending
+                    ? (language === 'he' ? 'מעבד אסמכתה (WebP)...' : 'Processing...')
+                    : (language === 'he' ? 'שלח אסמכתה לבדיקה' : 'Submit Proof')}
+                </span>
               </button>
             </div>
           </div>

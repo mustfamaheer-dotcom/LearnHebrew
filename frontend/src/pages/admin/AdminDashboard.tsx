@@ -3128,110 +3128,151 @@ export const AdminDashboard: React.FC = () => {
         </main>
       </div>
 
-      {/* CREATE USER MODAL */}
+      {/* CREATE USER MODAL - MODERNIZED */}
       {isCreatingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-transparent dark:border-slate-800 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {language === 'he' ? 'יצירת חשבון משתמש חדש' : 'Create New Account'}
-              </h2>
-              <button onClick={() => setIsCreatingUser(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full my-8 shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden flex flex-col">
+            {/* Executive Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white p-6 sm:p-7">
+              <div className="absolute top-0 end-0 -mt-8 -me-8 w-44 h-44 bg-brand-olive-500/15 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-olive-400/20 text-brand-olive-300 border border-brand-olive-400/30 flex items-center justify-center shrink-0 shadow-xs">
+                    <UserPlus className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-brand-olive-300 text-[10px] font-black uppercase tracking-wider mb-1 border border-white/10">
+                      <ShieldCheck className="w-3 h-3 text-brand-olive-400" />
+                      <span>{language === 'he' ? 'ניהול משתמשים והרשאות' : 'User Governance'}</span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-black text-white">
+                      {language === 'he' ? 'יצירת חשבון משתמש חדש' : 'Create New User Account'}
+                    </h2>
+                    <p className="text-xs text-brand-teal-100/80 font-medium mt-0.5">
+                      {language === 'he'
+                        ? 'הגדרת פרטים אישיים, תפקיד במערכת ורמת עברית'
+                        : 'Configure account credentials, system role, and Hebrew level'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingUser(false)}
+                  className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-2">
+            {/* Modal Body */}
+            <div className="p-6 sm:p-7 space-y-5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    {language === 'he' ? 'שם פרטי' : 'First Name'}
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'שם פרטי' : 'First Name'} <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
+                    required
+                    placeholder="e.g. David"
                     value={newUserFirst}
                     onChange={(e) => setNewUserFirst(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
                   />
                 </div>
+
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    {language === 'he' ? 'שם משפחה' : 'Last Name'}
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'שם משפחה' : 'Last Name'} <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
+                    required
+                    placeholder="e.g. Cohen"
                     value={newUserLast}
                     onChange={(e) => setNewUserLast(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'כתובת אימייל' : 'Email Address'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'he' ? 'כתובת אימייל' : 'Email Address'} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="email"
+                  required
+                  placeholder="user@example.com"
                   value={newUserEmail}
                   onChange={(e) => setNewUserEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'סיסמה זמנית' : 'Temporary Password'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1.5">
+                  <span>{language === 'he' ? 'סיסמה ראשונית' : 'Initial Password'} <span className="text-rose-500">*</span></span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {language === 'he' ? 'המשתמש יוכל לשנותה בהתחברות' : 'User can change after login'}
+                  </span>
                 </label>
                 <input
                   type="text"
+                  required
+                  placeholder="Password123!"
                   value={newUserPass}
                   onChange={(e) => setNewUserPass(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1 font-mono"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    {language === 'he' ? 'תפקיד' : 'Role'}
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'תפקיד במערכת' : 'System Role'}
                   </label>
                   <select
                     value={newUserRole}
                     onChange={(e) => setNewUserRole(e.target.value as any)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                   >
-                    <option value="STUDENT">{language === 'he' ? 'תלמיד' : 'Student'}</option>
-                    <option value="TEACHER">{language === 'he' ? 'מורה' : 'Teacher'}</option>
-                    <option value="ADMIN">{language === 'he' ? 'מנהל' : 'Admin'}</option>
+                    <option value="STUDENT">{language === 'he' ? '🎓 תלמיד (Student)' : '🎓 Student (Hebrew Learner)'}</option>
+                    <option value="TEACHER">{language === 'he' ? '👨‍🏫 מורה מוסמך (Teacher)' : '👨‍🏫 Teacher (Certified Instructor)'}</option>
+                    <option value="ADMIN">{language === 'he' ? '🛡️ מנהל מערכת (Admin)' : '🛡️ Admin (System Administrator)'}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    {language === 'he' ? 'רמת עברית' : 'Hebrew Level'}
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                    {language === 'he' ? 'רמת עברית התחלתית' : 'Starting Hebrew Level'}
                   </label>
                   <select
                     value={newUserLevel}
                     onChange={(e) => setNewUserLevel(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                   >
-                    <option value="BEGINNER">{language === 'he' ? 'מתחילים (אלף)' : 'Beginner (Alef)'}</option>
-                    <option value="INTERMEDIATE">{language === 'he' ? 'בינוני (בית)' : 'Intermediate (Bet)'}</option>
-                    <option value="ADVANCED">{language === 'he' ? 'מתקדמים (גימל)' : 'Advanced (Gimel)'}</option>
+                    <option value="BEGINNER">{language === 'he' ? '🌱 מתחילים (רמה אלף)' : '🌱 Beginner (Alef)'}</option>
+                    <option value="INTERMEDIATE">{language === 'he' ? '🌿 בינוני (רמה בית)' : '🌿 Intermediate (Bet)'}</option>
+                    <option value="ADVANCED">{language === 'he' ? '🌳 מתקדמים (רמה גימל)' : '🌳 Advanced (Gimel)'}</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            {/* Modal Actions Footer */}
+            <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-850/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
               <button
+                type="button"
                 onClick={() => setIsCreatingUser(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 {language === 'he' ? 'ביטול' : 'Cancel'}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   if (!newUserEmail || !newUserFirst || !newUserLast) {
                     toast.warning(language === 'he' ? 'אנא מלא את כל השדות הנדרשים' : 'Please fill out all fields.');
@@ -3247,9 +3288,14 @@ export const AdminDashboard: React.FC = () => {
                   });
                 }}
                 disabled={createUserMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-brand-teal-800 text-white text-xs font-bold hover:bg-brand-teal-900 shadow-sm"
+                className="px-6 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
               >
-                {createUserMutation.isPending ? (language === 'he' ? 'יוצר...' : 'Creating...') : (language === 'he' ? 'צור חשבון' : 'Create Account')}
+                <UserPlus className="w-4 h-4 text-slate-950" />
+                <span>
+                  {createUserMutation.isPending
+                    ? (language === 'he' ? 'יוצר חשבון...' : 'Creating...')
+                    : (language === 'he' ? 'צור חשבון חדש' : 'Create Account')}
+                </span>
               </button>
             </div>
           </div>
@@ -4124,101 +4170,136 @@ export const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* SCHEDULE LESSON MODAL (Supports 25, 40, or 55 min) */}
+      {/* SCHEDULE LESSON MODAL - MODERNIZED */}
       {isBookingLesson && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-transparent dark:border-slate-800 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-brand-teal-800 dark:text-brand-teal-400" />
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {language === 'he' ? 'תיאום שיעור חי' : 'Schedule Live Session'}
-                </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full my-8 shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden flex flex-col">
+            {/* Executive Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white p-6 sm:p-7">
+              <div className="absolute top-0 end-0 -mt-8 -me-8 w-44 h-44 bg-brand-olive-500/15 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-olive-400/20 text-brand-olive-300 border border-brand-olive-400/30 flex items-center justify-center shrink-0 shadow-xs">
+                    <Calendar className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-brand-olive-300 text-[10px] font-black uppercase tracking-wider mb-1 border border-white/10">
+                      <Clock className="w-3 h-3 text-brand-olive-400" />
+                      <span>{language === 'he' ? 'יומן שיעורים חי' : 'Live Classroom'}</span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-black text-white">
+                      {language === 'he' ? 'תיאום שיעור חי' : 'Schedule Live Session'}
+                    </h2>
+                    <p className="text-xs text-brand-teal-100/80 font-medium mt-0.5">
+                      {language === 'he'
+                        ? 'קביעת שיעור אישי לפי שעון ישראל עם קישור זום'
+                        : 'Schedule a 1-on-1 private lesson in Israel Time with Zoom'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsBookingLesson(false)}
+                  className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <button onClick={() => setIsBookingLesson(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            {/* Modal Body */}
+            <div className="p-6 sm:p-7 space-y-5 text-xs">
               {/* Duration Switcher */}
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'משך השיעור' : 'Session Duration'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-2">
+                  {language === 'he' ? 'בחר משך שיעור' : 'Select Session Duration'}
                 </label>
-                <div className="grid grid-cols-3 gap-2 mt-1">
+                <div className="grid grid-cols-3 gap-2.5">
                   {[25, 40, 55].map((d) => (
                     <button
                       key={d}
                       type="button"
                       onClick={() => setBookDuration(d as 25 | 40 | 55)}
-                      className={`py-2 rounded-xl font-bold border transition-all ${
+                      className={`p-3 rounded-2xl font-extrabold text-xs border transition-all text-center flex flex-col items-center justify-center gap-0.5 active:scale-95 ${
                         bookDuration === d
                           ? d === 55
-                            ? 'bg-purple-600 text-white border-purple-600'
+                            ? 'bg-purple-600 text-white border-purple-600 shadow-md ring-2 ring-purple-500/20'
                             : d === 40
-                            ? 'bg-sky-600 text-white border-sky-600'
-                            : 'bg-emerald-600 text-white border-emerald-600'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                            ? 'bg-sky-600 text-white border-sky-600 shadow-md ring-2 ring-sky-500/20'
+                            : 'bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-500/20'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300'
                       }`}
                     >
-                      {d} {language === 'he' ? 'דקות' : 'Min'}
+                      <span className="text-sm font-black">{d} {language === 'he' ? 'דק׳' : 'Min'}</span>
+                      <span className="text-[10px] opacity-80 font-medium">
+                        {d === 25 ? (language === 'he' ? 'רגיל' : 'Standard') : d === 40 ? (language === 'he' ? 'מורחב' : 'Extended') : (language === 'he' ? 'מלא' : 'Full')}
+                      </span>
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* Student Selection */}
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'תלמיד' : 'Student'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'he' ? 'תלמיד' : 'Student'} <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={bookStudentId}
                   onChange={(e) => setBookStudentId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                 >
                   <option value="">-- {language === 'he' ? 'בחר תלמיד' : 'Choose Student'} --</option>
                   {studentsList.map((s: any) => (
                     <option key={s.id} value={s.id}>
-                      {s.firstName} {s.lastName}
+                      {s.firstName} {s.lastName} ({s.email})
                     </option>
                   ))}
                 </select>
               </div>
 
+              {/* Teacher Selection */}
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'מורה' : 'Teacher'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'he' ? 'מורה מוסמך' : 'Assigned Teacher'} <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={bookTeacherId}
                   onChange={(e) => setBookTeacherId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                 >
                   <option value="">-- {language === 'he' ? 'בחר מורה' : 'Choose Teacher'} --</option>
                   {(teachersData || []).map((t: any) => (
                     <option key={t.id} value={t.id}>
-                      {t.user?.firstName} {t.user?.lastName}
+                      {t.user?.firstName} {t.user?.lastName} ({t.user?.email})
                     </option>
                   ))}
                 </select>
               </div>
 
+              {/* Date & Time */}
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'תאריך ושעה (שעון ישראל)' : 'Scheduled Date & Time (Israel Time)'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1.5">
+                  <span>{language === 'he' ? 'מועד השיעור' : 'Scheduled Date & Time'} <span className="text-rose-500">*</span></span>
+                  <span className="text-[10px] text-brand-teal-700 dark:text-brand-teal-300 font-bold bg-brand-teal-50 dark:bg-brand-teal-950/60 px-2 py-0.5 rounded-md border border-brand-teal-200/60 dark:border-brand-teal-800/60">
+                    🇮🇱 {ISRAEL_TZ_LABEL}
+                  </span>
                 </label>
                 <input
                   type="datetime-local"
+                  required
                   value={bookDateTime}
                   onChange={(e) => setBookDateTime(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                 />
               </div>
 
+              {/* Zoom Link */}
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'קישור לפגישת זום' : 'Zoom Meeting Link'}
+                <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-1.5">
+                  <Video className="w-3.5 h-3.5 text-blue-500" />
+                  <span>{language === 'he' ? 'קישור לחדר זום' : 'Zoom Classroom Link'}</span>
                 </label>
                 <input
                   type="url"
@@ -4226,19 +4307,22 @@ export const AdminDashboard: React.FC = () => {
                   onChange={(e) => setBookZoomLink(e.target.value)}
                   placeholder="https://zoom.us/j/1234567890"
                   dir="ltr"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1 font-mono text-xs"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
                 />
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            {/* Modal Actions Footer */}
+            <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-850/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
               <button
+                type="button"
                 onClick={() => setIsBookingLesson(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 {language === 'he' ? 'ביטול' : 'Cancel'}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   if (!bookStudentId || !bookTeacherId || !bookDateTime) {
                     toast.warning(language === 'he' ? 'אנא מלא את כל פרטי השיעור' : 'Please fill in all booking fields');
@@ -4254,11 +4338,14 @@ export const AdminDashboard: React.FC = () => {
                   });
                 }}
                 disabled={bookLessonMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-brand-teal-800 text-white text-xs font-bold hover:bg-brand-teal-900 shadow-sm"
+                className="px-6 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
               >
-                {bookLessonMutation.isPending
-                  ? (language === 'he' ? 'מתאם...' : 'Scheduling...')
-                  : (language === 'he' ? `אישור (${bookDuration} דק׳)` : `Confirm ${bookDuration}m Session`)}
+                <Calendar className="w-4 h-4 text-slate-950" />
+                <span>
+                  {bookLessonMutation.isPending
+                    ? (language === 'he' ? 'מתאם שיעור...' : 'Scheduling...')
+                    : (language === 'he' ? `אשר תיאום שיעור (${bookDuration} דק׳)` : `Confirm ${bookDuration}m Session`)}
+                </span>
               </button>
             </div>
           </div>
