@@ -232,6 +232,53 @@ export const AdminDashboard: React.FC = () => {
     }
   }, [location.search]);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const searchTab = new URLSearchParams(window.location.search).get('tab');
+      if (
+        searchTab &&
+        [
+          'overview',
+          'landing_cms',
+          'enterprise',
+          'levels',
+          'session_types',
+          'roles',
+          'payments',
+          'exams',
+          'review_links',
+          'point_rules',
+          'languages',
+          'reminders_hub',
+          'users',
+          'teachers',
+          'packages',
+          'bookings',
+          'surveys',
+          'system_logs',
+        ].includes(searchTab)
+      ) {
+        setActiveTab(searchTab as any);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId as any);
+    setIsMobileMoreOpen(false);
+    setMobileOpen(false);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tabId);
+      window.history.pushState({ tab: tabId }, '', url.toString());
+    } catch {
+      // ignore
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const [isPlatformSettingsModalOpen, setIsPlatformSettingsModalOpen] = useState(false);
@@ -1045,11 +1092,7 @@ export const AdminDashboard: React.FC = () => {
         <GlassSidebar
           navItems={navItems}
           activeTab={activeTab}
-          onTabChange={(tabId) => {
-            setActiveTab(tabId as any);
-            setIsMobileMoreOpen(false);
-            setMobileOpen(false);
-          }}
+          onTabChange={handleTabChange}
           user={{
             firstName: currentUser?.firstName,
             lastName: currentUser?.lastName,
@@ -1194,10 +1237,10 @@ export const AdminDashboard: React.FC = () => {
                   <button
                     onClick={() => {
                       haptics.tap();
-                      setActiveTab('roles');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      handleTabChange('roles');
                     }}
-                    className="group p-3.5 rounded-2xl bg-gradient-to-b from-sky-50/80 to-white dark:from-sky-950/20 dark:to-slate-900 border border-sky-200/70 dark:border-sky-800/50 hover:border-sky-500 dark:hover:border-sky-500 hover:shadow-md transition-all text-start flex flex-col justify-between"
+                    title={language === 'he' ? 'מטריצת תפקידים והרשאות מערכת (Role & Permission Action Matrix)' : 'Role & Permission Action Matrix'}
+                    className="group p-3.5 rounded-2xl bg-gradient-to-b from-sky-50/80 to-white dark:from-sky-950/20 dark:to-slate-900 border border-sky-200/70 dark:border-sky-800/50 hover:border-sky-500 dark:hover:border-sky-500 hover:shadow-md transition-all text-start flex flex-col justify-between cursor-pointer"
                   >
                     <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold mb-2 group-hover:scale-110 transition-transform">
                       <ShieldCheck className="w-4 h-4" />
@@ -1214,8 +1257,11 @@ export const AdminDashboard: React.FC = () => {
 
                   {/* Action 6: Scheduled Sessions */}
                   <button
-                    onClick={() => setActiveTab('bookings')}
-                    className="group p-3.5 rounded-2xl bg-gradient-to-b from-purple-50/80 to-white dark:from-purple-950/20 dark:to-slate-900 border border-purple-200/70 dark:border-purple-800/50 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md transition-all text-start flex flex-col justify-between"
+                    onClick={() => {
+                      haptics.tap();
+                      handleTabChange('bookings');
+                    }}
+                    className="group p-3.5 rounded-2xl bg-gradient-to-b from-purple-50/80 to-white dark:from-purple-950/20 dark:to-slate-900 border border-purple-200/70 dark:border-purple-800/50 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-md transition-all text-start flex flex-col justify-between cursor-pointer"
                   >
                     <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold mb-2 group-hover:scale-110 transition-transform">
                       <Clock className="w-4 h-4" />
@@ -2931,10 +2977,7 @@ export const AdminDashboard: React.FC = () => {
             activeTab === 'languages') && (
             <EnterpriseTabsContainer
               currentTab={activeTab === 'enterprise' ? 'levels' : (activeTab as any)}
-              onTabChange={(tab) => {
-                setActiveTab(tab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onTabChange={handleTabChange}
             />
           )}
 
@@ -3434,8 +3477,7 @@ export const AdminDashboard: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setIsCreatingUser(false);
-                        setActiveTab('roles');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        handleTabChange('roles');
                       }}
                       className="text-[11px] font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 transition-colors"
                     >
