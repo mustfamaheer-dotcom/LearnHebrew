@@ -73,7 +73,8 @@ export async function createUser(data: {
   password: string;
   firstName: string;
   lastName: string;
-  role: Role;
+  role?: Role;
+  roleDefinitionId?: string;
   languagePref?: 'en' | 'he';
   nativeLanguageId?: string;
   learningLanguageId?: string;
@@ -93,33 +94,52 @@ export async function createUser(data: {
   const passwordHash = await hashPassword(data.password);
 
   // Link to RoleDefinition
-  const roleDef = await prisma.roleDefinition.findFirst({
-    where: { name: data.role },
-  });
+  let roleDef = null;
+  if (data.roleDefinitionId) {
+    roleDef = await prisma.roleDefinition.findUnique({
+      where: { id: data.roleDefinitionId },
+    });
+  }
+
+  let resolvedRole: Role = data.role || Role.STUDENT;
+  if (roleDef && Object.values(Role).includes(roleDef.name as any)) {
+    resolvedRole = roleDef.name as Role;
+  }
+
+  if (!roleDef && resolvedRole) {
+    roleDef = await prisma.roleDefinition.findFirst({
+      where: { name: resolvedRole },
+    });
+  }
 
   // Resolve and synchronize dynamic Hebrew Proficiency Level (Level model)
-  let resolvedLevelId: string | null = data.levelId || null;
+  let resolvedLevelId: string | null = null;
   let resolvedLevelEnum: HebrewLevel = data.level || HebrewLevel.BEGINNER;
 
-  if (resolvedLevelId) {
-    const lvlRecord = await prisma.level.findUnique({ where: { id: resolvedLevelId } });
-    if (lvlRecord && Object.values(HebrewLevel).includes(lvlRecord.code as any)) {
-      resolvedLevelEnum = lvlRecord.code as HebrewLevel;
-    }
-  } else if (data.level) {
-    const lvlRecord = await prisma.level.findFirst({ where: { code: data.level } });
-    if (lvlRecord) {
-      resolvedLevelId = lvlRecord.id;
-    }
-  } else if (data.role === Role.STUDENT) {
-    const defaultLevel = await prisma.level.findFirst({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' },
-    });
-    if (defaultLevel) {
-      resolvedLevelId = defaultLevel.id;
-      if (Object.values(HebrewLevel).includes(defaultLevel.code as any)) {
-        resolvedLevelEnum = defaultLevel.code as HebrewLevel;
+  if (resolvedRole === Role.STUDENT) {
+    if (data.levelId) {
+      const lvlRecord = await prisma.level.findUnique({ where: { id: data.levelId } });
+      if (lvlRecord) {
+        resolvedLevelId = lvlRecord.id;
+        if (Object.values(HebrewLevel).includes(lvlRecord.code as any)) {
+          resolvedLevelEnum = lvlRecord.code as HebrewLevel;
+        }
+      }
+    } else if (data.level) {
+      const lvlRecord = await prisma.level.findFirst({ where: { code: data.level } });
+      if (lvlRecord) {
+        resolvedLevelId = lvlRecord.id;
+      }
+    } else {
+      const defaultLevel = await prisma.level.findFirst({
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+      });
+      if (defaultLevel) {
+        resolvedLevelId = defaultLevel.id;
+        if (Object.values(HebrewLevel).includes(defaultLevel.code as any)) {
+          resolvedLevelEnum = defaultLevel.code as HebrewLevel;
+        }
       }
     }
   }
@@ -130,11 +150,11 @@ export async function createUser(data: {
       passwordHash,
       firstName: data.firstName,
       lastName: data.lastName,
-      role: data.role,
-      roleDefinitionId: roleDef?.id,
+      role: resolvedRole,
+      roleDefinitionId: roleDef?.id || null,
       languagePref: data.languagePref || 'en',
-      nativeLanguageId: data.nativeLanguageId || null,
-      learningLanguageId: data.learningLanguageId || null,
+      nativeLanguageId: resolvedRole === Role.STUDENT ? (data.nativeLanguageId || null) : null,
+      learningLanguageId: resolvedRole === Role.STUDENT ? (data.learningLanguageId || null) : null,
       createdById: data.createdById,
       mustChangePw: true,
       notificationPreference: {
@@ -143,7 +163,7 @@ export async function createUser(data: {
           reminder1hEnabled: true,
         },
       },
-      ...(data.role === Role.STUDENT && {
+      ...(resolvedRole === Role.STUDENT && {
         studentProfile: {
           create: {
             levelId: resolvedLevelId,
@@ -151,7 +171,7 @@ export async function createUser(data: {
           },
         },
       }),
-      ...(data.role === Role.TEACHER && {
+      ...(resolvedRole === Role.TEACHER && {
         teacherProfile: {
           create: {
             bio: data.bio || '',
@@ -161,10 +181,15 @@ export async function createUser(data: {
       }),
     },
     include: {
-      studentProfile: true,
+      studentProfile: {
+        include: {
+          levelModel: true,
+        },
+      },
       teacherProfile: true,
       nativeLanguage: true,
       learningLanguage: true,
+      roleDefinition: true,
     },
   });
 
@@ -173,7 +198,7 @@ export async function createUser(data: {
     action: 'USER_CREATED',
     entityType: 'User',
     entityId: user.id,
-    metaJson: { email: user.email, role: user.role },
+    metaJson: { email: user.email, role: user.role, roleDefinitionId: user.roleDefinitionId },
   });
 
   const { passwordHash: _, ...safeUser } = user;
@@ -232,6 +257,13 @@ export async function updateUser(id: string, data: any) {
     }
   }
 
+  if (userData.roleDefinitionId) {
+    const roleDef = await prisma.roleDefinition.findUnique({ where: { id: userData.roleDefinitionId } });
+    if (roleDef && Object.values(Role).includes(roleDef.name as any)) {
+      userData.role = roleDef.name as Role;
+    }
+  }
+
   const user = await prisma.user.update({
     where: { id },
     data: {
@@ -257,10 +289,15 @@ export async function updateUser(id: string, data: any) {
       }),
     },
     include: {
-      studentProfile: true,
+      studentProfile: {
+        include: {
+          levelModel: true,
+        },
+      },
       teacherProfile: true,
       nativeLanguage: true,
       learningLanguage: true,
+      roleDefinition: true,
     },
   });
 

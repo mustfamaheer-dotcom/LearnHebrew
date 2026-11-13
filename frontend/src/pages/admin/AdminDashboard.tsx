@@ -24,7 +24,7 @@ import { LanguagesTab } from '../../components/admin/LanguagesTab';
 import { PlatformSettingsNavModal } from '../../components/admin/PlatformSettingsNavModal';
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
-import { sessionTypesApi, levelsApi } from '../../lib/enterpriseApi';
+import { sessionTypesApi, levelsApi, languagesApi, rolesApi } from '../../lib/enterpriseApi';
 import { PriceDisplay } from '../../components/common/PriceDisplay';
 import { haptics } from '../../utils/haptics';
 import {
@@ -244,8 +244,13 @@ export const AdminDashboard: React.FC = () => {
   const [newUserPass, setNewUserPass] = useState('LearnHebrew@2026');
   const [newUserFirst, setNewUserFirst] = useState('');
   const [newUserLast, setNewUserLast] = useState('');
-  const [newUserRole, setNewUserRole] = useState<'STUDENT' | 'TEACHER' | 'ADMIN'>('STUDENT');
+  const [newUserRole, setNewUserRole] = useState<string>('STUDENT');
+  const [newUserRoleDefId, setNewUserRoleDefId] = useState('');
+  const [newUserNativeLangId, setNewUserNativeLangId] = useState('');
+  const [newUserLearningLangId, setNewUserLearningLangId] = useState('');
   const [newUserLevelId, setNewUserLevelId] = useState('');
+  const [newUserSpecialties, setNewUserSpecialties] = useState('Modern Hebrew, Conversational, Grammar');
+  const [newUserBio, setNewUserBio] = useState('');
 
   // Modern Package Management State
   const [isCreatingPackage, setIsCreatingPackage] = useState(false);
@@ -416,11 +421,57 @@ export const AdminDashboard: React.FC = () => {
     return Array.isArray(levelsData) ? levelsData.filter((l: any) => l.isActive !== false) : [];
   }, [levelsData]);
 
+  // 6.6. Languages List (Main Native Language & Learning Language)
+  const { data: languagesData = [] } = useQuery({
+    queryKey: ['languages'],
+    queryFn: async () => {
+      const res = await languagesApi.list();
+      return Array.isArray(res) ? res : ((res as any)?.languages || []);
+    },
+  });
+
+  const safeLanguages = useMemo(() => {
+    return Array.isArray(languagesData) ? languagesData.filter((l: any) => l.isActive !== false) : [];
+  }, [languagesData]);
+
+  // 6.7. Platform Roles & RBAC Action Matrix
+  const { data: rolesMatrixData } = useQuery({
+    queryKey: ['rolesMatrix'],
+    queryFn: rolesApi.getMatrix,
+  });
+
+  const platformRoles = useMemo(() => {
+    return rolesMatrixData?.roles || [];
+  }, [rolesMatrixData]);
+
   useEffect(() => {
     if (safeLevels.length > 0 && !newUserLevelId) {
       setNewUserLevelId(safeLevels[0].id);
     }
   }, [safeLevels, newUserLevelId]);
+
+  useEffect(() => {
+    if (safeLanguages.length > 0) {
+      if (!newUserNativeLangId) {
+        const enLang = safeLanguages.find((l: any) => l.code === 'en') || safeLanguages[0];
+        if (enLang) setNewUserNativeLangId(enLang.id);
+      }
+      if (!newUserLearningLangId) {
+        const heLang = safeLanguages.find((l: any) => l.code === 'he') || safeLanguages[0];
+        if (heLang) setNewUserLearningLangId(heLang.id);
+      }
+    }
+  }, [safeLanguages, newUserNativeLangId, newUserLearningLangId]);
+
+  useEffect(() => {
+    if (platformRoles.length > 0 && !newUserRoleDefId) {
+      const studentRole = platformRoles.find((r: any) => r.name === 'STUDENT') || platformRoles[0];
+      if (studentRole) {
+        setNewUserRoleDefId(studentRole.id);
+        setNewUserRole(studentRole.name);
+      }
+    }
+  }, [platformRoles, newUserRoleDefId]);
 
   // 7. Landing Page CMS Settings
   const { data: cmsSettings, isLoading: cmsLoading } = useQuery({
@@ -3258,185 +3309,399 @@ export const AdminDashboard: React.FC = () => {
         </main>
       </div>
 
-      {/* CREATE USER MODAL - MODERNIZED */}
-      {isCreatingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full my-8 shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden flex flex-col">
-            {/* Executive Header */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white p-6 sm:p-7">
-              <div className="absolute top-0 end-0 -mt-8 -me-8 w-44 h-44 bg-brand-olive-500/15 rounded-full blur-2xl pointer-events-none" />
-              <div className="relative z-10 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-brand-olive-400/20 text-brand-olive-300 border border-brand-olive-400/30 flex items-center justify-center shrink-0 shadow-xs">
-                    <UserPlus className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-brand-olive-300 text-[10px] font-black uppercase tracking-wider mb-1 border border-white/10">
-                      <ShieldCheck className="w-3 h-3 text-brand-olive-400" />
-                      <span>{language === 'he' ? 'ניהול משתמשים והרשאות' : 'User Governance'}</span>
+      {/* CREATE USER MODAL - LINKED TO PLATFORM ROLES & CAPABILITIES */}
+      {isCreatingUser && (() => {
+        const selectedRoleDef = platformRoles.find((r: any) => r.id === newUserRoleDefId) || platformRoles.find((r: any) => r.name === newUserRole);
+        const currentGrantedActions = selectedRoleDef?.permissions?.filter((p: any) => p.granted)?.length ?? 0;
+        const totalActionsCount = rolesMatrixData?.permissions?.length || 57;
+        const actionsPercentage = totalActionsCount > 0 ? Math.round((currentGrantedActions / totalActionsCount) * 100) : 0;
+        const selectedLevelObj = safeLevels.find((lvl: any) => lvl.id === newUserLevelId);
+        const isStudent = newUserRole === 'STUDENT';
+        const isTeacher = newUserRole === 'TEACHER';
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in overflow-y-auto">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full my-8 shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden flex flex-col">
+              {/* Executive Header */}
+              <div className="relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white p-6 sm:p-7">
+                <div className="absolute top-0 end-0 -mt-8 -me-8 w-44 h-44 bg-brand-olive-500/15 rounded-full blur-2xl pointer-events-none" />
+                <div className="relative z-10 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-olive-400/20 text-brand-olive-300 border border-brand-olive-400/30 flex items-center justify-center shrink-0 shadow-xs">
+                      <UserPlus className="w-6 h-6" />
                     </div>
-                    <h2 className="text-xl sm:text-2xl font-black text-white">
-                      {language === 'he' ? 'יצירת חשבון משתמש חדש' : 'Create New User Account'}
-                    </h2>
-                    <p className="text-xs text-brand-teal-100/80 font-medium mt-0.5">
-                      {language === 'he'
-                        ? 'הגדרת פרטים אישיים, תפקיד במערכת ורמת עברית'
-                        : 'Configure account credentials, system role, and Hebrew level'}
-                    </p>
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-brand-olive-300 text-[10px] font-black uppercase tracking-wider mb-1 border border-white/10">
+                        <ShieldCheck className="w-3 h-3 text-brand-olive-400" />
+                        <span>{language === 'he' ? 'ניהול משתמשים והרשאות מערכת' : 'User Governance & RBAC'}</span>
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-black text-white">
+                        {language === 'he' ? 'יצירת חשבון משתמש חדש' : 'Create New User Account'}
+                      </h2>
+                      <p className="text-xs text-brand-teal-100/80 font-medium mt-0.5">
+                        {language === 'he'
+                          ? 'הגדרת פרטים אישיים, תפקיד בפלטפורמה, שפות ורמת עברית'
+                          : 'Configure credentials, platform role & permissions, languages, and level'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatingUser(false)}
+                    className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 sm:p-7 space-y-5 text-xs max-h-[75vh] overflow-y-auto">
+                {/* 1. Account Credentials */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                      {language === 'he' ? 'שם פרטי' : 'First Name'} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. David"
+                      value={newUserFirst}
+                      onChange={(e) => setNewUserFirst(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                      {language === 'he' ? 'שם משפחה' : 'Last Name'} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Cohen"
+                      value={newUserLast}
+                      onChange={(e) => setNewUserLast(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
+                    />
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                      {language === 'he' ? 'כתובת אימייל' : 'Email Address'} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="user@example.com"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1.5">
+                      <span>{language === 'he' ? 'סיסמה ראשונית' : 'Initial Password'} <span className="text-rose-500">*</span></span>
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        {language === 'he' ? 'ברירת מחדל: שניתן לשנות' : 'Changeable'}
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Password123!"
+                      value={newUserPass}
+                      onChange={(e) => setNewUserPass(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Platform Role & Permissions Linkage */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/70 border border-slate-200/80 dark:border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                      <span>{language === 'he' ? 'תפקיד בפלטפורמה (Platform Role)' : 'Platform Role & Permissions'}</span>
+                      <span className="text-rose-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingUser(false);
+                        setActiveTab('roles');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="text-[11px] font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 transition-colors"
+                    >
+                      <span>{language === 'he' ? 'מטריצת תפקידים והרשאות' : 'Role & Permission Action Matrix'}</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <select
+                    value={newUserRoleDefId}
+                    onChange={(e) => {
+                      const chosenId = e.target.value;
+                      setNewUserRoleDefId(chosenId);
+                      const matched = platformRoles.find((r: any) => r.id === chosenId);
+                      if (matched) {
+                        setNewUserRole(matched.name);
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                  >
+                    {platformRoles.length === 0 ? (
+                      <>
+                        <option value="STUDENT">{language === 'he' ? 'תלמיד (Student / Learner)' : 'Student / Learner'}</option>
+                        <option value="TEACHER">{language === 'he' ? 'מורה מוסמך (Teacher / Instructor)' : 'Teacher / Instructor'}</option>
+                        <option value="ADMIN">{language === 'he' ? 'מנהל מערכת (Administrator)' : 'Administrator'}</option>
+                      </>
+                    ) : (
+                      platformRoles.map((r: any) => {
+                        const granted = Array.isArray(r.permissions)
+                          ? r.permissions.filter((p: any) => p.granted).length
+                          : 0;
+                        return (
+                          <option key={r.id} value={r.id}>
+                            {language === 'he' ? r.labelHe : r.labelEn} ({r.name}) — {granted} {language === 'he' ? 'הרשאות פעולה' : 'actions'}
+                          </option>
+                        );
+                      })
+                    )}
+                  </select>
+
+                  {/* Live Role Capability & Permissions Preview */}
+                  {selectedRoleDef && (
+                    <div className="p-3 rounded-xl bg-sky-500/10 border border-sky-200/80 dark:border-sky-800/60 flex items-center justify-between gap-3 text-start">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-slate-900 dark:text-white text-xs">
+                            {language === 'he' ? selectedRoleDef.labelHe : selectedRoleDef.labelEn}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-sky-100 text-sky-800 dark:bg-sky-900/60 dark:text-sky-200 border border-sky-200 dark:border-sky-800">
+                            {selectedRoleDef.name}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">
+                          {selectedRoleDef.name === 'SUPER_ADMIN'
+                            ? (language === 'he' ? 'שליטה מלאה בכל מודולי המערכת, עריכת הגדרות וניהול אבטחה' : 'Full superadmin governance across all platform modules & system configs')
+                            : selectedRoleDef.name === 'ADMIN'
+                            ? (language === 'he' ? 'ניהול משתמשים, חבילות, לוח שיעורים, רמות והגדרות אקדמיות' : 'Administrative governance: user management, packages, schedules & curriculum')
+                            : selectedRoleDef.name === 'SALES'
+                            ? (language === 'he' ? 'ניהול הרשמות תלמידים, אישור עסקאות תשלום והקצאת חבילות' : 'Student enrollment, sales CRM, payment approvals & package allocations')
+                            : selectedRoleDef.name === 'CS'
+                            ? (language === 'he' ? 'שירות לקוחות, טיפול בפניות, תזכורות והתראות מערכת' : 'Learner customer support, ticket resolution & notification monitoring')
+                            : selectedRoleDef.name === 'TEACHER'
+                            ? (language === 'he' ? 'יומן שיעורים, סימון נוכחות, משובי איכות, ציונים ופתיחת משחקים' : 'Teaching portal, attendance logging, feedback scorecards & classroom games')
+                            : (language === 'he' ? 'פורטל למידה אישי, יומן שיעורים, שיעורי בית, מבחני רמה ומשחקים' : 'Student portal, lesson booking, homework submissions, exams & points')}
+                        </p>
+                      </div>
+                      <div className="text-end shrink-0">
+                        <span className="text-xs font-black text-sky-700 dark:text-sky-300 block">
+                          {currentGrantedActions} / {totalActionsCount}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {actionsPercentage}% {language === 'he' ? 'פעולות מורשות' : 'granted'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. CONDITIONAL: Student Academic Configuration (Languages & Hebrew Levels) */}
+                {isStudent && (
+                  <div className="p-4 rounded-2xl bg-brand-teal-50/50 dark:bg-brand-teal-950/30 border border-brand-teal-200/70 dark:border-brand-teal-900/60 space-y-4 animate-fade-in">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-300" />
+                      <h3 className="font-extrabold text-xs text-brand-teal-950 dark:text-brand-teal-200">
+                        {language === 'he' ? 'שפות לימוד ומסגרת רמת עברית לתלמיד' : 'Student Language & Hebrew Proficiency Framework'}
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Main / Native Language */}
+                      <div>
+                        <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                          {language === 'he' ? 'שפת אם / שפה ראשית' : 'Main / Native Language'} <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={newUserNativeLangId}
+                          onChange={(e) => setNewUserNativeLangId(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                        >
+                          {safeLanguages.map((lang: any) => (
+                            <option key={lang.id} value={lang.id}>
+                              {lang.labelEn} ({lang.labelNative})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Language Need to Learn */}
+                      <div>
+                        <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                          {language === 'he' ? 'שפה ללימוד' : 'Language to Learn'} <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={newUserLearningLangId}
+                          onChange={(e) => setNewUserLearningLangId(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                        >
+                          {safeLanguages.map((lang: any) => (
+                            <option key={lang.id} value={lang.id}>
+                              {lang.labelEn} ({lang.labelNative})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Starting Hebrew Level (Linked to Hebrew Proficiency Levels) */}
+                      <div className="sm:col-span-2">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="font-bold text-slate-700 dark:text-slate-300 block">
+                            {language === 'he' ? 'רמת עברית התחלתית (מקושרת למערכת הרמות)' : 'Starting Hebrew Level (Linked to Proficiency Levels)'} <span className="text-rose-500">*</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCreatingUser(false);
+                              setActiveTab('levels');
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="text-[11px] font-bold text-brand-teal-600 dark:text-brand-teal-400 hover:underline flex items-center gap-1 transition-colors"
+                          >
+                            <span>{language === 'he' ? 'צפייה במסגרת הרמות' : 'View Levels Framework'}</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <select
+                          value={newUserLevelId}
+                          onChange={(e) => setNewUserLevelId(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                        >
+                          {safeLevels.length === 0 ? (
+                            <option value="">{language === 'he' ? '-- אין רמות מוגדרות --' : '-- No levels configured --'}</option>
+                          ) : (
+                            safeLevels.map((lvl: any) => (
+                              <option key={lvl.id} value={lvl.id}>
+                                {language === 'he' ? lvl.labelHe : lvl.labelEn} {lvl.code ? `(${lvl.code})` : ''}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                        {selectedLevelObj?.description && (
+                          <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-brand-teal-100 dark:border-brand-teal-900/40 text-[11px] text-slate-600 dark:text-slate-400 mt-2 flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: selectedLevelObj.color || '#0D9488' }} />
+                            <span>{selectedLevelObj.description}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. CONDITIONAL: Teacher Profile Configuration (Starting Level is Hidden) */}
+                {isTeacher && (
+                  <div className="p-4 rounded-2xl bg-brand-olive-50/50 dark:bg-brand-olive-950/30 border border-brand-olive-200/70 dark:border-brand-olive-900/60 space-y-3 animate-fade-in">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-brand-olive-600 dark:text-brand-olive-400" />
+                      <h3 className="font-extrabold text-xs text-brand-olive-950 dark:text-brand-olive-200">
+                        {language === 'he' ? 'הגדרות פרופיל מורה מוסמך' : 'Certified Instructor Profile'}
+                      </h3>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                        {language === 'he' ? 'תחומי התמחות בהוראה' : 'Teaching Specialties'}
+                      </label>
+                      <input
+                        type="text"
+                        value={newUserSpecialties}
+                        onChange={(e) => setNewUserSpecialties(e.target.value)}
+                        placeholder="e.g. Modern Hebrew, Conversational, Grammar, Ulpan Prep"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:ring-2 focus:ring-brand-teal-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                        {language === 'he' ? 'תיאור קצר / רקע מקצועי' : 'Instructor Bio / Background'}
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={newUserBio}
+                        onChange={(e) => setNewUserBio(e.target.value)}
+                        placeholder={language === 'he' ? 'מורה מוסמך להוראת עברית עם ניסיון עשיר...' : 'Certified Hebrew educator with focus on conversational fluency...'}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium text-xs focus:ring-2 focus:ring-brand-teal-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. CONDITIONAL: Administrative Staff Roles Info */}
+                {!isStudent && !isTeacher && (
+                  <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-2.5">
+                    <ShieldCheck className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0" />
+                    <span>
+                      {language === 'he'
+                        ? 'חשבון מנהל / צוות פלטפורמה אינו דורש רמת עברית התחלתית. הגישה נקבעת ישירות לפי ההרשאות המוענקות לתפקיד זה במטריצת ההרשאות.'
+                        : 'Staff and administrative roles do not require Hebrew learner levels. Platform capability access is determined dynamically by the Role & Permission Action Matrix.'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Actions Footer */}
+              <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-850/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setIsCreatingUser(false)}
-                  className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  {language === 'he' ? 'ביטול' : 'Cancel'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newUserEmail || !newUserFirst || !newUserLast) {
+                      toast.warning(language === 'he' ? 'אנא מלא את כל השדות הנדרשים' : 'Please fill out all required fields.');
+                      return;
+                    }
+                    createUserMutation.mutate({
+                      email: newUserEmail,
+                      password: newUserPass,
+                      firstName: newUserFirst,
+                      lastName: newUserLast,
+                      role: newUserRole,
+                      roleDefinitionId: newUserRoleDefId || undefined,
+                      nativeLanguageId: isStudent ? newUserNativeLangId : undefined,
+                      learningLanguageId: isStudent ? newUserLearningLangId : undefined,
+                      levelId: isStudent ? newUserLevelId : undefined,
+                      specialties: isTeacher ? newUserSpecialties.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+                      bio: isTeacher ? newUserBio : undefined,
+                    });
+                  }}
+                  disabled={createUserMutation.isPending}
+                  className="px-6 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
+                >
+                  <UserPlus className="w-4 h-4 text-slate-950" />
+                  <span>
+                    {createUserMutation.isPending
+                      ? (language === 'he' ? 'יוצר חשבון...' : 'Creating...')
+                      : (language === 'he' ? 'צור חשבון חדש' : 'Create Account')}
+                  </span>
                 </button>
               </div>
             </div>
-
-            {/* Modal Body */}
-            <div className="p-6 sm:p-7 space-y-5 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                    {language === 'he' ? 'שם פרטי' : 'First Name'} <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. David"
-                    value={newUserFirst}
-                    onChange={(e) => setNewUserFirst(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                    {language === 'he' ? 'שם משפחה' : 'Last Name'} <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Cohen"
-                    value={newUserLast}
-                    onChange={(e) => setNewUserLast(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                  {language === 'he' ? 'כתובת אימייל' : 'Email Address'} <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="user@example.com"
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-medium placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1.5">
-                  <span>{language === 'he' ? 'סיסמה ראשונית' : 'Initial Password'} <span className="text-rose-500">*</span></span>
-                  <span className="text-[10px] text-slate-400 font-normal">
-                    {language === 'he' ? 'המשתמש יוכל לשנותה בהתחברות' : 'User can change after login'}
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Password123!"
-                  value={newUserPass}
-                  onChange={(e) => setNewUserPass(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-xs"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                    {language === 'he' ? 'תפקיד במערכת' : 'System Role'}
-                  </label>
-                  <select
-                    value={newUserRole}
-                    onChange={(e) => setNewUserRole(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
-                  >
-                    <option value="STUDENT">{language === 'he' ? '🎓 תלמיד (Student)' : '🎓 Student (Hebrew Learner)'}</option>
-                    <option value="TEACHER">{language === 'he' ? '👨‍🏫 מורה מוסמך (Teacher)' : '👨‍🏫 Teacher (Certified Instructor)'}</option>
-                    <option value="ADMIN">{language === 'he' ? '🛡️ מנהל מערכת (Admin)' : '🛡️ Admin (System Administrator)'}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                    {language === 'he' ? 'רמת עברית התחלתית' : 'Starting Hebrew Level'}
-                  </label>
-                  <select
-                    value={newUserLevelId}
-                    onChange={(e) => setNewUserLevelId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
-                  >
-                    {safeLevels.length === 0 ? (
-                      <option value="">{language === 'he' ? '-- אין רמות מוגדרות --' : '-- No levels configured --'}</option>
-                    ) : (
-                      safeLevels.map((lvl: any) => (
-                        <option key={lvl.id} value={lvl.id}>
-                          {language === 'he' ? lvl.labelHe : lvl.labelEn} {lvl.code ? `(${lvl.code})` : ''}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Actions Footer */}
-            <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-850/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => setIsCreatingUser(false)}
-                className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                {language === 'he' ? 'ביטול' : 'Cancel'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!newUserEmail || !newUserFirst || !newUserLast) {
-                    toast.warning(language === 'he' ? 'אנא מלא את כל השדות הנדרשים' : 'Please fill out all fields.');
-                    return;
-                  }
-                  createUserMutation.mutate({
-                    email: newUserEmail,
-                    password: newUserPass,
-                    firstName: newUserFirst,
-                    lastName: newUserLast,
-                    role: newUserRole,
-                    levelId: newUserLevelId,
-                  });
-                }}
-                disabled={createUserMutation.isPending}
-                className="px-6 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
-              >
-                <UserPlus className="w-4 h-4 text-slate-950" />
-                <span>
-                  {createUserMutation.isPending
-                    ? (language === 'he' ? 'יוצר חשבון...' : 'Creating...')
-                    : (language === 'he' ? 'צור חשבון חדש' : 'Create Account')}
-                </span>
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* MODERN CREATE / EDIT PACKAGE MODAL */}
       {isCreatingPackage && (
