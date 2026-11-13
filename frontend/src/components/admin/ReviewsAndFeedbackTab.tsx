@@ -646,11 +646,11 @@ export const ReviewsAndFeedbackTab: React.FC = () => {
               className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold outline-none"
             >
               <option value="ALL">{isHe ? 'כל הדירוגים' : 'All Ratings'}</option>
-              <option value="5">5 ⭐⭐⭐⭐⭐</option>
-              <option value="4">4 ⭐⭐⭐⭐</option>
-              <option value="3">3 ⭐⭐⭐</option>
-              <option value="2">2 ⭐⭐</option>
-              <option value="1">1 ⭐</option>
+              <option value="5">{isHe ? '5 כוכבים' : '5 Stars'}</option>
+              <option value="4">{isHe ? '4 כוכבים' : '4 Stars'}</option>
+              <option value="3">{isHe ? '3 כוכבים' : '3 Stars'}</option>
+              <option value="2">{isHe ? '2 כוכבים' : '2 Stars'}</option>
+              <option value="1">{isHe ? 'כוכב 1' : '1 Star'}</option>
             </select>
 
             {/* Filter by Pace */}
@@ -827,11 +827,11 @@ export const ReviewsAndFeedbackTab: React.FC = () => {
               className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold outline-none"
             >
               <option value="ALL">{isHe ? 'כל הדירוגים' : 'All Ratings'}</option>
-              <option value="5">5 ⭐⭐⭐⭐⭐</option>
-              <option value="4">4 ⭐⭐⭐⭐</option>
-              <option value="3">3 ⭐⭐⭐</option>
-              <option value="2">2 ⭐⭐</option>
-              <option value="1">1 ⭐</option>
+              <option value="5">{isHe ? '5 כוכבים' : '5 Stars'}</option>
+              <option value="4">{isHe ? '4 כוכבים' : '4 Stars'}</option>
+              <option value="3">{isHe ? '3 כוכבים' : '3 Stars'}</option>
+              <option value="2">{isHe ? '2 כוכבים' : '2 Stars'}</option>
+              <option value="1">{isHe ? 'כוכב 1' : '1 Star'}</option>
             </select>
           </div>
 
@@ -1023,7 +1023,7 @@ export const ReviewsAndFeedbackTab: React.FC = () => {
                           }`}
                         >
                           {isTop
-                            ? isHe ? 'מצטיין ⭐' : 'Top Tier ⭐'
+                            ? isHe ? 'מצטיין' : 'Top Tier'
                             : isGood
                             ? isHe ? 'טוב מאוד' : 'Strong Performer'
                             : isHe ? 'דורש מעקב' : 'Needs Review'}

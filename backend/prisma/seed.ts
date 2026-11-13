@@ -1041,13 +1041,17 @@ async function main() {
         },
       });
 
+      const qualityVal = lIdx % 12 === 0 ? 3 : (lIdx % 4 === 0 ? 4 : 5);
+      const paceVal = lIdx % 10 === 0 ? 2 : (lIdx % 8 === 0 ? 4 : 3);
+      const diffVal = lIdx % 10 === 0 ? 2 : (lIdx % 7 === 0 ? 4 : 3);
+
       await prisma.lessonFeedback.create({
         data: {
           lessonId: lesson.id,
           studentId: student.id,
-          qualityRating: 5 - (lIdx % 2 === 0 ? 0 : (lIdx % 7 === 0 ? 1 : 0)),
-          difficulty: 3 + (lIdx % 3),
-          paceRating: 4,
+          qualityRating: qualityVal,
+          difficulty: diffVal,
+          paceRating: paceVal,
           comments: `Great lesson on ${topic.en}! The teacher was very supportive and explained the concepts clearly.`,
           submittedAt: new Date(scheduledAt.getTime() + 7200 * 1000),
         },
@@ -1064,10 +1068,10 @@ async function main() {
       data: {
         studentId: student.id,
         teacherId: teacher.id,
-        communication: 5 - (sIdx % 8 === 0 ? 1 : 0),
-        knowledge: 5,
-        punctuality: 5,
-        overallRating: 5 - (sIdx % 6 === 0 ? 1 : 0),
+        communication: sIdx % 7 === 0 ? 4 : 5,
+        knowledge: sIdx % 10 === 0 ? 4 : 5,
+        punctuality: sIdx % 8 === 0 ? 4 : 5,
+        overallRating: sIdx % 5 === 0 ? 4 : 5,
         comments: `Outstanding teaching style, highly encouraging environment, and very clear explanations of Hebrew roots.`,
         submittedAt: new Date(now.getTime() - (sIdx * 36) * 3600 * 1000),
       },
