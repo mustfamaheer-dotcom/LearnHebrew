@@ -786,8 +786,8 @@ export const RolesPermissionsTab: React.FC = () => {
 
       {/* MAIN WORKSPACE GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Roles List Sidebar (4 Columns) */}
-        <div className="space-y-3 lg:col-span-4">
+        {/* Roles List Sidebar (4 Columns) - Sticky with Internal Scroll */}
+        <div className="space-y-3 lg:col-span-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto scrollbar-thin pe-1">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -883,10 +883,10 @@ export const RolesPermissionsTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Permissions Configuration Workspace (8 Columns) */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
-          {/* Executive Role Header & Stats */}
-          <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-slate-900 to-brand-teal-950 text-white border-b border-slate-800 relative overflow-hidden">
+        {/* Permissions Configuration Workspace (8 Columns) - Fixed/Sticky with Internal Scrolling */}
+        <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col lg:sticky lg:top-24 h-[85vh] lg:h-[calc(100vh-7rem)]">
+          {/* Executive Role Header & Stats (Stationary Header) */}
+          <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-slate-900 to-brand-teal-950 text-white border-b border-slate-800 relative overflow-hidden shrink-0">
             <div className="absolute top-0 end-0 -mt-10 -me-10 w-48 h-48 bg-brand-olive-500/10 rounded-full blur-2xl pointer-events-none" />
 
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -992,8 +992,8 @@ export const RolesPermissionsTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Filtering & Search Bar */}
-          <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-3.5">
+          {/* Filtering & Search Bar (Stationary Toolbar) */}
+          <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-3.5 shrink-0">
             {/* Domain Tabs */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               {DOMAIN_GROUPS.map((dom) => {
@@ -1095,8 +1095,8 @@ export const RolesPermissionsTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Granular Permission Action Cards */}
-          <div className="p-4 sm:p-6 space-y-6 overflow-y-auto max-h-[750px]">
+          {/* Granular Permission Action Cards (Scrollable Inside Body) */}
+          <div className="p-4 sm:p-6 space-y-6 flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-thin">
             {Object.keys(groupedPermissions).length === 0 ? (
               <div className="p-12 text-center text-slate-400 space-y-3">
                 <Search className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
