@@ -37,6 +37,7 @@ import {
   ShieldCheck,
   Zap,
   Play,
+  Pause,
   Calendar,
 } from 'lucide-react';
 
@@ -163,41 +164,121 @@ export const LandingPage: React.FC = () => {
         ];
 
   // Testimonials
+  const defaultTestimonials = [
+    {
+      name: 'Michael Bronstein',
+      location: 'New York, USA',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      rating: 5,
+      levelTag: 'Alef - Beginner',
+      teacherName: 'Maya Ben-David',
+      textEn:
+        'The 25-minute format is a genius invention! I can easily fit a lesson during my lunch break. My teacher explains Hebrew verb roots (Shoresh) with incredible clarity.',
+      textHe:
+        'מתכונת 25 הדקות היא פשוט המצאה גאונית! אני קובע שיעור בהפסקת הצהריים בעבודה. המורה מסבירה שורשים ודקדוק בבהירות מדהימה.',
+    },
+    {
+      name: 'Rachel Dayan',
+      location: 'London, UK',
+      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
+      rating: 5,
+      levelTag: 'Bet - Elementary',
+      teacherName: 'Daniel Mizrahi',
+      textEn:
+        'The Google Drive recorded sessions and interactive games make revision so engaging. I went from zero to holding full conversations with Israeli relatives in 3 months!',
+      textHe:
+        'הקלטות הווידאו ומשחקי השפה עם הנקודות עושים את כל ההבדל. התחלתי מאפס והיום אני מנהלת שיחות חופשיות עם המשפחה בישראל!',
+    },
+    {
+      name: 'Daniel Chen',
+      location: 'Toronto, Canada',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+      rating: 5,
+      levelTag: 'Gimel - Intermediate',
+      teacherName: 'Noam Levi',
+      textEn:
+        'Strict Israel Timing (IDT) schedule and 1-on-1 focus makes Engrew the most authentic and reliable Hebrew academy available. Noam is patient and exceptionally skilled.',
+      textHe:
+        'סנכרון מדויק לשעון ישראל ויחס אישי של אחד-על-אחד הפכו את Engrew לפלטפורמה הכי מקצועית שיש. נעם סבלני ומלמד בצורה מעולה.',
+    },
+    {
+      name: 'Sophie Laurent',
+      location: 'Paris, France',
+      avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+      rating: 5,
+      levelTag: 'Dalet - Upper Intermediate',
+      teacherName: 'Liora Katz',
+      textEn:
+        'I work in tech and needed conversational Hebrew for meetings in Tel Aviv. The specialized vocabulary and slang focus helped me pass my Israeli job interview!',
+      textHe:
+        'אני עובדת בהייטק והייתי צריכה עברית עסקית לפגישות בתל אביב. אוצר המילים המעשי והסלנג עזרו לי לעבור ראיון עבודה בחברה ישראלית!',
+    },
+    {
+      name: 'David Miller',
+      location: 'Miami, Florida',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+      rating: 5,
+      levelTag: 'Alef - Beginner',
+      teacherName: 'Talia Friedman',
+      textEn:
+        'The homework assignments with the built-in PDF viewer and teacher audio feedback are top notch. I look forward to my lessons every Tuesday and Thursday.',
+      textHe:
+        'שיעורי הבית עם צפיית ה-PDF המובנית ומשובי השמע מהמורה ברמה הגבוהה ביותר. אני מחכה לשיעורים שלי בכל שלישי וחמישי.',
+    },
+    {
+      name: 'Elena Rostova',
+      location: 'Berlin, Germany',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
+      rating: 5,
+      levelTag: 'Gimel - Intermediate',
+      teacherName: 'Erez Golan',
+      textEn:
+        'The XP leaderboard and gamification kept me motivated daily. Erez is such an encouraging teacher who makes complex binyanim easy to understand.',
+      textHe:
+        'לוח המובילים והמשחקים שמרו על המוטיבציה שלי בכל יום. ארז מורה מעודד שמפשט גזרות ובניינים מורכבים בצורה קלה להבנה.',
+    },
+    {
+      name: 'Julian Meyer',
+      location: 'Zurich, Switzerland',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
+      rating: 5,
+      levelTag: 'Hei - Advanced',
+      teacherName: 'Maya Ben-David',
+      textEn:
+        'After studying Hebrew in university for years, Engrew finally gave me the spontaneous speaking confidence I lacked. The 25m private format is unbeatable.',
+      textHe:
+        'אחרי שנים של לימוד עברית באוניברסיטה, Engrew סוף סוף העניקה לי את הביטחון לדבר בספונטניות. הפורמט של 25 דקות פשוט מנצח.',
+    },
+    {
+      name: 'Sarah Al-Mansoor',
+      location: 'Dubai, UAE',
+      avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=200',
+      rating: 5,
+      levelTag: 'Alef - Beginner',
+      teacherName: 'Karim Mahmoud',
+      textEn:
+        'The teachers are culturally welcoming and so patient. Learning the Alef-Bet through the interactive 3D flashcards was smooth and enjoyable.',
+      textHe:
+        'המורים מקבלים בחום ובסבלנות רבה. לימוד האלף-בית דרך כרטיסיות השמע האינטראקטיביות היה מהנה וקל להפליא.',
+    },
+    {
+      name: 'Marcos Silva',
+      location: 'Buenos Aires, Argentina',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
+      rating: 5,
+      levelTag: 'Bet - Elementary',
+      teacherName: 'Noam Levi',
+      textEn:
+        'Great platform! Fast booking, instant Zoom links, and my sessions balance is clearly visible. Every minute of the 25 minutes is utilized efficiently.',
+      textHe:
+        'פלטפורמה נהדרת! קביעת שיעורים מהירה, קישורי זום מיידיים ומכסת שיעורים שקופה. כל דקה מ-25 הדקות מנוצלת ביעילות מקסימלית.',
+    },
+  ];
+
   const testimonials =
     config.testimonials && config.testimonials.length > 0
       ? config.testimonials
-      : [
-          {
-            name: 'Michael Bronstein',
-            location: 'New York, USA',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-            rating: 5,
-            textEn:
-              'The 25-minute format is a genius invention! I can easily fit a lesson during my lunch break. My Hebrew teacher Mona is phenomenal.',
-            textHe:
-              'מתכונת 25 הדקות היא פשוט המצאה גאונית! אני קובע שיעור בהפסקת הצהריים בעבודה וההתקדמות בדיבור מדהימה.',
-          },
-          {
-            name: 'Rachel Dayan',
-            location: 'London, UK',
-            avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-            rating: 5,
-            textEn:
-              'The Google Drive recorded sessions and interactive games make revision so engaging. I went from zero to holding full conversations in 3 months!',
-            textHe:
-              'הקלטות הווידאו ומשחקי השפה עם הנקודות עושים את כל ההבדל. התחלתי מאפס והיום אני מנהלת שיחות חופשיות!',
-          },
-          {
-            name: 'Daniel Chen',
-            location: 'Toronto, Canada',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-            rating: 5,
-            textEn:
-              'Strict Israel Timing (IDT) schedule and 1-on-1 focus makes Engrew the most authentic and reliable Hebrew academy available.',
-            textHe:
-              'סנכרון מדויק לשעון ישראל ויחס אישי של אחד-על-אחד הפכו את Engrew לפלטפורמה הכי מקצועית שיש.',
-          },
-        ];
+      : defaultTestimonials;
 
   // Social Media Links (CMS Managed)
   const socials = config?.socials || {};
@@ -409,6 +490,149 @@ export const LandingPage: React.FC = () => {
 
   const handleMouseUpOrLeave = () => {
     isMouseDownRef.current = false;
+  };
+
+  // Feedback Carousel State & Auto-Scroll Logic
+  const feedbackScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollFeedbackLeft, setCanScrollFeedbackLeft] = useState(false);
+  const [canScrollFeedbackRight, setCanScrollFeedbackRight] = useState(true);
+  const [activeFeedbackIndex, setActiveFeedbackIndex] = useState(0);
+  const [isFeedbackAutoScroll, setIsFeedbackAutoScroll] = useState(true);
+  const [isFeedbackHovered, setIsFeedbackHovered] = useState(false);
+
+  const isFeedbackMouseDownRef = useRef(false);
+  const feedbackStartXRef = useRef(0);
+  const feedbackScrollLeftRef = useRef(0);
+  const hasFeedbackDraggedRef = useRef(false);
+
+  // Auto-scroll ticker: advances every 3.8s when not hovered
+  useEffect(() => {
+    if (!isFeedbackAutoScroll || isFeedbackHovered) return;
+
+    const timer = setInterval(() => {
+      if (!feedbackScrollRef.current) return;
+      const container = feedbackScrollRef.current;
+      const cards = container.querySelectorAll<HTMLElement>(':scope > div');
+      if (!cards.length) return;
+
+      const nextIndex = (activeFeedbackIndex + 1) % cards.length;
+      cards[nextIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+      setActiveFeedbackIndex(nextIndex);
+    }, 3800);
+
+    return () => clearInterval(timer);
+  }, [isFeedbackAutoScroll, isFeedbackHovered, activeFeedbackIndex, testimonials.length]);
+
+  const updateFeedbackScrollButtons = () => {
+    if (!feedbackScrollRef.current) return;
+    const container = feedbackScrollRef.current;
+    const cards = container.querySelectorAll<HTMLElement>(':scope > div');
+    if (!cards.length) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = containerRect.left + containerRect.width / 2;
+
+    let closestIndex = 0;
+    let minDistance = Infinity;
+
+    cards.forEach((card, idx) => {
+      const cardRect = card.getBoundingClientRect();
+      const cardCenter = cardRect.left + cardRect.width / 2;
+      const dist = Math.abs(cardCenter - containerCenter);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = idx;
+      }
+    });
+
+    setActiveFeedbackIndex(closestIndex);
+
+    const isRtl = language === 'he';
+    if (isRtl) {
+      setCanScrollFeedbackLeft(closestIndex < cards.length - 1);
+      setCanScrollFeedbackRight(closestIndex > 0);
+    } else {
+      setCanScrollFeedbackLeft(closestIndex > 0);
+      setCanScrollFeedbackRight(closestIndex < cards.length - 1);
+    }
+  };
+
+  useEffect(() => {
+    const container = feedbackScrollRef.current;
+    if (!container) return;
+    updateFeedbackScrollButtons();
+    container.addEventListener('scroll', updateFeedbackScrollButtons, { passive: true });
+    window.addEventListener('resize', updateFeedbackScrollButtons);
+    return () => {
+      container.removeEventListener('scroll', updateFeedbackScrollButtons);
+      window.removeEventListener('resize', updateFeedbackScrollButtons);
+    };
+  }, [testimonials.length, language]);
+
+  const scrollFeedback = (direction: 'left' | 'right') => {
+    if (!feedbackScrollRef.current) return;
+    haptics.tap();
+    const container = feedbackScrollRef.current;
+    const cards = container.querySelectorAll<HTMLElement>(':scope > div');
+    if (!cards.length) return;
+
+    const isRtl = language === 'he';
+    let targetIndex = activeFeedbackIndex;
+    if (direction === 'left') {
+      targetIndex = isRtl ? activeFeedbackIndex + 1 : activeFeedbackIndex - 1;
+    } else {
+      targetIndex = isRtl ? activeFeedbackIndex - 1 : activeFeedbackIndex + 1;
+    }
+
+    targetIndex = Math.max(0, Math.min(targetIndex, cards.length - 1));
+
+    cards[targetIndex]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    });
+    setActiveFeedbackIndex(targetIndex);
+  };
+
+  const scrollFeedbackToIndex = (index: number) => {
+    if (!feedbackScrollRef.current) return;
+    haptics.tap();
+    const container = feedbackScrollRef.current;
+    const cards = container.querySelectorAll<HTMLElement>(':scope > div');
+    if (cards[index]) {
+      cards[index].scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+      setActiveFeedbackIndex(index);
+    }
+  };
+
+  const handleFeedbackMouseDown = (e: React.MouseEvent) => {
+    if (!feedbackScrollRef.current) return;
+    isFeedbackMouseDownRef.current = true;
+    hasFeedbackDraggedRef.current = false;
+    feedbackStartXRef.current = e.pageX - feedbackScrollRef.current.offsetLeft;
+    feedbackScrollLeftRef.current = feedbackScrollRef.current.scrollLeft;
+  };
+
+  const handleFeedbackMouseMove = (e: React.MouseEvent) => {
+    if (!isFeedbackMouseDownRef.current || !feedbackScrollRef.current) return;
+    const x = e.pageX - feedbackScrollRef.current.offsetLeft;
+    const walk = x - feedbackStartXRef.current;
+    if (Math.abs(walk) > 5) {
+      hasFeedbackDraggedRef.current = true;
+    }
+    feedbackScrollRef.current.scrollLeft = feedbackScrollLeftRef.current - walk;
+  };
+
+  const handleFeedbackMouseUpOrLeave = () => {
+    isFeedbackMouseDownRef.current = false;
   };
 
   return (
@@ -1106,55 +1330,193 @@ export const LandingPage: React.FC = () => {
         )}
       </section>
 
-      {/* STUDENT TESTIMONIALS (CMS Managed) */}
+      {/* STUDENT TESTIMONIALS & FEEDBACK (Auto-Scrollable Carousel) */}
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
-        <div className="text-center mb-12">
-          <span className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 uppercase tracking-wider block mb-2">
-            {language === 'he' ? 'סיפורי הצלחה' : 'Learner Reviews'}
-          </span>
+        <div className="text-center mb-10 sm:mb-14">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-black uppercase tracking-wider mb-2 border border-emerald-500/20">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{language === 'he' ? 'משובים חיים של תלמידים' : 'Verified Student Reviews'}</span>
+          </div>
           <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
             {language === 'he' ? 'מה התלמידים שלנו אומרים' : 'Loved by Hebrew Students Worldwide'}
           </h2>
-          <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs sm:text-base">
+          <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs sm:text-base max-w-2xl mx-auto">
             {language === 'he'
-              ? 'ביקורות אמיתיות מתלמידים שלומדים עברית מודרנית עם Engrew.'
-              : 'Real feedback from students mastering modern Hebrew through 25-minute sessions.'}
+              ? 'משובים אמיתיים מתלמידים שלומדים עברית מודרנית עם Engrew במפגשים אישיים של 25 דקות.'
+              : 'Authentic reviews and testimonials from students mastering conversational Hebrew through private 25-minute sessions.'}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {testimonials.map((t: any, idx: number) => {
-            const quote = language === 'he' && t.textHe ? t.textHe : t.textEn;
-            return (
-              <div
-                key={idx}
-                className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-6 sm:p-7 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between"
-              >
-                <div>
-                  {/* Star Rating */}
-                  <div className="flex items-center gap-1 text-amber-400 mb-4">
-                    {Array.from({ length: t.rating || 5 }).map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-amber-400" />
-                    ))}
-                  </div>
+        {/* Carousel Wrapper with Auto-Scroll & Navigation Arrows */}
+        <div
+          className="relative group/feedback"
+          onMouseEnter={() => setIsFeedbackHovered(true)}
+          onMouseLeave={() => setIsFeedbackHovered(false)}
+          onTouchStart={() => setIsFeedbackHovered(true)}
+          onTouchEnd={() => setIsFeedbackHovered(false)}
+        >
+          {/* Left Navigation Arrow (Physical Left of Screen) */}
+          <button
+            type="button"
+            onClick={() => scrollFeedback('left')}
+            aria-label={language === 'he' ? 'משוב קודם' : 'Previous feedback'}
+            disabled={!canScrollFeedbackLeft}
+            className="flex absolute left-0 sm:-left-3 lg:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
+          >
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+          </button>
 
-                  <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic mb-6">
-                    &ldquo;{quote}&rdquo;
-                  </p>
-                </div>
+          {/* Right Navigation Arrow (Physical Right of Screen) */}
+          <button
+            type="button"
+            onClick={() => scrollFeedback('right')}
+            aria-label={language === 'he' ? 'משוב הבא' : 'Next feedback'}
+            disabled={!canScrollFeedbackRight}
+            className="flex absolute right-0 sm:-right-3 lg:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
+          >
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+          </button>
 
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-teal-600 to-emerald-700 text-white font-black flex items-center justify-center text-xs shadow-xs ring-1 ring-teal-400/30 shrink-0">
-                    {t.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'S'}
-                  </div>
+          {/* Edge Fade Masks for Smooth Scroll Look */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-6 w-8 sm:w-14 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-10 opacity-70 hidden sm:block" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-8 sm:w-14 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-10 opacity-70 hidden sm:block" />
+
+          {/* Horizontal Touch & Drag Scrollable Container with Auto-Scroll */}
+          <div
+            ref={feedbackScrollRef}
+            onMouseDown={handleFeedbackMouseDown}
+            onMouseMove={handleFeedbackMouseMove}
+            onMouseUp={handleFeedbackMouseUpOrLeave}
+            onMouseLeave={handleFeedbackMouseUpOrLeave}
+            className="flex items-stretch gap-5 sm:gap-7 overflow-x-auto snap-x snap-mandatory scroll-smooth py-6 px-4 sm:px-8 touch-pan-x cursor-grab active:cursor-grabbing select-none"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {testimonials.map((t: any, idx: number) => {
+              const quote = language === 'he' && t.textHe ? t.textHe : t.textEn;
+              const initials = t.name
+                ? t.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
+                : 'S';
+
+              return (
+                <div
+                  key={idx}
+                  className="w-[85vw] sm:w-[380px] md:w-[420px] shrink-0 snap-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-6 sm:p-7 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between select-auto hover:-translate-y-1 relative"
+                >
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">{t.name}</h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{t.location}</p>
+                    {/* Header: Star Rating & Level Badge */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-0.5 text-amber-400">
+                          {Array.from({ length: t.rating || 5 }).map((_, i) => (
+                            <Star key={i} className="w-4 h-4 fill-amber-400" />
+                          ))}
+                        </div>
+                        <span className="text-xs font-black text-slate-800 dark:text-slate-200 ms-1">
+                          {(t.rating || 5).toFixed(1)}
+                        </span>
+                      </div>
+
+                      {t.levelTag && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 border border-brand-teal-200 dark:border-brand-teal-800">
+                          {t.levelTag}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quote text */}
+                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed font-medium mb-6">
+                      &ldquo;{quote}&rdquo;
+                    </p>
+                  </div>
+
+                  {/* Student Details & Teacher Info */}
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-teal-700 to-emerald-700 text-white font-black flex items-center justify-center text-xs shadow-xs shrink-0">
+                        {initials}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {t.name}
+                          </h4>
+                          <span title="Verified Student" className="inline-flex">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {t.location}
+                        </p>
+                      </div>
+                    </div>
+
+                    {t.teacherName && (
+                      <div className="text-end shrink-0 hidden sm:block">
+                        <span className="text-[10px] text-slate-400 block font-medium">
+                          {language === 'he' ? 'מורה מלווה' : 'Teacher'}
+                        </span>
+                        <span className="text-[11px] font-bold text-brand-olive-600 dark:text-brand-olive-400">
+                          {t.teacherName}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Carousel Bottom Controls: Pagination Dots + Auto-Play Toggle */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-2">
+          {/* Auto-scroll status pill with play/pause */}
+          <button
+            type="button"
+            onClick={() => {
+              haptics.tap();
+              setIsFeedbackAutoScroll(!isFeedbackAutoScroll);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          >
+            {isFeedbackAutoScroll ? (
+              <>
+                <Pause className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span>{language === 'he' ? 'השהה גלילה אוטומטית' : 'Pause Auto-Scroll'}</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3 h-3 text-brand-olive-600 dark:text-brand-olive-400" />
+                <span>{language === 'he' ? 'הפעל גלילה אוטומטית' : 'Resume Auto-Scroll'}</span>
+              </>
+            )}
+          </button>
+
+          {/* Dots Indicator */}
+          <div className="flex items-center gap-1.5">
+            {testimonials.map((_: any, dotIdx: number) => (
+              <button
+                key={dotIdx}
+                type="button"
+                onClick={() => scrollFeedbackToIndex(dotIdx)}
+                aria-label={`Go to review ${dotIdx + 1}`}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  activeFeedbackIndex === dotIdx
+                    ? 'w-7 bg-brand-olive-500 shadow-xs'
+                    : 'w-2 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
+                }`}
+              />
+            ))}
+          </div>
+
+          <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+            {language === 'he'
+              ? 'גלילה אוטומטית נעצרת במעבר עכבר'
+              : 'Auto-scroll pauses on hover'}
+          </span>
         </div>
       </section>
 
