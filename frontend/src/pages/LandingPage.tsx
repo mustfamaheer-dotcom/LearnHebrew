@@ -638,12 +638,18 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="w-full max-w-full overflow-x-hidden space-y-10 sm:space-y-20 pb-20">
       {/* HERO SECTION */}
-      <section className="relative pt-4 sm:pt-14 pb-8 sm:pb-20 overflow-hidden w-full max-w-full">
-        {/* Layered Atmospheric Glows - Contained to desktop to prevent mobile horizontal expansion */}
-        <div className="hidden sm:block absolute top-0 start-1/2 -translate-x-1/2 w-[54rem] h-[30rem] bg-gradient-to-tr from-brand-teal-500/15 via-emerald-500/10 to-brand-olive-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="hidden sm:block absolute -top-12 -end-12 w-96 h-96 bg-brand-olive-400/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="hidden sm:block absolute top-1/2 -start-24 w-80 h-80 bg-brand-teal-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="sm:hidden absolute inset-0 bg-gradient-to-b from-teal-500/5 via-transparent to-transparent pointer-events-none" />
+      <section className="relative pt-6 sm:pt-16 pb-12 sm:pb-24 overflow-hidden w-full max-w-full">
+        {/* Modern Luminous Background Atmosphere - Clear, Modern & Professional */}
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-teal-50/60 via-white to-slate-50/30 dark:from-slate-950 dark:via-slate-900/60 dark:to-slate-950 pointer-events-none" />
+
+        {/* Soft Radial Spotlight from top center */}
+        <div className="absolute top-0 start-1/2 -translate-x-1/2 w-full max-w-7xl h-[42rem] bg-[radial-gradient(ellipse_75%_55%_at_50%_0%,rgba(77,167,197,0.14),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_75%_55%_at_50%_0%,rgba(12,74,96,0.35),rgba(2,6,23,0))] pointer-events-none" />
+
+        {/* Crisp Architectural Micro-Grid (Subtle & High-Tech) */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#0c4a600a_1px,transparent_1px),linear-gradient(to_bottom,#0c4a600a_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff07_1px,transparent_1px),linear-gradient(to_bottom,#ffffff07_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_15%,#000_50%,transparent_100%)] pointer-events-none" />
+
+        {/* Subtle Horizontal Ambient Accent Horizon Line */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-brand-teal-500/25 dark:via-brand-teal-400/30 to-transparent pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative z-10 w-full min-w-0">
           <div className="grid lg:grid-cols-12 gap-6 lg:gap-12 items-center w-full min-w-0">
@@ -783,12 +789,12 @@ export const LandingPage: React.FC = () => {
 
             {/* Right Column: Interactive Live Session Experience Card */}
             <div className="lg:col-span-5 w-full min-w-0">
-              <div className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-br from-white/95 via-white/85 to-teal-50/60 dark:from-slate-900/95 dark:via-slate-900/85 dark:to-teal-950/40 p-3 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-xl backdrop-blur-2xl space-y-3 sm:space-y-4 w-full max-w-full overflow-hidden">
-                {/* Specular Ambient Glow - Hidden on mobile */}
-                <div className="hidden sm:block absolute -top-10 -end-10 w-44 h-44 rounded-full bg-emerald-400/15 blur-2xl pointer-events-none" />
+              <div className="relative rounded-3xl bg-white/95 dark:bg-slate-900/95 p-4 sm:p-6 border border-slate-200/90 dark:border-slate-800 shadow-[0_20px_50px_-12px_rgba(12,74,96,0.08)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl space-y-3 sm:space-y-4 w-full max-w-full overflow-hidden transition-all">
+                {/* Subtle Top Specular Edge Highlight */}
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-teal-400/40 to-transparent pointer-events-none" />
 
                 {/* Card Top: Live Badge & Session Meta */}
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200/70 dark:border-slate-800">
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-1.5">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -798,18 +804,16 @@ export const LandingPage: React.FC = () => {
                       {language === 'he' ? 'שיעור 1-על-1 אינטראקטיבי' : 'Live 1-on-1 Session'}
                     </span>
                   </div>
-                  <div className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] sm:text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300">
+                  <div className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] sm:text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
                     25 MIN
                   </div>
                 </div>
 
-
-
                 {/* Interactive Hebrew Soundboard */}
-                <div className="space-y-1.5 w-full min-w-0">
+                <div className="space-y-2 w-full min-w-0">
                   <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
-                    <span className="flex items-center gap-1 text-brand-teal-800 dark:text-brand-teal-400 font-extrabold text-[10px] sm:text-xs truncate">
-                      <Volume2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand-teal-600 dark:text-teal-400 shrink-0" />
+                    <span className="flex items-center gap-1.5 text-brand-teal-800 dark:text-brand-teal-300 font-extrabold text-[10px] sm:text-xs truncate">
+                      <Volume2 className="w-3.5 h-3.5 text-brand-teal-600 dark:text-teal-400 shrink-0" />
                       <span>{language === 'he' ? 'לוח שמע חי — לחץ להגייה' : 'Live Audio — Tap to Listen'}</span>
                     </span>
                     <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono shrink-0">
@@ -825,10 +829,10 @@ export const LandingPage: React.FC = () => {
                           key={word.he}
                           type="button"
                           onClick={() => playSampleAudio(word.he)}
-                          className={`p-1.5 sm:p-2.5 rounded-xl border text-center transition-all duration-200 flex flex-col items-center justify-center relative overflow-hidden group min-w-0 w-full ${
+                          className={`p-2 sm:p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-center relative overflow-hidden group min-w-0 w-full active:scale-95 ${
                             isPlaying
                               ? 'bg-brand-teal-800 text-white border-brand-teal-800 scale-[1.02] shadow-md ring-2 ring-emerald-400/50'
-                              : 'bg-white/80 dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80 shadow-2xs'
+                              : 'bg-slate-50/70 hover:bg-white dark:bg-slate-850/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/70 dark:border-slate-700/70 hover:border-brand-teal-300 dark:hover:border-brand-teal-600 shadow-2xs hover:shadow-xs'
                           }`}
                         >
                           <span className="font-hebrew text-xs sm:text-base font-bold block truncate max-w-full">
@@ -859,9 +863,9 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 {/* Simulation Bottom Bar: Zoom Launcher Ready */}
-                <div className="p-2 sm:p-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/90 flex items-center justify-between gap-1.5 text-[9px] sm:text-xs w-full min-w-0">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between gap-1.5 text-[9px] sm:text-xs w-full min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <Video className="w-3 h-3 text-teal-600 dark:text-teal-400 shrink-0" />
+                    <Video className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
                     <span className="font-bold text-slate-700 dark:text-slate-300 truncate text-[10px] sm:text-xs">
                       {language === 'he' ? 'חדר Zoom מאובטח + הקלטת Drive' : 'Zoom HD + Cloud Recording'}
                     </span>
