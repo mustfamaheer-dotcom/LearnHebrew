@@ -51,7 +51,8 @@ export const NotificationBell: React.FC = () => {
 
     // Setup SSE connection
     try {
-      const sseUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1'}/notifications/stream`;
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+      const sseUrl = `${baseUrl}/notifications/stream?token=${encodeURIComponent(accessToken)}`;
       
       // Native EventSource sends cookies automatically with credentials
       const es = new EventSource(sseUrl, { withCredentials: true });

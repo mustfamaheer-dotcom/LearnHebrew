@@ -77,7 +77,8 @@ export const SalesDashboard: React.FC = () => {
     queryKey: ['sales-users', searchTerm],
     queryFn: async () => {
       const res = await api.get('/users', { params: { role: 'STUDENT', search: searchTerm } });
-      return res.data?.users || [];
+      const raw = res.data;
+      return Array.isArray(raw) ? raw : (raw?.users || raw?.data || []);
     },
   });
 
@@ -85,24 +86,41 @@ export const SalesDashboard: React.FC = () => {
     queryKey: ['packages'],
     queryFn: async () => {
       const res = await api.get('/packages');
-      return res.data || [];
+      const raw = res.data;
+      return Array.isArray(raw) ? raw : (raw?.packages || raw?.data || []);
     },
   });
 
   const { data: languages = [] } = useQuery({
     queryKey: ['languages'],
-    queryFn: languagesApi.list,
+    queryFn: async () => {
+      const res = await languagesApi.list();
+      return Array.isArray(res) ? res : ((res as any)?.languages || []);
+    },
   });
 
   const { data: levels = [] } = useQuery({
     queryKey: ['levels'],
-    queryFn: levelsApi.list,
+    queryFn: async () => {
+      const res = await levelsApi.list();
+      return Array.isArray(res) ? res : ((res as any)?.levels || []);
+    },
   });
 
   const { data: payments = [], isLoading: isPaymentsLoading, refetch: refetchPayments } = useQuery({
     queryKey: ['sales-payments'],
-    queryFn: () => paymentsApi.list(),
+    queryFn: async () => {
+      const res = await paymentsApi.list();
+      return Array.isArray(res) ? res : ((res as any)?.payments || []);
+    },
   });
+
+  // Safe arrays for guaranteed crash-free rendering
+  const safeUsers = Array.isArray(usersData) ? usersData : ((usersData as any)?.users || []);
+  const safePackages = Array.isArray(packages) ? packages : ((packages as any)?.packages || []);
+  const safeLanguages = Array.isArray(languages) ? languages : [];
+  const safeLevels = Array.isArray(levels) ? levels : [];
+  const safePayments = Array.isArray(payments) ? payments : ((payments as any)?.payments || []);
 
   // Image preview helper
   const handleScreenshotChange = (file: File | null) => {
@@ -165,16 +183,16 @@ export const SalesDashboard: React.FC = () => {
   });
 
   // Filtered payments
-  const filteredPayments = payments.filter((p) => {
+  const filteredPayments = safePayments.filter((p: any) => {
     if (statusFilter !== 'ALL' && p.status !== statusFilter) return false;
     return true;
   });
 
   // KPIs
-  const totalStudents = usersData.length;
-  const totalPayments = payments.length;
-  const pendingPayments = payments.filter((p) => p.status === 'PENDING').length;
-  const approvedPayments = payments.filter((p) => p.status === 'APPROVED').length;
+  const totalStudents = safeUsers.length;
+  const totalPayments = safePayments.length;
+  const pendingPayments = safePayments.filter((p: any) => p.status === 'PENDING').length;
+  const approvedPayments = safePayments.filter((p: any) => p.status === 'APPROVED').length;
 
   // Sidebar Nav Items
   const navItems = [
@@ -205,7 +223,7 @@ export const SalesDashboard: React.FC = () => {
       label: 'Packages Catalog',
       labelHe: 'חבילות ומחירון',
       icon: Layers,
-      badge: packages.length > 0 ? String(packages.length) : null,
+      badge: safePackages.length > 0 ? String(safePackages.length) : null,
     },
   ];
 
@@ -451,7 +469,7 @@ export const SalesDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {payments.slice(0, 5).map((p: any) => (
+                      {safePayments.slice(0, 5).map((p: any) => (
                         <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/50 transition-colors">
                           <td className="py-3 px-4">
                             <span className="font-extrabold text-slate-900 dark:text-white block">
@@ -551,7 +569,7 @@ export const SalesDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {usersData.map((u: any) => (
+                      {safeUsers.map((u: any) => (
                         <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/50 transition-colors">
                           <td className="py-4 px-5">
                             <div className="flex items-center gap-3">
@@ -678,7 +696,7 @@ export const SalesDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {filteredPayments.map((p) => (
+                      {filteredPayments.map((p: any) => (
                         <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/50 transition-colors">
                           <td className="py-4 px-5">
                             <span className="font-extrabold text-slate-900 dark:text-white block">
@@ -741,7 +759,7 @@ export const SalesDashboard: React.FC = () => {
           {activeTab === 'packages' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {packages.map((pkg: any) => (
+                {safePackages.map((pkg: any) => (
                   <div
                     key={pkg.id}
                     className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:border-brand-teal-500 transition-all space-y-4"
@@ -878,7 +896,7 @@ export const SalesDashboard: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
                 >
                   <option value="">-- Choose Language --</option>
-                  {languages.map((l) => (
+                  {safeLanguages.map((l) => (
                     <option key={l.id} value={l.id}>
                       {l.flagEmoji} {l.labelEn} ({l.labelNative})
                     </option>
@@ -896,7 +914,7 @@ export const SalesDashboard: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
                 >
                   <option value="">-- Choose Language --</option>
-                  {languages.map((l) => (
+                  {safeLanguages.map((l) => (
                     <option key={l.id} value={l.id}>
                       {l.flagEmoji} {l.labelEn} ({l.labelNative})
                     </option>
@@ -914,7 +932,7 @@ export const SalesDashboard: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
                 >
                   <option value="">-- Choose Level --</option>
-                  {levels.map((lvl) => (
+                  {safeLevels.map((lvl) => (
                     <option key={lvl.id} value={lvl.id}>
                       {lvl.labelEn} ({lvl.code})
                     </option>
@@ -987,7 +1005,7 @@ export const SalesDashboard: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
                 >
                   <option value="">-- Choose Student --</option>
-                  {usersData.map((u: any) => (
+                  {safeUsers.map((u: any) => (
                     <option key={u.id} value={u.id}>
                       {u.firstName} {u.lastName} ({u.email})
                     </option>
@@ -1005,7 +1023,7 @@ export const SalesDashboard: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
                 >
                   <option value="">-- Choose Package --</option>
-                  {packages.map((pkg: any) => (
+                  {safePackages.map((pkg: any) => (
                     <option key={pkg.id} value={pkg.id}>
                       {pkg.name} — {pkg.currency === 'ILS' ? '₪' : '$'}{pkg.price} (Max 30 days)
                     </option>

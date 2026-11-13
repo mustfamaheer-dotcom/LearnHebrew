@@ -13,12 +13,20 @@ export async function authenticate(
   next: NextFunction
 ) {
   try {
+    let token: string | undefined;
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query && typeof req.query.token === 'string') {
+      token = req.query.token;
+    } else if ((req as any).cookies?.accessToken) {
+      token = (req as any).cookies.accessToken;
+    }
+
+    if (!token) {
       return res.status(401).json({ error: 'Authentication token required' });
     }
 
-    const token = authHeader.split(' ')[1];
     const payload = verifyAccessToken(token);
 
     // Verify user exists and is active

@@ -54,7 +54,8 @@ export const CSDashboard: React.FC = () => {
     queryKey: ['cs-students', searchTerm],
     queryFn: async () => {
       const res = await api.get('/users', { params: { role: 'STUDENT', search: searchTerm } });
-      return res.data?.users || [];
+      const raw = res.data;
+      return Array.isArray(raw) ? raw : (raw?.users || raw?.data || []);
     },
   });
 
@@ -62,7 +63,8 @@ export const CSDashboard: React.FC = () => {
     queryKey: ['cs-lessons'],
     queryFn: async () => {
       const res = await api.get('/lessons');
-      return res.data || [];
+      const raw = res.data;
+      return Array.isArray(raw) ? raw : (raw?.lessons || raw?.data || []);
     },
   });
 
@@ -70,7 +72,8 @@ export const CSDashboard: React.FC = () => {
     queryKey: ['cs-teachers'],
     queryFn: async () => {
       const res = await api.get('/teachers');
-      return res.data || [];
+      const raw = res.data;
+      return Array.isArray(raw) ? raw : (raw?.teachers || raw?.data || []);
     },
   });
 
@@ -78,19 +81,26 @@ export const CSDashboard: React.FC = () => {
     queryKey: ['cs-surveys'],
     queryFn: async () => {
       const res = await api.get('/feedback/surveys');
-      return res.data || [];
+      const raw = res.data;
+      return Array.isArray(raw) ? raw : (raw?.surveys || raw?.data || []);
     },
   });
 
+  // Safe arrays for guaranteed crash-free rendering
+  const safeUsers = Array.isArray(usersData) ? usersData : ((usersData as any)?.users || []);
+  const safeLessons = Array.isArray(lessonsData) ? lessonsData : ((lessonsData as any)?.lessons || []);
+  const safeTeachers = Array.isArray(teachersData) ? teachersData : ((teachersData as any)?.teachers || []);
+  const safeSurveys = Array.isArray(surveysData) ? surveysData : ((surveysData as any)?.surveys || []);
+
   // Calculate KPIs
-  const totalStudents = usersData.length;
-  const upcomingLessons = lessonsData.filter((l: any) => l.status === 'SCHEDULED');
-  const completedLessons = lessonsData.filter((l: any) => l.status === 'COMPLETED');
+  const totalStudents = safeUsers.length;
+  const upcomingLessons = safeLessons.filter((l: any) => l.status === 'SCHEDULED');
+  const completedLessons = safeLessons.filter((l: any) => l.status === 'COMPLETED');
   const attendedCount = completedLessons.filter((l: any) => l.attendanceStatus === 'ATTENDED').length;
   const attendanceRate = completedLessons.length > 0 ? Math.round((attendedCount / completedLessons.length) * 100) : 100;
 
   // Find students with expiring session balances (within next 7 days)
-  const expiringStudents = usersData.filter((u: any) => {
+  const expiringStudents = safeUsers.filter((u: any) => {
     const balances = u.studentProfile?.sessionBalances || [];
     const sevenDaysFromNow = new Date();
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
@@ -426,7 +436,7 @@ export const CSDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {usersData.map((u: any) => {
+                      {safeUsers.map((u: any) => {
                         const balances = u.studentProfile?.sessionBalances || [];
                         const nearestExpiry = balances
                           .filter((b: any) => b.balance > 0 && b.expiresAt)
@@ -547,7 +557,7 @@ export const CSDashboard: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {lessonsData.map((l: any) => (
+                      {safeLessons.map((l: any) => (
                         <tr key={l.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/50 transition-colors">
                           <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                             {l.student?.user?.firstName} {l.student?.user?.lastName}
@@ -676,7 +686,7 @@ export const CSDashboard: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {surveysData.map((s: any) => {
+                  {safeSurveys.map((s: any) => {
                     const daysAgo = Math.floor((Date.now() - new Date(s.createdAt).getTime()) / (1000 * 60 * 60 * 24));
                     const isLocked = daysAgo > 7;
 
@@ -780,7 +790,7 @@ export const CSDashboard: React.FC = () => {
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
                 >
                   <option value="">-- Choose Teacher --</option>
-                  {teachersData.map((t: any) => (
+                  {safeTeachers.map((t: any) => (
                     <option key={t.id} value={t.id}>
                       {t.user?.firstName} {t.user?.lastName} (Active)
                     </option>
