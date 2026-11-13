@@ -17,7 +17,7 @@ import {
 import {
   formatSlotRange12Hour,
   formatIsraelDateTime,
-  getSlotDurationMinutes,
+  calculateSlotEndTime,
   ISRAEL_TZ_LABEL,
 } from '../../lib/timeUtils';
 
@@ -134,8 +134,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
 
   const chosenDay = rescheduleDate ? new Date(rescheduleDate + 'T00:00:00').getDay() : -1;
   const matchingSlots = slots.filter((s: any) => {
-    const dur = getSlotDurationMinutes(s.startTime, s.endTime);
-    return dur === duration && s.dayOfWeek === chosenDay && s.isAvailable !== false;
+    return s.dayOfWeek === chosenDay && s.isAvailable !== false;
   });
 
   const teacherName = lesson.teacher?.user
@@ -264,7 +263,7 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
                     }`}
                   >
                     <Clock className="w-3.5 h-3.5" />
-                    <span>{formatSlotRange12Hour(slot.startTime, slot.endTime)}</span>
+                    <span>{formatSlotRange12Hour(slot.startTime, calculateSlotEndTime(slot.startTime, duration))}</span>
                   </button>
                 );
               })}
@@ -273,8 +272,8 @@ export const RescheduleModal: React.FC<RescheduleModalProps> = ({
             <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 text-center text-xs text-amber-800 dark:text-amber-200">
               <p className="font-semibold">
                 {isHe
-                  ? `אין שעות פנויות של ${duration} דקות ביום זה.`
-                  : `No ${duration}-minute slots available on this date.`}
+                  ? 'אין שעות פנויות ביום זה.'
+                  : 'No available slots on this date.'}
               </p>
               <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-1">
                 {isHe ? 'אנא בחר תאריך אחר לבדיקת שעות המורה.' : 'Please select another date to view available times.'}

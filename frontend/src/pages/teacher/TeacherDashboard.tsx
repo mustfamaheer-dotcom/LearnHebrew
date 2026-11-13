@@ -69,14 +69,18 @@ const DAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי
 
 export type SessionDuration = 25 | 40 | 55;
 
-// Standard intervals for each of the 3 session duration types
-const TIME_BLOCKS_25 = [
+// Standard 25-minute availability slots covering 08:00 to 22:00
+const AVAILABILITY_SLOTS_25 = [
+  { start: '08:00', end: '08:25' },
+  { start: '08:30', end: '08:55' },
   { start: '09:00', end: '09:25' },
   { start: '09:30', end: '09:55' },
   { start: '10:00', end: '10:25' },
   { start: '10:30', end: '10:55' },
   { start: '11:00', end: '11:25' },
   { start: '11:30', end: '11:55' },
+  { start: '12:00', end: '12:25' },
+  { start: '12:30', end: '12:55' },
   { start: '13:00', end: '13:25' },
   { start: '13:30', end: '13:55' },
   { start: '14:00', end: '14:25' },
@@ -85,28 +89,16 @@ const TIME_BLOCKS_25 = [
   { start: '15:30', end: '15:55' },
   { start: '16:00', end: '16:25' },
   { start: '16:30', end: '16:55' },
-];
-
-const TIME_BLOCKS_40 = [
-  { start: '09:00', end: '09:40' },
-  { start: '09:45', end: '10:25' },
-  { start: '10:30', end: '11:10' },
-  { start: '11:15', end: '11:55' },
-  { start: '13:00', end: '13:40' },
-  { start: '13:45', end: '14:25' },
-  { start: '14:30', end: '15:10' },
-  { start: '15:15', end: '15:55' },
-  { start: '16:00', end: '16:40' },
-];
-
-const TIME_BLOCKS_55 = [
-  { start: '09:00', end: '09:55' },
-  { start: '10:00', end: '10:55' },
-  { start: '11:00', end: '11:55' },
-  { start: '13:00', end: '13:55' },
-  { start: '14:00', end: '14:55' },
-  { start: '15:00', end: '15:55' },
-  { start: '16:00', end: '16:55' },
+  { start: '17:00', end: '17:25' },
+  { start: '17:30', end: '17:55' },
+  { start: '18:00', end: '18:25' },
+  { start: '18:30', end: '18:55' },
+  { start: '19:00', end: '19:25' },
+  { start: '19:30', end: '19:55' },
+  { start: '20:00', end: '20:25' },
+  { start: '20:30', end: '20:55' },
+  { start: '21:00', end: '21:25' },
+  { start: '21:30', end: '21:55' },
 ];
 
 // Custom outline Home icon with inner circle door matching iOS pill island aesthetic
@@ -161,7 +153,6 @@ export const TeacherDashboard: React.FC = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDay());
-  const [selectedDuration, setSelectedDuration] = useState<SessionDuration>(25);
 
   // Mandatory Slot Zoom Link Configuration Modal
   const [isConfiguringSlot, setIsConfiguringSlot] = useState(false);
@@ -169,7 +160,6 @@ export const TeacherDashboard: React.FC = () => {
     dayOfWeek: number;
     startTime: string;
     endTime: string;
-    durationMinutes: number;
     slotLabel: string;
     formattedDate: string;
   } | null>(null);
@@ -462,7 +452,6 @@ export const TeacherDashboard: React.FC = () => {
       dayOfWeek: selectedDay,
       startTime: block.start,
       endTime: block.end,
-      durationMinutes: selectedDuration,
       slotLabel,
       formattedDate: new Date(selectedDate + 'T00:00:00').toLocaleDateString(
         language === 'he' ? 'he-IL' : 'en-US',
@@ -500,7 +489,6 @@ export const TeacherDashboard: React.FC = () => {
       dayOfWeek: selectedSlotBlock.dayOfWeek,
       startTime: selectedSlotBlock.startTime,
       endTime: selectedSlotBlock.endTime,
-      durationMinutes: selectedSlotBlock.durationMinutes,
       zoomLink: trimmedZoom,
       saveAsDefault: saveZoomAsDefault,
     });
@@ -888,54 +876,22 @@ export const TeacherDashboard: React.FC = () => {
                     <CalendarIcon className="w-5 h-5 text-brand-teal-700 dark:text-brand-teal-400" />
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                       {language === 'he'
-                        ? 'לוח זמינות שבועי לפי משך שיעור'
-                        : 'Weekly Availability Calendar by Session Duration'}
+                        ? 'לוח זמינות שבועי'
+                        : 'Weekly Availability Calendar'}
                     </h2>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {language === 'he'
-                      ? 'בחר מתכונת שיעור (25, 40 או 55 דקות) ויום בשבוע, ולחץ על שעה כדי לפתוח אותה להזמנה.'
-                      : 'Choose session format (25, 40, or 55 minutes) and a weekday, then toggle slots open for student booking.'}
+                      ? 'סמן את השעות שבהן אתה זמין ללמד. תלמידים יוכלו לקבוע שיעור בכל משך (25, 40 או 55 דקות) בשעות שפתחת.'
+                      : 'Mark the time slots when you are available. Students can book lessons of any duration (25, 40, or 55 minutes) during your open hours.'}
                   </p>
                 </div>
 
-                {/* Duration Switcher & Israel Time Pill */}
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* 3 Duration Types Switcher */}
-                  <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDuration(25)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        selectedDuration === 25
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      {language === 'he' ? '25 דקות' : '25 Min'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDuration(40)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        selectedDuration === 40
-                          ? 'bg-sky-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      {language === 'he' ? '40 דקות' : '40 Min'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDuration(55)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        selectedDuration === 55
-                          ? 'bg-purple-600 text-white shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                      }`}
-                    >
-                      {language === 'he' ? '55 דקות' : '55 Min'}
-                    </button>
+                {/* Israel Time Pill & Slot Interval Badge */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold shadow-2xs">
+                    <Clock className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400" />
+                    <span>{language === 'he' ? 'משבצות של 25 דק׳' : '25-Min Slot Intervals'}</span>
                   </div>
 
                   {/* Israel Timing Badge */}
@@ -952,19 +908,15 @@ export const TeacherDashboard: React.FC = () => {
               <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600 dark:text-slate-300">
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-md bg-emerald-500"></span>
-                  {language === 'he' ? 'פתוח 25 דק׳' : '25m Available'}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-md bg-sky-500"></span>
-                  {language === 'he' ? 'פתוח 40 דק׳' : '40m Available'}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-md bg-purple-500"></span>
-                  {language === 'he' ? 'פתוח 55 דק׳' : '55m Available'}
+                  {language === 'he' ? 'שעת זמינות פתוחה' : 'Available Slot'}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-3 h-3 rounded-md bg-brand-teal-800"></span>
-                  {language === 'he' ? 'שיעור מוזמן' : 'Booked'}
+                  {language === 'he' ? 'שיעור מוזמן' : 'Booked Lesson'}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-md border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-850"></span>
+                  {language === 'he' ? 'לא מוגדר / סגור' : 'Closed / Available to Open'}
                 </span>
                 <span className="text-[11px] text-slate-400 dark:text-slate-500 ms-auto font-normal">
                   {language === 'he' ? 'אזור זמן: ירושלים (שעון ישראל)' : 'Timezone: Asia/Jerusalem (UTC+2 / UTC+3)'}
@@ -1101,19 +1053,19 @@ export const TeacherDashboard: React.FC = () => {
                 );
               })()}
 
-              {/* Time Slot Matrix for Selected Day and Duration */}
+              {/* Time Slot Matrix for Selected Day */}
               <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base">
                       {language === 'he'
-                        ? `שעות זמינות ליום ${DAYS_HE[selectedDay]} (${new Date(selectedDate + 'T00:00:00').toLocaleDateString('he-IL', { month: 'short', day: 'numeric', year: 'numeric' })}) • שיעורי ${selectedDuration} דקות`
-                        : `Slots for ${DAYS[selectedDay]}, ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} (${selectedDuration}-Min Slots in 12h IST)`}
+                        ? `שעות זמינות ליום ${DAYS_HE[selectedDay]} (${new Date(selectedDate + 'T00:00:00').toLocaleDateString('he-IL', { month: 'short', day: 'numeric', year: 'numeric' })}) • משבצות של 25 דק׳`
+                        : `Slots for ${DAYS[selectedDay]}, ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} (25-Min Interval Slots • 12h IST)`}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
                       {language === 'he'
-                        ? 'שעות שייפתחו כאן יהיו זמינות לבחירה ישירה עבור התלמידים בהזמנת שיעור.'
-                        : 'Slots opened here are linked directly to student booking for this date and weekday.'}
+                        ? 'שעות שייפתחו כאן יהיו זמינות לבחירה ישירה עבור התלמידים בהזמנת שיעור (25, 40 או 55 דק׳).'
+                        : 'Slots opened here are open for student bookings of any session length (25, 40, or 55 minutes).'}
                     </p>
                   </div>
                   <span className="text-xs text-brand-teal-800 dark:text-brand-teal-300 font-bold bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 px-3 py-1 rounded-xl shrink-0">
@@ -1124,12 +1076,7 @@ export const TeacherDashboard: React.FC = () => {
                 </div>
 
                 {(() => {
-                  const currentBlocks =
-                    selectedDuration === 25
-                      ? TIME_BLOCKS_25
-                      : selectedDuration === 40
-                      ? TIME_BLOCKS_40
-                      : TIME_BLOCKS_55;
+                  const currentBlocks = AVAILABILITY_SLOTS_25;
 
                   return (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -1137,21 +1084,30 @@ export const TeacherDashboard: React.FC = () => {
                         const existingSlot = slots.find(
                           (s: any) =>
                             s.dayOfWeek === selectedDay &&
-                            s.startTime === block.start &&
-                            s.endTime === block.end
+                            s.startTime === block.start
                         );
 
                         const slotLabel12h = formatSlotRange12Hour(block.start, block.end);
 
                         const bookedLesson = lessons.find((l: any) => {
+                          if (l.status === 'CANCELLED') return false;
                           const lDateStr = new Date(l.scheduledAt).toISOString().split('T')[0];
+                          if (lDateStr !== selectedDate || l.status !== 'SCHEDULED') return false;
+
                           const lDate = new Date(l.scheduledAt);
-                          const lTime = lDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-                          return lDateStr === selectedDate && lTime === block.start && l.status === 'SCHEDULED';
+                          const lH = lDate.getHours();
+                          const lM = lDate.getMinutes();
+                          const lStartMs = (lH * 60 + lM) * 60 * 1000;
+                          const lDur = l.durationMinutes || 25;
+                          const lEndMs = lStartMs + lDur * 60 * 1000;
+
+                          const [bH, bM] = block.start.split(':').map(Number);
+                          const bStartMs = (bH * 60 + bM) * 60 * 1000;
+                          return bStartMs >= lStartMs && bStartMs < lEndMs;
                         });
 
                         if (bookedLesson) {
-                          const bookedDur = bookedLesson.durationMinutes || selectedDuration;
+                          const bookedDur = bookedLesson.durationMinutes || 25;
                           return (
                             <div
                               key={block.start}
@@ -1185,18 +1141,10 @@ export const TeacherDashboard: React.FC = () => {
                         }
 
                         if (existingSlot) {
-                          const slotDur = getSlotDurationMinutes(existingSlot.startTime, existingSlot.endTime);
-                          const colorClasses =
-                            slotDur === 55
-                              ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-500 text-purple-950 dark:text-purple-200'
-                              : slotDur === 40
-                              ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-500 text-sky-950 dark:text-sky-200'
-                              : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-200';
-
                           return (
                             <div
                               key={block.start}
-                              className={`p-3.5 rounded-2xl border-2 shadow-2xs flex flex-col justify-between min-h-[7rem] ${colorClasses}`}
+                              className="p-3.5 rounded-2xl border-2 shadow-2xs flex flex-col justify-between min-h-[7rem] bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-200"
                             >
                               <div>
                                 <div className="flex items-center justify-between text-[11px] font-extrabold uppercase mb-1">
@@ -1204,10 +1152,10 @@ export const TeacherDashboard: React.FC = () => {
                                   <CheckCircle className="w-3.5 h-3.5" />
                                 </div>
                                 <span className="text-xs font-black block">
-                                  {language === 'he' ? 'שעה פתוחה' : 'Available Slot'}
+                                  {language === 'he' ? 'שעת זמינות פתוחה' : 'Available Slot'}
                                 </span>
                                 <span className="text-[10px] font-semibold opacity-90 block">
-                                  {slotDur} {language === 'he' ? 'דק׳ (שעון ישראל)' : 'min (Israel Time)'}
+                                  {language === 'he' ? 'פתוח לקביעת שיעור (25, 40, 55 דק׳)' : 'Open for student booking'}
                                 </span>
 
                                 {existingSlot.zoomLink ? (
@@ -1274,8 +1222,8 @@ export const TeacherDashboard: React.FC = () => {
                               <Plus className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400" />
                               <span>
                                 {language === 'he'
-                                  ? `פתח שעה (${selectedDuration} דק׳)`
-                                  : `Open ${selectedDuration}m Slot`}
+                                  ? 'פתח שעת זמינות'
+                                  : 'Open Available Slot'}
                               </span>
                             </div>
                           </button>
@@ -3450,7 +3398,7 @@ export const TeacherDashboard: React.FC = () => {
                   {language === 'he' ? 'תאריך ושעה:' : 'Date & Israel Time:'}
                 </span>
                 <span className="font-black text-slate-900 dark:text-white">
-                  {selectedSlotBlock.slotLabel} ({selectedSlotBlock.durationMinutes} min)
+                  {selectedSlotBlock.slotLabel}
                 </span>
               </div>
               <div className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold">
@@ -3458,7 +3406,7 @@ export const TeacherDashboard: React.FC = () => {
               </div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
                 <Clock className="w-3 h-3" />
-                <span>{selectedSlotBlock.durationMinutes}-Minute Slot Format</span>
+                <span>{language === 'he' ? 'משבצת זמינות • פתוחה לשיעורי 25, 40 או 55 דק׳' : 'Open Slot • Accepts 25, 40, or 55 min sessions'}</span>
               </div>
             </div>
 

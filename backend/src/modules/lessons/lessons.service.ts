@@ -151,16 +151,31 @@ export async function bookLesson(data: {
     }
   }
 
-  // Conflict prevention
-  const existingLesson = await prisma.lesson.findFirst({
+  // Conflict prevention: check if another scheduled lesson overlaps with [newStart, newEnd]
+  const newStart = new Date(data.scheduledAt);
+  const newEnd = new Date(newStart.getTime() + duration * 60 * 1000);
+  const minSearch = new Date(newStart.getTime() - 2 * 60 * 60 * 1000);
+  const maxSearch = new Date(newEnd.getTime() + 2 * 60 * 60 * 1000);
+
+  const existingLessons = await prisma.lesson.findMany({
     where: {
       teacherId: teacher.id,
-      scheduledAt: data.scheduledAt,
       status: 'SCHEDULED',
+      scheduledAt: {
+        gte: minSearch,
+        lte: maxSearch,
+      },
     },
   });
-  if (existingLesson) {
-    throw { status: 409, message: 'Teacher already has a lesson scheduled at this time' };
+
+  const conflictingLesson = existingLessons.find((l) => {
+    const lStart = new Date(l.scheduledAt);
+    const lEnd = new Date(lStart.getTime() + (l.durationMinutes || 25) * 60 * 1000);
+    return newStart < lEnd && newEnd > lStart;
+  });
+
+  if (conflictingLesson) {
+    throw { status: 409, message: 'Teacher already has a lesson scheduled during this time window' };
   }
 
   return prisma.$transaction(async (tx) => {

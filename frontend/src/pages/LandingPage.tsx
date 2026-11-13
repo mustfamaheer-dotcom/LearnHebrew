@@ -442,29 +442,7 @@ export const LandingPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Tutor Profile Preview */}
-                <div className="flex items-center justify-between gap-2 p-2 sm:p-2.5 rounded-xl bg-white/70 dark:bg-slate-850/70 border border-slate-200/60 dark:border-slate-750 w-full min-w-0">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-brand-teal-700 to-emerald-700 text-white font-black flex items-center justify-center text-xs sm:text-sm shadow-md shrink-0">
-                      MK
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1">
-                        <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm truncate">
-                          {language === 'he' ? 'מונה ח\'ליל' : 'Mona Khalil'}
-                        </h4>
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                      </div>
-                      <p className="text-[9px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                        {language === 'he' ? 'תל אביב · מורה מוסמכת' : 'Tel Aviv · Native Instructor'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-[10px] sm:text-xs font-black shrink-0">
-                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span>5.0</span>
-                  </div>
-                </div>
+
 
                 {/* Interactive Hebrew Soundboard */}
                 <div className="space-y-1.5 w-full min-w-0">

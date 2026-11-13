@@ -24,6 +24,7 @@ import { isGoogleDriveUrl, getVideoEmbedUrl } from '../../lib/driveUtils';
 import {
   formatSlotRange12Hour,
   formatIsraelDateTime,
+  calculateSlotEndTime,
   getSlotDurationMinutes,
   ISRAEL_TZ_LABEL,
 } from '../../lib/timeUtils';
@@ -680,8 +681,7 @@ export const StudentDashboard: React.FC = () => {
     }
     const chosenDay = new Date(bookingDate + 'T00:00:00').getDay();
     const matchingSlot = (selectedTeacher?.timeSlots || []).find((s: any) => {
-      const dur = getSlotDurationMinutes(s.startTime, s.endTime);
-      return dur === selectedDuration && s.dayOfWeek === chosenDay && s.startTime === selectedSlotTime;
+      return s.dayOfWeek === chosenDay && s.startTime === selectedSlotTime;
     });
 
     const scheduledIso = new Date(
@@ -1509,17 +1509,16 @@ export const StudentDashboard: React.FC = () => {
                   {(() => {
                     const chosenDay = new Date(bookingDate + 'T00:00:00').getDay();
 
-                    // Filter slots specifically for this teacher, this duration, and this exact weekday
+                    // All open slots for this teacher on this weekday (no duration constraint)
                     const matchingSlots = (selectedTeacher.timeSlots || []).filter((slot: any) => {
-                      const dur = getSlotDurationMinutes(slot.startTime, slot.endTime);
-                      return dur === selectedDuration && slot.dayOfWeek === chosenDay && slot.isAvailable !== false;
+                      return slot.dayOfWeek === chosenDay && slot.isAvailable !== false;
                     });
 
-                    // Days when this teacher has slots for this duration
+                    // Days when this teacher has any open availability slots
                     const teacherAvailableDays = Array.from(
                       new Set(
                         (selectedTeacher.timeSlots || [])
-                          .filter((s: any) => getSlotDurationMinutes(s.startTime, s.endTime) === selectedDuration && s.isAvailable !== false)
+                          .filter((s: any) => s.isAvailable !== false)
                           .map((s: any) => s.dayOfWeek)
                       )
                     ).sort((a: any, b: any) => a - b) as number[];
@@ -1529,13 +1528,26 @@ export const StudentDashboard: React.FC = () => {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-1">
                           {matchingSlots.map((slot: any) => {
                             const isSelected = selectedSlotTime === slot.startTime;
+                            const slotEndCalculated = calculateSlotEndTime(slot.startTime, selectedDuration);
 
-                            // Check if already booked on this exact date
+                            // Check if an existing scheduled lesson overlaps with this [slot.startTime, slotEndCalculated] window
                             const isSlotBooked = (selectedTeacher.lessons || []).some((l: any) => {
+                              if (l.status === 'CANCELLED') return false;
                               const lDateStr = new Date(l.scheduledAt).toISOString().split('T')[0];
+                              if (lDateStr !== bookingDate || l.status !== 'SCHEDULED') return false;
+
                               const lDate = new Date(l.scheduledAt);
-                              const lTime = lDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-                              return lDateStr === bookingDate && lTime === slot.startTime && l.status === 'SCHEDULED';
+                              const lH = lDate.getHours();
+                              const lM = lDate.getMinutes();
+                              const lStartMs = (lH * 60 + lM) * 60 * 1000;
+                              const lDur = l.durationMinutes || 25;
+                              const lEndMs = lStartMs + lDur * 60 * 1000;
+
+                              const [sH, sM] = slot.startTime.split(':').map(Number);
+                              const sStartMs = (sH * 60 + sM) * 60 * 1000;
+                              const sEndMs = sStartMs + selectedDuration * 60 * 1000;
+
+                              return sStartMs < lEndMs && sEndMs > lStartMs;
                             });
 
                             if (isSlotBooked) {
@@ -1545,7 +1557,7 @@ export const StudentDashboard: React.FC = () => {
                                   className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-850/60 text-slate-400 dark:text-slate-500 text-center opacity-60 cursor-not-allowed"
                                 >
                                   <p className="font-mono text-xs font-bold leading-tight line-through">
-                                    {formatSlotRange12Hour(slot.startTime, slot.endTime)}
+                                    {formatSlotRange12Hour(slot.startTime, slotEndCalculated)}
                                   </p>
                                   <p className="text-[10px] text-rose-500 dark:text-rose-400 font-extrabold mt-1">
                                     {language === 'he' ? 'מוזמן (תפוס)' : 'Booked'}
@@ -1570,7 +1582,7 @@ export const StudentDashboard: React.FC = () => {
                                 }`}
                               >
                                 <p className="font-mono text-xs font-bold leading-tight">
-                                  {formatSlotRange12Hour(slot.startTime, slot.endTime)}
+                                  {formatSlotRange12Hour(slot.startTime, slotEndCalculated)}
                                 </p>
                                 <p className="text-[10px] opacity-90 mt-1 font-semibold">
                                   {selectedDuration} {language === 'he' ? 'דק׳ (שעון ישראל)' : 'min (IST)'}
@@ -3971,40 +3983,42 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                   {(() => {
                     const matchingSlots = (selectedTeacher.timeSlots || []).filter((slot: any) => {
-                      const dur = getSlotDurationMinutes(slot.startTime, slot.endTime);
-                      return dur === selectedDuration;
+                      return slot.isAvailable !== false;
                     });
 
                     return (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1 max-h-44 overflow-y-auto p-1">
-                        {matchingSlots.map((slot: any) => (
-                          <button
-                            key={slot.id}
-                            type="button"
-                            onClick={() => setSelectedSlotTime(slot.startTime)}
-                            className={`p-2.5 rounded-xl border text-center transition-all ${
-                              selectedSlotTime === slot.startTime
-                                ? selectedDuration === 55
-                                  ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-xs ring-2 ring-purple-400'
-                                  : selectedDuration === 40
-                                  ? 'bg-sky-600 text-white border-sky-600 font-bold shadow-xs ring-2 ring-sky-400'
-                                  : 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-xs ring-2 ring-emerald-400'
-                                : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-                            }`}
-                          >
-                            <p className="font-mono text-xs font-bold leading-tight">
-                              {formatSlotRange12Hour(slot.startTime, slot.endTime)}
-                            </p>
-                            <p className="text-[10px] opacity-80 mt-0.5">
-                              {selectedDuration} {language === 'he' ? 'דק׳ (שעון ישראל)' : 'min (IST)'}
-                            </p>
-                          </button>
-                        ))}
+                        {matchingSlots.map((slot: any) => {
+                          const slotEndCalculated = calculateSlotEndTime(slot.startTime, selectedDuration);
+                          return (
+                            <button
+                              key={slot.id}
+                              type="button"
+                              onClick={() => setSelectedSlotTime(slot.startTime)}
+                              className={`p-2.5 rounded-xl border text-center transition-all ${
+                                selectedSlotTime === slot.startTime
+                                  ? selectedDuration === 55
+                                    ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-xs ring-2 ring-purple-400'
+                                    : selectedDuration === 40
+                                    ? 'bg-sky-600 text-white border-sky-600 font-bold shadow-xs ring-2 ring-sky-400'
+                                    : 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-xs ring-2 ring-emerald-400'
+                                  : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                              }`}
+                            >
+                              <p className="font-mono text-xs font-bold leading-tight">
+                                {formatSlotRange12Hour(slot.startTime, slotEndCalculated)}
+                              </p>
+                              <p className="text-[10px] opacity-80 mt-0.5">
+                                {selectedDuration} {language === 'he' ? 'דק׳ (שעון ישראל)' : 'min (IST)'}
+                              </p>
+                            </button>
+                          );
+                        })}
                         {matchingSlots.length === 0 && (
                           <p className="text-xs text-slate-400 dark:text-slate-500 italic col-span-3 py-3 text-center">
                             {language === 'he'
-                              ? `לא הוגדרו שעות זמינות של ${selectedDuration} דקות עבור מורה זה.`
-                              : `No ${selectedDuration}-minute slots set for this teacher.`}
+                              ? 'לא הוגדרו שעות זמינות עבור מורה זה.'
+                              : 'No available slots set for this teacher.'}
                           </p>
                         )}
                       </div>
