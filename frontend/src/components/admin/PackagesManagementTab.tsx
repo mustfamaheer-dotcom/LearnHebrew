@@ -295,33 +295,102 @@ export const PackagesManagementTab: React.FC = () => {
               </div>
 
               {/* Session Items Quotas */}
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Included Sessions in Package (By Duration)
-                </label>
+              <div className="p-4 rounded-2xl bg-brand-teal-50/40 dark:bg-brand-teal-950/20 border border-brand-teal-200/60 dark:border-brand-teal-800/50 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 shrink-0" />
+                    <label className="text-xs font-black uppercase tracking-wider text-brand-teal-900 dark:text-brand-teal-200">
+                      {language === 'he' ? 'מכסות שיעורים לפי משך וסוג' : 'Session Types & Durations Quotas'}
+                    </label>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-slate-850 text-brand-teal-800 dark:text-brand-teal-300 font-black text-xs border border-brand-teal-200 dark:border-brand-teal-800 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>
+                      {language === 'he'
+                        ? `סה״כ: ${form.sessionItems.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0)} שיעורים בחבילה`
+                        : `Total: ${form.sessionItems.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0)} Sessions in Package`}
+                    </span>
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {sessionTypes.map((st) => {
                     const item = form.sessionItems.find((si) => si.sessionTypeId === st.id);
                     const qty = item ? item.quantity : 0;
+                    const hasQuantity = qty > 0;
                     return (
-                      <div key={st.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
-                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{st.labelEn}</div>
-                        <div className="text-[10px] text-slate-400">{st.durationMinutes} minutes</div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <input
-                            type="number"
-                            min="0"
-                            value={qty}
-                            onChange={(e) => {
-                              const val = Math.max(0, Number(e.target.value));
+                      <div
+                        key={st.id}
+                        className={`p-3.5 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${
+                          hasQuantity
+                            ? 'border-brand-teal-400 dark:border-brand-teal-600 bg-white dark:bg-slate-850 shadow-xs ring-1 ring-brand-teal-400/30'
+                            : 'border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-2">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 font-mono font-black text-xs border border-brand-teal-200/60 dark:border-brand-teal-800/60">
+                            {st.durationMinutes} {language === 'he' ? 'דק׳' : 'min'}
+                          </span>
+                          {hasQuantity && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                        </div>
+
+                        <div>
+                          <div className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">
+                            {language === 'he' && st.labelHe ? st.labelHe : st.labelEn}
+                          </div>
+                          <div className="text-[10px] text-slate-400 line-clamp-1">
+                            {language === 'he' ? st.labelEn : st.labelHe}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextVal = Math.max(0, qty - 1);
                               const updated = form.sessionItems.map((si) =>
-                                si.sessionTypeId === st.id ? { ...si, quantity: val } : si
+                                si.sessionTypeId === st.id ? { ...si, quantity: nextVal } : si
                               );
                               setForm({ ...form, sessionItems: updated });
                             }}
-                            className="w-20 p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-extrabold text-center"
-                          />
-                          <span className="text-xs text-slate-500">sessions</span>
+                            disabled={qty <= 0}
+                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 font-bold flex items-center justify-center transition-colors active:scale-95"
+                          >
+                            -
+                          </button>
+
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min="0"
+                              value={qty}
+                              onChange={(e) => {
+                                const val = Math.max(0, Number(e.target.value));
+                                const updated = form.sessionItems.map((si) =>
+                                  si.sessionTypeId === st.id ? { ...si, quantity: val } : si
+                                );
+                                setForm({ ...form, sessionItems: updated });
+                              }}
+                              className="w-14 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-black text-center text-slate-900 dark:text-white"
+                            />
+                            <span className="text-[10px] text-slate-400 font-bold">
+                              {language === 'he' ? 'שיעורים' : 'slots'}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextVal = qty + 1;
+                              const updated = form.sessionItems.map((si) =>
+                                si.sessionTypeId === st.id ? { ...si, quantity: nextVal } : si
+                              );
+                              setForm({ ...form, sessionItems: updated });
+                            }}
+                            className="w-7 h-7 rounded-lg bg-brand-teal-100 dark:bg-brand-teal-950 text-brand-teal-800 dark:text-brand-teal-300 hover:bg-brand-teal-200 dark:hover:bg-brand-teal-900 font-bold flex items-center justify-center transition-colors active:scale-95"
+                          >
+                            +
+                          </button>
                         </div>
                       </div>
                     );

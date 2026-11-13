@@ -22,6 +22,8 @@ import { ReviewLinksTab } from '../../components/admin/ReviewLinksTab';
 import { PointRulesTab } from '../../components/admin/PointRulesTab';
 import { LanguagesTab } from '../../components/admin/LanguagesTab';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
+import { sessionTypesApi } from '../../lib/enterpriseApi';
+import { PriceDisplay } from '../../components/common/PriceDisplay';
 import { haptics } from '../../utils/haptics';
 import {
   formatSlotRange12Hour,
@@ -89,6 +91,9 @@ import {
   LayoutGrid,
   Gift,
   MoreHorizontal,
+  Minus,
+  Tag,
+  Edit2,
 } from 'lucide-react';
 
 // Custom outline Home icon with inner circle door matching iOS pill island aesthetic
@@ -239,16 +244,76 @@ export const AdminDashboard: React.FC = () => {
   const [newUserRole, setNewUserRole] = useState<'STUDENT' | 'TEACHER' | 'ADMIN'>('STUDENT');
   const [newUserLevel, setNewUserLevel] = useState('BEGINNER');
 
+  // Modern Package Management State
   const [isCreatingPackage, setIsCreatingPackage] = useState(false);
-  const [pkgName, setPkgName] = useState('');
-  const [pkgNameHe, setPkgNameHe] = useState('');
-  const [pkgLessons, setPkgLessons] = useState(10);
-  const [pkgDays, setPkgDays] = useState(60);
-  const [pkgPrice, setPkgPrice] = useState(250);
+  const [editingPkg, setEditingPkg] = useState<any | null>(null);
+  const [pkgForm, setPkgForm] = useState({
+    name: '',
+    nameHe: '',
+    description: '',
+    descriptionHe: '',
+    price: 150,
+    originalPrice: '' as string | number,
+    onSale: false,
+    currency: 'USD',
+    validityDays: 30,
+    sessionItems: [] as Array<{ sessionTypeId: string; quantity: number }>,
+  });
 
   const [isAssigningPkg, setIsAssigningPkg] = useState(false);
   const [assignPkgId, setAssignPkgId] = useState('');
   const [assignStudentId, setAssignStudentId] = useState('');
+
+  // Dynamic Session Types for Automatic Package Allocation
+  const { data: sessionTypes = [] } = useQuery({
+    queryKey: ['session-types'],
+    queryFn: sessionTypesApi.list,
+  });
+
+  const handleOpenCreatePackage = () => {
+    setEditingPkg(null);
+    setPkgForm({
+      name: '',
+      nameHe: '',
+      description: '',
+      descriptionHe: '',
+      price: 150,
+      originalPrice: '',
+      onSale: false,
+      currency: 'USD',
+      validityDays: 30,
+      sessionItems: sessionTypes.map((st) => ({
+        sessionTypeId: st.id,
+        quantity: st.durationMinutes === 25 ? 10 : 0,
+      })),
+    });
+    setIsCreatingPackage(true);
+  };
+
+  const handleOpenEditPackage = (pkg: any) => {
+    setEditingPkg(pkg);
+    setPkgForm({
+      name: pkg.name || pkg.nameEn || '',
+      nameHe: pkg.nameHe || '',
+      description: pkg.description || pkg.descriptionEn || '',
+      descriptionHe: pkg.descriptionHe || '',
+      price: Number(pkg.price ?? pkg.priceUsd ?? 0),
+      originalPrice: pkg.originalPrice ? Number(pkg.originalPrice) : '',
+      onSale: Boolean(pkg.onSale),
+      currency: pkg.currency || 'USD',
+      validityDays: Math.min(Number(pkg.validityDays ?? pkg.durationDays ?? 30), 30),
+      sessionItems: sessionTypes.map((st) => {
+        const found = pkg.sessionItems?.find((si: any) => si.sessionTypeId === st.id);
+        return {
+          sessionTypeId: st.id,
+          quantity: found
+            ? Number(found.quantity)
+            : (pkg.lessonsCount && st.durationMinutes === 25 ? Number(pkg.lessonsCount) : 0),
+        };
+      }),
+    });
+    setIsCreatingPackage(true);
+  };
 
   // Detailed User Accounts & Roles Management State
   const [userStatusFilter, setUserStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
@@ -277,46 +342,6 @@ export const AdminDashboard: React.FC = () => {
   const [bookDateTime, setBookDateTime] = useState('');
   const [bookDuration, setBookDuration] = useState<25 | 40 | 55>(25);
   const [bookZoomLink, setBookZoomLink] = useState('https://zoom.us/j/engrew-live');
-
-  // Session Pricing Management State (25, 40, 55 min)
-  const { data: sessionPricing } = useQuery({
-    queryKey: ['adminSessionPricing'],
-    queryFn: async () => {
-      const res = await api.get('/settings/session-pricing');
-      return res.data?.pricing;
-    },
-  });
-
-  const [pricing25, setPricing25] = useState<number | string>(25);
-  const [pricing40, setPricing40] = useState<number | string>(40);
-  const [pricing55, setPricing55] = useState<number | string>(55);
-  const [pricingCurrency, setPricingCurrency] = useState('USD');
-
-  React.useEffect(() => {
-    if (sessionPricing) {
-      setPricing25(sessionPricing['25'] ?? 25);
-      setPricing40(sessionPricing['40'] ?? 40);
-      setPricing55(sessionPricing['55'] ?? 55);
-      setPricingCurrency(sessionPricing.currency || 'USD');
-    }
-  }, [sessionPricing]);
-
-  const savePricingMutation = useMutation({
-    mutationFn: async (payload: any) => {
-      return api.put('/settings/session-pricing', { pricing: payload });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['adminSessionPricing'] });
-      queryClient.invalidateQueries({ queryKey: ['sessionPricing'] });
-      toast.success(
-        language === 'he' ? 'מחירי השיעורים עודכנו בהצלחה!' : 'Session booking rates updated successfully!',
-        language === 'he' ? 'עודכן' : 'Saved'
-      );
-    },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error || 'Failed to update session rates');
-    },
-  });
 
   // 1. Analytics Overview
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
@@ -526,18 +551,64 @@ export const AdminDashboard: React.FC = () => {
     },
   });
 
-  const createPackageMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return api.post('/packages', data);
+  const savePackageMutation = useMutation({
+    mutationFn: async () => {
+      const activeSessionItems = pkgForm.sessionItems.filter((si) => Number(si.quantity) > 0);
+      const totalLessons = activeSessionItems.reduce((acc, curr) => acc + Number(curr.quantity), 0);
+      const payload = {
+        name: pkgForm.name.trim(),
+        nameEn: pkgForm.name.trim(),
+        nameHe: (pkgForm.nameHe || pkgForm.name).trim(),
+        description: pkgForm.description?.trim() || undefined,
+        descriptionEn: pkgForm.description?.trim() || undefined,
+        descriptionHe: pkgForm.descriptionHe?.trim() || undefined,
+        price: Number(pkgForm.price) || 0,
+        originalPrice: pkgForm.originalPrice ? Number(pkgForm.originalPrice) : null,
+        onSale: Boolean(pkgForm.onSale),
+        currency: pkgForm.currency || 'USD',
+        validityDays: Math.min(Number(pkgForm.validityDays) || 30, 30),
+        sessionItems: activeSessionItems.map((si) => ({
+          sessionTypeId: si.sessionTypeId,
+          quantity: Number(si.quantity),
+        })),
+        totalLessons,
+      };
+
+      if (editingPkg) {
+        return api.patch(`/packages/${editingPkg.id}`, payload);
+      } else {
+        return api.post('/packages', payload);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminPackages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
       setIsCreatingPackage(false);
-      setPkgName('');
-      setPkgNameHe('');
+      setEditingPkg(null);
       toast.success(
-        language === 'he' ? 'החבילה נוצרה בהצלחה!' : 'Package created successfully!'
+        editingPkg
+          ? (language === 'he' ? 'החבילה עודכנה בהצלחה!' : 'Package updated successfully!')
+          : (language === 'he' ? 'החבילה נוצרה בהצלחה!' : 'Package created successfully!')
       );
+    },
+    onError: (err: any) => {
+      toast.error(
+        err.response?.data?.message || err.response?.data?.error || (language === 'he' ? 'שגיאה בשמירת החבילה' : 'Failed to save package')
+      );
+    },
+  });
+
+  const deletePackageMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return api.delete(`/packages/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminPackages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
+      toast.success(language === 'he' ? 'החבילה הושבתה בהצלחה' : 'Package deactivated');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || (language === 'he' ? 'שגיאה בהשבתת החבילה' : 'Failed to deactivate package'));
     },
   });
 
@@ -2514,199 +2585,144 @@ export const AdminDashboard: React.FC = () => {
             <div className="space-y-6">
               <PageHeaderBanner
                 badgeIcon={Layers}
-                badgeText={language === 'he' ? 'חבילות ומחירון' : 'Curriculum & Packages'}
+                badgeText={language === 'he' ? 'חבילות שיעורים ומכסות' : 'Session Quotas & Packages'}
                 statusText="Active"
                 title={language === 'he' ? 'חבילות שיעורים ותוכניות לימוד' : 'Lesson Packages & Student Allocations'}
                 description={
                   language === 'he'
-                    ? 'חבילות לימוד ומסלולים מובנים להוראת עברית בהתאמה אישית, מבצעים, ומחירון רב-מטבעי (דולר / ש״ח).'
-                    : 'Curriculum bundles and lesson packages for structured Hebrew learning paths with multi-currency support (USD / ILS).'
+                    ? 'חבילות לימוד ומסלולים מובנים להוראת עברית בהתאמה אישית, חלוקת מכסות שיעורים לפי משך, מבצעים ותוקף ל-30 יום.'
+                    : 'Curriculum bundles and lesson packages for structured Hebrew learning paths with multi-duration session quotas and 30-day validity.'
                 }
                 action={
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => setIsAssigningPkg(true)}
-                      className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/20 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95"
+                      className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/20 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
                     >
-                      Assign to Student
+                      <UserCheck className="w-4 h-4 text-brand-olive-300" />
+                      <span>{language === 'he' ? 'הקצה חבילה לתלמיד' : 'Assign to Student'}</span>
                     </button>
                     <button
-                      onClick={() => setIsCreatingPackage(true)}
+                      onClick={handleOpenCreatePackage}
                       className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
                     >
                       <Plus className="w-4 h-4 text-slate-950" />
-                      <span>Create Package</span>
+                      <span>{language === 'he' ? 'צור חבילה חדשה' : 'Create Package'}</span>
                     </button>
                   </div>
                 }
               />
 
-              {/* Session Booking Rates by Duration (25m / 40m / 55m) */}
-              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-5 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
-                      <Layers className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-black text-slate-900 dark:text-white">
-                        {language === 'he' ? 'ערכי חבילות לפי משך מפגש' : 'Session Duration Reference Rates'}
-                      </h2>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {language === 'he'
-                          ? 'הגדר את ערך הבסיס של משכי השיעורים (25, 40 ו-55 דקות) עבור חבילות ומכסות'
-                          : 'Set the base reference values for 25, 40, and 55-minute session package configurations'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      {language === 'he' ? 'מטבע:' : 'Currency:'}
-                    </span>
-                    <select
-                      value={pricingCurrency}
-                      onChange={(e) => setPricingCurrency(e.target.value)}
-                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white"
+              {/* Modern Packages Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {(packagesData || []).map((pkg: any) => {
+                  const items = pkg.sessionItems || [];
+                  const sessionSummary = items.length > 0
+                    ? items.map((si: any) => `${si.quantity}x ${si.sessionType?.name || (language === 'he' ? si.sessionType?.labelHe : si.sessionType?.labelEn) || `${si.sessionType?.durationMinutes || 25}m`}`).join(', ')
+                    : `${pkg.totalLessons ?? pkg.lessonsCount ?? 0} ${language === 'he' ? 'שיעורים' : 'Lessons'}`;
+
+                  return (
+                    <div
+                      key={pkg.id}
+                      className={`bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group ${
+                        pkg.onSale
+                          ? 'border-rose-300 dark:border-rose-900/60 ring-2 ring-rose-500/20'
+                          : 'border-slate-200/80 dark:border-slate-800'
+                      }`}
                     >
-                      <option value="USD">USD ($)</option>
-                      <option value="ILS">ILS (₪)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-                  <div className="p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850/60 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-slate-700 dark:text-slate-300">
-                        25 {language === 'he' ? 'דקות' : 'Minutes'}
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400">
-                        {language === 'he' ? 'רגיל' : 'Standard'}
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute start-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
-                        {pricingCurrency === 'ILS' ? '₪' : '$'}
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={pricing25}
-                        onChange={(e) => setPricing25(e.target.value)}
-                        className="w-full ps-8 pe-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-extrabold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
-                        placeholder="25"
-                      />
-                    </div>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                      {language === 'he' ? 'עלות למפגש 25 דק׳' : 'Cost per 25m private session'}
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850/60 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-slate-700 dark:text-slate-300">
-                        40 {language === 'he' ? 'דקות' : 'Minutes'}
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400">
-                        {language === 'he' ? 'מורחב' : 'Extended'}
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute start-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
-                        {pricingCurrency === 'ILS' ? '₪' : '$'}
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={pricing40}
-                        onChange={(e) => setPricing40(e.target.value)}
-                        className="w-full ps-8 pe-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-extrabold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-sky-500"
-                        placeholder="40"
-                      />
-                    </div>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                      {language === 'he' ? 'עלות למפגש 40 דק׳' : 'Cost per 40m intensive session'}
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-2xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850/60 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-slate-700 dark:text-slate-300">
-                        55 {language === 'he' ? 'דקות' : 'Minutes'}
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-400">
-                        {language === 'he' ? 'מלא' : 'Full Hour'}
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <span className="absolute start-3 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">
-                        {pricingCurrency === 'ILS' ? '₪' : '$'}
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={pricing55}
-                        onChange={(e) => setPricing55(e.target.value)}
-                        className="w-full ps-8 pe-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-extrabold text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-purple-500"
-                        placeholder="55"
-                      />
-                    </div>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                      {language === 'he' ? 'עלות למפגש 55 דק׳' : 'Cost per 55m comprehensive session'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-1">
-                  <button
-                    onClick={() => {
-                      savePricingMutation.mutate({
-                        '25': Number(pricing25) || 25,
-                        '40': Number(pricing40) || 40,
-                        '55': Number(pricing55) || 55,
-                        currency: pricingCurrency,
-                      });
-                    }}
-                    disabled={savePricingMutation.isPending}
-                    className="px-5 py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-2"
-                  >
-                    <Check className="w-4 h-4 text-brand-olive-300" />
-                    <span>
-                      {savePricingMutation.isPending
-                        ? (language === 'he' ? 'שומר תמחור...' : 'Saving Rates...')
-                        : (language === 'he' ? 'שמור תמחור שיעורים' : 'Save Session Rates')}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6">
-                {(packagesData || []).map((pkg: any) => (
-                  <div
-                    key={pkg.id}
-                    className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-brand-olive-300 dark:hover:border-brand-olive-500 transition-all flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 uppercase tracking-wider">
-                          {pkg.lessonsCount} x 25-Min Lessons
+                      {pkg.onSale && (
+                        <span className="absolute top-0 end-0 bg-gradient-to-l from-rose-600 to-rose-500 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-bl-2xl shadow-xs">
+                          {language === 'he' ? 'מבצע מיוחד' : 'Sale Offer'}
                         </span>
-                        <span className="text-xl font-extrabold text-slate-900 dark:text-white">${pkg.priceUsd}</span>
-                      </div>
-                      <h2 className="text-lg font-bold text-slate-900 dark:text-white">{pkg.nameEn}</h2>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 font-hebrew mt-0.5">{pkg.nameHe}</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-3">{pkg.descriptionEn}</p>
-                    </div>
+                      )}
 
-                    <div className="pt-6 border-t border-slate-100 dark:border-slate-800 mt-6 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                      <span>Valid for {pkg.durationDays} days</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">Active</span>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/50 text-brand-teal-700 dark:text-brand-teal-300 text-xs font-black border border-brand-teal-100 dark:border-brand-teal-800/60">
+                            <Clock className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400" />
+                            <span>{sessionSummary}</span>
+                          </span>
+
+                          <PriceDisplay
+                            price={pkg.price ?? pkg.priceUsd ?? 0}
+                            originalPrice={pkg.originalPrice}
+                            onSale={pkg.onSale}
+                            currency={pkg.currency || 'USD'}
+                            size="md"
+                          />
+                        </div>
+
+                        <div>
+                          <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300 transition-colors">
+                            {language === 'he' ? (pkg.nameHe || pkg.name) : (pkg.name || pkg.nameEn)}
+                          </h3>
+                          <p className="text-xs text-slate-400 font-semibold mt-0.5" dir="rtl">
+                            {pkg.nameHe}
+                          </p>
+                          {(pkg.description || pkg.descriptionEn) && (
+                            <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 line-clamp-2 leading-relaxed">
+                              {language === 'he' && pkg.descriptionHe ? pkg.descriptionHe : (pkg.description || pkg.descriptionEn)}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Breakdown badge chips */}
+                        {items.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {items.map((si: any) => (
+                              <span
+                                key={si.id || si.sessionTypeId}
+                                className="px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold border border-slate-200/60 dark:border-slate-700/60"
+                              >
+                                {si.quantity} &times; {si.sessionType?.durationMinutes ?? 25} {language === 'he' ? 'דק׳' : 'min'}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-5 border-t border-slate-100 dark:border-slate-800 mt-6 flex items-center justify-between text-xs">
+                        <span className="text-slate-400 dark:text-slate-500 font-bold flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>
+                            {language === 'he' ? `תוקף ל-${pkg.validityDays ?? pkg.durationDays ?? 30} יום` : `Valid ${pkg.validityDays ?? pkg.durationDays ?? 30} days`}
+                          </span>
+                        </span>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              setAssignPkgId(pkg.id);
+                              setIsAssigningPkg(true);
+                            }}
+                            className="p-2 rounded-xl text-slate-500 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 hover:bg-brand-teal-50 dark:hover:bg-slate-800 transition-colors"
+                            title={language === 'he' ? 'הקצה לתלמיד' : 'Assign to student'}
+                          >
+                            <UserCheck className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditPackage(pkg)}
+                            className="p-2 rounded-xl text-slate-500 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 hover:bg-brand-teal-50 dark:hover:bg-slate-800 transition-colors"
+                            title={language === 'he' ? 'ערוך חבילה' : 'Edit package'}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(language === 'he' ? `האם להשבית את החבילה ${pkg.name}?` : `Deactivate package ${pkg.name}?`)) {
+                                deletePackageMutation.mutate(pkg.id);
+                              }
+                            }}
+                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                            title={language === 'he' ? 'השבת חבילה' : 'Deactivate package'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -2900,7 +2916,6 @@ export const AdminDashboard: React.FC = () => {
                       ) : (
                         filteredLessons.map((l: any) => {
                           const dur = l.durationMinutes || 25;
-                          const rate = sessionPricing?.[String(dur)] ?? (dur === 55 ? 55 : dur === 40 ? 40 : 25);
                           const isScheduled = l.status === 'SCHEDULED';
                           const isCompleted = l.status === 'COMPLETED';
                           const isCancelled = l.status === 'CANCELLED';
@@ -2986,9 +3001,7 @@ export const AdminDashboard: React.FC = () => {
                                         : 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                                     }`}
                                   >
-                                    <span>{dur} min</span>
-                                    <span className="opacity-60">•</span>
-                                    <span>${rate}</span>
+                                    <span>{dur} {language === 'he' ? 'דק׳' : 'min'}</span>
                                   </span>
                                 </div>
                               </td>
@@ -3227,111 +3240,360 @@ export const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* CREATE PACKAGE MODAL */}
+      {/* MODERN CREATE / EDIT PACKAGE MODAL */}
       {isCreatingPackage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-transparent dark:border-slate-800 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                {language === 'he' ? 'יצירת חבילת שיעורים חדשה' : 'Create New Lesson Package'}
-              </h2>
-              <button onClick={() => setIsCreatingPackage(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full my-8 shadow-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden flex flex-col">
+            {/* Executive Gradient Header */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-brand-teal-900 to-slate-900 text-white p-6 sm:p-7">
+              <div className="absolute top-0 end-0 -mt-8 -me-8 w-48 h-48 bg-brand-olive-500/15 rounded-full blur-2xl pointer-events-none" />
+              <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-olive-400/20 text-brand-olive-300 border border-brand-olive-400/30 flex items-center justify-center shrink-0 shadow-xs">
+                    <Layers className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-white/10 text-brand-olive-300 text-[10px] font-black uppercase tracking-wider mb-1 border border-white/10">
+                      <Sparkles className="w-3 h-3 text-brand-olive-400" />
+                      <span>{language === 'he' ? 'חבילות ומכסות שיעורים' : 'Session Quota Packages'}</span>
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-black text-white">
+                      {editingPkg
+                        ? (language === 'he' ? 'עריכת חבילת שיעורים ומכסות' : 'Edit Lesson Package & Quotas')
+                        : (language === 'he' ? 'יצירת חבילת שיעורים חדשה' : 'Create New Lesson Package')}
+                    </h2>
+                    <p className="text-xs text-brand-teal-100/80 font-medium mt-0.5">
+                      {language === 'he'
+                        ? 'הגדרת מכסות שיעורים לפי משך, מחיר ותוקף ל-30 יום'
+                        : 'Configure multi-duration session quotas, pricing, and 30-day validity'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreatingPackage(false);
+                    setEditingPkg(null);
+                  }}
+                  className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'שם החבילה (אנגלית)' : 'Package Name (English)'}
+            {/* Modal Body */}
+            <div className="p-6 sm:p-7 space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* 1. Package Names (EN & HE) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-1.5">
+                    <span>🇬🇧</span>
+                    <span>{language === 'he' ? 'שם החבילה באנגלית' : 'Package Name (English)'}</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Immersion Intensive Mastery"
+                    value={pkgForm.name}
+                    onChange={(e) => setPkgForm({ ...pkgForm, name: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-1.5">
+                    <span>🇮🇱</span>
+                    <span>{language === 'he' ? 'שם החבילה בעברית' : 'Package Name (Hebrew / עברית)'}</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    dir="rtl"
+                    placeholder="לדוגמה: מסלול שליטה אינטנסיבי בעברית"
+                    value={pkgForm.nameHe}
+                    onChange={(e) => setPkgForm({ ...pkgForm, nameHe: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:bg-white dark:focus:bg-slate-900 transition-all font-hebrew"
+                  />
+                </div>
+              </div>
+
+              {/* 2. AUTOMATIC SESSION TYPES & DURATIONS */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-brand-teal-50/40 dark:bg-brand-teal-950/20 border border-brand-teal-200/60 dark:border-brand-teal-800/50 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-brand-teal-900 dark:text-brand-teal-200">
+                        {language === 'he' ? 'מכסות שיעורים לפי משך וסוג' : 'Session Types & Durations Quotas'}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {language === 'he'
+                          ? 'המכסות נטענות אוטומטית מסוגי השיעורים הפעילים במערכת'
+                          : 'Automatically mapped to live system session types and durations'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-slate-850 text-brand-teal-800 dark:text-brand-teal-300 font-black text-xs border border-brand-teal-200 dark:border-brand-teal-800/80 shadow-xs self-start sm:self-auto">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>
+                      {language === 'he'
+                        ? `סה״כ: ${pkgForm.sessionItems.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0)} שיעורים בחבילה`
+                        : `Total: ${pkgForm.sessionItems.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0)} Sessions in Package`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {sessionTypes.map((st) => {
+                    const found = pkgForm.sessionItems.find((si) => si.sessionTypeId === st.id);
+                    const qty = found ? Number(found.quantity) : 0;
+                    const hasQuantity = qty > 0;
+
+                    return (
+                      <div
+                        key={st.id}
+                        className={`p-3.5 rounded-2xl border transition-all duration-200 flex flex-col justify-between ${
+                          hasQuantity
+                            ? 'border-brand-teal-400 dark:border-brand-teal-600 bg-white dark:bg-slate-855 shadow-xs ring-1 ring-brand-teal-400/30'
+                            : 'border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-2">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 font-mono font-black text-xs border border-brand-teal-200/60 dark:border-brand-teal-800/60">
+                            {st.durationMinutes} {language === 'he' ? 'דק׳' : 'min'}
+                          </span>
+                          {hasQuantity && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="text-xs font-black text-slate-900 dark:text-white line-clamp-1">
+                            {language === 'he' && st.labelHe ? st.labelHe : st.labelEn}
+                          </div>
+                          <div className="text-[10px] text-slate-400 line-clamp-1">
+                            {language === 'he' ? st.labelEn : st.labelHe}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextVal = Math.max(0, qty - 1);
+                              const updated = pkgForm.sessionItems.some((si) => si.sessionTypeId === st.id)
+                                ? pkgForm.sessionItems.map((si) => (si.sessionTypeId === st.id ? { ...si, quantity: nextVal } : si))
+                                : [...pkgForm.sessionItems, { sessionTypeId: st.id, quantity: nextVal }];
+                              setPkgForm({ ...pkgForm, sessionItems: updated });
+                            }}
+                            disabled={qty <= 0}
+                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-30 font-bold flex items-center justify-center transition-colors active:scale-95"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              min="0"
+                              value={qty}
+                              onChange={(e) => {
+                                const nextVal = Math.max(0, parseInt(e.target.value, 10) || 0);
+                                const updated = pkgForm.sessionItems.some((si) => si.sessionTypeId === st.id)
+                                  ? pkgForm.sessionItems.map((si) => (si.sessionTypeId === st.id ? { ...si, quantity: nextVal } : si))
+                                  : [...pkgForm.sessionItems, { sessionTypeId: st.id, quantity: nextVal }];
+                                setPkgForm({ ...pkgForm, sessionItems: updated });
+                              }}
+                              className="w-14 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-black text-center text-slate-900 dark:text-white"
+                            />
+                            <span className="text-[10px] text-slate-400 font-bold">
+                              {language === 'he' ? 'שיעורים' : 'slots'}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextVal = qty + 1;
+                              const updated = pkgForm.sessionItems.some((si) => si.sessionTypeId === st.id)
+                                ? pkgForm.sessionItems.map((si) => (si.sessionTypeId === st.id ? { ...si, quantity: nextVal } : si))
+                                : [...pkgForm.sessionItems, { sessionTypeId: st.id, quantity: nextVal }];
+                              setPkgForm({ ...pkgForm, sessionItems: updated });
+                            }}
+                            className="w-7 h-7 rounded-lg bg-brand-teal-100 dark:bg-brand-teal-950 text-brand-teal-800 dark:text-brand-teal-300 hover:bg-brand-teal-200 dark:hover:bg-brand-teal-900 font-bold flex items-center justify-center transition-colors active:scale-95"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Pricing & Promotional Sale */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-850/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-rose-500 shrink-0" />
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    {language === 'he' ? 'תמחור ומבצעים מיוחדים' : 'Pricing & Promotional Strike-Through'}
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'מחיר בפועל לתשלום' : 'Selling Price'}
+                    </label>
+                    <div className="relative">
+                      <span className="absolute start-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">
+                        {pkgForm.currency === 'ILS' ? '₪' : '$'}
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={pkgForm.price}
+                        onChange={(e) => setPkgForm({ ...pkgForm, price: Number(e.target.value) })}
+                        className="w-full ps-8 pe-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-black text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'מחיר מקורי (מחוק במבצע)' : 'Original Struck Price'}
+                    </label>
+                    <div className="relative">
+                      <span className="absolute start-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">
+                        {pkgForm.currency === 'ILS' ? '₪' : '$'}
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="e.g. 299"
+                        value={pkgForm.originalPrice}
+                        onChange={(e) => setPkgForm({ ...pkgForm, originalPrice: e.target.value })}
+                        className="w-full ps-8 pe-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold text-slate-900 dark:text-white placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                      {language === 'he' ? 'מטבע תשלום' : 'Currency'}
+                    </label>
+                    <select
+                      value={pkgForm.currency}
+                      onChange={(e) => setPkgForm({ ...pkgForm, currency: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white"
+                    >
+                      <option value="USD">USD ($)</option>
+                      <option value="ILS">ILS (₪)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2.5 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={pkgForm.onSale}
+                    onChange={(e) => setPkgForm({ ...pkgForm, onSale: e.target.checked })}
+                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 dark:border-slate-700"
+                  />
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {language === 'he'
+                      ? 'סמן חבילה זו כמבצע מיוחד (מציג תגית SALE ומחיר קודם מחוק)'
+                      : 'Flag package as Special Promotion (renders sale badge and crossed-out original price)'}
+                  </span>
                 </label>
-                <input
-                  type="text"
-                  placeholder={language === 'he' ? 'לדוגמה: Immersion Intensive' : 'e.g. Immersion Intensive'}
-                  value={pkgName}
-                  onChange={(e) => setPkgName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
-                />
+              </div>
+
+              {/* 4. Validity & Descriptions */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-1">
+                    <span>{language === 'he' ? 'תוקף החבילה (ימים)' : 'Package Validity (Days)'}</span>
+                    <span className="text-[10px] text-brand-teal-700 dark:text-brand-teal-300 font-semibold">
+                      {language === 'he' ? 'תוקף מרבי 30 יום' : 'Max 30 days'}
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={pkgForm.validityDays}
+                    onChange={(e) => setPkgForm({ ...pkgForm, validityDays: Math.min(30, Number(e.target.value)) })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-xs font-black text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    {language === 'he' ? 'תיאור קצר (אנגלית)' : 'Short Description (English)'}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 10 focused lessons with native mentors."
+                    value={pkgForm.description}
+                    onChange={(e) => setPkgForm({ ...pkgForm, description: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
-                  {language === 'he' ? 'שם החבילה (עברית)' : 'Package Name (Hebrew / עברית)'}
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  {language === 'he' ? 'תיאור קצר (עברית)' : 'Short Description (Hebrew)'}
                 </label>
                 <input
                   type="text"
                   dir="rtl"
-                  placeholder="לדוגמה: מסלול אינטנסיבי"
-                  value={pkgNameHe}
-                  onChange={(e) => setPkgNameHe(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
+                  placeholder="לדוגמה: 10 שיעורים פרטיים ממוקדים עם מורים שפת-אם."
+                  value={pkgForm.descriptionHe}
+                  onChange={(e) => setPkgForm({ ...pkgForm, descriptionHe: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 font-hebrew"
                 />
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    {language === 'he' ? 'שיעורי 25 דק׳' : '25m Lessons'}
-                  </label>
-                  <input
-                    type="number"
-                    value={pkgLessons}
-                    onChange={(e) => setPkgLessons(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    {language === 'he' ? 'ימי תוקף' : 'Valid Days'}
-                  </label>
-                  <input
-                    type="number"
-                    value={pkgDays}
-                    onChange={(e) => setPkgDays(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-slate-700 dark:text-slate-300">
-                    {language === 'he' ? 'מחיר ($)' : 'Price ($)'}
-                  </label>
-                  <input
-                    type="number"
-                    value={pkgPrice}
-                    onChange={(e) => setPkgPrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mt-1"
-                  />
-                </div>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2">
+            {/* Modal Actions Footer */}
+            <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-850/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
               <button
-                onClick={() => setIsCreatingPackage(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                type="button"
+                onClick={() => {
+                  setIsCreatingPackage(false);
+                  setEditingPkg(null);
+                }}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 {language === 'he' ? 'ביטול' : 'Cancel'}
               </button>
+
               <button
+                type="button"
                 onClick={() => {
-                  if (!pkgName) {
-                    toast.warning(language === 'he' ? 'שם החבילה הוא שדה חובה' : 'Package name is required');
+                  if (!pkgForm.name.trim()) {
+                    toast.warning(language === 'he' ? 'שם החבילה באנגלית הוא שדה חובה' : 'Package name (English) is required');
                     return;
                   }
-                  createPackageMutation.mutate({
-                    nameEn: pkgName,
-                    nameHe: pkgNameHe || pkgName,
-                    lessonsCount: pkgLessons,
-                    durationDays: pkgDays,
-                    priceUsd: pkgPrice,
-                    descriptionEn: `${pkgLessons} focused 25-minute live private lessons with native teachers.`,
-                    descriptionHe: `${pkgLessons} שיעורים פרטיים ממוקדים של 25 דקות.`,
-                  });
+                  savePackageMutation.mutate();
                 }}
-                disabled={createPackageMutation.isPending}
-                className="flex-1 py-2.5 rounded-xl bg-brand-teal-800 text-white text-xs font-bold hover:bg-brand-teal-900 shadow-sm"
+                disabled={savePackageMutation.isPending}
+                className="px-6 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs shadow-lg transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
               >
-                {createPackageMutation.isPending ? (language === 'he' ? 'יוצר...' : 'Creating...') : (language === 'he' ? 'צור חבילה' : 'Create Package')}
+                <Check className="w-4 h-4 text-slate-950" />
+                <span>
+                  {savePackageMutation.isPending
+                    ? (language === 'he' ? 'שומר חבילה...' : 'Saving Package...')
+                    : editingPkg
+                    ? (language === 'he' ? 'עדכן חבילה' : 'Update Package')
+                    : (language === 'he' ? 'צור חבילה חדשה' : 'Create Package')}
+                </span>
               </button>
             </div>
           </div>
@@ -3364,7 +3626,7 @@ export const AdminDashboard: React.FC = () => {
                   <option value="">-- {language === 'he' ? 'בחר חבילה' : 'Choose a Package'} --</option>
                   {(packagesData || []).map((p: any) => (
                     <option key={p.id} value={p.id}>
-                      {language === 'he' ? p.nameHe : p.nameEn} ({p.lessonsCount} lessons - ${p.priceUsd})
+                      {language === 'he' ? (p.nameHe || p.name) : (p.name || p.nameEn)} ({p.totalLessons ?? p.lessonsCount ?? 0} {language === 'he' ? 'שיעורים' : 'lessons'} - {p.currency === 'ILS' ? '₪' : '$'}{p.price ?? p.priceUsd ?? 0})
                     </option>
                   ))}
                 </select>

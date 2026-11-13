@@ -3,30 +3,97 @@ import { z } from 'zod';
 import * as packagesService from './packages.service';
 import { AuthRequest } from '../../middleware/auth';
 
-const createPackageSchema = z.object({
-  name: z.string().min(1),
-  nameHe: z.string().min(1),
-  description: z.string().optional(),
-  descriptionHe: z.string().optional(),
-  totalLessons: z.number().int().optional(),
-  validityDays: z.number().int().positive().optional().default(30),
-  price: z.number().min(0),
-  originalPrice: z.number().min(0).optional().nullable(),
-  onSale: z.boolean().optional(),
-  currency: z.enum(['USD', 'ILS']).default('USD'),
-  sessionItems: z
-    .array(
-      z.object({
-        sessionTypeId: z.string(),
-        quantity: z.number().int().positive(),
-      })
-    )
-    .optional(),
-});
+const createPackageSchema = z
+  .object({
+    name: z.string().optional(),
+    nameEn: z.string().optional(),
+    nameHe: z.string().optional(),
+    description: z.string().optional(),
+    descriptionEn: z.string().optional(),
+    descriptionHe: z.string().optional(),
+    totalLessons: z.number().int().optional(),
+    lessonsCount: z.number().int().optional(),
+    validityDays: z.number().int().positive().optional().default(30),
+    durationDays: z.number().int().positive().optional(),
+    price: z.number().min(0).optional(),
+    priceUsd: z.number().min(0).optional(),
+    originalPrice: z.number().min(0).optional().nullable(),
+    onSale: z.boolean().optional(),
+    currency: z.enum(['USD', 'ILS']).default('USD'),
+    sessionItems: z
+      .array(
+        z.object({
+          sessionTypeId: z.string(),
+          quantity: z.number().int().nonnegative(),
+        })
+      )
+      .optional(),
+  })
+  .transform((val) => ({
+    name: (val.name || val.nameEn || 'Package').trim(),
+    nameHe: (val.nameHe || val.name || val.nameEn || 'חבילת שיעורים').trim(),
+    description: val.description || val.descriptionEn,
+    descriptionHe: val.descriptionHe,
+    totalLessons: val.totalLessons ?? val.lessonsCount ?? 0,
+    validityDays: val.validityDays ?? val.durationDays ?? 30,
+    price: val.price ?? val.priceUsd ?? 0,
+    originalPrice: val.originalPrice ?? null,
+    onSale: val.onSale ?? false,
+    currency: val.currency || 'USD',
+    sessionItems: (val.sessionItems || []).filter((item) => item.quantity > 0),
+  }));
 
-const updatePackageSchema = createPackageSchema.partial().extend({
-  isActive: z.boolean().optional(),
-});
+const updatePackageSchema = z
+  .object({
+    name: z.string().optional(),
+    nameEn: z.string().optional(),
+    nameHe: z.string().optional(),
+    description: z.string().optional(),
+    descriptionEn: z.string().optional(),
+    descriptionHe: z.string().optional(),
+    totalLessons: z.number().int().optional(),
+    lessonsCount: z.number().int().optional(),
+    validityDays: z.number().int().positive().optional(),
+    durationDays: z.number().int().positive().optional(),
+    price: z.number().min(0).optional(),
+    priceUsd: z.number().min(0).optional(),
+    originalPrice: z.number().min(0).optional().nullable(),
+    onSale: z.boolean().optional(),
+    currency: z.enum(['USD', 'ILS']).optional(),
+    isActive: z.boolean().optional(),
+    sessionItems: z
+      .array(
+        z.object({
+          sessionTypeId: z.string(),
+          quantity: z.number().int().nonnegative(),
+        })
+      )
+      .optional(),
+  })
+  .transform((val) => ({
+    ...(val.name || val.nameEn ? { name: (val.name || val.nameEn)!.trim() } : {}),
+    ...(val.nameHe ? { nameHe: val.nameHe.trim() } : {}),
+    ...(val.description !== undefined || val.descriptionEn !== undefined
+      ? { description: val.description || val.descriptionEn }
+      : {}),
+    ...(val.descriptionHe !== undefined ? { descriptionHe: val.descriptionHe } : {}),
+    ...(val.totalLessons !== undefined || val.lessonsCount !== undefined
+      ? { totalLessons: val.totalLessons ?? val.lessonsCount }
+      : {}),
+    ...(val.validityDays !== undefined || val.durationDays !== undefined
+      ? { validityDays: val.validityDays ?? val.durationDays }
+      : {}),
+    ...(val.price !== undefined || val.priceUsd !== undefined
+      ? { price: val.price ?? val.priceUsd }
+      : {}),
+    ...(val.originalPrice !== undefined ? { originalPrice: val.originalPrice } : {}),
+    ...(val.onSale !== undefined ? { onSale: val.onSale } : {}),
+    ...(val.currency ? { currency: val.currency } : {}),
+    ...(val.isActive !== undefined ? { isActive: val.isActive } : {}),
+    ...(val.sessionItems
+      ? { sessionItems: val.sessionItems.filter((i) => i.quantity > 0) }
+      : {}),
+  }));
 
 const assignPackageSchema = z.object({
   studentId: z.string(),

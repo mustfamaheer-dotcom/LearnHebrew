@@ -65,6 +65,9 @@ export async function updatePackage(id: string, data: any) {
     const price = data.price !== undefined ? Number(data.price) : undefined;
     const originalPrice = data.originalPrice !== undefined ? (data.originalPrice ? Number(data.originalPrice) : null) : undefined;
     const onSale = data.onSale !== undefined ? Boolean(data.onSale) : undefined;
+    const totalLessons = data.sessionItems
+      ? data.sessionItems.reduce((acc: number, curr: any) => acc + Number(curr.quantity), 0)
+      : (data.totalLessons !== undefined ? Number(data.totalLessons) : undefined);
 
     return tx.package.update({
       where: { id },
@@ -73,6 +76,7 @@ export async function updatePackage(id: string, data: any) {
         nameHe: data.nameHe,
         description: data.description,
         descriptionHe: data.descriptionHe,
+        totalLessons,
         validityDays,
         price,
         originalPrice,
