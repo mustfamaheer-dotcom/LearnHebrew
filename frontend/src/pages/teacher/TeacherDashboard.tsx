@@ -1480,12 +1480,17 @@ export const TeacherDashboard: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
-                {studentsData?.map((student: any) => {
-                  const completedLessons = student.stats?.completedLessons || 0;
-                  const remainingLessons = student.stats?.packageRemainingLessons || 0;
-                  const totalLessons = student.stats?.packageTotalLessons || (completedLessons + remainingLessons);
+                {studentsData?.map((studentItem: any) => {
+                  const student = studentItem.student || studentItem;
+                  const studentUser = student.user || studentItem.user;
+                  const stats = studentItem.stats || student.stats || {};
+                  const completedLessons = stats.completedLessons || 0;
+                  const remainingLessons = stats.packageRemainingLessons || 0;
+                  const totalLessons = stats.packageTotalLessons || (completedLessons + remainingLessons);
                   const progressPct = totalLessons > 0 ? Math.min(100, Math.round((completedLessons / totalLessons) * 100)) : 0;
-                  const pendingHw = student.stats?.pendingHomework || 0;
+                  const pendingHw = stats.pendingHomework || 0;
+                  const studentName = `${studentUser?.firstName || 'Student'} ${studentUser?.lastName || ''}`.trim();
+                  const studentEmail = studentUser?.email || '';
 
                   return (
                     <div
@@ -1497,20 +1502,20 @@ export const TeacherDashboard: React.FC = () => {
                         {/* Student Identity Row: Avatar + Full Name + Email */}
                         <div className="flex items-center gap-3.5 min-w-0 min-h-[52px]">
                           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-teal-700 to-brand-teal-900 text-white font-black text-base flex items-center justify-center shadow-xs shrink-0 ring-2 ring-brand-teal-100 dark:ring-brand-teal-950">
-                            {student.user.firstName?.[0] || 'S'}
+                            {studentUser?.firstName?.[0] || 'S'}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h4
                               className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-snug break-words"
-                              title={`${student.user.firstName} ${student.user.lastName}`}
+                              title={studentName}
                             >
-                              {student.user.firstName} {student.user.lastName}
+                              {studentName}
                             </h4>
                             <span
                               className="text-xs text-slate-500 dark:text-slate-400 block truncate mt-0.5"
-                              title={student.user.email}
+                              title={studentEmail}
                             >
-                              {student.user.email}
+                              {studentEmail}
                             </span>
                           </div>
                         </div>
@@ -1547,31 +1552,31 @@ export const TeacherDashboard: React.FC = () => {
 
                         {/* Last & Next Lesson */}
                         <div className="h-14 text-xs space-y-1 text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex flex-col justify-center">
-                          {student.stats?.lastLessonDate && (
+                          {stats.lastLessonDate && (
                             <div className="flex items-center justify-between">
                               <span>{language === 'he' ? 'שיעור אחרון:' : 'Last lesson:'}</span>
                               <span className="font-semibold text-slate-700 dark:text-slate-300">
-                                {new Date(student.stats.lastLessonDate).toLocaleDateString()}
+                                {new Date(stats.lastLessonDate).toLocaleDateString()}
                               </span>
                             </div>
                           )}
-                          {student.stats?.nextLessonDate && (
+                          {stats.nextLessonDate && (
                             <div className="flex items-center justify-between">
                               <span className="text-brand-teal-700 dark:text-brand-teal-400 font-semibold">
                                 {language === 'he' ? 'שיעור הבא:' : 'Next session:'}
                               </span>
                               <span className="font-bold text-brand-teal-800 dark:text-brand-teal-300">
-                                {new Date(student.stats.nextLessonDate).toLocaleDateString()}
+                                {new Date(stats.nextLessonDate).toLocaleDateString()}
                               </span>
                             </div>
                           )}
-                          {pendingHw > 0 && !student.stats?.nextLessonDate && (
+                          {pendingHw > 0 && !stats.nextLessonDate && (
                             <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 font-bold">
                               <span>{language === 'he' ? 'ש״ב ממתינים לבדיקה:' : 'Pending HW review:'}</span>
                               <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800">{pendingHw}</span>
                             </div>
                           )}
-                          {!student.stats?.lastLessonDate && !student.stats?.nextLessonDate && pendingHw === 0 && (
+                          {!stats.lastLessonDate && !stats.nextLessonDate && pendingHw === 0 && (
                             <div className="flex items-center justify-between text-slate-400 dark:text-slate-500">
                               <span>{language === 'he' ? 'סטטוס מפגשים:' : 'Session status:'}</span>
                               <span className="italic font-medium">{language === 'he' ? 'אין שיעורים קרובים' : 'No upcoming sessions'}</span>
@@ -1603,7 +1608,7 @@ export const TeacherDashboard: React.FC = () => {
                           + {language === 'he' ? 'הקלטה' : 'Video'}
                         </button>
                         <button
-                          onClick={() => setSelectedStudentDetail(student)}
+                          onClick={() => setSelectedStudentDetail({ ...student, user: studentUser, stats })}
                           className="py-2 px-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors text-center flex items-center justify-center gap-1.5 shadow-2xs"
                         >
                           <Eye className="w-3.5 h-3.5 shrink-0" />
@@ -2123,8 +2128,8 @@ export const TeacherDashboard: React.FC = () => {
                               <span className="truncate">
                                 {language === 'he' ? 'משויך לשיעור:' : 'Linked Lesson:'}{' '}
                                 <strong>
-                                  {game.lesson.student?.user?.firstName}{' '}
-                                  {game.lesson.student?.user?.lastName}
+                                  {game.lesson.student?.user?.firstName || 'Student'}{' '}
+                                  {game.lesson.student?.user?.lastName || ''}
                                 </strong>{' '}
                                 ({game.lesson.durationMinutes || 25} {language === 'he' ? 'דק׳' : 'min'})
                               </span>
@@ -2259,11 +2264,15 @@ export const TeacherDashboard: React.FC = () => {
                 className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
               >
                 <option value="">{language === 'he' ? 'בחר תלמיד מהרשימה...' : 'Choose a student...'}</option>
-                {studentsData?.map((s: any) => (
-                  <option key={s.id} value={s.id}>
-                    {s.user.firstName} {s.user.lastName} ({t(`levels.${s.level || 'BEGINNER'}`)})
-                  </option>
-                ))}
+                {studentsData?.map((s: any) => {
+                  const student = s.student || s;
+                  const u = student.user || s.user;
+                  return (
+                    <option key={student.id} value={student.id}>
+                      {u?.firstName || 'Student'} {u?.lastName || ''} ({t(`levels.${student.level || 'BEGINNER'}`)})
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -2399,11 +2408,15 @@ export const TeacherDashboard: React.FC = () => {
                   className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
                 >
                   <option value="">{language === 'he' ? 'כל התלמידים (שיעור פתוח)' : 'All Students (Open Library)'}</option>
-                  {studentsData?.map((s: any) => (
-                    <option key={s.id} value={s.id}>
-                      {s.user.firstName} {s.user.lastName}
-                    </option>
-                  ))}
+                  {studentsData?.map((s: any) => {
+                    const student = s.student || s;
+                    const u = student.user || s.user;
+                    return (
+                      <option key={student.id} value={student.id}>
+                        {u?.firstName || 'Student'} {u?.lastName || ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -2738,7 +2751,7 @@ export const TeacherDashboard: React.FC = () => {
                     </span>
                     {previewGame.lesson && (
                       <span className="text-[11px] text-brand-olive-700 dark:text-brand-olive-300 font-medium">
-                        • {language === 'he' ? 'שיעור עם' : 'Lesson with'} {previewGame.lesson.student?.user?.firstName}
+                        • {language === 'he' ? 'שיעור עם' : 'Lesson with'} {previewGame.lesson.student?.user?.firstName || 'Student'}
                       </span>
                     )}
                   </div>

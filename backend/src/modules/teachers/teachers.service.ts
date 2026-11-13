@@ -201,12 +201,17 @@ export async function getTeacherStudents(teacherIdOrUserId: string) {
     const nextLesson = scheduledLessons[0] || null;
 
     return {
+      ...s,
       student: s,
       stats: {
         totalLessons: teacherLessons.length,
         completedLessons: completedLessons.length,
         scheduledLessons: scheduledLessons.length,
         nextLesson,
+        lastLessonDate: completedLessons[0]?.scheduledAt || null,
+        nextLessonDate: nextLesson?.scheduledAt || null,
+        pendingHomework: (s.homeworks || []).filter((h: any) => h.status === 'SUBMITTED').length,
+        homeworkTotal: (s.homeworks || []).length,
       },
     };
   });
