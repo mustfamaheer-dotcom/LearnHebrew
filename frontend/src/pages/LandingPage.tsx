@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -24,6 +24,8 @@ import {
   Volume2,
   VolumeX,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Star,
   Globe2,
   Users,
@@ -273,6 +275,141 @@ export const LandingPage: React.FC = () => {
             aHe: 'כן בהחלט! תרגול בכרטיסיות שמע, חידונים והתאמות מילים מעניק נקודות שמקדמות אותך בלוח המובילים של האקדמיה.',
           },
         ];
+
+  // Horizontal Packages Carousel State & Handlers
+  const packagesScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [activePkgIndex, setActivePkgIndex] = useState(0);
+
+  const isMouseDownRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const hasDraggedRef = useRef(false);
+
+  const activePackages = (packagesData || []).filter((p: any) => p.isActive !== false);
+
+  const updateScrollButtons = () => {
+    if (!packagesScrollRef.current) return;
+    const container = packagesScrollRef.current;
+    const cards = container.querySelectorAll<HTMLElement>(':scope > div');
+    if (!cards.length) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = containerRect.left + containerRect.width / 2;
+
+    let closestIndex = 0;
+    let minDistance = Infinity;
+
+    cards.forEach((card, idx) => {
+      const cardRect = card.getBoundingClientRect();
+      const cardCenter = cardRect.left + cardRect.width / 2;
+      const dist = Math.abs(cardCenter - containerCenter);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = idx;
+      }
+    });
+
+    setActivePkgIndex(closestIndex);
+
+    const isRtl = language === 'he';
+    if (isRtl) {
+      setCanScrollLeft(closestIndex < cards.length - 1);
+      setCanScrollRight(closestIndex > 0);
+    } else {
+      setCanScrollLeft(closestIndex > 0);
+      setCanScrollRight(closestIndex < cards.length - 1);
+    }
+  };
+
+  useEffect(() => {
+    const container = packagesScrollRef.current;
+    if (!container) return;
+    updateScrollButtons();
+    container.addEventListener('scroll', updateScrollButtons, { passive: true });
+    window.addEventListener('resize', updateScrollButtons);
+    return () => {
+      container.removeEventListener('scroll', updateScrollButtons);
+      window.removeEventListener('resize', updateScrollButtons);
+    };
+  }, [packagesData, language]);
+
+  const scrollPackages = (direction: 'left' | 'right') => {
+    if (!packagesScrollRef.current) return;
+    haptics.tap();
+    const container = packagesScrollRef.current;
+    const cards = container.querySelectorAll<HTMLElement>(':scope > div');
+    if (!cards.length) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = containerRect.left + containerRect.width / 2;
+
+    let closestIndex = 0;
+    let minDistance = Infinity;
+
+    cards.forEach((card, idx) => {
+      const cardRect = card.getBoundingClientRect();
+      const cardCenter = cardRect.left + cardRect.width / 2;
+      const dist = Math.abs(cardCenter - containerCenter);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = idx;
+      }
+    });
+
+    const isRtl = language === 'he';
+    let targetIndex = closestIndex;
+    if (direction === 'left') {
+      targetIndex = isRtl ? closestIndex + 1 : closestIndex - 1;
+    } else {
+      targetIndex = isRtl ? closestIndex - 1 : closestIndex + 1;
+    }
+
+    targetIndex = Math.max(0, Math.min(targetIndex, cards.length - 1));
+
+    cards[targetIndex]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    });
+  };
+
+  const scrollToIndex = (index: number) => {
+    if (!packagesScrollRef.current) return;
+    haptics.tap();
+    const container = packagesScrollRef.current;
+    const cards = container.querySelectorAll<HTMLElement>(':scope > div');
+    if (cards[index]) {
+      cards[index].scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!packagesScrollRef.current) return;
+    isMouseDownRef.current = true;
+    hasDraggedRef.current = false;
+    startXRef.current = e.pageX - packagesScrollRef.current.offsetLeft;
+    scrollLeftRef.current = packagesScrollRef.current.scrollLeft;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDownRef.current || !packagesScrollRef.current) return;
+    const x = e.pageX - packagesScrollRef.current.offsetLeft;
+    const walk = x - startXRef.current;
+    if (Math.abs(walk) > 5) {
+      hasDraggedRef.current = true;
+    }
+    packagesScrollRef.current.scrollLeft = scrollLeftRef.current - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    isMouseDownRef.current = false;
+  };
 
   return (
     <div className="w-full max-w-full overflow-x-hidden space-y-10 sm:space-y-20 pb-20">
@@ -744,43 +881,152 @@ export const LandingPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {((packagesData || []).filter((p: any) => p.isActive !== false)).map((pkg: any, idx: number) => {
-            const isFeatured = pkg.isPopular || idx === 1;
-            const name = language === 'he' && pkg.nameHe ? pkg.nameHe : pkg.name;
-            const desc = language === 'he' && pkg.descriptionHe ? pkg.descriptionHe : pkg.description;
-            const items = pkg.sessionItems || [];
-            const sessionSummary =
-              items.length > 0
-                ? items
-                    .map(
-                      (si: any) =>
-                        `${si.quantity}x ${
-                          language === 'he'
-                            ? si.sessionType?.labelHe || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25} דק׳`
-                            : si.sessionType?.labelEn || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25}m`
-                        }`
-                    )
-                    .join(' + ')
-                : language === 'he'
-                ? `${pkg.totalLessons} שיעורים פרטיים 1-על-1`
-                : `${pkg.totalLessons} Private 1-on-1 Lessons`;
+        {/* Horizontal Scrollable Packages Carousel with Left & Right Arrows */}
+        <div className="relative group/carousel">
+          {/* Left Navigation Arrow (Physical Left of Screen) */}
+          <button
+            type="button"
+            onClick={() => scrollPackages('left')}
+            aria-label={language === 'he' ? 'גלול שמאלה' : 'Scroll left'}
+            disabled={!canScrollLeft}
+            className="flex absolute left-0 sm:-left-3 lg:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
+          >
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+          </button>
 
-            if (isFeatured) {
+          {/* Right Navigation Arrow (Physical Right of Screen) */}
+          <button
+            type="button"
+            onClick={() => scrollPackages('right')}
+            aria-label={language === 'he' ? 'גלול ימינה' : 'Scroll right'}
+            disabled={!canScrollRight}
+            className="flex absolute right-0 sm:-right-3 lg:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
+          >
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+          </button>
+
+          {/* Edge Fade Masks for Smooth Scroll Look */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-6 w-8 sm:w-14 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-10 opacity-70 hidden sm:block" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-8 sm:w-14 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-10 opacity-70 hidden sm:block" />
+
+          {/* Horizontal Touch & Drag Scrollable Container */}
+          <div
+            ref={packagesScrollRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUpOrLeave}
+            onMouseLeave={handleMouseUpOrLeave}
+            className="flex items-stretch gap-5 sm:gap-7 overflow-x-auto snap-x snap-mandatory scroll-smooth py-6 px-4 sm:px-8 touch-pan-x cursor-grab active:cursor-grabbing select-none"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {activePackages.map((pkg: any, idx: number) => {
+              const isFeatured = pkg.isPopular || idx === 1;
+              const name = language === 'he' && pkg.nameHe ? pkg.nameHe : pkg.name;
+              const desc = language === 'he' && pkg.descriptionHe ? pkg.descriptionHe : pkg.description;
+              const items = pkg.sessionItems || [];
+              const sessionSummary =
+                items.length > 0
+                  ? items
+                      .map(
+                        (si: any) =>
+                          `${si.quantity}x ${
+                            language === 'he'
+                              ? si.sessionType?.labelHe || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25} דק׳`
+                              : si.sessionType?.labelEn || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25}m`
+                          }`
+                      )
+                      .join(' + ')
+                  : language === 'he'
+                  ? `${pkg.totalLessons} שיעורים פרטיים 1-על-1`
+                  : `${pkg.totalLessons} Private 1-on-1 Lessons`;
+
+              if (isFeatured) {
+                return (
+                  <div
+                    key={pkg.id || idx}
+                    className="w-[85vw] sm:w-[360px] md:w-[380px] shrink-0 snap-center bg-gradient-to-b from-brand-teal-900 via-brand-teal-950 to-brand-teal-950 text-white p-7 sm:p-8 rounded-3xl shadow-xl relative flex flex-col justify-between ring-2 ring-brand-olive-400 select-auto transition-transform duration-200 hover:-translate-y-1"
+                  >
+                    <span className="absolute -top-3 start-1/2 -translate-x-1/2 bg-brand-olive-500 text-slate-950 text-[10px] sm:text-[11px] font-black uppercase px-3 py-1 rounded-full shadow-xs tracking-wider">
+                      {language === 'he' ? 'הבחירה הפופולרית ביותר' : 'Most Popular Choice'}
+                    </span>
+                    <div>
+                      <span className="text-xs font-bold text-brand-olive-300 uppercase tracking-wider">
+                        {language === 'he' ? 'התקדמות מואצת' : 'Accelerated Fluency'}
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-bold text-white mt-1 mb-2">{name}</h3>
+                      <p className="text-xs sm:text-sm text-brand-teal-100 mb-6">{desc}</p>
+                      <div className="mb-6">
+                        <PriceDisplay
+                          price={pkg.price}
+                          originalPrice={pkg.originalPrice}
+                          onSale={pkg.onSale}
+                          currency={pkg.currency || 'USD'}
+                          size="xl"
+                          isLightOnDark={true}
+                        />
+                        <span className="text-xs font-normal text-brand-teal-200 block mt-1">
+                          {language === 'he'
+                            ? `/ תוקף ל-${pkg.validityDays} יום`
+                            : `/ ${pkg.validityDays} days validity`}
+                        </span>
+                      </div>
+                      <ul className="space-y-3 text-xs sm:text-sm text-brand-teal-100 mb-8">
+                        <li className="flex items-center gap-2 font-semibold">
+                          <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
+                          <span>{sessionSummary}</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
+                          {language === 'he'
+                            ? 'הקלטות וידאו מלאות ב-Google Drive'
+                            : 'Full Google Drive video recordings'}
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
+                          {language === 'he'
+                            ? 'שיעורי בית ותרגול אינטראקטיבי'
+                            : 'Custom homework with PDF viewer'}
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
+                          {language === 'he' ? 'משוב אישי וצבירת נקודות' : 'Dedicated teacher feedback'}
+                        </li>
+                      </ul>
+                    </div>
+                    <Link
+                      to={`/login?packageId=${pkg.id}&pkgName=${encodeURIComponent(name)}`}
+                      onClick={(e) => {
+                        if (hasDraggedRef.current) {
+                          e.preventDefault();
+                          return;
+                        }
+                        haptics.tap();
+                      }}
+                      className="w-full py-3.5 text-center bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-black text-xs sm:text-sm rounded-2xl transition-all shadow-md hover:scale-[1.02] block"
+                    >
+                      {t('landing.getStarted')}
+                    </Link>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={pkg.id || idx}
-                  className="bg-gradient-to-b from-brand-teal-900 via-brand-teal-950 to-brand-teal-950 text-white p-7 sm:p-8 rounded-3xl shadow-xl relative flex flex-col justify-between ring-2 ring-brand-olive-400"
+                  className="w-[85vw] sm:w-[360px] md:w-[380px] shrink-0 snap-center bg-white dark:bg-slate-900 p-7 sm:p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:shadow-md transition-all select-auto duration-200 hover:-translate-y-1"
                 >
-                  <span className="absolute -top-3 start-1/2 -translate-x-1/2 bg-brand-olive-500 text-slate-950 text-[10px] sm:text-[11px] font-black uppercase px-3 py-1 rounded-full shadow-xs tracking-wider">
-                    {language === 'he' ? 'הבחירה הפופולרית ביותר' : 'Most Popular Choice'}
-                  </span>
                   <div>
-                    <span className="text-xs font-bold text-brand-olive-300 uppercase tracking-wider">
-                      {language === 'he' ? 'התקדמות מואצת' : 'Accelerated Fluency'}
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {language === 'he' ? 'חבילת לימוד' : 'Learning Package'}
                     </span>
-                    <h3 className="text-xl sm:text-2xl font-bold text-white mt-1 mb-2">{name}</h3>
-                    <p className="text-xs sm:text-sm text-brand-teal-100 mb-6">{desc}</p>
+                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 mb-2">
+                      {name}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6">{desc}</p>
                     <div className="mb-6">
                       <PriceDisplay
                         price={pkg.price}
@@ -788,105 +1034,76 @@ export const LandingPage: React.FC = () => {
                         onSale={pkg.onSale}
                         currency={pkg.currency || 'USD'}
                         size="xl"
-                        isLightOnDark={true}
                       />
-                      <span className="text-xs font-normal text-brand-teal-200 block mt-1">
+                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400 block mt-1">
                         {language === 'he'
                           ? `/ תוקף ל-${pkg.validityDays} יום`
                           : `/ ${pkg.validityDays} days validity`}
                       </span>
                     </div>
-                    <ul className="space-y-3 text-xs sm:text-sm text-brand-teal-100 mb-8">
+                    <ul className="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-8">
                       <li className="flex items-center gap-2 font-semibold">
-                        <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
                         <span>{sessionSummary}</span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
                         {language === 'he'
-                          ? 'הקלטות וידאו מלאות ב-Google Drive'
-                          : 'Full Google Drive video recordings'}
+                          ? 'מורים מוסמכים מישראל (שעון IST)'
+                          : 'Certified native teachers (IST)'}
                       </li>
                       <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
                         {language === 'he'
-                          ? 'שיעורי בית ותרגול אינטראקטיבי'
-                          : 'Custom homework with PDF viewer'}
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
-                        {language === 'he' ? 'משוב אישי וצבירת נקודות' : 'Dedicated teacher feedback'}
+                          ? 'משחקי שפה ותרגול הגייה קולי'
+                          : 'Interactive games & audio voice'}
                       </li>
                     </ul>
                   </div>
                   <Link
                     to={`/login?packageId=${pkg.id}&pkgName=${encodeURIComponent(name)}`}
-                    onClick={() => haptics.tap()}
-                    className="w-full py-3.5 text-center bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-black text-xs sm:text-sm rounded-2xl transition-all shadow-md hover:scale-[1.02] block"
+                    onClick={(e) => {
+                      if (hasDraggedRef.current) {
+                        e.preventDefault();
+                        return;
+                      }
+                      haptics.tap();
+                    }}
+                    className="w-full py-3.5 text-center bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm rounded-2xl transition-colors shadow-xs block"
                   >
                     {t('landing.getStarted')}
                   </Link>
                 </div>
               );
-            }
-
-            return (
-              <div
-                key={pkg.id || idx}
-                className="bg-white dark:bg-slate-900 p-7 sm:p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow"
-              >
-                <div>
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    {language === 'he' ? 'חבילת לימוד' : 'Learning Package'}
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 mb-2">
-                    {name}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6">{desc}</p>
-                  <div className="mb-6">
-                    <PriceDisplay
-                      price={pkg.price}
-                      originalPrice={pkg.originalPrice}
-                      onSale={pkg.onSale}
-                      currency={pkg.currency || 'USD'}
-                      size="xl"
-                    />
-                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400 block mt-1">
-                      {language === 'he'
-                        ? `/ תוקף ל-${pkg.validityDays} יום`
-                        : `/ ${pkg.validityDays} days validity`}
-                    </span>
-                  </div>
-                  <ul className="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-8">
-                    <li className="flex items-center gap-2 font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
-                      <span>{sessionSummary}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
-                      {language === 'he'
-                        ? 'מורים מוסמכים מישראל (שעון IST)'
-                        : 'Certified native teachers (IST)'}
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
-                      {language === 'he'
-                        ? 'משחקי שפה ותרגול הגייה קולי'
-                        : 'Interactive games & audio voice'}
-                    </li>
-                  </ul>
-                </div>
-                <Link
-                  to={`/login?packageId=${pkg.id}&pkgName=${encodeURIComponent(name)}`}
-                  onClick={() => haptics.tap()}
-                  className="w-full py-3.5 text-center bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm rounded-2xl transition-colors shadow-xs block"
-                >
-                  {t('landing.getStarted')}
-                </Link>
-              </div>
-            );
-          })}
+            })}
+          </div>
         </div>
+
+        {/* Carousel Progress Indicators & Swipe Hint */}
+        {activePackages.length > 1 && (
+          <div className="flex flex-col items-center gap-2.5 mt-4">
+            <div className="flex items-center gap-2">
+              {activePackages.map((_: any, dotIdx: number) => (
+                <button
+                  key={dotIdx}
+                  type="button"
+                  onClick={() => scrollToIndex(dotIdx)}
+                  aria-label={`Go to package ${dotIdx + 1}`}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    activePkgIndex === dotIdx
+                      ? 'w-7 bg-brand-olive-500 shadow-xs'
+                      : 'w-2 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+              {language === 'he'
+                ? 'החלק אופקית או השתמש בחצים לצפייה בכל החבילות'
+                : 'Swipe horizontally or use arrows to compare all packages'}
+            </span>
+          </div>
+        )}
       </section>
 
       {/* STUDENT TESTIMONIALS (CMS Managed) */}
