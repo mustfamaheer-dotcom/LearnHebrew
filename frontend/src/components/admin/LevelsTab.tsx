@@ -57,101 +57,103 @@ export const LevelsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Layers className="w-5 h-5 text-blue-500" />
+          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center">
+              <Layers className="w-4 h-4" />
+            </div>
             Custom Platform Levels Management
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Define custom academic proficiency levels with dynamic Hebrew/English labels, ordering, and theme accents.
           </p>
         </div>
         <button
           onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white rounded-xl font-bold text-xs transition shadow-sm active:scale-95"
         >
-          <Plus className="w-4 h-4" /> Add Level
+          <Plus className="w-4 h-4 text-brand-olive-300" /> Add Level
         </button>
       </div>
 
       {isCreating && (
-        <div className="p-6 bg-blue-50 dark:bg-slate-900 border border-blue-200 dark:border-blue-900/50 rounded-2xl space-y-4">
-          <h3 className="font-semibold text-slate-900 dark:text-white">Create New Proficiency Level</h3>
+        <div className="p-6 bg-brand-teal-50/40 dark:bg-slate-850/60 border border-brand-teal-200/70 dark:border-brand-teal-800/70 rounded-3xl space-y-4">
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Create New Proficiency Level</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Code (Unique Key)</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Code (Unique Key)</label>
               <input
                 type="text"
                 placeholder="e.g. MASTERY_C1"
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                className="w-full mt-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+                className="w-full mt-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">English Label</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">English Label</label>
               <input
                 type="text"
                 placeholder="e.g. Advanced C1"
                 value={formData.labelEn}
                 onChange={(e) => setFormData({ ...formData, labelEn: e.target.value })}
-                className="w-full mt-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+                className="w-full mt-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Hebrew Label</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Hebrew Label</label>
               <input
                 type="text"
                 placeholder="לדוגמה: רמה ו׳ - שוטף"
                 value={formData.labelHe}
                 onChange={(e) => setFormData({ ...formData, labelHe: e.target.value })}
-                className="w-full mt-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+                className="w-full mt-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Progression Order</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Progression Order</label>
               <input
                 type="number"
                 value={formData.sortOrder}
                 onChange={(e) => setFormData({ ...formData, sortOrder: Number(e.target.value) })}
-                className="w-full mt-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+                className="w-full mt-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Accent Color</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Accent Color</label>
               <div className="flex items-center gap-2 mt-1">
                 <input
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                  className="w-10 h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-700"
+                  className="w-10 h-10 rounded-xl cursor-pointer border border-slate-200 dark:border-slate-700"
                 />
-                <span className="text-xs text-slate-500">{formData.color}</span>
+                <span className="text-xs font-mono text-slate-500">{formData.color}</span>
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Description</label>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Description</label>
               <input
                 type="text"
                 placeholder="Brief description of this stage"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full mt-1 p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
+                className="w-full mt-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none"
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 border-t border-brand-teal-100 dark:border-slate-800">
             <button
               onClick={() => setIsCreating(false)}
-              className="px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-xl text-sm"
+              className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
             >
               Cancel
             </button>
             <button
               onClick={() => createMutation.mutate(formData)}
               disabled={!formData.code || !formData.labelEn || !formData.labelHe}
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold disabled:opacity-50"
+              className="px-5 py-2 bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-xl text-xs font-bold shadow-xs disabled:opacity-50"
             >
               Save Level
             </button>

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LucideIcon,
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Settings,
 } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -18,6 +19,8 @@ export interface GlassNavItem {
   icon: LucideIcon;
   badge?: string | number | null;
   badgeColor?: string;
+  children?: GlassNavItem[];
+  defaultExpanded?: boolean;
 }
 
 interface GlassSidebarProps {
@@ -57,6 +60,33 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
 }) => {
   const { language } = useTranslation();
   const { isCollapsed, toggleCollapsed } = useSidebarStore();
+
+  // Track expanded state for mother items with children
+  const [openParents, setOpenParents] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    navItems.forEach((item) => {
+      if (item.children && item.children.length > 0) {
+        const hasActiveChild = item.children.some((c) => c.id === activeTab);
+        initial[item.id] = item.defaultExpanded ?? (hasActiveChild || false);
+      }
+    });
+    return initial;
+  });
+
+  // Automatically expand parent if activeTab changes to one of its children
+  useEffect(() => {
+    navItems.forEach((item) => {
+      if (item.children && item.children.length > 0) {
+        if (item.children.some((c) => c.id === activeTab)) {
+          setOpenParents((prev) => ({ ...prev, [item.id]: true }));
+        }
+      }
+    });
+  }, [activeTab, navItems]);
+
+  const toggleParent = (parentId: string) => {
+    setOpenParents((prev) => ({ ...prev, [parentId]: !prev[parentId] }));
+  };
 
   return (
     <>
@@ -151,7 +181,10 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
           <nav className="space-y-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              const hasChildren = Boolean(item.children && item.children.length > 0);
+              const isChildActive = Boolean(hasChildren && item.children!.some((c) => c.id === activeTab));
+              const isActive = activeTab === item.id || isChildActive;
+              const isParentOpen = Boolean(openParents[item.id]);
               const label = language === 'he' && item.labelHe ? item.labelHe : item.label;
 
               // Collapsed (Icons Only) Mode
@@ -161,8 +194,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        onTabChange(item.id);
-                        if (onCloseMobile) onCloseMobile();
+                        if (hasChildren) {
+                          toggleParent(item.id);
+                        } else {
+                          onTabChange(item.id);
+                          if (onCloseMobile) onCloseMobile();
+                        }
                       }}
                       className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all relative ${
                         isActive
@@ -183,25 +220,157 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                       }`} />
 
                       {/* Mini Badge Dot if badge present */}
-                      {item.badge !== null && item.badge !== undefined && (
-                        <span className="absolute top-1.5 end-1.5 w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)] animate-pulse" />
+                      {(item.badge !== null && item.badge !== undefined || hasChildren) && (
+                        <span className={`absolute top-1.5 end-1.5 w-2 h-2 rounded-full ${
+                          hasChildren ? 'bg-brand-olive-400' : 'bg-emerald-400'
+                        } shadow-[0_0_6px_rgba(52,211,153,0.9)]`} />
                       )}
                     </button>
 
-                    {/* Floating Tooltip Pill on Hover */}
-                    <div className="hidden lg:flex absolute start-[calc(100%+0.65rem)] top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 items-center gap-2">
-                      <span>{label}</span>
-                      {item.badge !== null && item.badge !== undefined && (
-                        <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px]">
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
+                    {/* Floating Flyout Menu on Hover (for Mother with Children or Tooltip) */}
+                    {hasChildren ? (
+                      <div className="hidden lg:group-hover:flex flex-col absolute start-[calc(100%+0.65rem)] top-0 p-2.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 shadow-2xl z-50 min-w-[200px] space-y-1 animate-in fade-in slide-in-from-left-2 duration-150">
+                        <div className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-800 mb-1">
+                          {label}
+                        </div>
+                        {item.children!.map((child) => {
+                          const ChildIcon = child.icon;
+                          const isChildCur = activeTab === child.id;
+                          const childLabel = language === 'he' && child.labelHe ? child.labelHe : child.label;
+                          return (
+                            <button
+                              key={child.id}
+                              type="button"
+                              onClick={() => {
+                                onTabChange(child.id);
+                                if (onCloseMobile) onCloseMobile();
+                              }}
+                              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all text-start ${
+                                isChildCur
+                                  ? 'bg-brand-teal-800 text-white shadow-xs'
+                                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <ChildIcon className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">{childLabel}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="hidden lg:flex absolute start-[calc(100%+0.65rem)] top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 items-center gap-2">
+                        <span>{label}</span>
+                        {item.badge !== null && item.badge !== undefined && (
+                          <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px]">
+                            {item.badge}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               }
 
-              // Expanded Full Sidebar Mode
+              // Expanded Full Sidebar Mode: MOTHER ITEM WITH CHILDREN
+              if (hasChildren) {
+                return (
+                  <div key={item.id} className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleParent(item.id)}
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all group ${
+                        isChildActive
+                          ? 'bg-brand-teal-50/80 dark:bg-brand-teal-950/60 text-brand-teal-900 dark:text-brand-teal-200 border border-brand-teal-200/80 dark:border-brand-teal-800/80 shadow-2xs'
+                          : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 truncate ps-1">
+                        <Icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
+                          isChildActive
+                            ? 'text-brand-teal-700 dark:text-brand-teal-300'
+                            : 'text-slate-500 dark:text-slate-400 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300'
+                        }`} />
+                        <span className="truncate tracking-tight font-extrabold">{label}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {item.badge !== null && item.badge !== undefined && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider bg-brand-teal-100 dark:bg-brand-teal-900/60 text-brand-teal-800 dark:text-brand-teal-200 border border-brand-teal-200 dark:border-brand-teal-800">
+                            {item.badge}
+                          </span>
+                        )}
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform duration-200 ${
+                            isParentOpen ? 'rotate-180 text-brand-teal-700 dark:text-brand-teal-300' : 'text-slate-400'
+                          }`}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Children List */}
+                    {isParentOpen && (
+                      <div className="ms-4 ps-3 border-s-2 border-brand-teal-200/80 dark:border-brand-teal-800/60 space-y-1 my-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                        {item.children!.map((child) => {
+                          const ChildIcon = child.icon;
+                          const isChildCurrent = activeTab === child.id;
+                          const childLabel = language === 'he' && child.labelHe ? child.labelHe : child.label;
+
+                          if (isChildCurrent) {
+                            return (
+                              <button
+                                key={child.id}
+                                type="button"
+                                onClick={() => {
+                                  onTabChange(child.id);
+                                  if (onCloseMobile) onCloseMobile();
+                                }}
+                                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all group relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-slate-900 to-brand-teal-900 text-white shadow-xs border border-white/15"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0 truncate ps-1">
+                                  <div className="w-1.5 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                                  <ChildIcon className="w-3.5 h-3.5 shrink-0 text-emerald-300" />
+                                  <span className="truncate">{childLabel}</span>
+                                </div>
+                                {child.badge && (
+                                  <span className="px-1.5 py-0.2 rounded-md bg-white/20 text-emerald-300 text-[9px] font-black">
+                                    {child.badge}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <button
+                              key={child.id}
+                              type="button"
+                              onClick={() => {
+                                onTabChange(child.id);
+                                if (onCloseMobile) onCloseMobile();
+                              }}
+                              className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-all text-start"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0 truncate ps-1">
+                                <ChildIcon className="w-3.5 h-3.5 shrink-0 text-slate-400 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300" />
+                                <span className="truncate">{childLabel}</span>
+                              </div>
+                              {child.badge && (
+                                <span className="px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 text-[9px]">
+                                  {child.badge}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Expanded Full Sidebar Mode: REGULAR FLAT ITEM (Active)
               if (isActive) {
                 return (
                   <button
@@ -237,6 +406,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                 );
               }
 
+              // Expanded Full Sidebar Mode: REGULAR FLAT ITEM (Inactive)
               return (
                 <button
                   key={item.id}

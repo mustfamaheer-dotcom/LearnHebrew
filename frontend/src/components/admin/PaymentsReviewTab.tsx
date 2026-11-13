@@ -34,27 +34,29 @@ export const PaymentsReviewTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Wallet className="w-5 h-5 text-emerald-500" />
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center">
+            <Wallet className="w-4 h-4" />
+          </div>
           Proof-of-Payment Reviews & Package Activation
         </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
           Review payments submitted by Sales team. Every payment is backed by a WebP converted screenshot. Approval instantly adds session balance valid for 30 days.
         </p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 text-xs font-semibold uppercase">
+          <table className="w-full text-start text-xs">
+            <thead className="bg-slate-50/70 dark:bg-slate-850/50 border-b border-slate-100 dark:border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="p-4">Student</th>
-                <th className="p-4">Package</th>
-                <th className="p-4">Submitted By</th>
-                <th className="p-4">Proof Screenshot</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Actions</th>
+                <th className="py-3.5 px-4 font-bold text-start">Student</th>
+                <th className="py-3.5 px-4 font-bold text-start">Package</th>
+                <th className="py-3.5 px-4 font-bold text-start">Submitted By</th>
+                <th className="py-3.5 px-4 font-bold text-start">Proof Screenshot</th>
+                <th className="py-3.5 px-4 font-bold text-start">Status</th>
+                <th className="py-3.5 px-4 font-bold text-end">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

@@ -47,11 +47,11 @@ export const EnterpriseTabsContainer: React.FC = () => {
               onClick={() => setSubTab(t.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs whitespace-nowrap transition-all ${
                 isActive
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white shadow-sm shadow-brand-teal-950/20'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-brand-teal-800 dark:hover:text-brand-teal-300 hover:bg-brand-teal-50/50 dark:hover:bg-slate-850'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className={`w-4 h-4 ${isActive ? 'text-brand-olive-300' : 'text-slate-400'}`} />
               {t.label}
             </button>
           );

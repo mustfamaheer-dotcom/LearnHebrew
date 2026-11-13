@@ -13,6 +13,14 @@ import { ReminderNotificationHubTab } from '../../components/admin/ReminderNotif
 import { ReviewsAndFeedbackTab } from '../../components/admin/ReviewsAndFeedbackTab';
 import { PackagesManagementTab } from '../../components/admin/PackagesManagementTab';
 import { EnterpriseTabsContainer } from '../../components/admin/EnterpriseTabsContainer';
+import { LevelsTab } from '../../components/admin/LevelsTab';
+import { SessionTypesTab } from '../../components/admin/SessionTypesTab';
+import { RolesPermissionsTab } from '../../components/admin/RolesPermissionsTab';
+import { PaymentsReviewTab } from '../../components/admin/PaymentsReviewTab';
+import { LevelExamsTab } from '../../components/admin/LevelExamsTab';
+import { ReviewLinksTab } from '../../components/admin/ReviewLinksTab';
+import { PointRulesTab } from '../../components/admin/PointRulesTab';
+import { LanguagesTab } from '../../components/admin/LanguagesTab';
 import { haptics } from '../../utils/haptics';
 import {
   formatSlotRange12Hour,
@@ -54,6 +62,7 @@ import {
   Wallet,
   UserCheck,
   UserX,
+  Link2,
   ShieldCheck,
   Video,
   AlertTriangle,
@@ -104,10 +113,49 @@ export const AdminDashboard: React.FC = () => {
 
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'landing_cms' | 'enterprise' | 'reminders_hub' | 'users' | 'teachers' | 'packages' | 'bookings' | 'surveys' | 'system_logs'
+    | 'overview'
+    | 'landing_cms'
+    | 'enterprise'
+    | 'levels'
+    | 'session_types'
+    | 'roles'
+    | 'payments'
+    | 'exams'
+    | 'review_links'
+    | 'point_rules'
+    | 'languages'
+    | 'reminders_hub'
+    | 'users'
+    | 'teachers'
+    | 'packages'
+    | 'bookings'
+    | 'surveys'
+    | 'system_logs'
   >(() => {
     const searchTab = new URLSearchParams(window.location.search).get('tab');
-    if (searchTab && ['overview', 'landing_cms', 'enterprise', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(searchTab)) {
+    if (
+      searchTab &&
+      [
+        'overview',
+        'landing_cms',
+        'enterprise',
+        'levels',
+        'session_types',
+        'roles',
+        'payments',
+        'exams',
+        'review_links',
+        'point_rules',
+        'languages',
+        'reminders_hub',
+        'users',
+        'teachers',
+        'packages',
+        'bookings',
+        'surveys',
+        'system_logs',
+      ].includes(searchTab)
+    ) {
       return searchTab as any;
     }
     return 'overview';
@@ -115,7 +163,29 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const handleNavEvent = (e: any) => {
-      if (e.detail?.tab && ['overview', 'landing_cms', 'enterprise', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(e.detail.tab)) {
+      if (
+        e.detail?.tab &&
+        [
+          'overview',
+          'landing_cms',
+          'enterprise',
+          'levels',
+          'session_types',
+          'roles',
+          'payments',
+          'exams',
+          'review_links',
+          'point_rules',
+          'languages',
+          'reminders_hub',
+          'users',
+          'teachers',
+          'packages',
+          'bookings',
+          'surveys',
+          'system_logs',
+        ].includes(e.detail.tab)
+      ) {
         setActiveTab(e.detail.tab);
       }
     };
@@ -125,7 +195,29 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const searchTab = new URLSearchParams(location.search).get('tab');
-    if (searchTab && ['overview', 'landing_cms', 'reminders_hub', 'users', 'teachers', 'packages', 'bookings', 'surveys', 'system_logs'].includes(searchTab)) {
+    if (
+      searchTab &&
+      [
+        'overview',
+        'landing_cms',
+        'enterprise',
+        'levels',
+        'session_types',
+        'roles',
+        'payments',
+        'exams',
+        'review_links',
+        'point_rules',
+        'languages',
+        'reminders_hub',
+        'users',
+        'teachers',
+        'packages',
+        'bookings',
+        'surveys',
+        'system_logs',
+      ].includes(searchTab)
+    ) {
       setActiveTab(searchTab as any);
     }
   }, [location.search]);
@@ -709,11 +801,62 @@ export const AdminDashboard: React.FC = () => {
     },
     {
       id: 'enterprise',
-      label: 'Levels & Roles (Enterprise)',
-      labelHe: 'רמות, תפקידים והרשאות',
+      label: 'Platform & Enterprise',
+      labelHe: 'הגדרות מתקדמות ורמות',
       icon: ShieldCheck,
-      badge: 'New',
-      badgeColor: 'bg-blue-500 text-white',
+      badge: '8',
+      badgeColor: 'bg-brand-teal-600 text-white',
+      defaultExpanded: true,
+      children: [
+        {
+          id: 'levels',
+          label: 'Levels & Curriculum',
+          labelHe: 'רמות לימוד ומסלולים',
+          icon: Layers,
+        },
+        {
+          id: 'session_types',
+          label: 'Session Types (25/40/55m)',
+          labelHe: 'סוגי מפגשים ותמחור',
+          icon: Clock,
+        },
+        {
+          id: 'roles',
+          label: 'Roles & RBAC Matrix',
+          labelHe: 'תפקידים והרשאות (RBAC)',
+          icon: ShieldCheck,
+        },
+        {
+          id: 'payments',
+          label: 'Payments Review',
+          labelHe: 'בדיקת תשלומי חבילות',
+          icon: Wallet,
+        },
+        {
+          id: 'exams',
+          label: 'Level Transition Exams',
+          labelHe: 'מבחני מעבר רמה',
+          icon: Award,
+        },
+        {
+          id: 'review_links',
+          label: 'Secret Review Links',
+          labelHe: 'קישורי משוב חד-פעמיים',
+          icon: Link2,
+        },
+        {
+          id: 'point_rules',
+          label: 'Game Point Rules',
+          labelHe: 'חוקי נקודות משחקים',
+          icon: Coins,
+        },
+        {
+          id: 'languages',
+          label: 'Languages Setup',
+          labelHe: 'ניהול שפות אם ויעד',
+          icon: Globe,
+        },
+      ],
     },
     {
       id: 'bookings',
@@ -2583,6 +2726,14 @@ export const AdminDashboard: React.FC = () => {
           {activeTab === 'enterprise' && (
             <EnterpriseTabsContainer />
           )}
+          {activeTab === 'levels' && <LevelsTab />}
+          {activeTab === 'session_types' && <SessionTypesTab />}
+          {activeTab === 'roles' && <RolesPermissionsTab />}
+          {activeTab === 'payments' && <PaymentsReviewTab />}
+          {activeTab === 'exams' && <LevelExamsTab />}
+          {activeTab === 'review_links' && <ReviewLinksTab />}
+          {activeTab === 'point_rules' && <PointRulesTab />}
+          {activeTab === 'languages' && <LanguagesTab />}
 
           {/* TAB 6: BOOKINGS & LESSONS */}
           {activeTab === 'bookings' && (

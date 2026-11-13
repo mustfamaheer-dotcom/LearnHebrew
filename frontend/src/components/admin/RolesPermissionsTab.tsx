@@ -67,21 +67,23 @@ export const RolesPermissionsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
             Dynamic RBAC Role & Permission Matrix
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Configure granular action permissions for each role (Sales, CS, Teachers, Students) or create custom roles.
           </p>
         </div>
         <button
           onClick={() => setIsCreatingRole(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white rounded-xl font-bold text-xs transition shadow-sm active:scale-95"
         >
-          <Plus className="w-4 h-4" /> Create Custom Role
+          <Plus className="w-4 h-4 text-brand-olive-300" /> Create Custom Role
         </button>
       </div>
 
@@ -96,15 +98,15 @@ export const RolesPermissionsTab: React.FC = () => {
                 setSelectedRoleId(r.id);
                 setSelectedPermIds(r.permissions.filter((p) => p.granted).map((p) => p.permission.id));
               }}
-              className={`w-full text-left p-3.5 rounded-xl border font-medium text-sm flex items-center justify-between transition ${
+              className={`w-full text-left p-3.5 rounded-2xl border font-medium text-xs flex items-center justify-between transition ${
                 selectedRoleId === r.id
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-800 dark:text-emerald-200 shadow-sm'
-                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                  ? 'bg-brand-teal-50/90 dark:bg-brand-teal-950/60 border-brand-teal-500 text-brand-teal-950 dark:text-brand-teal-200 shadow-2xs font-extrabold'
+                  : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-brand-teal-300'
               }`}
             >
               <div>
-                <div className="font-bold">{r.labelEn}</div>
-                <div className="text-xs text-slate-400 font-mono mt-0.5">{r.name}</div>
+                <div className="font-extrabold">{r.labelEn}</div>
+                <div className="text-[10px] text-slate-400 font-mono mt-0.5">{r.name}</div>
               </div>
               {r.isSystem && <Lock className="w-3.5 h-3.5 text-slate-400" aria-label="System Protected Role" />}
             </button>
@@ -112,20 +114,20 @@ export const RolesPermissionsTab: React.FC = () => {
         </div>
 
         {/* Permissions Matrix */}
-        <div className="lg:col-span-3 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+        <div className="lg:col-span-3 bg-white dark:bg-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6">
           <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Permissions for: <span className="text-emerald-600">{activeRole?.labelEn}</span>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">
+                Permissions for: <span className="text-brand-teal-700 dark:text-brand-teal-300">{activeRole?.labelEn}</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">Toggle checkboxes to grant or revoke specific actions</p>
             </div>
             <button
               onClick={() => updatePermissionsMutation.mutate()}
               disabled={updatePermissionsMutation.isPending}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm"
+              className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white rounded-xl text-xs font-bold transition shadow-xs active:scale-95 disabled:opacity-50"
             >
-              <Save className="w-4 h-4" /> Save Permissions
+              <Save className="w-4 h-4 text-brand-olive-300" /> Save Permissions
             </button>
           </div>
 

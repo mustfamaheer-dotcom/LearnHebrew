@@ -36,27 +36,29 @@ export const LanguagesTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Globe className="w-5 h-5 text-blue-500" />
+          <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 flex items-center justify-center">
+              <Globe className="w-4 h-4" />
+            </div>
             Platform Multi-Language Registry
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Configure native mother tongues and learning languages. Used during student onboarding to customize instructions and reviews.
           </p>
         </div>
         <button
           onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white rounded-xl font-bold text-xs transition shadow-sm active:scale-95"
         >
-          <Plus className="w-4 h-4" /> Add Supported Language
+          <Plus className="w-4 h-4 text-brand-olive-300" /> Add Supported Language
         </button>
       </div>
 
       {isCreating && (
-        <div className="p-6 bg-blue-50 dark:bg-slate-900 border border-blue-200 dark:border-blue-900/50 rounded-2xl space-y-4">
-          <h3 className="font-semibold text-slate-900 dark:text-white">Add New Language Option</h3>
+        <div className="p-6 bg-brand-teal-50/40 dark:bg-slate-850/60 border border-brand-teal-200/70 dark:border-brand-teal-800/70 rounded-3xl space-y-4">
+          <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">Add New Language Option</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Code (ISO)</label>
