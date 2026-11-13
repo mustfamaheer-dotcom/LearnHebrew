@@ -706,7 +706,7 @@ export const StudentDashboard: React.FC = () => {
             setMobileMenuOpen(false);
           }}
           user={user}
-          panelSubtitle={language === 'he' ? 'אקדמיה לעברית' : 'Engrew Hebrew Academy'}
+          panelSubtitle={language === 'he' ? 'אקדמיה לעברית ואנגלית' : 'Engrew Hebrew & English Academy'}
           isOpenMobile={mobileMenuOpen}
           onCloseMobile={() => setMobileMenuOpen(false)}
           customSlot={

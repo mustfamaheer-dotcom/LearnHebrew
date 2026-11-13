@@ -53,7 +53,7 @@ export const Navbar: React.FC = () => {
                 <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-brand-olive-500 animate-pulse shrink-0"></span>
               </div>
               <span className="text-[9px] sm:text-[11px] font-semibold text-brand-teal-700/80 dark:text-brand-teal-300/80 uppercase tracking-wider truncate">
-                {language === 'he' ? 'אקדמיה לעברית' : 'Hebrew Academy'}
+                {language === 'he' ? 'אקדמיה לעברית ואנגלית' : 'Hebrew & English Academy'}
               </span>
             </div>
           </Link>

@@ -42,8 +42,8 @@ export const TeacherShareModal: React.FC<Props> = ({ isOpen, onClose, teacher })
     haptics.tap();
     const text = encodeURIComponent(
       language === 'he'
-        ? `היי! אני מזמין אותך ללמוד עברית מדוברת בשיעורים אישיים 1-על-1 ב-Engrew Hebrew Academy:\n${shareUrl}`
-        : `Hi! I invite you to learn conversational Hebrew with me 1-on-1 on Engrew Hebrew Academy:\n${shareUrl}`
+        ? `היי! אני מזמין אותך ללמוד עברית ואנגלית בשיעורים אישיים 1-על-1 ב-Engrew Hebrew & English Academy:\n${shareUrl}`
+        : `Hi! I invite you to learn with me 1-on-1 on Engrew Hebrew & English Academy:\n${shareUrl}`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };

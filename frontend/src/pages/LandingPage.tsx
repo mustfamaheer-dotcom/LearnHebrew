@@ -71,8 +71,8 @@ export const LandingPage: React.FC = () => {
   // Bilingual fallbacks
   const badge =
     language === 'he'
-      ? config.badgeHe || 'האקדמיה המובילה לעברית מדוברת'
-      : config.badgeEn || 'Premier Modern Hebrew Academy';
+      ? config.badgeHe || 'האקדמיה המובילה לעברית ואנגלית'
+      : config.badgeEn || 'Premier Modern Hebrew & English Academy';
 
   const heroTitle =
     language === 'he'
@@ -1052,8 +1052,8 @@ export const LandingPage: React.FC = () => {
                 </span>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {language === 'he'
-                    ? 'האקדמיה המובילה לעברית מדוברת'
-                    : 'Premier Modern Hebrew Academy'}
+                    ? 'האקדמיה המובילה לעברית ואנגלית'
+                    : 'Premier Modern Hebrew & English Academy'}
                 </p>
               </div>
             </div>
@@ -1111,7 +1111,7 @@ export const LandingPage: React.FC = () => {
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-3">
             <p>
-              &copy; {new Date().getFullYear()} Engrew Hebrew Academy. All rights reserved.
+              &copy; {new Date().getFullYear()} Engrew Hebrew & English Academy. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1">

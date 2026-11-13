@@ -2,7 +2,7 @@ export const translations = {
   en: {
     nav: {
       brand: 'Engrew',
-      tagline: 'Hebrew Academy',
+      tagline: 'Hebrew & English Academy',
       dashboard: 'Dashboard',
       lessons: 'Lessons',
       schedule: 'Schedule',
@@ -128,7 +128,7 @@ export const translations = {
   he: {
     nav: {
       brand: 'Engrew',
-      tagline: 'אקדמיה לעברית',
+      tagline: 'אקדמיה לעברית ואנגלית',
       dashboard: 'לוח הבקרה',
       lessons: 'שיעורים',
       schedule: 'לוח זמנים',

@@ -57,7 +57,7 @@ export function downloadIcsFile(lesson: LessonCalendarDetails): void {
   const icsContent = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Engrew Hebrew Academy//EN',
+    'PRODID:-//Engrew Hebrew & English Academy//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',

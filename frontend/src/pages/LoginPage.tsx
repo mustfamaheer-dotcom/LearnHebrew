@@ -261,7 +261,7 @@ export const LoginPage: React.FC = () => {
                 <div>
                   <span className="text-2xl font-black tracking-tight text-brand-teal-900 dark:text-brand-teal-100">Engrew</span>
                   <span className="text-[11px] font-bold text-brand-teal-700 dark:text-brand-teal-400 uppercase tracking-widest block">
-                    {language === 'he' ? 'אקדמיה לעברית' : 'Hebrew Academy'}
+                    {language === 'he' ? 'אקדמיה לעברית ואנגלית' : 'Hebrew & English Academy'}
                   </span>
                 </div>
               </Link>
