@@ -550,7 +550,7 @@ model Certificate {
   packageId         String?
   packageName       String       // e.g. "Hebrew Conversation Intensive (10 Sessions)"
   packageNameHe     String?      // e.g. "מסלול עברית אינטנסיבי לשיחה (10 מפגשים)"
-  studentName       String       // e.g. "Noah Miller"
+  studentName       String       // e.g. "Omar Farouk"
   levelAchieved     String       // e.g. "Alef (Beginner 1)"
   levelAchievedHe   String?      // e.g. "רמה א׳ - מתחילים"
   completionDate    DateTime     @default(now())

@@ -34,8 +34,8 @@ async function main() {
     data: {
       email: 'admin@learnhebrew.com',
       passwordHash: adminPassword,
-      firstName: 'Avi',
-      lastName: 'Barak',
+      firstName: 'Mostafa',
+      lastName: 'Gamal',
       role: Role.SUPER_ADMIN,
       languagePref: 'en',
       mustChangePw: false,
@@ -47,10 +47,10 @@ async function main() {
   // 2. Create Teachers
   const teacherUser1 = await prisma.user.create({
     data: {
-      email: 'sarah.cohen@learnhebrew.com',
+      email: 'mona.khalil@learnhebrew.com',
       passwordHash: teacherPassword,
-      firstName: 'Sarah',
-      lastName: 'Cohen',
+      firstName: 'Mona',
+      lastName: 'Khalil',
       role: Role.TEACHER,
       languagePref: 'he',
       mustChangePw: false,
@@ -59,7 +59,7 @@ async function main() {
       avatarUrl: null,
       teacherProfile: {
         create: {
-          bio: 'Certified Hebrew linguist with 8+ years teaching experience in Tel Aviv and online. Specializes in conversational fluency and modern idioms.',
+          bio: 'Certified Hebrew linguist with 8+ years teaching experience and online instruction. Specializes in conversational fluency and modern idioms.',
           specialties: ['Conversational Hebrew', 'Modern Idioms', 'Grammar Mastery'],
           ratingAvg: 4.95,
           ratingCount: 28,
@@ -71,10 +71,10 @@ async function main() {
 
   const teacherUser2 = await prisma.user.create({
     data: {
-      email: 'david.levi@learnhebrew.com',
+      email: 'karim.mahmoud@learnhebrew.com',
       passwordHash: teacherPassword,
-      firstName: 'David',
-      lastName: 'Levi',
+      firstName: 'Karim',
+      lastName: 'Mahmoud',
       role: Role.TEACHER,
       languagePref: 'en',
       mustChangePw: false,
@@ -96,10 +96,10 @@ async function main() {
   // 3. Create Students
   const studentUser1 = await prisma.user.create({
     data: {
-      email: 'noah.miller@gmail.com',
+      email: 'omar.farouk@gmail.com',
       passwordHash: studentPassword,
-      firstName: 'Noah',
-      lastName: 'Miller',
+      firstName: 'Omar',
+      lastName: 'Farouk',
       role: Role.STUDENT,
       languagePref: 'en',
       mustChangePw: false,
@@ -111,7 +111,7 @@ async function main() {
           level: HebrewLevel.BEGINNER,
           totalPoints: 340,
           streakDays: 6,
-          notes: 'Wants to travel to Israel next summer. Highly motivated with daily flashcards.',
+          notes: 'Highly motivated learner with daily flashcards and conversational drills.',
         },
       },
     },
@@ -120,10 +120,10 @@ async function main() {
 
   const studentUser2 = await prisma.user.create({
     data: {
-      email: 'emma.watson@gmail.com',
+      email: 'salma.hassan@gmail.com',
       passwordHash: studentPassword,
-      firstName: 'Emma',
-      lastName: 'Watson',
+      firstName: 'Salma',
+      lastName: 'Hassan',
       role: Role.STUDENT,
       languagePref: 'he',
       mustChangePw: false,
@@ -135,7 +135,7 @@ async function main() {
           level: HebrewLevel.INTERMEDIATE,
           totalPoints: 680,
           streakDays: 14,
-          notes: 'Preparing for university studies in Jerusalem. Focus on academic writing and complex grammar.',
+          notes: 'Focus on academic writing, fluency, and complex Hebrew grammar.',
         },
       },
     },
@@ -144,10 +144,10 @@ async function main() {
 
   const studentUser3 = await prisma.user.create({
     data: {
-      email: 'liam.smith@gmail.com',
+      email: 'ziad.tarek@gmail.com',
       passwordHash: studentPassword,
-      firstName: 'Liam',
-      lastName: 'Smith',
+      firstName: 'Ziad',
+      lastName: 'Tarek',
       role: Role.STUDENT,
       languagePref: 'en',
       mustChangePw: false,
@@ -159,6 +159,31 @@ async function main() {
           level: HebrewLevel.ELEMENTARY,
           totalPoints: 210,
           streakDays: 3,
+        },
+      },
+    },
+    include: { studentProfile: true },
+  });
+
+  // Dedicated Student: Moustafa Maher (Kept preserved)
+  const studentUserMoustafa = await prisma.user.create({
+    data: {
+      email: 'mustfa.maheer@gmail.com',
+      passwordHash: studentPassword,
+      firstName: 'Moustafa',
+      lastName: 'Maher',
+      role: Role.STUDENT,
+      languagePref: 'en',
+      mustChangePw: false,
+      isActive: true,
+      createdById: adminUser.id,
+      avatarUrl: null,
+      studentProfile: {
+        create: {
+          level: HebrewLevel.BEGINNER,
+          totalPoints: 450,
+          streakDays: 8,
+          notes: 'Dedicated student progressing quickly through modern Hebrew modules.',
         },
       },
     },
@@ -301,7 +326,7 @@ async function main() {
       lessonType: SlotType.REGULAR,
       zoomLink: 'https://zoom.us/j/1234567890',
       recordingUrl: 'https://drive.google.com/file/d/demo-hebrew-lesson-1/view',
-      teacherNotes: 'Great job today! Noah mastered the vowels (Nikkud) and practiced basic greetings. Remember to review the Shin/Sin differences.',
+      teacherNotes: 'Great job today! Omar mastered the vowels (Nikkud) and practiced basic greetings. Remember to review the Shin/Sin differences.',
     },
   });
 
@@ -353,7 +378,7 @@ async function main() {
       dueDate: twoDaysAgo,
       status: HomeworkStatus.REVIEWED,
       studentNote: 'Completed! Checked the Irregularities with Gutturals.',
-      teacherFeedback: 'Outstanding work, Emma! All 12 forms were 100% accurate. You are ready for the past tense next week.',
+      teacherFeedback: 'Outstanding work, Salma! All 12 forms were 100% accurate. You are ready for the past tense next week.',
     },
   });
 
@@ -365,7 +390,7 @@ async function main() {
       qualityRating: 5,
       difficulty: 3,
       paceRating: 3,
-      comments: 'Sarah is an amazing teacher! Very clear explanations and patient with my pronunciation.',
+      comments: 'Mona is an amazing teacher! Very clear explanations and patient with my pronunciation.',
     },
   });
 
@@ -480,7 +505,7 @@ async function main() {
       eventType: PointsEventType.LESSON_COMPLETED,
       points: 50,
       referenceId: pastLesson.id,
-      description: 'Completed lesson with Sarah Cohen',
+      description: 'Completed lesson with Mona Khalil',
     },
   });
 
@@ -489,7 +514,7 @@ async function main() {
       userId: studentUser1.id,
       type: 'LESSON_REMINDER',
       title: 'Upcoming Lesson Tomorrow',
-      body: 'Your Hebrew session with Sarah Cohen is tomorrow at 10:00 AM.',
+      body: 'Your Hebrew session with Mona Khalil is tomorrow at 10:00 AM.',
       isRead: false,
     },
   });
@@ -534,9 +559,10 @@ async function main() {
 
   console.log('Seeding completed successfully!');
   console.log('Demo Credentials:');
-  console.log('  Admin:   admin@learnhebrew.com       / Admin@2026!');
-  console.log('  Teacher: sarah.cohen@learnhebrew.com / Teacher@2026!');
-  console.log('  Student: noah.miller@gmail.com       / Student@2026!');
+  console.log('  Admin:   admin@learnhebrew.com       / Admin@2026! (Mostafa Gamal)');
+  console.log('  Teacher: mona.khalil@learnhebrew.com / Teacher@2026! (Mona Khalil)');
+  console.log('  Student: omar.farouk@gmail.com       / Student@2026! (Omar Farouk)');
+  console.log('  Student: mustfa.maheer@gmail.com     / Student@2026! (Moustafa Maher)');
 }
 
 main()

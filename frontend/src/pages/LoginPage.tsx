@@ -410,7 +410,7 @@ export const LoginPage: React.FC = () => {
                 {/* Teacher Button */}
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('sarah.cohen@learnhebrew.com', 'Teacher@2026!')}
+                  onClick={() => handleQuickLogin('mona.khalil@learnhebrew.com', 'Teacher@2026!')}
                   className="p-2 sm:p-3 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-olive-500 dark:hover:border-brand-olive-400 hover:bg-brand-olive-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
                 >
                   <div className="w-8 h-8 rounded-xl bg-brand-olive-50 dark:bg-brand-olive-950/60 border border-brand-olive-200/60 dark:border-brand-olive-800/60 flex items-center justify-center mb-1 text-brand-olive-700 dark:text-brand-olive-400 group-hover:scale-110 transition-transform">
@@ -419,13 +419,13 @@ export const LoginPage: React.FC = () => {
                   <span className="font-bold text-slate-900 dark:text-white text-xs block">
                     {language === 'he' ? 'מורה' : 'Teacher'}
                   </span>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">sarah@...</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">mona@...</p>
                 </button>
 
                 {/* Student Button */}
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('daniel.cohen@learnhebrew.com', 'Student@2026!')}
+                  onClick={() => handleQuickLogin('omar.farouk@gmail.com', 'Student@2026!')}
                   className="p-2 sm:p-3 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-brand-teal-500 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
                 >
                   <div className="w-8 h-8 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 border border-brand-teal-200/60 dark:border-brand-teal-800/60 flex items-center justify-center mb-1 text-brand-teal-700 dark:text-brand-teal-400 group-hover:scale-110 transition-transform">
@@ -434,7 +434,7 @@ export const LoginPage: React.FC = () => {
                   <span className="font-bold text-slate-900 dark:text-white text-xs block">
                     {language === 'he' ? 'תלמיד' : 'Student'}
                   </span>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">daniel@...</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono truncate hidden sm:block">omar@...</p>
                 </button>
               </div>
             </div>

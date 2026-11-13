@@ -170,7 +170,7 @@ export const LandingPage: React.FC = () => {
             avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
             rating: 5,
             textEn:
-              'The 25-minute format is a genius invention! I can easily fit a lesson during my lunch break. My Hebrew teacher Sarah in Tel Aviv is phenomenal.',
+              'The 25-minute format is a genius invention! I can easily fit a lesson during my lunch break. My Hebrew teacher Mona is phenomenal.',
             textHe:
               'מתכונת 25 הדקות היא פשוט המצאה גאונית! אני קובע שיעור בהפסקת הצהריים בעבודה וההתקדמות בדיבור מדהימה.',
           },
@@ -445,12 +445,12 @@ export const LandingPage: React.FC = () => {
                 <div className="flex items-center justify-between gap-2 p-2 sm:p-2.5 rounded-xl bg-white/70 dark:bg-slate-850/70 border border-slate-200/60 dark:border-slate-750 w-full min-w-0">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg bg-gradient-to-br from-brand-teal-700 to-emerald-700 text-white font-black flex items-center justify-center text-xs sm:text-sm shadow-md shrink-0">
-                      TC
+                      MK
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <h4 className="font-extrabold text-slate-900 dark:text-white text-xs sm:text-sm truncate">
-                          {language === 'he' ? 'תמר כהן' : 'Tamar Cohen'}
+                          {language === 'he' ? 'מונה ח\'ליל' : 'Mona Khalil'}
                         </h4>
                         <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
                       </div>

@@ -552,8 +552,8 @@ export const ReminderNotificationHubTab: React.FC<ReminderNotificationHubTabProp
 
                 <p className="text-xs text-teal-100/90 leading-relaxed">
                   {isHe
-                    ? `השיעור הפרטי שלך עם שרה כהן מתחיל בעוד ${leadMinutes} דקות! נא לוודא חיבור יציב ומיקרופון פועל.`
-                    : `Your 25-minute 1-on-1 Hebrew lesson with Sarah Cohen starts in ${leadMinutes} minutes!`}
+                    ? `השיעור הפרטי שלך עם מונה ח'ליל מתחיל בעוד ${leadMinutes} דקות! נא לוודא חיבור יציב ומיקרופון פועל.`
+                    : `Your 25-minute 1-on-1 Hebrew lesson with Mona Khalil starts in ${leadMinutes} minutes!`}
                 </p>
 
                 {includeZoomAction && (
