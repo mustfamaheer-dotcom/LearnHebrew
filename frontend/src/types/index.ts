@@ -51,6 +51,7 @@ export interface Package {
   price: number;
   originalPrice?: number | null;
   onSale?: boolean;
+  isPopular?: boolean;
   currency: string;
   isActive: boolean;
   sessionItems?: Array<{

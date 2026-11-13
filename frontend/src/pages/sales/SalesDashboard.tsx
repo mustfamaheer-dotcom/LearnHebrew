@@ -816,8 +816,29 @@ export const SalesDashboard: React.FC = () => {
                 {safePackages.map((pkg: any) => (
                   <div
                     key={pkg.id}
-                    className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:border-brand-teal-500 transition-all space-y-4"
+                    className={`bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border shadow-xs flex flex-col justify-between hover:border-brand-teal-500 transition-all space-y-4 relative overflow-hidden ${
+                      pkg.isPopular
+                        ? 'border-amber-400 dark:border-amber-500/80 ring-2 ring-amber-400/30 shadow-md'
+                        : pkg.onSale
+                        ? 'border-rose-300 dark:border-rose-900/60 ring-2 ring-rose-500/20'
+                        : 'border-slate-200/80 dark:border-slate-800'
+                    }`}
                   >
+                    {/* Most Popular Badge */}
+                    {pkg.isPopular && (
+                      <div className="absolute top-0 start-0 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-ee-2xl shadow-sm flex items-center gap-1.5 z-10">
+                        <Sparkles className="w-3 h-3 text-white fill-white shrink-0" />
+                        <span>{language === 'he' ? 'הבחירה הפופולרית ביותר' : 'Most Popular Choice'}</span>
+                      </div>
+                    )}
+
+                    {/* Sale Offer Badge */}
+                    {pkg.onSale && (
+                      <span className="absolute top-0 end-0 bg-gradient-to-l from-rose-600 to-rose-500 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-es-2xl shadow-xs z-10">
+                        {language === 'he' ? 'מבצע מיוחד' : 'Sale Offer'}
+                      </span>
+                    )}
+
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-black px-2.5 py-0.5 rounded-md bg-brand-teal-50 text-brand-teal-800 dark:bg-brand-teal-950/60 dark:text-brand-teal-300">

@@ -19,6 +19,7 @@ const createPackageSchema = z
     priceUsd: z.number().min(0).optional(),
     originalPrice: z.number().min(0).optional().nullable(),
     onSale: z.boolean().optional(),
+    isPopular: z.boolean().optional(),
     currency: z.enum(['USD', 'ILS']).default('USD'),
     sessionItems: z
       .array(
@@ -39,6 +40,7 @@ const createPackageSchema = z
     price: val.price ?? val.priceUsd ?? 0,
     originalPrice: val.originalPrice ?? null,
     onSale: val.onSale ?? false,
+    isPopular: val.isPopular ?? false,
     currency: val.currency || 'USD',
     sessionItems: (val.sessionItems || []).filter((item) => item.quantity > 0),
   }));
@@ -59,6 +61,7 @@ const updatePackageSchema = z
     priceUsd: z.number().min(0).optional(),
     originalPrice: z.number().min(0).optional().nullable(),
     onSale: z.boolean().optional(),
+    isPopular: z.boolean().optional(),
     currency: z.enum(['USD', 'ILS']).optional(),
     isActive: z.boolean().optional(),
     sessionItems: z
@@ -88,6 +91,7 @@ const updatePackageSchema = z
       : {}),
     ...(val.originalPrice !== undefined ? { originalPrice: val.originalPrice } : {}),
     ...(val.onSale !== undefined ? { onSale: val.onSale } : {}),
+    ...(val.isPopular !== undefined ? { isPopular: val.isPopular } : {}),
     ...(val.currency ? { currency: val.currency } : {}),
     ...(val.isActive !== undefined ? { isActive: val.isActive } : {}),
     ...(val.sessionItems

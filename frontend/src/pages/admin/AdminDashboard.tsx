@@ -258,6 +258,7 @@ export const AdminDashboard: React.FC = () => {
     price: 150,
     originalPrice: '' as string | number,
     onSale: false,
+    isPopular: false,
     currency: 'USD',
     validityDays: 30,
     sessionItems: [] as Array<{ sessionTypeId: string; quantity: number }>,
@@ -283,6 +284,7 @@ export const AdminDashboard: React.FC = () => {
       price: 150,
       originalPrice: '',
       onSale: false,
+      isPopular: false,
       currency: 'USD',
       validityDays: 30,
       sessionItems: sessionTypes.map((st) => ({
@@ -303,6 +305,7 @@ export const AdminDashboard: React.FC = () => {
       price: Number(pkg.price ?? pkg.priceUsd ?? 0),
       originalPrice: pkg.originalPrice ? Number(pkg.originalPrice) : '',
       onSale: Boolean(pkg.onSale),
+      isPopular: Boolean(pkg.isPopular),
       currency: pkg.currency || 'USD',
       validityDays: Math.min(Number(pkg.validityDays ?? pkg.durationDays ?? 30), 30),
       sessionItems: sessionTypes.map((st) => {
@@ -568,6 +571,7 @@ export const AdminDashboard: React.FC = () => {
         price: Number(pkgForm.price) || 0,
         originalPrice: pkgForm.originalPrice ? Number(pkgForm.originalPrice) : null,
         onSale: Boolean(pkgForm.onSale),
+        isPopular: Boolean(pkgForm.isPopular),
         currency: pkgForm.currency || 'USD',
         validityDays: Math.min(Number(pkgForm.validityDays) || 30, 30),
         sessionItems: activeSessionItems.map((si) => ({
@@ -2654,13 +2658,24 @@ export const AdminDashboard: React.FC = () => {
                     <div
                       key={pkg.id}
                       className={`bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group ${
-                        pkg.onSale
+                        pkg.isPopular
+                          ? 'border-amber-400 dark:border-amber-500/80 ring-2 ring-amber-400/30 shadow-md'
+                          : pkg.onSale
                           ? 'border-rose-300 dark:border-rose-900/60 ring-2 ring-rose-500/20'
                           : 'border-slate-200/80 dark:border-slate-800'
                       }`}
                     >
+                      {/* Most Popular Badge */}
+                      {pkg.isPopular && (
+                        <div className="absolute top-0 start-0 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-ee-2xl shadow-sm flex items-center gap-1.5 z-10">
+                          <Sparkles className="w-3 h-3 text-white fill-white shrink-0" />
+                          <span>{language === 'he' ? 'הבחירה הפופולרית ביותר' : 'Most Popular Choice'}</span>
+                        </div>
+                      )}
+
+                      {/* On Sale Badge */}
                       {pkg.onSale && (
-                        <span className="absolute top-0 end-0 bg-gradient-to-l from-rose-600 to-rose-500 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-bl-2xl shadow-xs">
+                        <span className="absolute top-0 end-0 bg-gradient-to-l from-rose-600 to-rose-500 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-es-2xl shadow-xs z-10">
                           {language === 'he' ? 'מבצע מיוחד' : 'Sale Offer'}
                         </span>
                       )}
@@ -3587,19 +3602,42 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <label className="flex items-center gap-2.5 cursor-pointer pt-1">
-                  <input
-                    type="checkbox"
-                    checked={pkgForm.onSale}
-                    onChange={(e) => setPkgForm({ ...pkgForm, onSale: e.target.checked })}
-                    className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 dark:border-slate-700"
-                  />
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {language === 'he'
-                      ? 'סמן חבילה זו כמבצע מיוחד (מציג תגית SALE ומחיר קודם מחוק)'
-                      : 'Flag package as Special Promotion (renders sale badge and crossed-out original price)'}
-                  </span>
-                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <label className="flex items-center gap-2.5 p-3 rounded-2xl bg-rose-50/60 dark:bg-rose-950/20 border border-rose-200/70 dark:border-rose-900/40 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={pkgForm.onSale}
+                      onChange={(e) => setPkgForm({ ...pkgForm, onSale: e.target.checked })}
+                      className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 dark:border-slate-700"
+                    />
+                    <div className="text-start">
+                      <span className="text-xs font-black text-rose-900 dark:text-rose-200 block">
+                        {language === 'he' ? 'מבצע מיוחד (Sale Offer)' : 'Special Promotion (Sale)'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                        {language === 'he' ? 'מציג תגית מבצע ומחיר קודם מחוק' : 'Displays promo badge and struck-out price'}
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-2.5 p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 cursor-pointer hover:bg-amber-100/60 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={pkgForm.isPopular}
+                      onChange={(e) => setPkgForm({ ...pkgForm, isPopular: e.target.checked })}
+                      className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300 dark:border-slate-700 accent-amber-600"
+                    />
+                    <div className="text-start">
+                      <span className="text-xs font-black text-amber-900 dark:text-amber-200 block flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span>{language === 'he' ? 'הבחירה הפופולרית ביותר (Most Popular)' : 'Most Popular Choice'}</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                        {language === 'he' ? 'תגית זהב יוקרתית והדגשת החבילה' : 'Golden highlight badge & featured styling'}
+                      </span>
+                    </div>
+                  </label>
+                </div>
               </div>
 
               {/* 4. Validity & Descriptions */}

@@ -30,6 +30,7 @@ export async function createPackage(data: any) {
       price: data.price ? Number(data.price) : 0,
       originalPrice: data.originalPrice ? Number(data.originalPrice) : null,
       onSale: Boolean(data.onSale || (data.originalPrice && Number(data.originalPrice) > Number(data.price))),
+      isPopular: Boolean(data.isPopular),
       currency: data.currency || 'USD',
       isActive: true,
       ...(items.length > 0 && {
@@ -65,6 +66,7 @@ export async function updatePackage(id: string, data: any) {
     const price = data.price !== undefined ? Number(data.price) : undefined;
     const originalPrice = data.originalPrice !== undefined ? (data.originalPrice ? Number(data.originalPrice) : null) : undefined;
     const onSale = data.onSale !== undefined ? Boolean(data.onSale) : undefined;
+    const isPopular = data.isPopular !== undefined ? Boolean(data.isPopular) : undefined;
     const totalLessons = data.sessionItems
       ? data.sessionItems.reduce((acc: number, curr: any) => acc + Number(curr.quantity), 0)
       : (data.totalLessons !== undefined ? Number(data.totalLessons) : undefined);
@@ -81,6 +83,7 @@ export async function updatePackage(id: string, data: any) {
         price,
         originalPrice,
         onSale,
+        isPopular,
         currency: data.currency,
         isActive: data.isActive,
       },

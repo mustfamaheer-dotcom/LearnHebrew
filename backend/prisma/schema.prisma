@@ -382,6 +382,7 @@ model Package {
   price         Decimal  @default(0.00) @db.Decimal(10, 2)
   originalPrice Decimal? @db.Decimal(10, 2) // Price before discount (struck out)
   onSale        Boolean  @default(false)
+  isPopular     Boolean  @default(false) // Most Popular Choice badge
   currency      String   @default("USD") // USD or ILS
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
