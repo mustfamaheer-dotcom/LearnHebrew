@@ -417,7 +417,7 @@ export const LoginPage: React.FC = () => {
                 {/* Sales Button (NEW) */}
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('sales@learnhebrew.com', 'Admin@2026!')}
+                  onClick={() => handleQuickLogin('sales@learnhebrew.com', 'Password123!')}
                   className="p-2 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
                   title="Sales Representative"
                 >
@@ -433,7 +433,7 @@ export const LoginPage: React.FC = () => {
                 {/* CS Button (NEW) */}
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('cs@learnhebrew.com', 'Admin@2026!')}
+                  onClick={() => handleQuickLogin('cs@learnhebrew.com', 'Password123!')}
                   className="p-2 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-teal-500 dark:hover:border-teal-400 hover:bg-teal-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
                   title="Customer Service"
                 >
@@ -449,7 +449,7 @@ export const LoginPage: React.FC = () => {
                 {/* Teacher Button */}
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('mona.khalil@learnhebrew.com', 'Teacher@2026!')}
+                  onClick={() => handleQuickLogin('mona.khalil@learnhebrew.com', 'Password123!')}
                   className="p-2 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
                   title="Teacher Mona"
                 >
@@ -465,7 +465,7 @@ export const LoginPage: React.FC = () => {
                 {/* Student Button */}
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('omar.farouk@gmail.com', 'Student@2026!')}
+                  onClick={() => handleQuickLogin('omar.farouk@gmail.com', 'Password123!')}
                   className="p-2 text-center rounded-2xl border border-slate-200/90 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-cyan-500 dark:hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-slate-700/50 transition-all active:scale-95 group flex flex-col items-center justify-center shadow-2xs"
                   title="Student Omar"
                 >
