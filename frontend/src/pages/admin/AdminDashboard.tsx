@@ -1139,9 +1139,13 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </button>
 
-                  {/* Action 5: User Accounts & Roles */}
+                  {/* Action 5: Role & Permission Action Matrix */}
                   <button
-                    onClick={() => setActiveTab('users')}
+                    onClick={() => {
+                      haptics.tap();
+                      setActiveTab('roles');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     className="group p-3.5 rounded-2xl bg-gradient-to-b from-sky-50/80 to-white dark:from-sky-950/20 dark:to-slate-900 border border-sky-200/70 dark:border-sky-800/50 hover:border-sky-500 dark:hover:border-sky-500 hover:shadow-md transition-all text-start flex flex-col justify-between"
                   >
                     <div className="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold mb-2 group-hover:scale-110 transition-transform">
@@ -1149,7 +1153,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <div>
                       <span className="block text-xs font-black text-slate-900 dark:text-white leading-tight">
-                        {language === 'he' ? 'הרשאות ומשתמשים' : 'Roles & Access'}
+                        {language === 'he' ? 'הרשאות ותפקידים' : 'Roles & Access'}
                       </span>
                       <span className="text-[10px] text-sky-700 dark:text-sky-400 font-bold">
                         {language === 'he' ? 'ניהול מלא' : 'Full Governance'}
