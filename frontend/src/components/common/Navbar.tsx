@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useSidebarStore } from '../../store/sidebarStore';
 import {
   Globe,
   LogOut,
@@ -10,6 +11,7 @@ import {
   Moon,
   Settings,
   Search,
+  Menu,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { getAvatarUrl } from '../../utils/avatar';
@@ -18,6 +20,7 @@ export const Navbar: React.FC = () => {
   const { user, logout, openProfileModal } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const { t, language, setLanguage } = useTranslation();
+  const { toggleMobileOpen } = useSidebarStore();
   const navigate = useNavigate();
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
@@ -36,27 +39,41 @@ export const Navbar: React.FC = () => {
       <header className="fixed top-0 inset-x-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/80 shadow-xs transition-colors duration-200">
         <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
-          {/* Logo & Brand Name */}
-          <Link to="/" className="flex items-center gap-2 sm:gap-3.5 group py-1 min-w-0 shrink">
-            <div className="relative flex items-center justify-center p-1 sm:p-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-brand-teal-50 to-brand-olive-50 dark:from-brand-teal-950/50 dark:to-slate-900 border border-brand-teal-100/60 dark:border-brand-teal-800/50 shadow-xs group-hover:shadow-sm transition-all group-hover:scale-105 duration-200 shrink-0">
-              <img
-                src="/logo.png"
-                alt="Engrew Logo"
-                className="h-8 sm:h-12 w-auto object-contain drop-shadow-xs"
-              />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg sm:text-2xl font-black tracking-tight text-brand-teal-900 dark:text-brand-teal-100 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300 transition-colors truncate">
-                  Engrew
-                </span>
-                <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-brand-olive-500 animate-pulse shrink-0"></span>
+          {/* Logo & Brand Name (with mobile menu toggle for authenticated users) */}
+          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0 shrink">
+            {!isLandingPage && user && (
+              <button
+                type="button"
+                onClick={toggleMobileOpen}
+                className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+                aria-label="Toggle navigation menu"
+                title={language === 'he' ? 'פתח תפריט ניווט' : 'Toggle navigation menu'}
+              >
+                <Menu className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+              </button>
+            )}
+
+            <Link to="/" className="flex items-center gap-2 sm:gap-3.5 group py-1 min-w-0 shrink">
+              <div className="relative flex items-center justify-center p-1 sm:p-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-br from-brand-teal-50 to-brand-olive-50 dark:from-brand-teal-950/50 dark:to-slate-900 border border-brand-teal-100/60 dark:border-brand-teal-800/50 shadow-xs group-hover:shadow-sm transition-all group-hover:scale-105 duration-200 shrink-0">
+                <img
+                  src="/logo.png"
+                  alt="Engrew Logo"
+                  className="h-8 sm:h-12 w-auto object-contain drop-shadow-xs"
+                />
               </div>
-              <span className="text-[9px] sm:text-[11px] font-semibold text-brand-teal-700/80 dark:text-brand-teal-300/80 uppercase tracking-wider truncate">
-                {language === 'he' ? 'אקדמיה לעברית ואנגלית' : 'Hebrew & English Academy'}
-              </span>
-            </div>
-          </Link>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg sm:text-2xl font-black tracking-tight text-brand-teal-900 dark:text-brand-teal-100 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300 transition-colors truncate">
+                    Engrew
+                  </span>
+                  <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-brand-olive-500 animate-pulse shrink-0"></span>
+                </div>
+                <span className="text-[9px] sm:text-[11px] font-semibold text-brand-teal-700/80 dark:text-brand-teal-300/80 uppercase tracking-wider truncate">
+                  {language === 'he' ? 'אקדמיה לעברית ואנגלית' : 'Hebrew & English Academy'}
+                </span>
+              </div>
+            </Link>
+          </div>
 
           {/* Right Controls: Dark Mode Toggle, Language switch & User profile */}
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">

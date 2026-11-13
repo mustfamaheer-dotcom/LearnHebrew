@@ -4,6 +4,9 @@ interface SidebarState {
   isCollapsed: boolean;
   toggleCollapsed: () => void;
   setCollapsed: (collapsed: boolean) => void;
+  isMobileOpen: boolean;
+  toggleMobileOpen: () => void;
+  setMobileOpen: (open: boolean) => void;
 }
 
 const getInitialCollapsedState = (): boolean => {
@@ -23,5 +26,8 @@ export const useSidebarStore = create<SidebarState>((set) => ({
     localStorage.setItem('engrew_sidebar_collapsed', String(collapsed));
     set({ isCollapsed: collapsed });
   },
+  isMobileOpen: false,
+  toggleMobileOpen: () => set((state) => ({ isMobileOpen: !state.isMobileOpen })),
+  setMobileOpen: (open: boolean) => set({ isMobileOpen: open }),
 }));
 

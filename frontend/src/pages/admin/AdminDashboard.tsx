@@ -112,7 +112,7 @@ export const AdminDashboard: React.FC = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
-  const { isCollapsed } = useSidebarStore();
+  const { isCollapsed, isMobileOpen, setMobileOpen } = useSidebarStore();
 
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<
@@ -883,6 +883,7 @@ export const AdminDashboard: React.FC = () => {
           onTabChange={(tabId) => {
             setActiveTab(tabId as any);
             setIsMobileMoreOpen(false);
+            setMobileOpen(false);
           }}
           user={{
             firstName: currentUser?.firstName,
@@ -894,8 +895,8 @@ export const AdminDashboard: React.FC = () => {
               : (currentUser?.role || (language === 'he' ? 'בעלים ומנהל ראשי' : 'Platform Owner')),
           }}
           panelSubtitle={language === 'he' ? 'מרכז בעל הפלטפורמה' : 'Platform Owner Hub'}
-          isOpenMobile={false}
-          onCloseMobile={() => setIsMobileMoreOpen(false)}
+          isOpenMobile={isMobileOpen}
+          onCloseMobile={() => setMobileOpen(false)}
         />
 
         {/* Main Content Area on the right */}
@@ -2711,17 +2712,23 @@ export const AdminDashboard: React.FC = () => {
           )}
 
           {/* TAB 5B: ENTERPRISE LEVELS, ROLES & PLATFORM HUB */}
-          {activeTab === 'enterprise' && (
-            <EnterpriseTabsContainer />
+          {(activeTab === 'enterprise' ||
+            activeTab === 'levels' ||
+            activeTab === 'session_types' ||
+            activeTab === 'roles' ||
+            activeTab === 'payments' ||
+            activeTab === 'exams' ||
+            activeTab === 'review_links' ||
+            activeTab === 'point_rules' ||
+            activeTab === 'languages') && (
+            <EnterpriseTabsContainer
+              currentTab={activeTab === 'enterprise' ? 'levels' : (activeTab as any)}
+              onTabChange={(tab) => {
+                setActiveTab(tab);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
           )}
-          {activeTab === 'levels' && <LevelsTab />}
-          {activeTab === 'session_types' && <SessionTypesTab />}
-          {activeTab === 'roles' && <RolesPermissionsTab />}
-          {activeTab === 'payments' && <PaymentsReviewTab />}
-          {activeTab === 'exams' && <LevelExamsTab />}
-          {activeTab === 'review_links' && <ReviewLinksTab />}
-          {activeTab === 'point_rules' && <PointRulesTab />}
-          {activeTab === 'languages' && <LanguagesTab />}
 
           {/* TAB 6: BOOKINGS & LESSONS */}
           {activeTab === 'bookings' && (
@@ -3885,7 +3892,7 @@ export const AdminDashboard: React.FC = () => {
       >
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4/5 h-10 bg-gradient-to-r from-brand-teal-500/20 via-teal-400/25 to-brand-olive-500/20 blur-xl pointer-events-none -z-10" />
 
-        <div className="relative rounded-full py-2 px-3 floating-capsule-shell grid grid-cols-5 items-center justify-around gap-1">
+        <div className="relative rounded-full py-2 px-2 floating-capsule-shell grid grid-cols-6 items-center justify-around gap-0.5 sm:gap-1">
           <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 dark:via-white/20 to-transparent pointer-events-none rounded-full" />
 
           {[
@@ -3893,14 +3900,11 @@ export const AdminDashboard: React.FC = () => {
             { id: 'users', label: language === 'he' ? 'משתמשים' : 'Users', icon: Users, badge: usersData?.length ? String(usersData.length) : null },
             { id: 'bookings', label: language === 'he' ? 'שיעורים' : 'Bookings', icon: Calendar, badge: scheduledLessonsCount > 0 ? String(scheduledLessonsCount) : null },
             { id: 'packages', label: language === 'he' ? 'חבילות' : 'Packages', icon: Layers, badge: null },
+            { id: 'enterprise', label: language === 'he' ? 'הגדרות' : 'Settings', icon: Settings, badge: '8' },
             { id: 'more', label: language === 'he' ? 'עוד' : 'More', icon: Sliders, badge: null },
           ].map((item) => {
             const Icon = item.icon;
-            const isHubSecondaryActive =
-              activeTab === 'teachers' ||
-              activeTab === 'landing_cms' ||
-              activeTab === 'surveys' ||
-              activeTab === 'reminders_hub' ||
+            const isEnterpriseActive =
               activeTab === 'enterprise' ||
               activeTab === 'levels' ||
               activeTab === 'session_types' ||
@@ -3909,11 +3913,17 @@ export const AdminDashboard: React.FC = () => {
               activeTab === 'exams' ||
               activeTab === 'review_links' ||
               activeTab === 'point_rules' ||
-              activeTab === 'languages' ||
+              activeTab === 'languages';
+            const isHubSecondaryActive =
+              activeTab === 'teachers' ||
+              activeTab === 'landing_cms' ||
+              activeTab === 'surveys' ||
+              activeTab === 'reminders_hub' ||
               activeTab === 'system_logs';
             const isActive =
               (item.id === 'more' && (isMobileMoreOpen || isHubSecondaryActive)) ||
-              (item.id !== 'more' && activeTab === item.id);
+              (item.id === 'enterprise' && isEnterpriseActive) ||
+              (item.id !== 'more' && item.id !== 'enterprise' && activeTab === item.id);
 
             return (
               <button
@@ -3929,7 +3939,7 @@ export const AdminDashboard: React.FC = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className={`relative py-1.5 px-2 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${
+                className={`relative py-1.5 px-1 sm:px-2 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${
                   isActive
                     ? 'floating-capsule-active active:scale-95'
                     : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/60 active:scale-95'
@@ -3937,21 +3947,21 @@ export const AdminDashboard: React.FC = () => {
               >
                 {/* Notification Badge Dot */}
                 {item.badge && (
-                  <span className="absolute top-1 end-2 flex h-2 w-2 items-center justify-center pointer-events-none">
+                  <span className="absolute top-1 end-1.5 flex h-2 w-2 items-center justify-center pointer-events-none">
                     <span className="absolute inline-flex h-full w-full rounded-full bg-teal-500 opacity-75 animate-ping" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-600 shadow-[0_0_8px_rgba(20,184,166,0.8)]" />
                   </span>
                 )}
 
                 <Icon
-                  className={`w-6 h-6 shrink-0 transition-transform duration-200 ${
+                  className={`w-5 sm:w-6 h-5 sm:h-6 shrink-0 transition-transform duration-200 ${
                     isActive
                       ? 'text-[#0c4a60] dark:text-[#2dd4bf] stroke-[2.2] scale-105 drop-shadow-[0_1px_4px_rgba(12,74,96,0.25)]'
                       : 'text-slate-900 dark:text-slate-100 stroke-[1.8] group-hover:scale-105'
                   }`}
                 />
                 <span
-                  className={`text-[11px] tracking-tight mt-0.5 leading-tight truncate max-w-full transition-colors ${
+                  className={`text-[10px] sm:text-[11px] tracking-tight mt-0.5 leading-tight truncate max-w-full transition-colors ${
                     isActive
                       ? 'text-[#0c4a60] dark:text-[#2dd4bf] font-bold'
                       : 'text-slate-800 dark:text-slate-200 font-semibold group-hover:text-slate-950 dark:group-hover:text-white'
