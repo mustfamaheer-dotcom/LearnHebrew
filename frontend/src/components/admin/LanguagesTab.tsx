@@ -85,7 +85,7 @@ export const LanguagesTab: React.FC = () => {
     code: '',
     labelEn: '',
     labelNative: '',
-    flagEmoji: '🌐',
+    flagEmoji: '',
   });
 
   const { data: languages = [], isLoading } = useQuery({
@@ -99,7 +99,7 @@ export const LanguagesTab: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['languages'] });
       toast.success(language === 'he' ? 'השפה נוספה בהצלחה למאגר' : 'Language added successfully');
       setIsCreating(false);
-      setForm({ code: '', labelEn: '', labelNative: '', flagEmoji: '🌐' });
+      setForm({ code: '', labelEn: '', labelNative: '', flagEmoji: '' });
     },
     onError: (err: any) =>
       toast.error(err.response?.data?.message || (language === 'he' ? 'שגיאה בהוספת שפה' : 'Failed to add language')),
@@ -494,8 +494,8 @@ export const LanguagesTab: React.FC = () => {
           >
             <div>
               <div className="flex items-start justify-between">
-                <span className="text-4xl p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 shadow-2xs">
-                  {lng.flagEmoji || '🌐'}
+                <span className="text-sm font-black w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 shadow-2xs text-teal-600 dark:text-teal-400">
+                  {lng.flagEmoji || lng.code.toUpperCase()}
                 </span>
                 <button
                   onClick={() => toggleMutation.mutate({ id: lng.id, isActive: !lng.isActive })}
