@@ -100,7 +100,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
 
       {/* Fixed Left Sidebar */}
       <aside
-        className={`fixed top-16 sm:top-20 start-0 bottom-0 z-40 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-e border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl flex flex-col justify-between transition-all duration-300 ease-in-out ${
+        className={`fixed top-16 sm:top-20 start-0 bottom-0 z-30 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] border-e border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl flex flex-col justify-between transition-all duration-300 ease-in-out ${
           isOpenMobile
             ? 'flex z-[70] !top-0 !h-screen w-80 max-w-[85vw] shadow-2xl rounded-e-3xl sm:rounded-e-none'
             : isCollapsed

@@ -22,7 +22,7 @@ export const DashboardSkeleton: React.FC<DashboardSkeletonProps> = ({
     <div className="min-h-screen bg-slate-50/60 dark:bg-slate-950/60 flex relative overflow-hidden transition-all duration-300">
       {/* 1. Desktop Sidebar Skeleton (Matches GlassSidebar) */}
       <aside
-        className={`hidden lg:flex flex-col fixed top-16 bottom-0 start-0 z-30 transition-all duration-300 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-e border-slate-200/80 dark:border-slate-800/80 ${
+        className={`hidden lg:flex flex-col fixed top-16 sm:top-20 bottom-0 start-0 z-30 transition-all duration-300 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-e border-slate-200/80 dark:border-slate-800/80 ${
           isCollapsed ? 'w-20' : 'w-72 xl:w-80'
         }`}
       >
