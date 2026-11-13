@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 
 export const SalesDashboard: React.FC = () => {
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
   const { isCollapsed } = useSidebarStore();
@@ -610,21 +610,21 @@ export const SalesDashboard: React.FC = () => {
                               <span>
                                 <span className="text-slate-400">{language === 'he' ? 'אם: ' : 'Native: '}</span>
                                 <span className="font-bold text-slate-700 dark:text-slate-300">
-                                  {u.nativeLanguage?.labelEn || 'English'}
+                                  {language === 'he' ? (u.nativeLanguage?.labelHe || u.nativeLanguage?.labelEn || 'אנגלית') : (u.nativeLanguage?.labelEn || 'English')}
                                 </span>
                               </span>
                               <span>
                                 <span className="text-slate-400">{language === 'he' ? 'לומד: ' : 'Learning: '}</span>
                                 <span className="font-bold text-brand-teal-700 dark:text-brand-teal-300">
-                                  {u.learningLanguage?.labelEn || 'Hebrew'}
+                                  {language === 'he' ? (u.learningLanguage?.labelHe || u.learningLanguage?.labelEn || 'עברית') : (u.learningLanguage?.labelEn || 'Hebrew')}
                                 </span>
                               </span>
                             </div>
                           </td>
                           <td className="py-4 px-5">
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
-                              <Award className="w-3 h-3" />
-                              <span>{u.studentProfile?.levelModel?.labelEn || u.studentProfile?.level || 'Beginner'}</span>
+                              <Award className="w-3 h-3 shrink-0" />
+                              <bdi>{language === 'he' ? (u.studentProfile?.levelModel?.labelHe || (u.studentProfile?.level ? t(`levels.${u.studentProfile.level}`) : 'מתחיל (רמה א׳)')) : (u.studentProfile?.levelModel?.labelEn || u.studentProfile?.level || 'Beginner')}</bdi>
                             </span>
                           </td>
                           <td className="py-4 px-5">
@@ -635,7 +635,7 @@ export const SalesDashboard: React.FC = () => {
                                     key={sb.id}
                                     className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-extrabold text-slate-800 dark:text-slate-200"
                                   >
-                                    {sb.balance}x {sb.sessionType?.name}
+                                    {sb.balance}x {language === 'he' ? `${sb.sessionType?.durationMinutes || 25} דק׳` : (sb.sessionType?.name || `${sb.sessionType?.durationMinutes || 25}m`)}
                                   </span>
                                 ))}
                               </div>

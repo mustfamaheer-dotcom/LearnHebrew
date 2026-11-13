@@ -544,16 +544,16 @@ export const SystemLogsTab: React.FC = () => {
       {/* 4. Logs Table Stream */}
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+          <table className="w-full text-start text-xs text-slate-600 dark:text-slate-300">
             <thead className="bg-slate-50/80 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="py-3.5 px-4">{language === 'he' ? 'רמת חומרה' : 'Severity'}</th>
-                <th className="py-3.5 px-4">{language === 'he' ? 'קטגוריה' : 'Category'}</th>
-                <th className="py-3.5 px-4">{language === 'he' ? 'הודעה ונתיב' : 'Message & Endpoint'}</th>
+                <th className="py-3.5 px-4 text-start">{language === 'he' ? 'רמת חומרה' : 'Severity'}</th>
+                <th className="py-3.5 px-4 text-start">{language === 'he' ? 'קטגוריה' : 'Category'}</th>
+                <th className="py-3.5 px-4 text-start">{language === 'he' ? 'הודעה ונתיב' : 'Message & Endpoint'}</th>
                 <th className="py-3.5 px-3 text-center">{language === 'he' ? 'סטטוס' : 'Status'}</th>
                 <th className="py-3.5 px-3 text-center">{language === 'he' ? 'זמן' : 'Latency'}</th>
-                <th className="py-3.5 px-4">{language === 'he' ? 'משתמש / IP' : 'User / Client IP'}</th>
-                <th className="py-3.5 px-4">{language === 'he' ? 'תאריך ושעה' : 'Timestamp (Israel)'}</th>
+                <th className="py-3.5 px-4 text-start">{language === 'he' ? 'משתמש / IP' : 'User / Client IP'}</th>
+                <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תאריך ושעה' : 'Timestamp (Israel)'}</th>
                 <th className="py-3.5 px-4 text-center">{language === 'he' ? 'פעולות' : 'Details'}</th>
               </tr>
             </thead>

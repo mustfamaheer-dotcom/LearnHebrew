@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 
 export const CSDashboard: React.FC = () => {
-  const { language } = useTranslation();
+  const { language, t } = useTranslation();
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
   const { isCollapsed } = useSidebarStore();
@@ -365,7 +365,7 @@ export const CSDashboard: React.FC = () => {
                           </td>
                           <td className="py-3.5 px-4">
                             <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-bold text-[11px]">
-                              {l.durationMinutes || 25} min
+                              {l.durationMinutes || 25} {language === 'he' ? 'דק׳' : 'min'}
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-brand-teal-700 dark:text-brand-teal-300 font-mono text-[11px] font-bold">
@@ -476,11 +476,11 @@ export const CSDashboard: React.FC = () => {
                               <div className="text-[11px] space-y-0.5">
                                 <div>
                                   <span className="text-slate-400">{language === 'he' ? 'שפת אם: ' : 'Native: '}</span>
-                                  <span className="font-bold">{u.nativeLanguage?.labelEn || 'English'}</span>
+                                  <span className="font-bold">{language === 'he' ? (u.nativeLanguage?.labelHe || u.nativeLanguage?.labelEn || 'אנגלית') : (u.nativeLanguage?.labelEn || 'English')}</span>
                                 </div>
                                 <div>
                                   <span className="text-slate-400">{language === 'he' ? 'רמה: ' : 'Level: '}</span>
-                                  <span className="font-bold text-blue-600">{language === 'he' && u.studentProfile?.levelModel?.labelHe ? u.studentProfile?.levelModel?.labelHe : (u.studentProfile?.levelModel?.labelEn || 'Beginner')}</span>
+                                  <bdi className="font-bold text-blue-600">{language === 'he' && u.studentProfile?.levelModel?.labelHe ? u.studentProfile?.levelModel?.labelHe : (u.studentProfile?.levelModel?.labelEn || (u.studentProfile?.level ? t(`levels.${u.studentProfile.level}`) : 'מתחיל (רמה א׳)'))}</bdi>
                                 </div>
                               </div>
                             </td>
@@ -496,7 +496,7 @@ export const CSDashboard: React.FC = () => {
                                           : 'bg-slate-100 text-slate-400 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
                                       }`}
                                     >
-                                      {sb.balance}x {sb.sessionType?.name}
+                                      {sb.balance}x {language === 'he' ? `${sb.sessionType?.durationMinutes || 25} דק׳` : (sb.sessionType?.name || `${sb.sessionType?.durationMinutes || 25}m`)}
                                     </span>
                                   ))}
                                 </div>

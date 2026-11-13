@@ -1668,15 +1668,15 @@ export const AdminDashboard: React.FC = () => {
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                    <table className="w-full text-start text-xs text-slate-600 dark:text-slate-300">
                       <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
                         <tr>
-                          <th className="py-3 px-4">{language === 'he' ? 'תלמיד' : 'Student'}</th>
-                          <th className="py-3 px-4">{language === 'he' ? 'סוג פעולה' : 'Type'}</th>
-                          <th className="py-3 px-4">{language === 'he' ? 'סכום' : 'Amount'}</th>
-                          <th className="py-3 px-4">{language === 'he' ? 'מכסה לאחר פעולה' : 'Quota After'}</th>
-                          <th className="py-3 px-4">{language === 'he' ? 'תיאור / הערה' : 'Description / Note'}</th>
-                          <th className="py-3 px-4">{language === 'he' ? 'תאריך' : 'Date'}</th>
+                          <th className="py-3 px-4 text-start">{language === 'he' ? 'תלמיד' : 'Student'}</th>
+                          <th className="py-3 px-4 text-start">{language === 'he' ? 'סוג פעולה' : 'Type'}</th>
+                          <th className="py-3 px-4 text-start">{language === 'he' ? 'סכום' : 'Amount'}</th>
+                          <th className="py-3 px-4 text-start">{language === 'he' ? 'מכסה לאחר פעולה' : 'Quota After'}</th>
+                          <th className="py-3 px-4 text-start">{language === 'he' ? 'תיאור / הערה' : 'Description / Note'}</th>
+                          <th className="py-3 px-4 text-end">{language === 'he' ? 'תאריך' : 'Date'}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -1749,15 +1749,15 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                  <table className="w-full text-start text-xs text-slate-600 dark:text-slate-300">
                     <thead className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700">
                       <tr>
-                        <th className="py-3 px-4">{language === 'he' ? 'תלמיד' : 'Student'}</th>
-                        <th className="py-3 px-4">{language === 'he' ? 'מורה' : 'Teacher'}</th>
-                        <th className="py-3 px-4">{language === 'he' ? 'תאריך ושעה (ישראל)' : 'Date & Time (Israel)'}</th>
-                        <th className="py-3 px-4">{language === 'he' ? 'משך' : 'Duration'}</th>
-                        <th className="py-3 px-4">{language === 'he' ? 'סטטוס' : 'Status'}</th>
-                        <th className="py-3 px-4 text-right">{language === 'he' ? 'פעולה מהירה' : 'Quick Action'}</th>
+                        <th className="py-3 px-4 text-start">{language === 'he' ? 'תלמיד' : 'Student'}</th>
+                        <th className="py-3 px-4 text-start">{language === 'he' ? 'מורה' : 'Teacher'}</th>
+                        <th className="py-3 px-4 text-start">{language === 'he' ? 'תאריך ושעה (ישראל)' : 'Date & Time (Israel)'}</th>
+                        <th className="py-3 px-4 text-start">{language === 'he' ? 'משך' : 'Duration'}</th>
+                        <th className="py-3 px-4 text-start">{language === 'he' ? 'סטטוס' : 'Status'}</th>
+                        <th className="py-3 px-4 text-end">{language === 'he' ? 'פעולה מהירה' : 'Quick Action'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -1797,7 +1797,7 @@ export const AdminDashboard: React.FC = () => {
                                 : (language === 'he' ? 'בוטל' : l.status)}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-3.5 px-4 text-end">
                             {l.zoomLink ? (
                               <a
                                 href={l.zoomLink}
@@ -2315,17 +2315,17 @@ export const AdminDashboard: React.FC = () => {
               {/* Users Table */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                  <table className="w-full text-start text-xs text-slate-600 dark:text-slate-300">
                     <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700 text-[11px]">
                       <tr>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'משתמש' : 'User'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'תפקיד' : 'Role'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'רמה / התמחות' : 'Hebrew Level / Specialty'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'חבילות ומפגשים' : 'Session Packages'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'הישגים ופעילות' : 'Gamification / Stats'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'שפה' : 'Lang'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'סטטוס' : 'Status'}</th>
-                        <th className="py-3.5 px-4 text-right">{language === 'he' ? 'פעולות ניהול' : 'Actions'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'משתמש' : 'User'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תפקיד' : 'Role'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'רמה / התמחות' : 'Hebrew Level / Specialty'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'חבילות ומפגשים' : 'Session Packages'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'הישגים ופעילות' : 'Gamification / Stats'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'שפה' : 'Lang'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'סטטוס' : 'Status'}</th>
+                        <th className="py-3.5 px-4 text-end">{language === 'he' ? 'פעולות ניהול' : 'Actions'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -2380,11 +2380,11 @@ export const AdminDashboard: React.FC = () => {
                               </td>
 
                               {/* Level / Specialty */}
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 text-start">
                                 {isStudent ? (
-                                  <span className="font-bold text-slate-700 dark:text-slate-300">
-                                    {u.studentProfile?.level ? t(`levels.${u.studentProfile.level}`) : 'BEGINNER'}
-                                  </span>
+                                  <bdi className="font-bold text-slate-700 dark:text-slate-300 inline-block">
+                                    {u.studentProfile?.level ? t(`levels.${u.studentProfile.level}`) : (language === 'he' ? 'מתחיל (רמה א׳)' : 'BEGINNER')}
+                                  </bdi>
                                 ) : isTeacher ? (
                                   <div className="space-y-0.5">
                                     <span className="font-bold text-slate-800 dark:text-slate-200 block">
@@ -2400,7 +2400,7 @@ export const AdminDashboard: React.FC = () => {
                               </td>
 
                               {/* Session Packages & Units */}
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 text-start">
                                 {isStudent && u.studentProfile ? (
                                   <div className="flex flex-col gap-1">
                                     {(u.studentProfile?.sessionBalances || []).length > 0 ? (
@@ -2414,7 +2414,7 @@ export const AdminDashboard: React.FC = () => {
                                                 : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
                                             }`}
                                           >
-                                            {sb.balance}x {sb.sessionType?.name || `${sb.sessionType?.durationMinutes || 25}m`}
+                                            {sb.balance}x {language === 'he' ? `${sb.sessionType?.durationMinutes || 25} דק׳` : (sb.sessionType?.name || `${sb.sessionType?.durationMinutes || 25}m`)}
                                           </span>
                                         ))}
                                       </div>
@@ -2428,9 +2428,10 @@ export const AdminDashboard: React.FC = () => {
                                         setAssignStudentId(u.studentProfile.id);
                                         setIsAssigningPkg(true);
                                       }}
-                                      className="text-[10px] text-brand-teal-700 dark:text-brand-teal-400 hover:underline font-bold text-start"
+                                      className="text-[10px] text-brand-teal-700 dark:text-brand-teal-400 hover:underline font-bold text-start inline-flex items-center gap-1"
                                     >
-                                      {language === 'he' ? '+ הקצה חבילה' : '+ Assign Package'}
+                                      <span>+</span>
+                                      <span>{language === 'he' ? 'הקצה חבילה' : 'Assign Package'}</span>
                                     </button>
                                   </div>
                                 ) : (
@@ -2439,16 +2440,16 @@ export const AdminDashboard: React.FC = () => {
                               </td>
 
                               {/* Gamification / Activity */}
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 text-start">
                                 {isStudent && u.studentProfile ? (
                                   <span className="inline-flex items-center gap-1 font-bold text-brand-teal-800 dark:text-brand-teal-300">
-                                    <Award className="w-3.5 h-3.5 text-brand-olive-500" />
-                                    {u.studentProfile.totalPoints || 0} pts
+                                    <Award className="w-3.5 h-3.5 text-brand-olive-500 shrink-0" />
+                                    <bdi>{language === 'he' ? `${u.studentProfile.totalPoints || 0} נק׳` : `${u.studentProfile.totalPoints || 0} pts`}</bdi>
                                   </span>
                                 ) : isTeacher && u.teacherProfile ? (
                                   <span className="inline-flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
-                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                                    {u.teacherProfile.ratingAvg ? Number(u.teacherProfile.ratingAvg).toFixed(1) : '5.0'}
+                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                                    <bdi>{u.teacherProfile.ratingAvg ? Number(u.teacherProfile.ratingAvg).toFixed(1) : '5.0'}</bdi>
                                   </span>
                                 ) : (
                                   <span className="text-slate-400 dark:text-slate-500 italic">—</span>
@@ -2456,28 +2457,28 @@ export const AdminDashboard: React.FC = () => {
                               </td>
 
                               {/* Language */}
-                              <td className="py-3.5 px-4 uppercase text-[11px] font-black text-slate-600 dark:text-slate-400">
+                              <td className="py-3.5 px-4 text-start uppercase text-[11px] font-black text-slate-600 dark:text-slate-400">
                                 {u.languagePref || 'en'}
                               </td>
 
                               {/* Status */}
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 text-start">
                                 {u.isActive !== false ? (
                                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    {language === 'he' ? 'פעיל' : 'Active'}
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                                    <span>{language === 'he' ? 'פעיל' : 'Active'}</span>
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                    {language === 'he' ? 'מושעה' : 'Suspended'}
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                    <span>{language === 'he' ? 'מושעה' : 'Suspended'}</span>
                                   </span>
                                 )}
                               </td>
 
                               {/* Actions */}
-                              <td className="py-3.5 px-4 text-right">
-                                <div className="inline-flex items-center gap-1.5">
+                              <td className="py-3.5 px-4 text-end">
+                                <div className="inline-flex items-center gap-1.5 justify-end">
                                   {/* Deep User Management Button */}
                                   <button
                                     onClick={() => handleOpenEditUser(u)}
@@ -2909,16 +2910,16 @@ export const AdminDashboard: React.FC = () => {
               {/* Modern Lessons Table */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                  <table className="w-full text-start text-xs text-slate-600 dark:text-slate-300">
                     <thead className="bg-slate-50 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-bold uppercase border-b border-slate-200 dark:border-slate-700 text-[11px]">
                       <tr>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'תלמיד' : 'Student'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'מורה' : 'Teacher'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'מועד השיעור (שעון ישראל)' : 'Israel Time & Date'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'משך ותעריף' : 'Duration & Rate'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'סטטוס' : 'Status'}</th>
-                        <th className="py-3.5 px-4">{language === 'he' ? 'כיתת Zoom / הקלטה' : 'Classroom & Video'}</th>
-                        <th className="py-3.5 px-4 text-right">{language === 'he' ? 'פעולות' : 'Actions'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תלמיד' : 'Student'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'מורה' : 'Teacher'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'מועד השיעור (שעון ישראל)' : 'Israel Time & Date'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'משך ותעריף' : 'Duration & Rate'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'סטטוס' : 'Status'}</th>
+                        <th className="py-3.5 px-4 text-start">{language === 'he' ? 'כיתת Zoom / הקלטה' : 'Classroom & Video'}</th>
+                        <th className="py-3.5 px-4 text-end">{language === 'he' ? 'פעולות' : 'Actions'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -3073,7 +3074,7 @@ export const AdminDashboard: React.FC = () => {
                               </td>
 
                               {/* Management Actions */}
-                              <td className="py-3.5 px-4 text-right">
+                              <td className="py-3.5 px-4 text-end">
                                 {isScheduled ? (
                                   <button
                                     onClick={() => {
