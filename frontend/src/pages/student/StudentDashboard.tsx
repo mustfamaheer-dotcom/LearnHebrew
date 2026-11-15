@@ -13,6 +13,7 @@ import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
 import { RescheduleModal } from '../../components/student/RescheduleModal';
+import { StudentExamsAndWalletModal } from '../../components/student/StudentExamsAndWalletModal';
 import { LiveLessonCountdownIsland } from '../../components/lessons/LiveLessonCountdownIsland';
 import { haptics } from '../../utils/haptics';
 import { triggerConfetti } from '../../utils/confetti';
@@ -123,6 +124,7 @@ export const StudentDashboard: React.FC = () => {
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
+  const [isExamsAndPackagesModalOpen, setIsExamsAndPackagesModalOpen] = useState(false);
 
   useEffect(() => {
     const handleNavEvent = (e: any) => {
@@ -859,6 +861,21 @@ export const StudentDashboard: React.FC = () => {
                         {t('dashboard.pointsEarned')}
                       </p>
                     </div>
+
+                    {/* Session Packages & Exams Action Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsExamsAndPackagesModalOpen(true)}
+                      className="flex items-center gap-2.5 px-4 py-3 sm:py-3.5 bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white rounded-2xl font-bold text-xs sm:text-sm border border-white/20 shadow-md backdrop-blur-md cursor-pointer group"
+                      title={language === 'he' ? 'חבילות שיעורים ומבחנים' : 'Session Packages & Exams'}
+                    >
+                      <div className="p-1 rounded-lg bg-emerald-400/20 text-emerald-300 group-hover:scale-110 transition-transform">
+                        <Layers className="w-4 h-4 text-emerald-300 shrink-0" />
+                      </div>
+                      <span className="whitespace-nowrap font-extrabold">
+                        {language === 'he' ? 'חבילות שיעורים ומבחנים' : 'Session Packages & Exams'}
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -4069,6 +4086,12 @@ export const StudentDashboard: React.FC = () => {
         isOpen={!!reschedulingLesson}
         lesson={reschedulingLesson}
         onClose={() => setReschedulingLesson(null)}
+      />
+
+      {/* Session Packages & Level Progression Exams Modal */}
+      <StudentExamsAndWalletModal
+        isOpen={isExamsAndPackagesModalOpen}
+        onClose={() => setIsExamsAndPackagesModalOpen(false)}
       />
 
       {/* Floating Capsule Island Bottom Navigation Bar (Matches Uploaded Pill Styling) */}
