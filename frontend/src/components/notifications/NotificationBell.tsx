@@ -146,7 +146,7 @@ export const NotificationBell: React.FC = () => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="relative p-1.5 sm:p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 hover:bg-brand-teal-50/50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all shadow-2xs group shrink-0"
+        className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 hover:bg-brand-teal-50/50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all shadow-2xs group shrink-0"
         title={language === 'he' ? 'התראות מערכת' : 'Notifications'}
         aria-label="Notifications"
       >
@@ -154,7 +154,7 @@ export const NotificationBell: React.FC = () => {
 
         {/* Luminous Pulsing Badge */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -end-1 min-w-[1.15rem] h-[1.15rem] px-1 rounded-full bg-rose-500 text-white font-black text-[10px] flex items-center justify-center shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse">
+          <span className="absolute -top-1 -end-1 min-w-[1rem] h-[1rem] px-0.5 rounded-full bg-rose-500 text-white font-black text-[9px] flex items-center justify-center shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
