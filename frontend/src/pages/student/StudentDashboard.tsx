@@ -74,7 +74,19 @@ import {
   Receipt,
   ShieldCheck,
   TrendingUp,
+  Flame,
+  Trophy,
+  Medal,
 } from 'lucide-react';
+
+const DEFAULT_LEVEL_TABS = [
+  { code: 'BEGINNER', labelEn: 'Beginner (Alef)', labelHe: 'מתחיל (רמה א׳)' },
+  { code: 'ELEMENTARY', labelEn: 'Elementary (Bet)', labelHe: 'יסודי (רמה ב׳)' },
+  { code: 'INTERMEDIATE', labelEn: 'Intermediate (Gimel)', labelHe: 'בינוני (רמה ג׳)' },
+  { code: 'UPPER_INTERMEDIATE', labelEn: 'Upper Intermediate (Dalet)', labelHe: 'מעל בינוני (רמה ד׳)' },
+  { code: 'ADVANCED', labelEn: 'Advanced (He)', labelHe: 'מתקדם (רמה ה׳)' },
+  { code: 'FLUENT', labelEn: 'Fluent (Vav)', labelHe: 'שליטה מלאה (רמה ו׳)' },
+];
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
@@ -288,13 +300,27 @@ export const StudentDashboard: React.FC = () => {
   });
 
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<'weekly' | 'monthly' | 'all_time'>('weekly');
+  const [selectedLeaderboardLevel, setSelectedLeaderboardLevel] = useState<string>('');
 
-  // 4. Fetch Leaderboard (Weekly, Monthly Seasons & All-Time)
+  const studentLevelFromDashboard = dashboard?.student?.levelModel?.code || dashboard?.student?.level || 'BEGINNER';
+  const activeLeaderboardLevel = selectedLeaderboardLevel || studentLevelFromDashboard;
+
+  // 4. Fetch Leaderboard by Level (Weekly, Monthly Seasons & All-Time)
   const { data: leaderboardData = [], isLoading: isLeaderboardLoading } = useQuery({
-    queryKey: ['leaderboard', leaderboardPeriod],
+    queryKey: ['leaderboard', leaderboardPeriod, activeLeaderboardLevel],
     queryFn: async () => {
-      const res = await api.get(`/games/leaderboard?period=${leaderboardPeriod}`);
+      const res = await api.get(`/games/leaderboard?period=${leaderboardPeriod}&level=${activeLeaderboardLevel}`);
       return res.data.leaderboard || [];
+    },
+    enabled: !!activeLeaderboardLevel,
+  });
+
+  // Fetch configured levels from platform
+  const { data: levelsFromApi = [] } = useQuery({
+    queryKey: ['platformLevels'],
+    queryFn: async () => {
+      const res = await api.get('/levels');
+      return Array.isArray(res.data) ? res.data : [];
     },
   });
 
@@ -3106,219 +3132,421 @@ export const StudentDashboard: React.FC = () => {
           )}
 
           {/* TAB 6: LEADERBOARD & SEASONAL LEAGUES */}
-          {activeTab === 'leaderboard' && (
-            <div className="space-y-6 animate-fade-in">
-              {/* Header Banner & Period Switcher */}
-              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-xs font-bold text-amber-800 dark:text-amber-300 mb-2">
-                    <Award className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{language === 'he' ? 'ליגות עברית עונתיות ותגי הישג' : 'Seasonal Leagues & Achievement Badges'}</span>
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                    {language === 'he' ? 'לוח מובילים ודירוג עונתי' : 'Leaderboard & Seasonal Rankings'}
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
-                    {language === 'he'
-                      ? 'התחרה עם תלמידים אחרים, צבור נקודות XP משיעורים ומשחקים, וזכה בתגי הישג עונתיים בלעדיים.'
-                      : 'Compete with fellow learners, earn XP from live lessons & games, and unlock seasonal achievement badges.'}
-                  </p>
-                </div>
+          {activeTab === 'leaderboard' && (() => {
+            const availableLevels = levelsFromApi.length > 0 ? levelsFromApi : DEFAULT_LEVEL_TABS;
+            const isViewingMyLevel = activeLeaderboardLevel === studentLevelFromDashboard;
+            const currentLevelObj = availableLevels.find((l: any) => l.code === activeLeaderboardLevel);
+            const myRankIndex = leaderboardData.findIndex((entry: any) => entry.studentId === student?.id);
+            const myRankNumber = myRankIndex >= 0 ? myRankIndex + 1 : null;
+            const myRankEntry = myRankIndex >= 0 ? leaderboardData[myRankIndex] : null;
 
-                {/* Season Toggle Pills */}
-                <div className="flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setLeaderboardPeriod('weekly')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      leaderboardPeriod === 'weekly'
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {language === 'he' ? 'ליגה שבועית' : 'This Week'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setLeaderboardPeriod('monthly')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      leaderboardPeriod === 'monthly'
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {language === 'he' ? 'ליגה חודשית' : 'This Month'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setLeaderboardPeriod('all_time')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      leaderboardPeriod === 'all_time'
-                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    {language === 'he' ? 'היכל התהילה' : 'All-Time'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Top 3 Podium Cards */}
-              {leaderboardData.length >= 3 && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* #2 Silver */}
-                  <div className="order-2 sm:order-1 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center shadow-xs">
-                    <span className="text-2xl mb-1">🥈</span>
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-400 to-slate-600 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-slate-300 dark:ring-slate-700 mb-2 shrink-0">
-                      {leaderboardData[1].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '2'}
+            return (
+              <div className="space-y-6 animate-fade-in">
+                {/* Header Banner & Period Switcher */}
+                <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-xs font-bold text-amber-800 dark:text-amber-300 mb-2">
+                      <Award className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{language === 'he' ? 'ליגות עברית עונתיות לפי רמות לימוד' : 'Level-Based Leagues & Seasonal Rankings'}</span>
                     </div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-full">
-                      {leaderboardData[1].name}
-                    </h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
-                      {t(`levels.${leaderboardData[1].level || 'BEGINNER'}`)}
-                    </span>
-                    <p className="mt-3 text-base font-extrabold text-slate-700 dark:text-slate-300">
-                      {leaderboardData[1].totalPoints.toLocaleString()} <span className="text-xs font-normal">XP</span>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                      {language === 'he' ? 'לוח מובילים ודירוג לפי רמה' : 'Level-Based Leaderboard & Rankings'}
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
+                      {language === 'he'
+                        ? 'כל רמה מתחרה בדירוג נפרד ועצמאי. התחרה עם עמיתיך לרמה, צבור נקודות משיעורים וממשחקים, וטפס לראש הליגה!'
+                        : 'Each proficiency level competes in its own dedicated league. Compete with peers in your level and earn XP to climb the ranks!'}
                     </p>
                   </div>
 
-                  {/* #1 Gold - Elevated */}
-                  <div className="order-1 sm:order-2 p-6 rounded-3xl bg-gradient-to-b from-amber-500/10 to-transparent dark:from-amber-950/30 dark:to-slate-900 border border-amber-300 dark:border-amber-700/60 flex flex-col items-center text-center shadow-md sm:-mt-2 relative">
-                    <div className="absolute -top-3 px-3 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-sm">
-                      ★ {language === 'he' ? 'מוביל הליגה' : 'League Leader'} ★
-                    </div>
-                    <span className="text-3xl mb-1 mt-1">🥇</span>
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-lg flex items-center justify-center shadow-lg ring-4 ring-amber-300 dark:ring-amber-500/60 mb-2 shrink-0">
-                      {leaderboardData[0].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '1'}
-                    </div>
-                    <h3 className="font-extrabold text-base text-slate-900 dark:text-white truncate max-w-full">
-                      {leaderboardData[0].name}
-                    </h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300/60 mt-1">
-                      {t(`levels.${leaderboardData[0].level || 'BEGINNER'}`)}
-                    </span>
-                    <p className="mt-3 text-xl font-black text-amber-600 dark:text-amber-400">
-                      {leaderboardData[0].totalPoints.toLocaleString()} <span className="text-xs font-normal">XP</span>
-                    </p>
-                  </div>
+                  {/* Season Toggle Pills */}
+                  <div className="flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setLeaderboardPeriod('weekly')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        leaderboardPeriod === 'weekly'
+                          ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {language === 'he' ? 'ליגה שבועית' : 'This Week'}
+                    </button>
 
-                  {/* #3 Bronze */}
-                  <div className="order-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center shadow-xs">
-                    <span className="text-2xl mb-1">🥉</span>
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-700 to-amber-900 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-amber-700/40 mb-2 shrink-0">
-                      {leaderboardData[2].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '3'}
-                    </div>
-                    <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-full">
-                      {leaderboardData[2].name}
-                    </h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
-                      {t(`levels.${leaderboardData[2].level || 'BEGINNER'}`)}
-                    </span>
-                    <p className="mt-3 text-base font-extrabold text-amber-800 dark:text-amber-600">
-                      {leaderboardData[2].totalPoints.toLocaleString()} <span className="text-xs font-normal">XP</span>
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setLeaderboardPeriod('monthly')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        leaderboardPeriod === 'monthly'
+                          ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {language === 'he' ? 'ליגה חודשית' : 'This Month'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setLeaderboardPeriod('all_time')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        leaderboardPeriod === 'all_time'
+                          ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {language === 'he' ? 'היכל התהילה' : 'All-Time'}
+                    </button>
                   </div>
                 </div>
-              )}
 
-              {/* Full Standings Table */}
-              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {language === 'he' ? 'טבלת הדירוג המלאה' : 'Full League Standings'}
-                  </h3>
-                  <span className="text-xs text-slate-400">
-                    {leaderboardData.length} {language === 'he' ? 'תלמידים בדירוג' : 'students ranked'}
-                  </span>
+                {/* Level Tabs Selection */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {language === 'he' ? 'בחר רמת לימוד לתצוגת דירוג:' : 'Select Proficiency Level League:'}
+                    </span>
+                    <span className="text-xs font-bold text-brand-teal-600 dark:text-brand-teal-400">
+                      {language === 'he'
+                        ? `רמתך: ${t(`levels.${studentLevelFromDashboard}`)}`
+                        : `Your Enrolled Level: ${t(`levels.${studentLevelFromDashboard}`)}`}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    {availableLevels.map((lvl: any) => {
+                      const isSelected = activeLeaderboardLevel === lvl.code;
+                      const isMyLevel = studentLevelFromDashboard === lvl.code;
+                      const label = language === 'he' && lvl.labelHe ? lvl.labelHe : (lvl.labelEn || t(`levels.${lvl.code}`));
+
+                      return (
+                        <button
+                          key={lvl.code}
+                          type="button"
+                          onClick={() => setSelectedLeaderboardLevel(lvl.code)}
+                          className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center gap-2 border cursor-pointer ${
+                            isSelected
+                              ? 'bg-brand-teal-800 text-white border-brand-teal-700 shadow-sm ring-2 ring-brand-teal-500/20'
+                              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
+                          }`}
+                        >
+                          <span>{label}</span>
+                          {isMyLevel && (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-black tracking-wide ${
+                              isSelected
+                                ? 'bg-brand-olive-400 text-slate-950'
+                                : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                            }`}>
+                              {language === 'he' ? 'הרמה שלך' : 'My Level'}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Level Context & Current Standing Summary Banner */}
+                  <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                    isViewingMyLevel
+                      ? 'bg-teal-50/70 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/80 text-teal-950 dark:text-teal-100 shadow-2xs'
+                      : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-2xs'
+                  }`}>
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-xs ${
+                        isViewingMyLevel
+                          ? 'bg-brand-teal-800 text-brand-olive-300'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}>
+                        <Trophy className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-extrabold truncate">
+                          {isViewingMyLevel ? (
+                            language === 'he' ? (
+                              <>
+                                אתה מתחרה בליגת <span className="underline decoration-brand-teal-500 underline-offset-4">{currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span>
+                                {myRankNumber
+                                  ? ` • דירוגך: מקום #${myRankNumber} מתוך ${leaderboardData.length} תלמידים (${myRankEntry?.totalPoints || 0} XP)`
+                                  : ` • אין עדיין נקודות בתקופה זו (${student?.totalPoints || 0} XP בסה״כ)`}
+                              </>
+                            ) : (
+                              <>
+                                You are competing in <span className="underline decoration-brand-teal-500 underline-offset-4">{currentLevelObj?.labelEn || t(`levels.${activeLeaderboardLevel}`)}</span>
+                                {myRankNumber
+                                  ? ` • Your Rank: #${myRankNumber} of ${leaderboardData.length} students (${myRankEntry?.totalPoints || 0} XP)`
+                                  : ` • No points recorded in this period yet (${student?.totalPoints || 0} lifetime XP)`}
+                              </>
+                            )
+                          ) : (
+                            language === 'he' ? (
+                              <>
+                                מוצג לוח המובילים של <span className="font-black text-slate-900 dark:text-white">{currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span> ({leaderboardData.length} תלמידים בדירוג)
+                              </>
+                            ) : (
+                              <>
+                                Viewing standings for <span className="font-black text-slate-900 dark:text-white">{currentLevelObj?.labelEn || t(`levels.${activeLeaderboardLevel}`)}</span> ({leaderboardData.length} students ranked)
+                              </>
+                            )
+                          )}
+                        </p>
+                        <p className="text-[11px] opacity-80 mt-0.5">
+                          {language === 'he'
+                            ? 'הדירוג מחושב אך ורק מול תלמידים מאותה הרמה ולא מול כלל התלמידים באקדמיה.'
+                            : 'Students are ranked exclusively against peers within the same level, not against the entire academy.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {!isViewingMyLevel && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedLeaderboardLevel(studentLevelFromDashboard)}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white text-xs font-bold transition shrink-0 cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <Award className="w-3.5 h-3.5 text-brand-olive-300" />
+                        <span>{language === 'he' ? 'חזור לרמה שלי' : 'View My Level'}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-start text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 font-bold uppercase">
-                        <th className="pb-3 text-start w-16">{language === 'he' ? 'דירוג' : 'Rank'}</th>
-                        <th className="pb-3 text-start">{language === 'he' ? 'תלמיד' : 'Student'}</th>
-                        <th className="pb-3 text-start">{language === 'he' ? 'תגי הישג' : 'Badges'}</th>
-                        <th className="pb-3 text-start">{language === 'he' ? 'רמה' : 'Level'}</th>
-                        <th className="pb-3 text-start">{language === 'he' ? 'רצף' : 'Streak'}</th>
-                        <th className="pb-3 text-end">{language === 'he' ? 'נקודות' : 'Points'}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
-                      {leaderboardData.map((entry: any, idx: number) => {
-                        const isTop1 = idx === 0;
-                        const isTop2 = idx === 1;
-                        const isTop3 = idx === 2;
+                {/* Top 3 Podium Cards */}
+                {leaderboardData.length > 0 ? (
+                  <div className={`grid grid-cols-1 ${
+                    leaderboardData.length === 1
+                      ? 'sm:grid-cols-1 max-w-sm mx-auto'
+                      : leaderboardData.length === 2
+                      ? 'sm:grid-cols-2 max-w-2xl mx-auto'
+                      : 'sm:grid-cols-3'
+                  } gap-4`}>
+                    {/* #2 Silver (if 2+ students) */}
+                    {leaderboardData[1] && (
+                      <div className="order-2 sm:order-1 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center shadow-xs">
+                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-[11px] mb-2">
+                          <Medal className="w-3.5 h-3.5 text-slate-400" />
+                          <span>#2 Silver</span>
+                        </div>
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-400 to-slate-600 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-slate-300 dark:ring-slate-700 mb-2 shrink-0">
+                          {leaderboardData[1].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '2'}
+                        </div>
+                        <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-full">
+                          {leaderboardData[1].name}
+                        </h3>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
+                          {language === 'he' && leaderboardData[1].levelLabelHe
+                            ? leaderboardData[1].levelLabelHe
+                            : (leaderboardData[1].levelLabelEn || t(`levels.${leaderboardData[1].level || 'BEGINNER'}`))}
+                        </span>
+                        <p className="mt-3 text-base font-extrabold text-slate-700 dark:text-slate-300">
+                          {leaderboardData[1].totalPoints.toLocaleString()} <span className="text-xs font-normal">XP</span>
+                        </p>
+                      </div>
+                    )}
 
-                        return (
-                          <tr
-                            key={entry.studentId}
-                            className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
-                              entry.studentId === student?.id
-                                ? 'bg-teal-50/50 dark:bg-teal-950/20 font-bold'
-                                : ''
-                            }`}
-                          >
-                            <td className="py-3 font-extrabold text-sm text-slate-900 dark:text-white">
-                              {isTop1 ? '🥇 #1' : isTop2 ? '🥈 #2' : isTop3 ? '🥉 #3' : `#${idx + 1}`}
-                            </td>
-                            <td className="py-3">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                                  {entry.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'U'}
-                                </div>
-                                <div>
-                                  <p className="font-bold text-slate-900 dark:text-white">
-                                    {entry.name}
-                                    {entry.studentId === student?.id && (
-                                      <span className="ms-1.5 text-[9px] px-1.5 py-0.5 rounded-md bg-teal-500/20 text-teal-700 dark:text-teal-300">
-                                        {language === 'he' ? 'אתה' : 'You'}
-                                      </span>
-                                    )}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3">
-                              <div className="flex items-center gap-1">
-                                {entry.badges && entry.badges.length > 0 ? (
-                                  entry.badges.map((b: any) => (
-                                    <span
-                                      key={b.id}
-                                      className="text-base"
-                                      title={language === 'he' ? b.titleHe || b.title : b.title}
-                                    >
-                                      {b.icon || '🏆'}
-                                    </span>
-                                  ))
-                                ) : (
-                                  <span className="text-[10px] text-slate-400">—</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                {t(`levels.${entry.level || 'BEGINNER'}`)}
-                              </span>
-                            </td>
-                            <td className="py-3 text-slate-600 dark:text-slate-400 font-medium">
-                              {entry.streakDays > 0 ? `🔥 ${entry.streakDays}d` : '—'}
-                            </td>
-                            <td className="py-3 text-end font-black text-amber-600 dark:text-amber-400 text-sm">
-                              {entry.totalPoints.toLocaleString()} <span className="text-[10px] font-normal text-slate-400">XP</span>
-                            </td>
+                    {/* #1 Gold - Elevated */}
+                    {leaderboardData[0] && (
+                      <div className="order-1 sm:order-2 p-6 rounded-3xl bg-gradient-to-b from-amber-500/10 to-transparent dark:from-amber-950/30 dark:to-slate-900 border border-amber-300 dark:border-amber-700/60 flex flex-col items-center text-center shadow-md sm:-mt-2 relative">
+                        <div className="absolute -top-3 px-3 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-sm flex items-center gap-1">
+                          <Trophy className="w-3 h-3" />
+                          <span>{language === 'he' ? 'מוביל הרמה' : 'Level Leader'}</span>
+                        </div>
+                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-extrabold text-[11px] mb-2 mt-1">
+                          <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                          <span>#1 Gold</span>
+                        </div>
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-lg flex items-center justify-center shadow-lg ring-4 ring-amber-300 dark:ring-amber-500/60 mb-2 shrink-0">
+                          {leaderboardData[0].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '1'}
+                        </div>
+                        <h3 className="font-extrabold text-base text-slate-900 dark:text-white truncate max-w-full">
+                          {leaderboardData[0].name}
+                        </h3>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300/60 mt-1">
+                          {language === 'he' && leaderboardData[0].levelLabelHe
+                            ? leaderboardData[0].levelLabelHe
+                            : (leaderboardData[0].levelLabelEn || t(`levels.${leaderboardData[0].level || 'BEGINNER'}`))}
+                        </span>
+                        <p className="mt-3 text-xl font-black text-amber-600 dark:text-amber-400">
+                          {leaderboardData[0].totalPoints.toLocaleString()} <span className="text-xs font-normal">XP</span>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* #3 Bronze (if 3+ students) */}
+                    {leaderboardData[2] && (
+                      <div className="order-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center shadow-xs">
+                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-900/10 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-extrabold text-[11px] mb-2">
+                          <Award className="w-3.5 h-3.5 text-amber-700" />
+                          <span>#3 Bronze</span>
+                        </div>
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-700 to-amber-900 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-amber-700/40 mb-2 shrink-0">
+                          {leaderboardData[2].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '3'}
+                        </div>
+                        <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-full">
+                          {leaderboardData[2].name}
+                        </h3>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
+                          {language === 'he' && leaderboardData[2].levelLabelHe
+                            ? leaderboardData[2].levelLabelHe
+                            : (leaderboardData[2].levelLabelEn || t(`levels.${leaderboardData[2].level || 'BEGINNER'}`))}
+                        </span>
+                        <p className="mt-3 text-base font-extrabold text-amber-800 dark:text-amber-600">
+                          {leaderboardData[2].totalPoints.toLocaleString()} <span className="text-xs font-normal">XP</span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200/80 dark:border-slate-800 text-center">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center mx-auto mb-3">
+                      <Trophy className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                      {language === 'he' ? 'אין עדיין תלמידים בדירוג לרמה זו בתקופה הנבחרת' : 'No students ranked in this level for this period yet'}
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                      {language === 'he'
+                        ? 'שחק במשחקי התרגול, פתור חידונים ובצע שיעורים כדי לצבור XP ולהיות הראשון בדירוג!'
+                        : 'Play practice games, complete quizzes, and attend live sessions to earn XP and take the top spot!'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setLeaderboardPeriod('all_time')}
+                      className="mt-4 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+                    >
+                      {language === 'he' ? 'צפה בכל הזמנים' : 'View All-Time Standings'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Full Standings Table */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Award className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
+                      <span>
+                        {language === 'he'
+                          ? `טבלת דירוג: ${currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}`
+                          : `${currentLevelObj?.labelEn || t(`levels.${activeLeaderboardLevel}`)} League Standings`}
+                      </span>
+                    </h3>
+                    <span className="text-xs text-slate-400">
+                      {leaderboardData.length} {language === 'he' ? 'תלמידים בדירוג' : 'students ranked'}
+                    </span>
+                  </div>
+
+                  {leaderboardData.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-6 text-center">
+                      {language === 'he' ? 'אין נתוני דירוג להצגה.' : 'No leaderboard records found.'}
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-start text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 font-bold uppercase">
+                            <th className="pb-3 text-start w-20">{language === 'he' ? 'דירוג' : 'Rank'}</th>
+                            <th className="pb-3 text-start">{language === 'he' ? 'תלמיד' : 'Student'}</th>
+                            <th className="pb-3 text-start">{language === 'he' ? 'תגי הישג' : 'Badges'}</th>
+                            <th className="pb-3 text-start">{language === 'he' ? 'רמה' : 'Level'}</th>
+                            <th className="pb-3 text-start">{language === 'he' ? 'רצף' : 'Streak'}</th>
+                            <th className="pb-3 text-end">{language === 'he' ? 'נקודות' : 'Points'}</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
+                          {leaderboardData.map((entry: any, idx: number) => {
+                            const isTop1 = idx === 0;
+                            const isTop2 = idx === 1;
+                            const isTop3 = idx === 2;
+
+                            return (
+                              <tr
+                                key={entry.studentId}
+                                className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
+                                  entry.studentId === student?.id
+                                    ? 'bg-teal-50/50 dark:bg-teal-950/20 font-bold'
+                                    : ''
+                                }`}
+                              >
+                                <td className="py-3 font-extrabold text-sm text-slate-900 dark:text-white">
+                                  {isTop1 ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-xs font-black">
+                                      <Trophy className="w-3 h-3 text-amber-500" /> #1
+                                    </span>
+                                  ) : isTop2 ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-black">
+                                      <Medal className="w-3 h-3 text-slate-400" /> #2
+                                    </span>
+                                  ) : isTop3 ? (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-900/10 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-800/40 text-xs font-black">
+                                      <Award className="w-3 h-3 text-amber-700" /> #3
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-500 dark:text-slate-400 font-bold">#{idx + 1}</span>
+                                  )}
+                                </td>
+                                <td className="py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                                      {entry.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'U'}
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-slate-900 dark:text-white">
+                                        {entry.name}
+                                        {entry.studentId === student?.id && (
+                                          <span className="ms-1.5 text-[9px] px-1.5 py-0.5 rounded-md bg-teal-500/20 text-teal-700 dark:text-teal-300">
+                                            {language === 'he' ? 'אתה' : 'You'}
+                                          </span>
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3">
+                                  <div className="flex items-center gap-1">
+                                    {entry.badges && entry.badges.length > 0 ? (
+                                      entry.badges.map((b: any) => (
+                                        <span
+                                          key={b.id}
+                                          className="text-xs px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-bold"
+                                          title={language === 'he' ? b.titleHe || b.title : b.title}
+                                        >
+                                          {language === 'he' ? b.titleHe || b.title : b.title}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <span className="text-[10px] text-slate-400">—</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                    {language === 'he' && entry.levelLabelHe
+                                      ? entry.levelLabelHe
+                                      : (entry.levelLabelEn || t(`levels.${entry.level || 'BEGINNER'}`))}
+                                  </span>
+                                </td>
+                                <td className="py-3 text-slate-600 dark:text-slate-400 font-medium">
+                                  {entry.streakDays > 0 ? (
+                                    <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                                      <Flame className="w-3.5 h-3.5 text-amber-500" />
+                                      <span>{entry.streakDays}d</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-slate-300 dark:text-slate-600">—</span>
+                                  )}
+                                </td>
+                                <td className="py-3 text-end font-black text-amber-600 dark:text-amber-400 text-sm">
+                                  {entry.totalPoints.toLocaleString()} <span className="text-[10px] font-normal text-slate-400">XP</span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* TAB 8: SESSION PACKAGES & BALANCES */}
           {activeTab === 'balance' && (

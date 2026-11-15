@@ -52,21 +52,64 @@ export async function listGames(filters: {
   });
 }
 
-export async function getLeaderboard(period: 'all_time' | 'weekly' | 'monthly' = 'all_time') {
+export async function getLeaderboard(
+  period: 'all_time' | 'weekly' | 'monthly' = 'all_time',
+  level?: string
+) {
+  const validHebrewLevels = Object.values(HebrewLevel) as string[];
+  const normalizedLevel = level ? level.trim().toUpperCase() : undefined;
+  const isEnumLevel = normalizedLevel ? validHebrewLevels.includes(normalizedLevel) : false;
+
+  const levelCondition: Prisma.StudentWhereInput | null =
+    normalizedLevel && normalizedLevel !== 'ALL'
+      ? isEnumLevel
+        ? {
+            OR: [
+              { level: normalizedLevel as HebrewLevel },
+              { levelModel: { code: normalizedLevel } },
+              { levelId: level },
+            ],
+          }
+        : {
+            OR: [
+              { levelModel: { code: level } },
+              { levelId: level },
+            ],
+          }
+      : null;
+
   if (period === 'weekly' || period === 'monthly') {
     const days = period === 'weekly' ? 7 : 30;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
+    let eligibleStudentIds: string[] | undefined = undefined;
+    if (levelCondition) {
+      const eligibleStudents = await prisma.student.findMany({
+        where: levelCondition,
+        select: { id: true },
+      });
+      eligibleStudentIds = eligibleStudents.map((s) => s.id);
+      if (eligibleStudentIds.length === 0) {
+        return [];
+      }
+    }
+
+    const whereLedger: Prisma.PointsLedgerWhereInput = {
+      createdAt: { gte: since },
+      ...(eligibleStudentIds ? { studentId: { in: eligibleStudentIds } } : {}),
+    };
+
     const grouped = await prisma.pointsLedger.groupBy({
       by: ['studentId'],
       _sum: { points: true },
-      where: { createdAt: { gte: since } },
+      where: whereLedger,
       orderBy: { _sum: { points: 'desc' } },
-      take: 10,
+      take: 50,
     });
 
     const studentInclude: Prisma.StudentInclude = {
       user: { select: { firstName: true, lastName: true } },
+      levelModel: { select: { code: true, labelEn: true, labelHe: true } },
       badges: { orderBy: { awardedAt: 'desc' }, take: 3 },
     };
 
@@ -86,7 +129,9 @@ export async function getLeaderboard(period: 'all_time' | 'weekly' | 'monthly' =
           rank: idx + 1,
           studentId: student.id,
           name: `${student.user.firstName} ${student.user.lastName}`,
-          level: student.level,
+          level: student.levelModel?.code || student.level,
+          levelLabelEn: student.levelModel?.labelEn,
+          levelLabelHe: student.levelModel?.labelHe,
           totalPoints: g._sum.points || 0,
           lifetimePoints: student.totalPoints,
           streakDays: student.streakDays,
@@ -95,19 +140,27 @@ export async function getLeaderboard(period: 'all_time' | 'weekly' | 'monthly' =
       })
       .filter(Boolean);
 
-    // If new week has few records, fallback to all-time
+    // If new week has records, return them
     if (results.length > 0) return results;
   }
 
-  // All-time leaderboard
+  // All-time leaderboard (or fallback when period has no records)
   const topStudents = await prisma.student.findMany({
-    take: 10,
+    where: levelCondition || {},
+    take: 50,
     orderBy: { totalPoints: 'desc' },
     include: {
       user: {
         select: {
           firstName: true,
           lastName: true,
+        },
+      },
+      levelModel: {
+        select: {
+          code: true,
+          labelEn: true,
+          labelHe: true,
         },
       },
       badges: {
@@ -121,7 +174,9 @@ export async function getLeaderboard(period: 'all_time' | 'weekly' | 'monthly' =
     rank: idx + 1,
     studentId: s.id,
     name: `${s.user.firstName} ${s.user.lastName}`,
-    level: s.level,
+    level: s.levelModel?.code || s.level,
+    levelLabelEn: s.levelModel?.labelEn,
+    levelLabelHe: s.levelModel?.labelHe,
     totalPoints: s.totalPoints,
     lifetimePoints: s.totalPoints,
     streakDays: s.streakDays,
@@ -138,9 +193,9 @@ export async function resetLeaderboardSeason(
   const top3 = topWeekly.slice(0, 3);
 
   const awards = [
-    { rank: 1, icon: '🥇', title: `Champion of ${seasonTitle}`, titleHe: `אלוף ${seasonTitleHe || seasonTitle}` },
-    { rank: 2, icon: '🥈', title: `Silver Finalist - ${seasonTitle}`, titleHe: `סגן אלוף - ${seasonTitleHe || seasonTitle}` },
-    { rank: 3, icon: '🥉', title: `Bronze Finalist - ${seasonTitle}`, titleHe: `מקום שלישי - ${seasonTitleHe || seasonTitle}` },
+    { rank: 1, icon: 'trophy', title: `Champion of ${seasonTitle}`, titleHe: `אלוף ${seasonTitleHe || seasonTitle}` },
+    { rank: 2, icon: 'medal', title: `Silver Finalist - ${seasonTitle}`, titleHe: `סגן אלוף - ${seasonTitleHe || seasonTitle}` },
+    { rank: 3, icon: 'award', title: `Bronze Finalist - ${seasonTitle}`, titleHe: `מקום שלישי - ${seasonTitleHe || seasonTitle}` },
   ];
 
   const createdBadges = [];

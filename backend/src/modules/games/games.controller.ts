@@ -48,8 +48,9 @@ export async function listGamesHandler(req: AuthRequest, res: Response, next: Ne
 export async function getLeaderboardHandler(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const period = (req.query.period as any) || 'all_time';
-    const leaderboard = await gamesService.getLeaderboard(period);
-    res.json({ leaderboard, period });
+    const level = req.query.level as string | undefined;
+    const leaderboard = await gamesService.getLeaderboard(period, level);
+    res.json({ leaderboard, period, level });
   } catch (error) {
     next(error);
   }
