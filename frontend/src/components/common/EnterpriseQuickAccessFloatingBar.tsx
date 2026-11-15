@@ -28,9 +28,6 @@ export const EnterpriseQuickAccessFloatingBar: React.FC = () => {
 
       {isTeacherModalOpen && (
         <AttendanceAndGamesModal
-          lessonId="latest"
-          studentId="latest"
-          studentName={language === 'he' ? 'תלמיד נבחר' : 'Selected Student'}
           onClose={() => setIsTeacherModalOpen(false)}
         />
       )}

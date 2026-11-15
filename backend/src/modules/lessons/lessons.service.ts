@@ -298,9 +298,9 @@ export async function markAttendance(
     data: {
       userId: lesson.student.userId,
       type: 'ATTENDANCE_MARKED',
-      title: isAttended ? 'Attendance Confirmed ✅' : 'Marked Absent ⚠️',
-      titleEn: isAttended ? 'Attendance Confirmed ✅' : 'Marked Absent ⚠️',
-      titleHe: isAttended ? 'נוכחותך בשיעור אושרה בהצלחה ✅' : 'סומנת כנעדר מהשיעור ⚠️',
+      title: isAttended ? 'Attendance Confirmed' : 'Marked Absent',
+      titleEn: isAttended ? 'Attendance Confirmed' : 'Marked Absent',
+      titleHe: isAttended ? 'נוכחותך בשיעור אושרה בהצלחה' : 'סומנת כנעדר מהשיעור',
       body: isAttended
         ? `Your attendance for session with ${lesson.teacher.user.firstName} on ${new Date(lesson.scheduledAt).toLocaleDateString()} was marked as Attended.`
         : `You were marked absent for the session with ${lesson.teacher.user.firstName} on ${new Date(lesson.scheduledAt).toLocaleDateString()}.`,
