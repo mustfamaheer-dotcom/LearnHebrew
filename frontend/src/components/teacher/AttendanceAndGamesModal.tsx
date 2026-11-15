@@ -27,9 +27,13 @@ export const AttendanceAndGamesModal: React.FC<Props> = ({
     queryKey: ['available-games'],
     queryFn: async () => {
       const res = await api.get('/games');
-      return res.data || [];
+      if (Array.isArray(res.data?.games)) return res.data.games;
+      if (Array.isArray(res.data)) return res.data;
+      return [];
     },
   });
+
+  const gameList = Array.isArray(games) ? games : [];
 
   const markAttendanceMutation = useMutation({
     mutationFn: (status: 'ATTENDED' | 'ABSENT' | 'EXCUSED') =>
@@ -93,17 +97,17 @@ export const AttendanceAndGamesModal: React.FC<Props> = ({
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => markAttendanceMutation.mutate('ATTENDED')}
-              className="flex items-center justify-center gap-2 p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition active:scale-95"
+              className="flex items-center justify-center gap-2 p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition active:scale-95 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{language === 'he' ? 'נוכח בשיעור ✅' : 'Attended ✅'}</span>
+              <span>{language === 'he' ? 'נוכח בשיעור' : 'Attended'}</span>
             </button>
             <button
               onClick={() => markAttendanceMutation.mutate('ABSENT')}
-              className="flex items-center justify-center gap-2 p-3.5 rounded-xl border border-red-500/40 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/50 transition active:scale-95"
+              className="flex items-center justify-center gap-2 p-3.5 rounded-xl border border-red-500/40 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/50 transition active:scale-95 cursor-pointer"
             >
               <XCircle className="w-4 h-4" />
-              <span>{language === 'he' ? 'נעדר ⚠️' : 'Absent ⚠️'}</span>
+              <span>{language === 'he' ? 'נעדר מהשיעור' : 'Absent'}</span>
             </button>
           </div>
         </div>
@@ -129,7 +133,7 @@ export const AttendanceAndGamesModal: React.FC<Props> = ({
               <option value="">
                 {language === 'he' ? 'בחר משחק לפתיחה' : 'Select a game to unlock'}
               </option>
-              {games.map((g: any) => (
+              {gameList.map((g: any) => (
                 <option key={g.id} value={g.id}>
                   {g.title} ({g.gameType}) — +{g.pointsReward} {language === 'he' ? 'נק׳' : 'pts'}
                 </option>
