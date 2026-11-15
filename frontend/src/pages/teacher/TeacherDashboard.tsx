@@ -979,48 +979,165 @@ export const TeacherDashboard: React.FC = () => {
             ? 'lg:ps-[calc(5rem+1.5rem)]'
             : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
         } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-6 sm:space-y-8 min-w-0`}>
-          {/* Top Banner */}
-          <div className="bg-gradient-to-r from-brand-teal-900 to-brand-teal-950 rounded-3xl p-5 sm:p-8 text-white shadow-md relative overflow-hidden">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 relative z-10">
-              <div className="space-y-1.5 min-w-0">
-                <span className="inline-block px-3 py-1 bg-white/10 text-brand-olive-300 text-xs font-bold rounded-full mb-1 backdrop-blur-xs max-w-full truncate">
-                  {language === 'he' ? 'לוח מורה • מערך שיעורים רב-מתכונתי (25 / 40 / 55 דקות)' : 'Instructor Dashboard • Multi-Duration Session System (25 / 40 / 55 Min)'}
-                </span>
-                <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
-                  {language === 'he' ? `שלום, ${user?.firstName}!` : `Welcome, ${user?.firstName}!`}
-                </h1>
-                <p className="text-brand-teal-100/90 text-xs sm:text-sm max-w-xl leading-relaxed">
-                  {language === 'he'
-                    ? 'נהל את לוח הזמינות השבועי לפי 3 סוגי שיעורים (25, 40 ו-55 דקות), בדוק שיעורי בית, התחל שיעורי זום והעלה סיכומי שיעור.'
-                    : 'Customize your weekly availability for 3 session durations (25, 40, and 55 minutes), review student homework, launch live Zoom classes, and link lesson recordings.'}
-                </p>
-              </div>
+          {/* Dynamic Page Header Banner - Updates according to activeTab (as in Admin) */}
+          {activeTab === 'calendar' && (
+            <PageHeaderBanner
+              badgeIcon={CalendarIcon}
+              badgeText={language === 'he' ? 'לוח זמינות שבועי • משבצות 25 דק׳' : 'Weekly Availability • 25-Min Interval Engine'}
+              statusText={language === 'he' ? 'פעיל' : 'Active'}
+              title={language === 'he' ? `לוח זמינות וקביעת שיעורים • ${user?.firstName || 'מורה'}` : `Weekly Availability Calendar • ${user?.firstName || 'Teacher'}`}
+              description={
+                language === 'he'
+                  ? 'סמן את משבצות הזמן שבהן הינך פנוי ללמד. תלמידים יוכלו להזמין שיעורים בכל 3 משכי הזמן (25, 40 או 55 דקות) בשעות שפתחת.'
+                  : 'Customize your weekly availability slots. Students can book lessons of any session duration (25, 40, or 55 minutes) during your open hours.'
+              }
+              action={
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
+                  <button
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs shadow-xs transition-colors border border-white/20 text-center cursor-pointer"
+                  >
+                    <Share2 className="w-4 h-4 text-brand-olive-300" />
+                    <span>{language === 'he' ? 'שתף פרופיל מורה' : 'Share Profile'}</span>
+                  </button>
+                  <button
+                    onClick={() => setIsCopyScheduleModalOpen(true)}
+                    className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-bold text-xs shadow-xs transition-colors border border-brand-teal-700 text-center cursor-pointer"
+                  >
+                    <Copy className="w-4 h-4 text-brand-olive-300" />
+                    <span>{language === 'he' ? 'העתק שבוע' : 'Copy Week'}</span>
+                  </button>
+                </div>
+              }
+            />
+          )}
 
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
-                <button
-                  onClick={() => setIsShareModalOpen(true)}
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs shadow-xs transition-colors border border-white/20 text-center"
-                >
-                  <Share2 className="w-4 h-4 text-brand-olive-300" />
-                  <span>{language === 'he' ? 'שתף פרופיל מורה' : 'Share Profile'}</span>
-                </button>
-                <button
-                  onClick={() => openNewGameModal('FLASHCARD')}
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-bold text-xs shadow-xs transition-colors border border-brand-teal-700 text-center"
-                >
-                  <Gamepad2 className="w-4 h-4 text-brand-olive-300" />
-                  <span>{language === 'he' ? 'יצירת משחק מותאם' : 'Create Custom Game'}</span>
-                </button>
+          {activeTab === 'lessons' && (
+            <PageHeaderBanner
+              badgeIcon={Video}
+              badgeText={language === 'he' ? 'שיעורים מתוזמנים וחדרי זום' : 'Live Lessons & Zoom Classrooms'}
+              statusText={language === 'he' ? 'בזמן אמת' : 'Live'}
+              title={language === 'he' ? 'כל השיעורים המתוזמנים (25 / 40 / 55 דק׳)' : 'Scheduled Lessons (25 / 40 / 55 Min)'}
+              description={
+                language === 'he'
+                  ? 'מעקב אחר כל השיעורים המתוזמנים, הצטרפות ישירה לחדר ה-Zoom, סימון נוכחות והעלאת סיכומי שיעור מובנים.'
+                  : 'Monitor upcoming student lessons, launch live Zoom classes, verify attendance, and write structured lesson summaries.'
+              }
+              action={
+                <div className="flex items-center gap-2">
+                  <span className="px-3.5 py-2 rounded-xl bg-white/10 text-brand-olive-300 font-bold text-xs border border-white/15">
+                    {lessons?.length || 0} {language === 'he' ? 'שיעורים רשומים' : 'Scheduled Lessons'}
+                  </span>
+                </div>
+              }
+            />
+          )}
+
+          {activeTab === 'students' && (
+            <PageHeaderBanner
+              badgeIcon={Users}
+              badgeText={language === 'he' ? 'תיקי תלמידים פעילים' : 'Active Student Directory'}
+              statusText={language === 'he' ? 'מעקב שוטף' : 'Active'}
+              title={language === 'he' ? 'פרופילי תלמידים ומעקב פדגוגי' : 'Student Profiles & Pedagogical Records'}
+              description={
+                language === 'he'
+                  ? 'צפה ברמות העברית של התלמידים (אלף עד ויו), היסטוריית שיעורים, הגשות שיעורי בית והתקדמות למידה אישית.'
+                  : 'Track student Hebrew levels (Alef to Vav), completed lessons, homework assignments, and tailored learning materials.'
+              }
+              action={
+                <div className="flex items-center gap-2">
+                  <span className="px-3.5 py-2 rounded-xl bg-white/10 text-brand-olive-300 font-bold text-xs border border-white/15">
+                    {studentsData?.length || 0} {language === 'he' ? 'תלמידים משובצים' : 'Assigned Students'}
+                  </span>
+                </div>
+              }
+            />
+          )}
+
+          {activeTab === 'homework' && (
+            <PageHeaderBanner
+              badgeIcon={BookOpen}
+              badgeText={language === 'he' ? 'שיעורי בית ומטלות PDF' : 'Homework & PDF Assignments'}
+              statusText={language === 'he' ? 'בדיקה פעילה' : 'Active'}
+              title={language === 'he' ? 'הגשות שיעורי בית ובדיקת מטלות' : 'Student Homework & PDF Materials'}
+              description={
+                language === 'he'
+                  ? 'הקצה מטלות חדשות עם קבצי PDF וקישורי Google Drive, בדוק הגשות של תלמידים וספק משוב וציונים.'
+                  : 'Assign custom homework and PDF materials, review student submissions, provide grading feedback, and award XP.'
+              }
+              action={
                 <button
                   onClick={() => setIsAssigningHw(true)}
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-bold text-xs shadow-xs transition-colors text-center"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-bold text-xs shadow-xs transition-colors cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>{language === 'he' ? 'הקצאת שיעורי בית' : 'Assign Homework'}</span>
                 </button>
-              </div>
-            </div>
-          </div>
+              }
+            />
+          )}
+
+          {activeTab === 'recordings' && (
+            <PageHeaderBanner
+              badgeIcon={PlayCircle}
+              badgeText={language === 'he' ? 'פורטל הקלטות שיעורים' : 'Session Video Archive'}
+              statusText={language === 'he' ? 'Google Drive' : 'Drive Linked'}
+              title={language === 'he' ? 'הקלטות שיעורים ומאגר וידאו' : 'Recorded Sessions & Video Library'}
+              description={
+                language === 'he'
+                  ? 'קשר שיעורי וידאו מ-Google Drive לפי נושא או מספר שיעור שיוצגו לתלמידים בחלון הנגן המובנה.'
+                  : 'Add Google Drive session recordings organized by topic or session number for students to watch in-app.'
+              }
+              action={
+                <button
+                  onClick={() => setIsCreatingRecording(true)}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>{language === 'he' ? 'הוסף שיעור מוקלט' : 'Add Recorded Session'}</span>
+                </button>
+              }
+            />
+          )}
+
+          {activeTab === 'games' && (
+            <PageHeaderBanner
+              badgeIcon={Gamepad2}
+              badgeText={language === 'he' ? 'משחקים מותאמים אישית' : 'Interactive Hebrew Learning Games'}
+              statusText={language === 'he' ? 'XP פעיל' : 'Gamified'}
+              title={language === 'he' ? 'ניהול משחקים ותרגילים אינטראקטיביים' : 'Custom Games & Exercises Manager'}
+              description={
+                language === 'he'
+                  ? 'צור והתאם כרטיסיות מילים, משחקי התאמה וחידונים לפי רמת התלמיד או קשר אותם ישירות לשיעור ספציפי.'
+                  : 'Design and customize flashcards, word matching, and timed quizzes tailored by Hebrew proficiency level and linked directly to specific student lessons.'
+              }
+              action={
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => openNewGameModal('FLASHCARD')}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs shadow-xs border border-white/20 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-brand-olive-300" />
+                    <span>{language === 'he' ? 'כרטיסיות' : 'Flashcards'}</span>
+                  </button>
+                  <button
+                    onClick={() => openNewGameModal('MATCHING')}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-bold text-xs shadow-xs transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{language === 'he' ? 'התאמת מילים' : 'Word Match'}</span>
+                  </button>
+                  <button
+                    onClick={() => openNewGameModal('QUIZ')}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-bold text-xs shadow-xs border border-brand-teal-600 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-brand-olive-300" />
+                    <span>{language === 'he' ? 'חידון' : 'Quiz'}</span>
+                  </button>
+                </div>
+              }
+            />
+          )}
 
           {/* TAB 1: INTERACTIVE MULTI-DURATION AVAILABILITY CALENDAR */}
           {activeTab === 'calendar' && (
@@ -2351,44 +2468,6 @@ export const TeacherDashboard: React.FC = () => {
           {/* TAB 5: CUSTOM GAMES MANAGER */}
           {activeTab === 'games' && (
             <div className="space-y-6">
-              {/* Header Banner */}
-              <PageHeaderBanner
-                badgeIcon={Sparkles}
-                badgeText={language === 'he' ? 'משחקים מותאמים אישית' : 'Interactive Hebrew Learning Games'}
-                statusText="Live"
-                title={language === 'he' ? 'ניהול משחקים ותרגילים אינטראקטיביים' : 'Custom Games & Exercises Manager'}
-                description={
-                  language === 'he'
-                    ? 'צור והתאם כרטיסיות מילים, משחקי התאמה וחידונים לפי רמת התלמיד או קשר אותם ישירות לשיעור ספציפי.'
-                    : 'Design and customize flashcards, word matching, and timed quizzes tailored by Hebrew proficiency level and linked directly to specific student lessons.'
-                }
-                action={
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={() => openNewGameModal('FLASHCARD')}
-                      className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl shadow-xs border border-white/20 transition-all flex items-center gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-brand-olive-300" />
-                      <span>{language === 'he' ? 'כרטיסיות מילים' : 'Flashcards'}</span>
-                    </button>
-                    <button
-                      onClick={() => openNewGameModal('MATCHING')}
-                      className="px-3.5 py-2 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>{language === 'he' ? 'התאמת מילים' : 'Word Match'}</span>
-                    </button>
-                    <button
-                      onClick={() => openNewGameModal('QUIZ')}
-                      className="px-3.5 py-2 bg-brand-teal-800 hover:bg-brand-teal-700 text-white font-bold text-xs rounded-xl shadow-xs border border-brand-teal-600 transition-all flex items-center gap-1.5"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-brand-olive-300" />
-                      <span>{language === 'he' ? 'חידון אמריקאי' : 'Timed Quiz'}</span>
-                    </button>
-                  </div>
-                }
-              />
-
               {/* Stats Overview */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
