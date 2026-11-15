@@ -14,6 +14,21 @@ const bookLessonSchema = z.object({
   zoomLink: z.string().optional(),
 });
 
+const bookRegularLessonsSchema = z.object({
+  studentId: z.string(),
+  teacherId: z.string(),
+  sessionTypeId: z.string().optional(),
+  durationMinutes: z.number().int().optional(),
+  recurringSlots: z.array(
+    z.object({
+      dayOfWeek: z.number().int().min(0).max(6),
+      startTime: z.string(),
+    })
+  ).min(1),
+  zoomLink: z.string().optional(),
+  weeksCount: z.number().int().min(1).max(12).optional(),
+});
+
 const updateLessonSchema = z.object({
   teacherNotes: z.string().nullable().optional(),
   recordingUrl: z.string().nullable().optional(),
@@ -67,6 +82,25 @@ export async function bookLessonHandler(req: AuthRequest, res: Response, next: N
       bookedById: req.user!.userId,
     });
     res.status(201).json({ lesson });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function bookRegularLessonsHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const data = bookRegularLessonsSchema.parse(req.body);
+    const result = await lessonsService.bookRegularLessons({
+      studentId: data.studentId,
+      teacherId: data.teacherId,
+      sessionTypeId: data.sessionTypeId,
+      durationMinutes: data.durationMinutes,
+      recurringSlots: data.recurringSlots,
+      zoomLink: data.zoomLink,
+      weeksCount: data.weeksCount,
+      bookedById: req.user!.userId,
+    });
+    res.status(201).json(result);
   } catch (error) {
     next(error);
   }

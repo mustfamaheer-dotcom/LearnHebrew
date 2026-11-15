@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   listLessonsHandler,
   bookLessonHandler,
+  bookRegularLessonsHandler,
   getLessonHandler,
   updateLessonHandler,
   cancelLessonHandler,
@@ -18,6 +19,7 @@ router.use(authenticate);
 
 router.get('/', listLessonsHandler);
 router.post('/', bookLessonHandler);
+router.post('/regular', bookRegularLessonsHandler);
 router.get('/:id', getLessonHandler);
 router.patch('/:id', updateLessonHandler);
 router.delete('/:id', cancelLessonHandler);

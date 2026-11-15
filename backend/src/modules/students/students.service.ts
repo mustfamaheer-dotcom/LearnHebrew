@@ -66,7 +66,7 @@ export async function getStudentDashboard(studentIdOrUserId: string) {
 
   const now = new Date();
 
-  const [upcomingLessons, activePackage, recentHomework, pointsHistory, recentLessons] =
+  const [upcomingLessons, activePackage, recentHomework, pointsHistory, recentLessons, sessionBalances] =
     await Promise.all([
       prisma.lesson.findMany({
         where: {
@@ -132,6 +132,10 @@ export async function getStudentDashboard(studentIdOrUserId: string) {
         orderBy: { scheduledAt: 'desc' },
         take: 5,
       }),
+      prisma.studentSessionBalance.findMany({
+        where: { studentId: student.id },
+        include: { sessionType: true },
+      }),
     ]);
 
   return {
@@ -141,6 +145,7 @@ export async function getStudentDashboard(studentIdOrUserId: string) {
     recentHomework,
     pointsHistory,
     recentLessons,
+    sessionBalances,
   };
 }
 

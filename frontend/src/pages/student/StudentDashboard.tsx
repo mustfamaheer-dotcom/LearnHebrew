@@ -77,6 +77,11 @@ import {
   Flame,
   Trophy,
   Medal,
+  Repeat,
+  CalendarRange,
+  CalendarCheck,
+  CalendarDays,
+  Info,
 } from 'lucide-react';
 
 const DEFAULT_LEVEL_TABS = [
@@ -234,6 +239,12 @@ export const StudentDashboard: React.FC = () => {
   const [bookingDate, setBookingDate] = useState<string>('');
   const [selectedSlotTime, setSelectedSlotTime] = useState<string>('');
   const [bookingError, setBookingError] = useState<string | null>(null);
+
+  // Two Booking Tabs: 'regular' (Weekly Recurring) vs 'onetime' (Single Flexible Lesson)
+  const [bookingMode, setBookingMode] = useState<'regular' | 'onetime'>('regular');
+  // Regular Weekly Recurring Selected Slots: array of { dayOfWeek: number, startTime: string }
+  const [selectedRegularSlots, setSelectedRegularSlots] = useState<Array<{ dayOfWeek: number; startTime: string }>>([]);
+  const [regularActiveDay, setRegularActiveDay] = useState<number>(() => (new Date().getDay() + 1) % 7);
 
   // 1. Fetch Student Dashboard Data
   const { data: dashboard, isLoading } = useQuery({
@@ -395,6 +406,46 @@ export const StudentDashboard: React.FC = () => {
         (language === 'he'
           ? 'שגיאה בהזמנת השיעור. אנא ודא שיש לך מכסת שיעורים פעילה בחבילה.'
           : 'Failed to book lesson. Please verify your session package quota.');
+      setBookingError(msg);
+      toast.error(msg, language === 'he' ? 'שגיאה בהזמנה' : 'Booking Error');
+    },
+  });
+
+  // Regular Booking Mutation (4-Week Weekly Recurring)
+  const bookRegularLessonMutation = useMutation({
+    mutationFn: async (payload: {
+      studentId: string;
+      teacherId: string;
+      recurringSlots: Array<{ dayOfWeek: number; startTime: string }>;
+      durationMinutes?: number;
+      sessionTypeId?: string;
+      zoomLink?: string;
+      weeksCount?: number;
+    }) => {
+      return api.post('/lessons/regular', payload);
+    },
+    onSuccess: (res: any, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['studentTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['availableTeachers'] });
+      setIsBookingModalOpen(false);
+      setSelectedRegularSlots([]);
+      setBookingError(null);
+      const totalBooked = res.data?.totalLessons || vars.recurringSlots.length * 4;
+      toast.success(
+        language === 'he'
+          ? `נקבעו בהצלחה ${totalBooked} שיעורים שבועיים קבועים ל-4 השבועות הקרובים!`
+          : `Successfully booked ${totalBooked} regular weekly lessons across the next 4 weeks!`,
+        language === 'he' ? 'חוג שבועי קבוע אושר' : 'Regular Booking Confirmed'
+      );
+    },
+    onError: (err: any) => {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        (language === 'he'
+          ? 'שגיאה בהזמנת השיעורים הקבועים. אנא ודא שיתרת החבילה שלך מספיקה.'
+          : 'Failed to book regular schedule. Please verify your monthly package balance.');
       setBookingError(msg);
       toast.error(msg, language === 'he' ? 'שגיאה בהזמנה' : 'Booking Error');
     },
@@ -568,6 +619,183 @@ export const StudentDashboard: React.FC = () => {
   );
   const hasEnoughBalance = (selectedSessionBalance?.balance || 0) > 0;
 
+  const pkgTotalLessons =
+    activePackage?.package?.totalLessons || activePackage?.lessonsTotal || 0;
+
+  // Monthly Regular Booking limit tied to package size:
+  // 4 sessions/month -> Max 1 weekly regular slot (4 total across month)
+  // 8 sessions/month -> Max 2 weekly regular slots (8 total across month)
+  // 12 sessions/month -> Max 3 weekly regular slots (12 total across month)
+  // 16 sessions/month -> Max 4 weekly regular slots (16 total across month)
+  let maxWeeklyRegularSlots = 1;
+  if (pkgTotalLessons >= 16) {
+    maxWeeklyRegularSlots = 4;
+  } else if (pkgTotalLessons >= 12) {
+    maxWeeklyRegularSlots = 3;
+  } else if (pkgTotalLessons >= 8) {
+    maxWeeklyRegularSlots = 2;
+  } else if (pkgTotalLessons >= 4) {
+    maxWeeklyRegularSlots = 1;
+  } else {
+    maxWeeklyRegularSlots = Math.min(
+      4,
+      Math.max(1, Math.floor((selectedSessionBalance?.balance || totalAvailableSessions) / 4))
+    );
+  }
+
+  const requiredSessionsForRegular = selectedRegularSlots.length * 4;
+  const hasEnoughBalanceForRegular =
+    (selectedSessionBalance?.balance || 0) >= requiredSessionsForRegular &&
+    requiredSessionsForRegular > 0;
+
+  const DAYS_LIST = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const DAYS_LIST_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+  const getUpcomingDatesForSlot = (dayOfWeek: number, startTime: string, weeks: number = 4) => {
+    const dates: Date[] = [];
+    const now = new Date();
+    const [h, m] = startTime.split(':').map(Number);
+    let daysUntil = (dayOfWeek - now.getDay() + 7) % 7;
+    if (daysUntil === 0) {
+      const todaySlot = new Date(now);
+      todaySlot.setHours(h, m, 0, 0);
+      if (todaySlot.getTime() - now.getTime() < 2 * 60 * 60 * 1000) {
+        daysUntil = 7;
+      }
+    }
+    const first = new Date(now);
+    first.setDate(now.getDate() + daysUntil);
+    first.setHours(h, m, 0, 0);
+
+    for (let w = 0; w < weeks; w++) {
+      const d = new Date(first);
+      d.setDate(first.getDate() + w * 7);
+      dates.push(d);
+    }
+    return dates;
+  };
+
+  const checkRegularSlotConflict = (teacher: any, dayOfWeek: number, startTime: string, duration: number) => {
+    if (!teacher || !teacher.lessons) return { hasConflict: false };
+    const targetDates = getUpcomingDatesForSlot(dayOfWeek, startTime, 4);
+
+    for (let i = 0; i < targetDates.length; i++) {
+      const targetDate = targetDates[i];
+      const targetStartMs = targetDate.getTime();
+      const targetEndMs = targetStartMs + duration * 60 * 1000;
+
+      const conflict = (teacher.lessons || []).find((l: any) => {
+        if (l.status === 'CANCELLED') return false;
+        const lStart = new Date(l.scheduledAt).getTime();
+        const lEnd = lStart + (l.durationMinutes || 25) * 60 * 1000;
+        return targetStartMs < lEnd && targetEndMs > lStart;
+      });
+
+      if (conflict) {
+        return {
+          hasConflict: true,
+          conflictingWeek: i + 1,
+          conflictingDate: targetDate.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+            month: 'short',
+            day: 'numeric',
+          }),
+        };
+      }
+    }
+
+    return { hasConflict: false };
+  };
+
+  const toggleRegularSlot = (dayOfWeek: number, startTime: string) => {
+    const isSelected = selectedRegularSlots.some(
+      (s) => s.dayOfWeek === dayOfWeek && s.startTime === startTime
+    );
+
+    if (isSelected) {
+      setSelectedRegularSlots((prev) =>
+        prev.filter((s) => !(s.dayOfWeek === dayOfWeek && s.startTime === startTime))
+      );
+      setBookingError(null);
+    } else {
+      if (selectedRegularSlots.length >= maxWeeklyRegularSlots) {
+        const msg =
+          language === 'he'
+            ? `הגעת למקסימום המותר בחבילה שלך: ${maxWeeklyRegularSlots} מועדים שבועיים קבועים (${maxWeeklyRegularSlots * 4} שיעורים בחודש).`
+            : `You have reached the maximum allowed for your package: ${maxWeeklyRegularSlots} regular weekly slot(s) (${maxWeeklyRegularSlots * 4} sessions/month).`;
+        setBookingError(msg);
+        toast.warning(msg);
+        return;
+      }
+      setSelectedRegularSlots((prev) => [...prev, { dayOfWeek, startTime }]);
+      setBookingError(null);
+    }
+  };
+
+  const handleRegularBookingSubmit = () => {
+    if (!selectedTeacherId) {
+      const err = language === 'he' ? 'אנא בחר מורה מוסמך.' : 'Please select a certified teacher.';
+      setBookingError(err);
+      toast.warning(err);
+      return;
+    }
+    if (selectedRegularSlots.length === 0) {
+      const err =
+        language === 'he'
+          ? 'אנא בחר לפחות מועד שבועי קבוע אחד לקביעת החוג.'
+          : 'Please select at least one weekly regular slot.';
+      setBookingError(err);
+      toast.warning(err);
+      return;
+    }
+    if (selectedRegularSlots.length > maxWeeklyRegularSlots) {
+      const err =
+        language === 'he'
+          ? `החבילה החודשית שלך מאפשרת לכל היותר ${maxWeeklyRegularSlots} מועדים שבועיים קבועים.`
+          : `Your monthly package allows at most ${maxWeeklyRegularSlots} regular weekly slot(s).`;
+      setBookingError(err);
+      toast.warning(err);
+      return;
+    }
+    if (!hasEnoughBalanceForRegular) {
+      const err =
+        language === 'he'
+          ? `יתרת השיעורים שלך אינה מספיקה לקביעת חוג שבועי קבוע ל-4 שבועות (${requiredSessionsForRegular} שיעורים נדרשים, יתרתך: ${selectedSessionBalance?.balance || 0}). ניתן להזמין שיعורים בודדים בלשונית 'שיעור בודד'.`
+          : `Insufficient balance for a 4-week regular schedule (${requiredSessionsForRegular} sessions required, your balance: ${selectedSessionBalance?.balance || 0}). You can book single sessions in the 'One-Time Lesson' tab or renew your package.`;
+      setBookingError(err);
+      toast.warning(err);
+      return;
+    }
+    if (!student?.id) {
+      const err = language === 'he' ? 'פרופיל התלמיד לא זוהה.' : 'Student profile not detected.';
+      setBookingError(err);
+      toast.error(err);
+      return;
+    }
+
+    for (const slot of selectedRegularSlots) {
+      const conflict = checkRegularSlotConflict(selectedTeacher, slot.dayOfWeek, slot.startTime, selectedDuration);
+      if (conflict.hasConflict) {
+        const err =
+          language === 'he'
+            ? `נמצאה התנגשות במועד הנבחר: המורה תפוס בשבוע ${conflict.conflictingWeek} (${conflict.conflictingDate}) בשעה ${slot.startTime}.`
+            : `Schedule conflict: Teacher is already booked on Week ${conflict.conflictingWeek} (${conflict.conflictingDate}) at ${slot.startTime}.`;
+        setBookingError(err);
+        toast.error(err);
+        return;
+      }
+    }
+
+    bookRegularLessonMutation.mutate({
+      studentId: student.id,
+      teacherId: selectedTeacherId,
+      recurringSlots: selectedRegularSlots,
+      durationMinutes: selectedDuration,
+      sessionTypeId: selectedSessionBalance?.sessionTypeId,
+      zoomLink: selectedTeacher?.defaultZoomLink,
+      weeksCount: 4,
+    });
+  };
+
   const selectedTeacher = (teachersData || []).find(
     (t: any) => t.id === selectedTeacherId
   );
@@ -722,7 +950,7 @@ export const StudentDashboard: React.FC = () => {
       teacherId: selectedTeacherId,
       timeSlotId: matchingSlot?.id,
       scheduledAt: scheduledIso,
-      lessonType: 'REGULAR',
+      lessonType: 'ONE_TIME',
       durationMinutes: selectedDuration,
       zoomLink: matchingSlot?.zoomLink || undefined,
     });
@@ -1350,18 +1578,26 @@ export const StudentDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 2: BOOK SESSION (25 / 40 / 55 MIN) */}
+          {/* TAB 2: BOOK SESSION (TWO CONNECTED TABS: REGULAR 4-WEEK RECURRING VS ONE-TIME FLEXIBLE) */}
           {activeTab === 'booking' && (
             <div className="space-y-6">
               <PageHeaderBanner
-                badgeIcon={Clock}
-                badgeText={language === 'he' ? 'שעון ישראל IST • 12 שעות' : 'Israel Time (IST) • 12-Hour'}
+                badgeIcon={bookingMode === 'regular' ? Repeat : Clock}
+                badgeText={bookingMode === 'regular'
+                  ? (language === 'he' ? 'חוג שבועי קבוע • 4 שבועות בחודש' : 'Regular Weekly Recurring • 4 Weeks/Month')
+                  : (language === 'he' ? 'שיעור בודד • גמיש ומשתנה' : 'One-Time Lesson • Flexible Single Session')}
                 statusText="Live"
-                title={language === 'he' ? 'הזמנת שיעור חי (25 / 40 / 55 דקות)' : 'Book a Live Session (25 / 40 / 55 Min)'}
+                title={bookingMode === 'regular'
+                  ? (language === 'he' ? 'קביעת חוג שבועי קבוע (Regular Booking)' : 'Regular Booking (Fixed Weekly Slots • 4 Weeks)')
+                  : (language === 'he' ? 'הזמנת שיעור בודד וגמיש (One-Time Lesson)' : 'One-Time Lesson (Flexible Single Session)')}
                 description={
-                  language === 'he'
-                    ? 'בחר משך שיעור, מורה מוסמך, תאריך ושעה זמינה בפורמט 12 שעות לפי שעון ישראל מתוך יתרת החבילה שלך.'
-                    : 'Select session duration, certified teacher, date, and available slot in Israel Standard Time (12-hour AM/PM).'
+                  bookingMode === 'regular'
+                    ? (language === 'he'
+                        ? 'בחר מועדים שבועיים קבועים לפי חבילתך החודשית (עד 1, 2, 3 או 4 ימים בשבוע) שיתקיימו מדי שבוע לאורך כל 4 השבועות של החודש.'
+                        : 'Select fixed weekly slots based on your monthly package (up to 1, 2, 3, or 4 slots per week) that recur automatically across the next 4 weeks.')
+                    : (language === 'he'
+                        ? 'בחר משך שיעור, מורה מוסמך, תאריך ושעה זמינה בפורמט 12 שעות לפי שעון ישראל מתוך יתרת החבילה שלך ללא התחייבות שבועית קבועה.'
+                        : 'Select session duration, certified teacher, date, and available slot in Israel Standard Time (12h AM/PM) one session at a time.')
                 }
                 action={
                   <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-white font-bold text-xs shadow-xs">
@@ -1375,342 +1611,648 @@ export const StudentDashboard: React.FC = () => {
                 }
               />
 
+              {/* TWO TABS SWITCHER (REGULAR BOOKING VS ONE-TIME LESSON) */}
+              <div className="p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 flex flex-col sm:flex-row gap-1.5 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingMode('regular');
+                    setBookingError(null);
+                  }}
+                  className={`flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2.5 text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+                    bookingMode === 'regular'
+                      ? 'bg-gradient-to-r from-brand-teal-700 to-indigo-700 text-white shadow-md shadow-brand-teal-900/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50'
+                  }`}
+                >
+                  <Repeat className="w-4 h-4 shrink-0" />
+                  <span>{language === 'he' ? 'חוג שבועי קבוע (Regular Booking)' : 'Regular Booking (Weekly Recurring)'}</span>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    bookingMode === 'regular'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-700 dark:text-brand-teal-300'
+                  }`}>
+                    {maxWeeklyRegularSlots} {language === 'he' ? 'מועדים/שבוע' : 'slots/wk max'}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBookingMode('onetime');
+                    setBookingError(null);
+                  }}
+                  className={`flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2.5 text-xs sm:text-sm font-extrabold transition-all cursor-pointer ${
+                    bookingMode === 'onetime'
+                      ? 'bg-gradient-to-r from-brand-teal-700 to-indigo-700 text-white shadow-md shadow-brand-teal-900/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-700/50'
+                  }`}
+                >
+                  <CalendarCheck className="w-4 h-4 shrink-0" />
+                  <span>{language === 'he' ? 'שיעור בודד וגמיש (One-Time Lesson)' : 'One-Time Lesson (Flexible Single)'}</span>
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                    bookingMode === 'onetime'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {selectedSessionBalance?.balance || 0} {language === 'he' ? 'זמינים' : 'left'}
+                  </span>
+                </button>
+              </div>
+
+              {/* MONTHLY PACKAGE ALLOWANCE & RULES BANNER */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-brand-teal-50/90 via-indigo-50/40 to-slate-50 dark:from-slate-850 dark:via-brand-teal-950/30 dark:to-slate-850 border border-brand-teal-200/70 dark:border-brand-teal-800/50 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-teal-700 to-indigo-700 text-white flex items-center justify-center shrink-0 shadow-xs ring-2 ring-brand-teal-400/30">
+                    <CalendarRange className="w-5 h-5 text-brand-olive-300" />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
+                        {language === 'he'
+                          ? `חבילה חודשית: ${pkgTotalLessons || 'מכסה'} שיעורים בחודש`
+                          : `Monthly Package: ${pkgTotalLessons || 'Custom'} Sessions / Month`}
+                      </h3>
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-brand-teal-900/60 text-brand-teal-800 dark:text-brand-teal-300 border border-brand-teal-200 dark:border-brand-teal-700">
+                        {bookingMode === 'regular'
+                          ? (language === 'he' ? `עד ${maxWeeklyRegularSlots} מועדים/שבוע` : `Up to ${maxWeeklyRegularSlots} slots/week`)
+                          : (language === 'he' ? 'שיעור בודד ללא התחייבות' : 'Pay-as-you-go Single Slot')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                      {bookingMode === 'regular'
+                        ? (language === 'he'
+                            ? `לפי כללי החבילה החודשית (${pkgTotalLessons || 4} שיעורים): ניתן לקבוע עד ${maxWeeklyRegularSlots} מועדים שבועיים קבועים. המערכת תשריין את אותם המועדים ברציפות לכל 4 השבועות של החודש (סה"כ ${selectedRegularSlots.length * 4} שיעורים מתוך יתרתך).`
+                            : `Per your monthly package (${pkgTotalLessons || 4} sessions): You can select up to ${maxWeeklyRegularSlots} fixed weekly regular slot(s). The system automatically schedules all 4 consecutive weeks of the month (total ${selectedRegularSlots.length * 4} lessons deducted).`)
+                        : (language === 'he'
+                            ? `בלשונית שיעור בודד (One-Time Lesson): ניתן לנצל את יתרת החבילה שלך לקביעת שיעורים ספציפיים וגמישים ללא התחייבות למועד קבוע שבועי.`
+                            : `In One-Time Lesson tab: Use your remaining package balance to book single, flexible lessons date by date without committing to a recurring weekly slot.`)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 self-start md:self-auto shrink-0 bg-white/90 dark:bg-slate-800/90 px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                  <Layers className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">{language === 'he' ? 'יתרת שיעורים זמינה:' : 'Available Quota:'}</span>
+                    <span className="font-black text-sm text-slate-900 dark:text-white">
+                      {selectedSessionBalance?.balance || 0} {language === 'he' ? 'שיעורים' : 'sessions'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BOOKING CONTAINER */}
               <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6">
 
-              {/* Insufficient balance warning banner */}
-              {!hasEnoughBalance && (
-                <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs font-semibold flex items-start gap-2.5">
-                  <AlertCircle className="w-5 h-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
-                  <div>
-                    <p className="font-bold">
-                      {language === 'he' ? 'אין שיעורים זמינים בחבילה למשך זה' : 'No Available Sessions in Package'}
-                    </p>
-                    <p className="mt-0.5 opacity-90 leading-relaxed">
-                      {language === 'he'
-                        ? `מכסת השיעורים הזמינים שלך עבור שיעור של ${selectedDuration} דקות הינה 0. יש לרכוש חבילת שיעורים חדשה או לפנות לצוות Engrew להוספת חבילה.`
-                        : `Your active quota for ${selectedDuration}-minute sessions is 0. Please acquire a session package or contact Engrew support to assign a new package.`}
-                    </p>
+                {/* Insufficient balance warning banner */}
+                {!hasEnoughBalance && (
+                  <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs font-semibold flex items-start gap-2.5">
+                    <AlertCircle className="w-5 h-5 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                    <div>
+                      <p className="font-bold">
+                        {language === 'he' ? 'אין שיעורים זמינים בחבילה למשך זה' : 'No Available Sessions in Package'}
+                      </p>
+                      <p className="mt-0.5 opacity-90 leading-relaxed">
+                        {language === 'he'
+                          ? `מכסת השיעורים הזמינים שלך עבור שיעור של ${selectedDuration} דקות הינה 0. יש לרכוש חבילת שיעורים חדשה או לפנות לצוות Engrew להוספת חבילה.`
+                          : `Your active quota for ${selectedDuration}-minute sessions is 0. Please acquire a session package or contact Engrew support to assign a new package.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Regular booking quota check */}
+                {bookingMode === 'regular' && (selectedSessionBalance?.balance || 0) < 4 && hasEnoughBalance && (
+                  <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-start gap-2.5">
+                    <Info className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div>
+                      <p className="font-bold">
+                        {language === 'he' ? 'יתרת השיעורים קטנה מ-4 שיעורים' : 'Fewer than 4 Sessions Remaining'}
+                      </p>
+                      <p className="mt-0.5 opacity-90 leading-relaxed">
+                        {language === 'he'
+                          ? `קביעת חוג שבועי קבוע ל-4 שבועות דורשת לפחות 4 שיעורים זמינים. כרגע נותרו לך ${selectedSessionBalance?.balance} שיעורים. באפשרותך לנצל אותם כשיעורים בודדים בלשונית 'שיעור בודד וגמיש' או לחדש את החבילה החודשית.`
+                          : `A 4-week regular schedule requires at least 4 available sessions. You currently have ${selectedSessionBalance?.balance} left. You can book them as individual sessions in the 'One-Time Lesson' tab or renew your package.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {bookingError && (
+                  <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{bookingError}</span>
+                  </div>
+                )}
+
+                {/* Step 1: Select Session Duration */}
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    {language === 'he' ? '1. בחר משך שיעור' : '1. Select Session Duration'}
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { dur: 25, labelEn: '25 Minutes', labelHe: '25 דקות' },
+                      { dur: 40, labelEn: '40 Minutes', labelHe: '40 דקות' },
+                      { dur: 55, labelEn: '55 Minutes', labelHe: '55 דקות' },
+                    ].map((item) => {
+                      const quota = sessionBalances.find((sb: any) => sb.sessionType?.durationMinutes === item.dur)?.balance || 0;
+                      return (
+                        <button
+                          key={item.dur}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDuration(item.dur as 25 | 40 | 55);
+                            setSelectedSlotTime('');
+                            setSelectedRegularSlots([]);
+                          }}
+                          className={`p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
+                            selectedDuration === item.dur
+                              ? item.dur === 55
+                                ? 'bg-purple-600 text-white border-purple-600 shadow-xs ring-2 ring-purple-400'
+                                : item.dur === 40
+                                ? 'bg-sky-600 text-white border-sky-600 shadow-xs ring-2 ring-sky-400'
+                                : 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-400'
+                              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                          }`}
+                        >
+                          <span className="block text-sm font-extrabold">
+                            {language === 'he' ? item.labelHe : item.labelEn}
+                          </span>
+                          <span className={`text-[11px] font-extrabold block mt-1 px-2 py-0.5 rounded-lg inline-block ${
+                            selectedDuration === item.dur
+                              ? 'bg-white/25 text-white'
+                              : quota > 0
+                              ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
+                          }`}>
+                            {quota} {language === 'he' ? 'שיעורים' : 'left'}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
 
-              {/* Sufficient balance confirmation */}
-              {hasEnoughBalance && (
-                <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-200 text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>
-                      {language === 'he'
-                        ? `מכסה מאושרת: ינוכה שיעור 1 (${selectedDuration} דק׳) מחבילת השיעורים שלך`
-                        : `Quota confirmed: 1 session (${selectedDuration} min) will be deducted from your package`}
-                    </span>
-                  </div>
-                  <span className="font-bold text-emerald-700 dark:text-emerald-300 shrink-0">
-                    {language === 'he' ? 'מכסה לאחר הזמנה:' : 'Quota after booking:'} {Math.max(0, (selectedSessionBalance?.balance || 0) - 1)} {language === 'he' ? 'שיעורים' : 'sessions'}
-                  </span>
-                </div>
-              )}
-
-              {bookingError && (
-                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{bookingError}</span>
-                </div>
-              )}
-
-              {/* Step 1: Select Session Duration */}
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  {language === 'he' ? '1. בחר משך שיעור' : '1. Select Session Duration'}
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { dur: 25, labelEn: '25 Minutes', labelHe: '25 דקות', color: 'emerald' },
-                    { dur: 40, labelEn: '40 Minutes', labelHe: '40 דקות', color: 'sky' },
-                    { dur: 55, labelEn: '55 Minutes', labelHe: '55 דקות', color: 'purple' },
-                  ].map((item) => {
-                    const quota = sessionBalances.find((sb: any) => sb.sessionType?.durationMinutes === item.dur)?.balance || 0;
-                    return (
+                {/* Step 2: Select Teacher */}
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    {language === 'he' ? '2. בחר מורה מוסמך לעברית' : '2. Select Certified Hebrew Teacher'}
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(teachersData || []).map((t: any) => (
                       <button
-                        key={item.dur}
+                        key={t.id}
                         type="button"
                         onClick={() => {
-                          setSelectedDuration(item.dur as 25 | 40 | 55);
+                          setSelectedTeacherId(t.id);
                           setSelectedSlotTime('');
+                          setSelectedRegularSlots([]);
                         }}
-                        className={`p-3.5 rounded-2xl border text-center transition-all ${
-                          selectedDuration === item.dur
-                            ? item.dur === 55
-                              ? 'bg-purple-600 text-white border-purple-600 shadow-xs ring-2 ring-purple-400'
-                              : item.dur === 40
-                              ? 'bg-sky-600 text-white border-sky-600 shadow-xs ring-2 ring-sky-400'
-                              : 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-400'
-                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                        className={`p-4 rounded-2xl border text-start transition-all cursor-pointer ${
+                          selectedTeacherId === t.id
+                            ? 'border-brand-teal-800 bg-brand-teal-50/60 dark:bg-brand-teal-950/60 ring-2 ring-brand-teal-800'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
                         }`}
                       >
-                        <span className="block text-sm font-extrabold">
-                          {language === 'he' ? item.labelHe : item.labelEn}
-                        </span>
-                        <span className={`text-[11px] font-extrabold block mt-1 px-2 py-0.5 rounded-lg inline-block ${
-                          selectedDuration === item.dur
-                            ? 'bg-white/25 text-white'
-                            : quota > 0
-                            ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
-                            : 'bg-slate-100 dark:bg-slate-700 text-slate-400'
-                        }`}>
-                          {quota} {language === 'he' ? 'שיעורים' : 'left'}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Step 2: Select Teacher */}
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  {language === 'he' ? '2. בחר מורה מוסמך לעברית' : '2. Select Certified Hebrew Teacher'}
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {(teachersData || []).map((t: any) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedTeacherId(t.id);
-                        setSelectedSlotTime('');
-                      }}
-                      className={`p-4 rounded-2xl border text-start transition-all ${
-                        selectedTeacherId === t.id
-                          ? 'border-brand-teal-800 bg-brand-teal-50/60 dark:bg-brand-teal-950/60 ring-2 ring-brand-teal-800'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black text-xs flex items-center justify-center shadow-xs ring-1 ring-teal-400/30 shrink-0">
-                          {`${t.user?.firstName?.charAt(0) || ''}${t.user?.lastName?.charAt(0) || ''}`.toUpperCase() || 'T'}
-                        </div>
-                        <div className="overflow-hidden flex-1">
-                          <p className="font-bold text-sm text-slate-900 dark:text-white truncate">
-                            {t.user?.firstName} {t.user?.lastName}
-                          </p>
-                          <div className="flex items-center gap-1.5 text-xs text-amber-500 font-bold">
-                            <Star className="w-3.5 h-3.5 fill-amber-500" />
-                            <span>{t.ratingAvg || '4.95'}</span>
-                            <span className="text-slate-400 font-normal">
-                              • {language === 'he' ? 'מורה מוסמך' : 'Certified Instructor'}
-                            </span>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black text-xs flex items-center justify-center shadow-xs ring-1 ring-teal-400/30 shrink-0">
+                            {`${t.user?.firstName?.charAt(0) || ''}${t.user?.lastName?.charAt(0) || ''}`.toUpperCase() || 'T'}
+                          </div>
+                          <div className="overflow-hidden flex-1">
+                            <p className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                              {t.user?.firstName} {t.user?.lastName}
+                            </p>
+                            <div className="flex items-center gap-1.5 text-xs text-amber-500 font-bold">
+                              <Star className="w-3.5 h-3.5 fill-amber-500" />
+                              <span>{t.ratingAvg || '4.95'}</span>
+                              <span className="text-slate-400 font-normal">
+                                • {language === 'he' ? 'מורה מוסמך' : 'Certified Instructor'}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                        {t.bio || (language === 'he' ? 'מורה מקצועי בעל ניסיון רב.' : 'Experienced native Hebrew educator.')}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Step 3: Choose Date */}
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  {language === 'he' ? '3. בחר תאריך לשיעור' : '3. Choose Lesson Date'}
-                </label>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <input
-                    type="date"
-                    min={new Date().toISOString().split('T')[0]}
-                    value={bookingDate}
-                    onChange={(e) => {
-                      setBookingDate(e.target.value);
-                      setSelectedSlotTime(''); // reset slot when date changes
-                    }}
-                    className="w-full max-w-xs px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none shadow-2xs"
-                  />
-                  <span className="text-xs font-extrabold text-brand-teal-800 dark:text-brand-teal-300 bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 px-3 py-2 rounded-xl">
-                    {new Date(bookingDate + 'T00:00:00').toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              {/* Step 4: Available Slots matching Selected Duration & Chosen Date */}
-              {selectedTeacher && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      {language === 'he'
-                        ? `4. בחר שעת שיעור (${selectedDuration} דק׳) - ${selectedTeacher.user?.firstName}`
-                        : `4. Select Slot (${selectedDuration} Min) - ${selectedTeacher.user?.firstName}`}
-                    </label>
-                    <span className="text-[11px] text-brand-teal-800 dark:text-brand-teal-300 font-bold bg-brand-teal-50 dark:bg-brand-teal-950/60 px-2.5 py-0.5 rounded-md border border-brand-teal-200 dark:border-brand-teal-800">
-                      {language === 'he' ? 'שעון 12 שעות • שעון ישראל' : `12h System • ${ISRAEL_TZ_LABEL}`}
-                    </span>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                          {t.bio || (language === 'he' ? 'מורה מקצועי בעל ניסיון רב.' : 'Experienced native Hebrew educator.')}
+                        </p>
+                      </button>
+                    ))}
                   </div>
-                  {(() => {
-                    const chosenDay = new Date(bookingDate + 'T00:00:00').getDay();
+                </div>
 
-                    // All open slots for this teacher on this weekday (no duration constraint)
-                    const matchingSlots = (selectedTeacher.timeSlots || []).filter((slot: any) => {
-                      return slot.dayOfWeek === chosenDay && slot.isAvailable !== false;
-                    });
+                {/* ======================================================== */}
+                {/* CONDITIONAL SUB-FLOW: TAB 1 REGULAR BOOKING (WEEKLY)    */}
+                {/* ======================================================== */}
+                {bookingMode === 'regular' && selectedTeacher && (
+                  <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                          {language === 'he'
+                            ? `3. בחר מועדים שבועיים קבועים (עד ${maxWeeklyRegularSlots} מועדים בשבוע)`
+                            : `3. Select Fixed Weekly Slots (Up to ${maxWeeklyRegularSlots} slots/week)`}
+                        </label>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          {language === 'he'
+                            ? `כל מועד שתבחר יתקיים באופן אוטומטי פעם בשבוע לאורך כל 4 השבועות של החודש.`
+                            : `Each chosen weekly slot will be reserved automatically once per week for 4 consecutive weeks.`}
+                        </p>
+                      </div>
 
-                    // Days when this teacher has any open availability slots
-                    const teacherAvailableDays = Array.from(
-                      new Set(
-                        (selectedTeacher.timeSlots || [])
-                          .filter((s: any) => s.isAvailable !== false)
-                          .map((s: any) => s.dayOfWeek)
-                      )
-                    ).sort((a: any, b: any) => a - b) as number[];
+                      <div className="flex items-center gap-2 self-start sm:self-auto">
+                        <span className={`px-3 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 ${
+                          selectedRegularSlots.length === maxWeeklyRegularSlots
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                            : 'bg-brand-teal-50 text-brand-teal-800 dark:bg-brand-teal-950/60 dark:text-brand-teal-300 border border-brand-teal-200 dark:border-brand-teal-800'
+                        }`}>
+                          <Repeat className="w-3.5 h-3.5" />
+                          <span>
+                            {language === 'he' ? 'נבחרו:' : 'Selected:'} {selectedRegularSlots.length} / {maxWeeklyRegularSlots} {language === 'he' ? 'שבועיים' : 'weekly'}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
 
-                    return (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-1">
-                          {matchingSlots.map((slot: any) => {
-                            const isSelected = selectedSlotTime === slot.startTime;
+                    {/* Day of Week Tabs */}
+                    <div className="grid grid-cols-7 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+                      {DAYS_LIST.map((dayName, idx) => {
+                        const daySlots = (selectedTeacher.timeSlots || []).filter(
+                          (s: any) => s.dayOfWeek === idx && s.isAvailable !== false
+                        );
+                        const selectedInThisDay = selectedRegularSlots.filter((s) => s.dayOfWeek === idx).length;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setRegularActiveDay(idx)}
+                            className={`py-2 px-1 text-center rounded-xl transition-all cursor-pointer ${
+                              regularActiveDay === idx
+                                ? 'bg-brand-teal-800 text-white font-extrabold shadow-xs'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700'
+                            }`}
+                          >
+                            <span className="block text-[11px] font-bold">
+                              {language === 'he' ? DAYS_LIST_HE[idx] : dayName.slice(0, 3)}
+                            </span>
+                            <span className={`text-[10px] block mt-0.5 font-bold ${
+                              selectedInThisDay > 0
+                                ? regularActiveDay === idx ? 'text-amber-300' : 'text-emerald-600 dark:text-emerald-400'
+                                : regularActiveDay === idx ? 'text-white/80' : 'text-slate-400'
+                            }`}>
+                              {selectedInThisDay > 0 ? `✓ ${selectedInThisDay}` : `${daySlots.length}`}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Slots for regularActiveDay */}
+                    {(() => {
+                      const daySlots = (selectedTeacher.timeSlots || []).filter(
+                        (s: any) => s.dayOfWeek === regularActiveDay && s.isAvailable !== false
+                      );
+
+                      if (daySlots.length === 0) {
+                        return (
+                          <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center space-y-2">
+                            <Clock className="w-6 h-6 text-slate-400 mx-auto" />
+                            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">
+                              {language === 'he'
+                                ? `למורה ${selectedTeacher.user?.firstName} אין שעות זמינות ביום ${DAYS_LIST_HE[regularActiveDay]}. אנא בחר יום אחר.`
+                                : `Teacher ${selectedTeacher.user?.firstName} has no open slots on ${DAYS_LIST[regularActiveDay]}. Please choose another day.`}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {daySlots.map((slot: any) => {
+                            const isSelected = selectedRegularSlots.some(
+                              (s) => s.dayOfWeek === regularActiveDay && s.startTime === slot.startTime
+                            );
                             const slotEndCalculated = calculateSlotEndTime(slot.startTime, selectedDuration);
+                            const conflictInfo = checkRegularSlotConflict(
+                              selectedTeacher,
+                              regularActiveDay,
+                              slot.startTime,
+                              selectedDuration
+                            );
 
-                            // Check if an existing scheduled lesson overlaps with this [slot.startTime, slotEndCalculated] window
-                            const isSlotBooked = (selectedTeacher.lessons || []).some((l: any) => {
-                              if (l.status === 'CANCELLED') return false;
-                              const lDateStr = new Date(l.scheduledAt).toISOString().split('T')[0];
-                              if (lDateStr !== bookingDate || l.status !== 'SCHEDULED') return false;
-
-                              const lDate = new Date(l.scheduledAt);
-                              const lH = lDate.getHours();
-                              const lM = lDate.getMinutes();
-                              const lStartMs = (lH * 60 + lM) * 60 * 1000;
-                              const lDur = l.durationMinutes || 25;
-                              const lEndMs = lStartMs + lDur * 60 * 1000;
-
-                              const [sH, sM] = slot.startTime.split(':').map(Number);
-                              const sStartMs = (sH * 60 + sM) * 60 * 1000;
-                              const sEndMs = sStartMs + selectedDuration * 60 * 1000;
-
-                              return sStartMs < lEndMs && sEndMs > lStartMs;
-                            });
-
-                            if (isSlotBooked) {
+                            if (conflictInfo.hasConflict) {
                               return (
                                 <div
                                   key={slot.id}
-                                  className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-850/60 text-slate-400 dark:text-slate-500 text-center opacity-60 cursor-not-allowed"
+                                  className="p-3.5 rounded-2xl border border-rose-200/80 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/30 text-slate-400 dark:text-slate-500 opacity-60 cursor-not-allowed"
                                 >
-                                  <p className="font-mono text-xs font-bold leading-tight line-through">
-                                    {formatSlotRange12Hour(slot.startTime, slotEndCalculated)}
-                                  </p>
-                                  <p className="text-[10px] text-rose-500 dark:text-rose-400 font-extrabold mt-1">
-                                    {language === 'he' ? 'מוזמן (תפוס)' : 'Booked'}
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-mono text-xs font-bold line-through">
+                                      {formatSlotRange12Hour(slot.startTime, slotEndCalculated)}
+                                    </span>
+                                    <span className="text-[10px] font-extrabold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/60 px-2 py-0.5 rounded-md">
+                                      {language === 'he' ? `תפוס בשבוע ${conflictInfo.conflictingWeek}` : `Conflict Week ${conflictInfo.conflictingWeek}`}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-rose-500 dark:text-rose-400 mt-1">
+                                    {language === 'he' ? `השיעור ב-${conflictInfo.conflictingDate} כבר תפוס` : `Collides on ${conflictInfo.conflictingDate}`}
                                   </p>
                                 </div>
                               );
                             }
 
+                            const isMaxReached = selectedRegularSlots.length >= maxWeeklyRegularSlots && !isSelected;
+
                             return (
                               <button
                                 key={slot.id}
                                 type="button"
-                                onClick={() => setSelectedSlotTime(slot.startTime)}
-                                className={`p-3 rounded-2xl border text-center transition-all ${
+                                disabled={isMaxReached}
+                                onClick={() => toggleRegularSlot(regularActiveDay, slot.startTime)}
+                                className={`p-3.5 rounded-2xl border text-start transition-all cursor-pointer ${
                                   isSelected
-                                    ? selectedDuration === 55
-                                      ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-xs ring-2 ring-purple-400'
-                                      : selectedDuration === 40
-                                      ? 'bg-sky-600 text-white border-sky-600 font-bold shadow-xs ring-2 ring-sky-400'
-                                      : 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-xs ring-2 ring-emerald-400'
-                                    : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-200/90 dark:border-slate-700 shadow-2xs'
+                                    ? 'bg-brand-teal-800 text-white border-brand-teal-800 shadow-md ring-2 ring-brand-teal-400'
+                                    : isMaxReached
+                                    ? 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 opacity-40 cursor-not-allowed'
+                                    : 'bg-white dark:bg-slate-800 hover:border-brand-teal-400 text-slate-800 dark:text-slate-100 border-slate-200/90 dark:border-slate-700 shadow-2xs'
                                 }`}
                               >
-                                <p className="font-mono text-xs font-bold leading-tight">
-                                  {formatSlotRange12Hour(slot.startTime, slotEndCalculated)}
-                                </p>
-                                <p className="text-[10px] opacity-90 mt-1 font-semibold">
-                                  {selectedDuration} {language === 'he' ? 'דק׳ (שעון ישראל)' : 'min (IST)'}
+                                <div className="flex items-center justify-between">
+                                  <span className="font-mono text-xs font-bold">
+                                    {formatSlotRange12Hour(slot.startTime, slotEndCalculated)}
+                                  </span>
+                                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                                    isSelected
+                                      ? 'bg-white/25 text-white'
+                                      : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                  }`}>
+                                    {isSelected ? '✓ ' + (language === 'he' ? 'נבחר' : 'Selected') : (language === 'he' ? 'פנוי ל-4 שבועות' : '4-Wk Ready')}
+                                  </span>
+                                </div>
+                                <p className={`text-[10px] mt-1 font-semibold ${isSelected ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
+                                  {language === 'he'
+                                    ? `כל יום ${DAYS_LIST_HE[regularActiveDay]} (${selectedDuration} דק׳)`
+                                    : `Every ${DAYS_LIST[regularActiveDay]} (${selectedDuration}m)`}
                                 </p>
                               </button>
                             );
                           })}
                         </div>
+                      );
+                    })()}
 
-                        {matchingSlots.length === 0 && (
-                          <div className="p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-center space-y-3">
-                            <p className="text-xs text-amber-900 dark:text-amber-200 font-bold">
-                              {language === 'he'
-                                ? `למורה ${selectedTeacher.user?.firstName} אין שעות זמינות של ${selectedDuration} דקות ביום ${DAYS_HE[chosenDay]} (${bookingDate}).`
-                                : `${selectedTeacher.user?.firstName} has no ${selectedDuration}-minute slots available on ${DAYS[chosenDay]} (${bookingDate}).`}
-                            </p>
+                    {/* 4-Week Auto-Schedule Preview */}
+                    {selectedRegularSlots.length > 0 && (
+                      <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200 uppercase tracking-wider flex items-center gap-2">
+                            <CalendarDays className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                            <span>{language === 'he' ? 'לוח 4 השבועות שישוריינו עבורך בחודש:' : '4-Week Auto-Schedule Preview:'}</span>
+                          </h4>
+                          <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                            {selectedRegularSlots.length * 4} {language === 'he' ? 'שיעורים סך הכל' : 'Sessions Total'}
+                          </span>
+                        </div>
 
-                            {teacherAvailableDays.length > 0 && (
-                              <div className="pt-2 border-t border-amber-200/60 dark:border-amber-800/40">
-                                <span className="text-[11px] font-extrabold text-amber-800 dark:text-amber-300 block mb-2">
-                                  {language === 'he'
-                                    ? `ימים זמינים אחרים עבור ${selectedTeacher.user?.firstName} (לחץ לבחירת תאריך):`
-                                    : `Available days for ${selectedTeacher.user?.firstName} (click to jump to date):`}
-                                </span>
-                                <div className="flex flex-wrap items-center justify-center gap-2">
-                                  {teacherAvailableDays.map((dayIdx) => {
-                                    // Calculate next upcoming date for that day
-                                    const today = new Date();
-                                    const diff = (dayIdx - today.getDay() + 7) % 7 || 7;
-                                    const nextDate = new Date(today);
-                                    nextDate.setDate(today.getDate() + diff);
-                                    const nextDateStr = nextDate.toISOString().split('T')[0];
-
-                                    return (
-                                      <button
-                                        key={dayIdx}
-                                        type="button"
-                                        onClick={() => {
-                                          setBookingDate(nextDateStr);
-                                          setSelectedSlotTime('');
-                                        }}
-                                        className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-xs font-bold text-slate-800 dark:text-slate-100 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors shadow-2xs"
-                                      >
-                                        {language === 'he' ? DAYS_HE[dayIdx] : DAYS[dayIdx]} ({nextDate.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', { month: 'short', day: 'numeric' })})
-                                      </button>
-                                    );
-                                  })}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-indigo-200/60 dark:border-indigo-800/40">
+                          {selectedRegularSlots.map((slot, sIdx) => {
+                            const targetDates = getUpcomingDatesForSlot(slot.dayOfWeek, slot.startTime, 4);
+                            return (
+                              <div
+                                key={sIdx}
+                                className="bg-white/90 dark:bg-slate-900/90 rounded-xl p-3 border border-indigo-200/80 dark:border-indigo-800/60 shadow-2xs space-y-2"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-extrabold text-xs text-slate-900 dark:text-white">
+                                    {language === 'he' ? `מועד #${sIdx + 1}: כל יום ${DAYS_LIST_HE[slot.dayOfWeek]}` : `Slot #${sIdx + 1}: Every ${DAYS_LIST[slot.dayOfWeek]}`}
+                                  </span>
+                                  <span className="font-mono text-xs font-black text-indigo-600 dark:text-indigo-400">
+                                    {slot.startTime} (IST)
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                  {targetDates.map((d, wIdx) => (
+                                    <div key={wIdx} className="px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                      <span className="text-slate-400 font-bold me-1">{wIdx + 1}.</span>
+                                      {d.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                      })}
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                            )}
-                          </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Submit Regular Schedule */}
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <span className="font-semibold">{language === 'he' ? 'ניכוי מחבילה:' : 'Package Deduction:'}</span>{' '}
+                        <span className="font-extrabold text-slate-900 dark:text-white">
+                          {selectedRegularSlots.length * 4} {language === 'he' ? 'שיעורים' : 'sessions'}
+                        </span>
+                        {' · '}
+                        <span className="font-semibold">{language === 'he' ? 'יתרתך:' : 'Available Quota:'}</span>{' '}
+                        <span className={`font-bold ${hasEnoughBalanceForRegular ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {selectedSessionBalance?.balance || 0} {language === 'he' ? 'שיעורים' : 'sessions'}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={handleRegularBookingSubmit}
+                        disabled={
+                          bookRegularLessonMutation.isPending ||
+                          selectedRegularSlots.length === 0 ||
+                          !hasEnoughBalanceForRegular ||
+                          !selectedTeacherId
+                        }
+                        className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-brand-teal-800 to-indigo-800 hover:from-brand-teal-900 hover:to-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black shadow-lg shadow-brand-teal-900/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <CheckCircle className="w-4 h-4 text-brand-olive-300" />
+                        <span>
+                          {bookRegularLessonMutation.isPending
+                            ? (language === 'he' ? 'משריין 4 שבועות קבועים...' : 'Scheduling 4 Weeks...')
+                            : (language === 'he'
+                                ? `אישור חוג שבועי קבוע ל-4 שבועות (${selectedRegularSlots.length * 4} שיעורים)`
+                                : `Confirm 4-Week Regular Schedule (${selectedRegularSlots.length * 4} Lessons)`)}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ======================================================== */}
+                {/* CONDITIONAL SUB-FLOW: TAB 2 ONE-TIME LESSON (FLEXIBLE)   */}
+                {/* ======================================================== */}
+                {bookingMode === 'onetime' && selectedTeacher && (
+                  <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    {/* Step 3: Choose Date */}
+                    <div className="space-y-3">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        {language === 'he' ? '3. בחר תאריך לשיעור בודד' : '3. Choose Single Lesson Date'}
+                      </label>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <input
+                          type="date"
+                          min={new Date().toISOString().split('T')[0]}
+                          value={bookingDate}
+                          onChange={(e) => {
+                            setBookingDate(e.target.value);
+                            setSelectedSlotTime('');
+                          }}
+                          className="w-full max-w-xs px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-brand-teal-800 focus:outline-none shadow-2xs"
+                        />
+                        {bookingDate && (
+                          <span className="text-xs font-extrabold text-brand-teal-800 dark:text-brand-teal-300 bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 px-3 py-2 rounded-xl">
+                            {new Date(bookingDate + 'T00:00:00').toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                          </span>
                         )}
                       </div>
-                    );
-                  })()}
-                </div>
-              )}
+                    </div>
 
-              {/* Submit Booking */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold">{language === 'he' ? 'ניכוי מחבילה:' : 'Package Deduction:'}</span>{' '}
-                  <span className="font-extrabold text-slate-900 dark:text-white">1 {language === 'he' ? 'שיעור' : 'session'}</span>
-                  {' · '}
-                  <span className="font-semibold">{language === 'he' ? 'יתרתך:' : 'Available Quota:'}</span>{' '}
-                  <span className={`font-bold ${hasEnoughBalance ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                    {selectedSessionBalance?.balance || 0} {language === 'he' ? 'שיעורים' : 'sessions'}
-                  </span>
-                </div>
-                <button
-                  onClick={handleBookingSubmit}
-                  disabled={bookLessonMutation.isPending || !hasEnoughBalance || !selectedSlotTime || !bookingDate || !selectedTeacherId}
-                  className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-brand-teal-800 hover:bg-brand-teal-900 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
-                >
-                  <CheckCircle className="w-4 h-4 text-brand-olive-300" />
-                  <span>
-                    {bookLessonMutation.isPending
-                      ? (language === 'he' ? 'מאשר ומנכה מחבילה...' : 'Confirming & Deducting...')
-                      : (language === 'he' ? `אישור הזמנה (${selectedDuration} דק׳ - ניכוי 1 מפגש)` : `Confirm ${selectedDuration}-Min Booking (1 Session)`)}
-                  </span>
-                </button>
+                    {/* Step 4: Available Slots matching Selected Duration & Chosen Date */}
+                    {bookingDate && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            {language === 'he'
+                              ? `4. בחר שעת שיעור (${selectedDuration} דק׳) - ${selectedTeacher.user?.firstName}`
+                              : `4. Select Slot (${selectedDuration} Min) - ${selectedTeacher.user?.firstName}`}
+                          </label>
+                          <span className="text-[11px] text-brand-teal-800 dark:text-brand-teal-300 font-bold bg-brand-teal-50 dark:bg-brand-teal-950/60 px-2.5 py-0.5 rounded-md border border-brand-teal-200 dark:border-brand-teal-800">
+                            {language === 'he' ? 'שעון 12 שעות • שעון ישראל' : `12h System • ${ISRAEL_TZ_LABEL}`}
+                          </span>
+                        </div>
+                        {(() => {
+                          const chosenDay = new Date(bookingDate + 'T00:00:00').getDay();
+                          const matchingSlots = (selectedTeacher.timeSlots || []).filter((slot: any) => {
+                            return slot.dayOfWeek === chosenDay && slot.isAvailable !== false;
+                          });
+
+                          return (
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-1">
+                                {matchingSlots.map((slot: any) => {
+                                  const isSelected = selectedSlotTime === slot.startTime;
+                                  const slotEndCalculated = calculateSlotEndTime(slot.startTime, selectedDuration);
+
+                                  // Connected Calendar Check: check if ANY lesson (REGULAR or ONE_TIME) is booked here
+                                  const conflictingLesson = (selectedTeacher.lessons || []).find((l: any) => {
+                                    if (l.status === 'CANCELLED') return false;
+                                    const lDateStr = new Date(l.scheduledAt).toISOString().split('T')[0];
+                                    if (lDateStr !== bookingDate || l.status !== 'SCHEDULED') return false;
+
+                                    const lDate = new Date(l.scheduledAt);
+                                    const lH = lDate.getHours();
+                                    const lM = lDate.getMinutes();
+                                    const lStartMs = (lH * 60 + lM) * 60 * 1000;
+                                    const lDur = l.durationMinutes || 25;
+                                    const lEndMs = lStartMs + lDur * 60 * 1000;
+
+                                    const [sH, sM] = slot.startTime.split(':').map(Number);
+                                    const sStartMs = (sH * 60 + sM) * 60 * 1000;
+                                    const sEndMs = sStartMs + selectedDuration * 60 * 1000;
+
+                                    return sStartMs < lEndMs && sEndMs > lStartMs;
+                                  });
+
+                                  if (conflictingLesson) {
+                                    const isRegular = conflictingLesson.lessonType === 'REGULAR';
+                                    return (
+                                      <div
+                                        key={slot.id}
+                                        className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/70 dark:bg-slate-850/60 text-slate-400 dark:text-slate-500 text-center opacity-60 cursor-not-allowed"
+                                      >
+                                        <p className="font-mono text-xs font-bold leading-tight line-through">
+                                          {formatSlotRange12Hour(slot.startTime, slotEndCalculated)}
+                                        </p>
+                                        <p className="text-[10px] text-rose-500 dark:text-rose-400 font-extrabold mt-1">
+                                          {isRegular
+                                            ? (language === 'he' ? 'תפוס (חוג קבוע)' : 'Booked (Regular)')
+                                            : (language === 'he' ? 'מוזמן (תפוס)' : 'Booked')}
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <button
+                                      key={slot.id}
+                                      type="button"
+                                      onClick={() => setSelectedSlotTime(slot.startTime)}
+                                      className={`p-3 rounded-2xl border text-center transition-all cursor-pointer ${
+                                        isSelected
+                                          ? selectedDuration === 55
+                                            ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-xs ring-2 ring-purple-400'
+                                            : selectedDuration === 40
+                                            ? 'bg-sky-600 text-white border-sky-600 font-bold shadow-xs ring-2 ring-sky-400'
+                                            : 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-xs ring-2 ring-emerald-400'
+                                          : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-200/90 dark:border-slate-700 shadow-2xs'
+                                      }`}
+                                    >
+                                      <p className="font-mono text-xs font-bold leading-tight">
+                                        {formatSlotRange12Hour(slot.startTime, slotEndCalculated)}
+                                      </p>
+                                      <p className="text-[10px] opacity-90 mt-1 font-semibold">
+                                        {selectedDuration} {language === 'he' ? 'דק׳ (שעון ישראל)' : 'min (IST)'}
+                                      </p>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {matchingSlots.length === 0 && (
+                                <div className="p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 text-center space-y-2">
+                                  <p className="text-xs text-amber-900 dark:text-amber-200 font-bold">
+                                    {language === 'he'
+                                      ? `למורה ${selectedTeacher.user?.firstName} אין שעות זמינות ביום זה (${bookingDate}).`
+                                      : `${selectedTeacher.user?.firstName} has no slots available on this date (${bookingDate}).`}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Submit One-Time Booking */}
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        <span className="font-semibold">{language === 'he' ? 'ניכוי מחבילה:' : 'Package Deduction:'}</span>{' '}
+                        <span className="font-extrabold text-slate-900 dark:text-white">1 {language === 'he' ? 'שיעור' : 'session'}</span>
+                        {' · '}
+                        <span className="font-semibold">{language === 'he' ? 'יתרתך:' : 'Available Quota:'}</span>{' '}
+                        <span className={`font-bold ${hasEnoughBalance ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {selectedSessionBalance?.balance || 0} {language === 'he' ? 'שיעורים' : 'sessions'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={handleBookingSubmit}
+                        disabled={bookLessonMutation.isPending || !hasEnoughBalance || !selectedSlotTime || !bookingDate || !selectedTeacherId}
+                        className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-brand-teal-800 hover:bg-brand-teal-900 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <CheckCircle className="w-4 h-4 text-brand-olive-300" />
+                        <span>
+                          {bookLessonMutation.isPending
+                            ? (language === 'he' ? 'מאשר ומנכה מחבילה...' : 'Confirming & Deducting...')
+                            : (language === 'he' ? `אישור הזמנה (${selectedDuration} דק׳ - ניכוי 1 מפגש)` : `Confirm ${selectedDuration}-Min Booking (1 Session)`)}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
               </div>
-            </div>
             </div>
           )}
 
@@ -4105,6 +4647,27 @@ export const StudentDashboard: React.FC = () => {
                   <X className="w-5 h-5" />
                 </button>
               </div>
+            </div>
+
+            {/* Quick Switch to Regular Booking Scheduler */}
+            <div className="p-3 rounded-2xl bg-brand-teal-50/80 dark:bg-brand-teal-950/40 border border-brand-teal-200/80 dark:border-brand-teal-800/60 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Repeat className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-300 shrink-0" />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {language === 'he' ? 'רוצה לקבוע חוג שבועי קבוע לכל החודש?' : 'Want to book a recurring weekly schedule?'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsBookingModalOpen(false);
+                  setActiveTab('booking');
+                  setBookingMode('regular');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-extrabold text-[11px] shrink-0 transition-all shadow-xs"
+              >
+                {language === 'he' ? 'חוג קבוע (Regular)' : 'Regular Booking'}
+              </button>
             </div>
 
             {!hasEnoughBalance && (

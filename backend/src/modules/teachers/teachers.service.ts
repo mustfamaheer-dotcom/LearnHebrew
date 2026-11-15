@@ -28,6 +28,8 @@ export async function listTeachers() {
             id: true,
             scheduledAt: true,
             durationMinutes: true,
+            lessonType: true,
+            status: true,
           },
         },
         _count: {

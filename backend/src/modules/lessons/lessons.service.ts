@@ -2,6 +2,7 @@ import { prisma } from '../../config/database';
 import { Prisma, SlotType, LessonStatus, AttendanceStatus, PointsEventType } from '@prisma/client';
 import { logAuditEvent } from '../../utils/audit';
 import { notificationService } from '../notifications/notifications.service';
+import { cacheInvalidatePrefix } from '../../lib/cache';
 
 export async function listLessons(filters: {
   studentId?: string;
@@ -256,7 +257,297 @@ export async function bookLesson(data: {
       console.error('[Notification Trigger Error - notifyBookingCreated]', err)
     );
 
+    cacheInvalidatePrefix('teachers');
+
     return lesson;
+  });
+}
+
+/**
+ * Book Fixed Weekly Recurring Lessons (Regular Booking):
+ * Automatically books recurring weekly slots across 4 weeks for the month.
+ * Validates maximum allowed weekly slots based on monthly package:
+ *   - 4 sessions/month -> Max 1 weekly regular slot (4 total)
+ *   - 8 sessions/month -> Max 2 weekly regular slots (8 total)
+ *   - 12 sessions/month -> Max 3 weekly regular slots (12 total)
+ *   - 16 sessions/month -> Max 4 weekly regular slots (16 total)
+ * Validates collision across all target dates and deducts sessions from balance.
+ */
+export async function bookRegularLessons(data: {
+  studentId: string;
+  teacherId: string;
+  sessionTypeId?: string;
+  durationMinutes?: number;
+  recurringSlots: Array<{
+    dayOfWeek: number; // 0=Sun..6=Sat
+    startTime: string; // "HH:mm" e.g. "10:00"
+  }>;
+  zoomLink?: string;
+  bookedById: string;
+  weeksCount?: number; // default 4 weeks
+}) {
+  const weeksCount = data.weeksCount && data.weeksCount > 0 ? data.weeksCount : 4;
+
+  if (!data.recurringSlots || data.recurringSlots.length === 0) {
+    throw { status: 400, message: 'Please select at least one weekly regular slot.' };
+  }
+
+  const student = await prisma.student.findFirst({
+    where: { OR: [{ id: data.studentId }, { userId: data.studentId }] },
+    include: {
+      user: true,
+      packages: {
+        where: { status: 'ACTIVE' },
+        include: { package: true },
+        orderBy: { createdAt: 'desc' },
+      },
+    },
+  });
+  if (!student) throw { status: 404, message: 'Student not found' };
+
+  const teacher = await prisma.teacher.findFirst({
+    where: { OR: [{ id: data.teacherId }, { userId: data.teacherId }] },
+  });
+  if (!teacher) throw { status: 404, message: 'Teacher not found' };
+
+  const booker = await prisma.user.findUnique({
+    where: { id: data.bookedById },
+  });
+  const isPrivileged = ['ADMIN', 'SUPER_ADMIN', 'SALES', 'CS'].includes(booker?.role || '');
+
+  if (!isPrivileged && student.userId !== data.bookedById) {
+    throw {
+      status: 403,
+      message: 'Access denied: You cannot book lessons using another student account.',
+    };
+  }
+
+  // 1. Calculate Maximum Allowed Regular Slots per week according to Package (4, 8, 12, 16)
+  const activeStudentPkg = student.packages?.[0];
+  const pkgTotalLessons = activeStudentPkg?.package?.totalLessons || activeStudentPkg?.lessonsTotal || 0;
+
+  let maxWeeklyRegularSlots = 1;
+  if (pkgTotalLessons >= 16) {
+    maxWeeklyRegularSlots = 4;
+  } else if (pkgTotalLessons >= 12) {
+    maxWeeklyRegularSlots = 3;
+  } else if (pkgTotalLessons >= 8) {
+    maxWeeklyRegularSlots = 2;
+  } else if (pkgTotalLessons >= 4) {
+    maxWeeklyRegularSlots = 1;
+  } else {
+    // If no active package, check total available sessions
+    const allBalances = await prisma.studentSessionBalance.findMany({ where: { studentId: student.id } });
+    const totalAvail = allBalances.reduce((sum, b) => sum + (b.balance || 0), 0);
+    maxWeeklyRegularSlots = Math.min(4, Math.max(1, Math.floor(totalAvail / 4)));
+  }
+
+  if (!isPrivileged && data.recurringSlots.length > maxWeeklyRegularSlots) {
+    throw {
+      status: 400,
+      message: `Your monthly package (${pkgTotalLessons || 'custom'} sessions) allows a maximum of ${maxWeeklyRegularSlots} regular slot(s) per week (total ${maxWeeklyRegularSlots * weeksCount} sessions per month). You selected ${data.recurringSlots.length} weekly slots.`,
+    };
+  }
+
+  // 2. Resolve SessionType & Duration
+  let sessionType = null;
+  if (data.sessionTypeId) {
+    sessionType = await prisma.sessionType.findUnique({ where: { id: data.sessionTypeId } });
+  } else {
+    const dur = data.durationMinutes || 25;
+    sessionType = await prisma.sessionType.findFirst({
+      where: { durationMinutes: dur, isActive: true },
+    });
+  }
+
+  if (!sessionType) {
+    sessionType = await prisma.sessionType.findFirst({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } });
+  }
+  const duration = sessionType?.durationMinutes || 25;
+
+  // 3. Validate Balance
+  const totalLessonsToBook = data.recurringSlots.length * weeksCount;
+  let userSessionBalance = null;
+  if (sessionType) {
+    userSessionBalance = await prisma.studentSessionBalance.findUnique({
+      where: {
+        studentId_sessionTypeId: {
+          studentId: student.id,
+          sessionTypeId: sessionType.id,
+        },
+      },
+    });
+  }
+
+  const currentBalance = userSessionBalance?.balance || 0;
+  if (!isPrivileged) {
+    if (currentBalance < totalLessonsToBook) {
+      throw {
+        status: 400,
+        message: `Insufficient session balance for regular booking. Booking ${data.recurringSlots.length} weekly slot(s) across ${weeksCount} weeks requires ${totalLessonsToBook} sessions, but your current balance is ${currentBalance}. Please book one-time lessons or top up your package.`,
+      };
+    }
+  }
+
+  // 4. Calculate All Target Dates (Weeks 1 to weeksCount for each recurring slot)
+  const now = new Date();
+  const targetSessions: Array<{ scheduledAt: Date; dayOfWeek: number; startTime: string }> = [];
+
+  for (const slot of data.recurringSlots) {
+    const [h, m] = slot.startTime.split(':').map(Number);
+    // Find first occurrence
+    const currentDay = now.getDay();
+    let daysUntilFirst = (slot.dayOfWeek - currentDay + 7) % 7;
+    
+    // Check if first occurrence is today, but within 2 hours or in the past
+    if (daysUntilFirst === 0) {
+      const todaySlotTime = new Date(now);
+      todaySlotTime.setHours(h, m, 0, 0);
+      if (todaySlotTime.getTime() - now.getTime() < 2 * 60 * 60 * 1000) {
+        daysUntilFirst = 7; // schedule starts next week
+      }
+    }
+
+    const firstOccurrence = new Date(now);
+    firstOccurrence.setDate(now.getDate() + daysUntilFirst);
+    firstOccurrence.setHours(h, m, 0, 0);
+
+    for (let w = 0; w < weeksCount; w++) {
+      const weekDate = new Date(firstOccurrence);
+      weekDate.setDate(firstOccurrence.getDate() + w * 7);
+      targetSessions.push({
+        scheduledAt: weekDate,
+        dayOfWeek: slot.dayOfWeek,
+        startTime: slot.startTime,
+      });
+    }
+  }
+
+  // 5. Conflict Prevention across ALL generated dates
+  const minDate = new Date(Math.min(...targetSessions.map((s) => s.scheduledAt.getTime())) - 2 * 60 * 60 * 1000);
+  const maxDate = new Date(Math.max(...targetSessions.map((s) => s.scheduledAt.getTime())) + 2 * 60 * 60 * 1000);
+
+  const existingLessons = await prisma.lesson.findMany({
+    where: {
+      teacherId: teacher.id,
+      status: 'SCHEDULED',
+      scheduledAt: { gte: minDate, lte: maxDate },
+    },
+  });
+
+  for (const target of targetSessions) {
+    const tStart = target.scheduledAt.getTime();
+    const tEnd = tStart + duration * 60 * 1000;
+
+    const conflict = existingLessons.find((l) => {
+      const lStart = new Date(l.scheduledAt).getTime();
+      const lEnd = lStart + (l.durationMinutes || 25) * 60 * 1000;
+      return tStart < lEnd && tEnd > lStart;
+    });
+
+    if (conflict) {
+      const conflictDateStr = target.scheduledAt.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
+      throw {
+        status: 409,
+        message: `Schedule conflict: Teacher already has a lesson booked on ${conflictDateStr} at ${target.startTime}. Please select an alternative regular slot.`,
+      };
+    }
+  }
+
+  // 6. Execute Transaction
+  return prisma.$transaction(async (tx) => {
+    if (userSessionBalance && userSessionBalance.balance >= totalLessonsToBook && sessionType) {
+      const newBal = userSessionBalance.balance - totalLessonsToBook;
+      await tx.studentSessionBalance.update({
+        where: { id: userSessionBalance.id },
+        data: { balance: newBal },
+      });
+
+      await tx.sessionBalanceLedger.create({
+        data: {
+          studentId: student.id,
+          sessionTypeId: sessionType.id,
+          delta: -totalLessonsToBook,
+          balanceAfter: newBal,
+          reason: 'REGULAR_WEEKLY_BOOKING',
+          createdById: data.bookedById,
+        },
+      });
+    }
+
+    const resolvedZoomLink =
+      data.zoomLink?.trim() || teacher.defaultZoomLink || 'https://zoom.us/j/engrew-live';
+
+    const createdLessons = [];
+    for (const target of targetSessions) {
+      const slotDateOnly = new Date(target.scheduledAt);
+      slotDateOnly.setHours(0, 0, 0, 0);
+
+      const matchingSlot = await tx.timeSlot.findFirst({
+        where: {
+          teacherId: teacher.id,
+          startTime: target.startTime,
+          OR: [
+            { date: slotDateOnly },
+            { dayOfWeek: target.dayOfWeek, date: null },
+          ],
+        },
+      });
+
+      if (matchingSlot && matchingSlot.date) {
+        await tx.timeSlot.update({
+          where: { id: matchingSlot.id },
+          data: { isBooked: true, isAvailable: false },
+        });
+      }
+
+      const lesson = await tx.lesson.create({
+        data: {
+          studentId: student.id,
+          teacherId: teacher.id,
+          timeSlotId: matchingSlot?.id,
+          sessionTypeId: sessionType?.id,
+          scheduledAt: target.scheduledAt,
+          durationMinutes: duration,
+          lessonType: SlotType.REGULAR,
+          zoomLink: resolvedZoomLink,
+          status: LessonStatus.SCHEDULED,
+        },
+        include: {
+          student: { include: { user: true } },
+          teacher: { include: { user: true } },
+          sessionType: true,
+        },
+      });
+      createdLessons.push(lesson);
+    }
+
+    await logAuditEvent({
+      userId: data.bookedById,
+      action: 'REGULAR_LESSONS_BOOKED',
+      entityType: 'Lesson',
+      entityId: createdLessons[0]?.id || 'bulk',
+      metaJson: {
+        totalLessons: createdLessons.length,
+        slotsCount: data.recurringSlots.length,
+        weeksCount,
+        maxWeeklyAllowed: maxWeeklyRegularSlots,
+      },
+    });
+
+    cacheInvalidatePrefix('teachers');
+
+    return {
+      message: `Successfully booked ${createdLessons.length} regular lessons across ${weeksCount} weeks!`,
+      totalLessons: createdLessons.length,
+      weeksCount,
+      maxWeeklyAllowed: maxWeeklyRegularSlots,
+      lessons: createdLessons,
+    };
   });
 }
 
