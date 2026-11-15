@@ -36,8 +36,6 @@ import {
   TrendingUp,
   ShieldCheck,
   Zap,
-  Play,
-  Pause,
   Calendar,
 } from 'lucide-react';
 
@@ -449,11 +447,13 @@ export const LandingPage: React.FC = () => {
 
     targetIndex = Math.max(0, Math.min(targetIndex, cards.length - 1));
 
-    cards[targetIndex]?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center',
-    });
+    const targetCard = cards[targetIndex];
+    if (targetCard && packagesScrollRef.current) {
+      const containerRect = packagesScrollRef.current.getBoundingClientRect();
+      const cardRect = targetCard.getBoundingClientRect();
+      const offset = cardRect.left - containerRect.left - (containerRect.width / 2 - cardRect.width / 2);
+      packagesScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
   };
 
   const scrollToIndex = (index: number) => {
@@ -461,12 +461,12 @@ export const LandingPage: React.FC = () => {
     haptics.tap();
     const container = packagesScrollRef.current;
     const cards = container.querySelectorAll<HTMLElement>(':scope > div');
-    if (cards[index]) {
-      cards[index].scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
-      });
+    const targetCard = cards[index];
+    if (targetCard) {
+      const containerRect = container.getBoundingClientRect();
+      const cardRect = targetCard.getBoundingClientRect();
+      const offset = cardRect.left - containerRect.left - (containerRect.width / 2 - cardRect.width / 2);
+      container.scrollBy({ left: offset, behavior: 'smooth' });
     }
   };
 
@@ -492,40 +492,16 @@ export const LandingPage: React.FC = () => {
     isMouseDownRef.current = false;
   };
 
-  // Feedback Carousel State & Auto-Scroll Logic
+  // Feedback Carousel State (Manual Only - Never Auto-Scrolls the page)
   const feedbackScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollFeedbackLeft, setCanScrollFeedbackLeft] = useState(false);
   const [canScrollFeedbackRight, setCanScrollFeedbackRight] = useState(true);
   const [activeFeedbackIndex, setActiveFeedbackIndex] = useState(0);
-  const [isFeedbackAutoScroll, setIsFeedbackAutoScroll] = useState(true);
-  const [isFeedbackHovered, setIsFeedbackHovered] = useState(false);
 
   const isFeedbackMouseDownRef = useRef(false);
   const feedbackStartXRef = useRef(0);
   const feedbackScrollLeftRef = useRef(0);
   const hasFeedbackDraggedRef = useRef(false);
-
-  // Auto-scroll ticker: advances every 3.8s when not hovered
-  useEffect(() => {
-    if (!isFeedbackAutoScroll || isFeedbackHovered) return;
-
-    const timer = setInterval(() => {
-      if (!feedbackScrollRef.current) return;
-      const container = feedbackScrollRef.current;
-      const cards = container.querySelectorAll<HTMLElement>(':scope > div');
-      if (!cards.length) return;
-
-      const nextIndex = (activeFeedbackIndex + 1) % cards.length;
-      cards[nextIndex]?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
-      });
-      setActiveFeedbackIndex(nextIndex);
-    }, 3800);
-
-    return () => clearInterval(timer);
-  }, [isFeedbackAutoScroll, isFeedbackHovered, activeFeedbackIndex, testimonials.length]);
 
   const updateFeedbackScrollButtons = () => {
     if (!feedbackScrollRef.current) return;
@@ -590,12 +566,14 @@ export const LandingPage: React.FC = () => {
 
     targetIndex = Math.max(0, Math.min(targetIndex, cards.length - 1));
 
-    cards[targetIndex]?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'center',
-    });
-    setActiveFeedbackIndex(targetIndex);
+    const targetCard = cards[targetIndex];
+    if (targetCard) {
+      const containerRect = container.getBoundingClientRect();
+      const cardRect = targetCard.getBoundingClientRect();
+      const offset = cardRect.left - containerRect.left - (containerRect.width / 2 - cardRect.width / 2);
+      container.scrollBy({ left: offset, behavior: 'smooth' });
+      setActiveFeedbackIndex(targetIndex);
+    }
   };
 
   const scrollFeedbackToIndex = (index: number) => {
@@ -603,12 +581,12 @@ export const LandingPage: React.FC = () => {
     haptics.tap();
     const container = feedbackScrollRef.current;
     const cards = container.querySelectorAll<HTMLElement>(':scope > div');
-    if (cards[index]) {
-      cards[index].scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-        inline: 'center',
-      });
+    const targetCard = cards[index];
+    if (targetCard) {
+      const containerRect = container.getBoundingClientRect();
+      const cardRect = targetCard.getBoundingClientRect();
+      const offset = cardRect.left - containerRect.left - (containerRect.width / 2 - cardRect.width / 2);
+      container.scrollBy({ left: offset, behavior: 'smooth' });
       setActiveFeedbackIndex(index);
     }
   };
@@ -1351,14 +1329,8 @@ export const LandingPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Carousel Wrapper with Auto-Scroll & Navigation Arrows */}
-        <div
-          className="relative group/feedback"
-          onMouseEnter={() => setIsFeedbackHovered(true)}
-          onMouseLeave={() => setIsFeedbackHovered(false)}
-          onTouchStart={() => setIsFeedbackHovered(true)}
-          onTouchEnd={() => setIsFeedbackHovered(false)}
-        >
+        {/* Carousel Wrapper with Manual Navigation Arrows */}
+        <div className="relative group/feedback">
           {/* Left Navigation Arrow (Physical Left of Screen) */}
           <button
             type="button"
@@ -1475,52 +1447,23 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Carousel Bottom Controls: Pagination Dots + Auto-Play Toggle */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-2">
-          {/* Auto-scroll status pill with play/pause */}
-          <button
-            type="button"
-            onClick={() => {
-              haptics.tap();
-              setIsFeedbackAutoScroll(!isFeedbackAutoScroll);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-          >
-            {isFeedbackAutoScroll ? (
-              <>
-                <Pause className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                <span>{language === 'he' ? 'השהה גלילה אוטומטית' : 'Pause Auto-Scroll'}</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3 h-3 text-brand-olive-600 dark:text-brand-olive-400" />
-                <span>{language === 'he' ? 'הפעל גלילה אוטומטית' : 'Resume Auto-Scroll'}</span>
-              </>
-            )}
-          </button>
-
-          {/* Dots Indicator */}
-          <div className="flex items-center gap-1.5">
+        {/* Carousel Bottom Controls: Pagination Dots */}
+        <div className="flex items-center justify-center mt-6">
+          <div className="flex items-center gap-2">
             {testimonials.map((_: any, dotIdx: number) => (
               <button
                 key={dotIdx}
                 type="button"
                 onClick={() => scrollFeedbackToIndex(dotIdx)}
                 aria-label={`Go to review ${dotIdx + 1}`}
-                className={`h-2 rounded-full transition-all duration-300 ${
+                className={`h-2.5 rounded-full transition-all duration-300 ${
                   activeFeedbackIndex === dotIdx
-                    ? 'w-7 bg-brand-olive-500 shadow-xs'
-                    : 'w-2 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
+                    ? 'w-8 bg-brand-olive-500 shadow-xs'
+                    : 'w-2.5 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
                 }`}
               />
             ))}
           </div>
-
-          <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-            {language === 'he'
-              ? 'גלילה אוטומטית נעצרת במעבר עכבר'
-              : 'Auto-scroll pauses on hover'}
-          </span>
         </div>
       </section>
 
