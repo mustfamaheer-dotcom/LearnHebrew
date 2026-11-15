@@ -92,3 +92,49 @@ export async function updateTeacherZoomLinkHandler(req: AuthRequest, res: Respon
   }
 }
 
+const addSlotsBatchSchema = z.object({
+  dayOfWeek: z.number().int().min(0).max(6),
+  slots: z.array(
+    z.object({
+      startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+      endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
+    })
+  ),
+  zoomLink: z.string().optional(),
+});
+
+export async function addSlotsBatchHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const data = addSlotsBatchSchema.parse(req.body);
+    const result = await teachersService.addSlotsBatch(req.params.id, data);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function clearDaySlotsHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const dayOfWeek = Number(req.params.dayOfWeek);
+    const result = await teachersService.clearDaySlots(req.params.id, dayOfWeek);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+const copyDaySlotsSchema = z.object({
+  sourceDayOfWeek: z.number().int().min(0).max(6),
+  targetDaysOfWeek: z.array(z.number().int().min(0).max(6)),
+});
+
+export async function copyDaySlotsHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const data = copyDaySlotsSchema.parse(req.body);
+    const result = await teachersService.copyDaySlots(req.params.id, data);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+

@@ -189,6 +189,117 @@ export async function updateTeacherZoomLink(teacherIdOrUserId: string, zoomLink:
   return updated;
 }
 
+export async function addSlotsBatch(
+  teacherIdOrUserId: string,
+  data: {
+    dayOfWeek: number;
+    slots: Array<{ startTime: string; endTime?: string }>;
+    zoomLink?: string;
+  }
+) {
+  const teacher = await getTeacherById(teacherIdOrUserId);
+  const zoomUrl = data.zoomLink?.trim() || teacher.defaultZoomLink || 'https://zoom.us/j/engrew-live';
+
+  const existing = await prisma.timeSlot.findMany({
+    where: {
+      teacherId: teacher.id,
+      dayOfWeek: Number(data.dayOfWeek),
+    },
+    select: { startTime: true },
+  });
+  const existingTimes = new Set(existing.map((s) => s.startTime));
+
+  const slotsToCreate = data.slots
+    .filter((s) => !existingTimes.has(s.startTime))
+    .map((s) => ({
+      teacherId: teacher.id,
+      dayOfWeek: Number(data.dayOfWeek),
+      startTime: s.startTime,
+      endTime: s.endTime || null,
+      slotType: SlotType.REGULAR,
+      isAvailable: true,
+      isBooked: false,
+      zoomLink: zoomUrl,
+    }));
+
+  if (slotsToCreate.length > 0) {
+    await prisma.timeSlot.createMany({
+      data: slotsToCreate,
+    });
+  }
+
+  await cacheInvalidatePrefix('teachers:');
+  return { addedCount: slotsToCreate.length };
+}
+
+export async function clearDaySlots(teacherIdOrUserId: string, dayOfWeek: number) {
+  const teacher = await getTeacherById(teacherIdOrUserId);
+  const deleted = await prisma.timeSlot.deleteMany({
+    where: {
+      teacherId: teacher.id,
+      dayOfWeek: Number(dayOfWeek),
+      isBooked: false,
+    },
+  });
+  await cacheInvalidatePrefix('teachers:');
+  return { deletedCount: deleted.count };
+}
+
+export async function copyDaySlots(
+  teacherIdOrUserId: string,
+  data: {
+    sourceDayOfWeek: number;
+    targetDaysOfWeek: number[];
+  }
+) {
+  const teacher = await getTeacherById(teacherIdOrUserId);
+  const sourceSlots = await prisma.timeSlot.findMany({
+    where: {
+      teacherId: teacher.id,
+      dayOfWeek: Number(data.sourceDayOfWeek),
+    },
+  });
+
+  if (sourceSlots.length === 0) {
+    return { addedCount: 0 };
+  }
+
+  const zoomUrl = teacher.defaultZoomLink || 'https://zoom.us/j/engrew-live';
+  let totalAdded = 0;
+
+  for (const targetDay of data.targetDaysOfWeek) {
+    const existing = await prisma.timeSlot.findMany({
+      where: {
+        teacherId: teacher.id,
+        dayOfWeek: Number(targetDay),
+      },
+      select: { startTime: true },
+    });
+    const existingTimes = new Set(existing.map((s) => s.startTime));
+
+    const toCreate = sourceSlots
+      .filter((s) => !existingTimes.has(s.startTime))
+      .map((s) => ({
+        teacherId: teacher.id,
+        dayOfWeek: Number(targetDay),
+        startTime: s.startTime,
+        endTime: s.endTime || null,
+        slotType: SlotType.REGULAR,
+        isAvailable: true,
+        isBooked: false,
+        zoomLink: s.zoomLink || zoomUrl,
+      }));
+
+    if (toCreate.length > 0) {
+      await prisma.timeSlot.createMany({ data: toCreate });
+      totalAdded += toCreate.length;
+    }
+  }
+
+  await cacheInvalidatePrefix('teachers:');
+  return { addedCount: totalAdded };
+}
+
 export async function getTeacherStudents(teacherIdOrUserId: string) {
   const teacher = await getTeacherById(teacherIdOrUserId);
 

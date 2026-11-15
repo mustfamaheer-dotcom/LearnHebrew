@@ -8,6 +8,9 @@ import {
   deleteTeacherSlotHandler,
   getTeacherStudentsHandler,
   updateTeacherZoomLinkHandler,
+  addSlotsBatchHandler,
+  clearDaySlotsHandler,
+  copyDaySlotsHandler,
 } from './teachers.controller';
 import { authenticate } from '../../middleware/auth';
 
@@ -23,6 +26,9 @@ router.use(authenticate);
 router.get('/:id/calendar', getTeacherCalendarHandler);
 router.patch('/:id/zoom-link', updateTeacherZoomLinkHandler);
 router.post('/:id/slots', addTeacherSlotHandler);
+router.post('/:id/slots/batch', addSlotsBatchHandler);
+router.post('/:id/slots/copy-day', copyDaySlotsHandler);
+router.delete('/:id/slots/day/:dayOfWeek', clearDaySlotsHandler);
 router.delete('/:id/slots/:slotId', deleteTeacherSlotHandler);
 router.get('/:id/students', getTeacherStudentsHandler);
 

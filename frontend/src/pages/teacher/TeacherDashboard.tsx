@@ -62,6 +62,9 @@ import {
   Share2,
   ChevronLeft,
   ChevronRight,
+  Sun,
+  Moon,
+  Copy,
 } from 'lucide-react';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -168,6 +171,16 @@ export const TeacherDashboard: React.FC = () => {
   const [permanentZoomLink, setPermanentZoomLink] = useState('');
   const zoomInputRef = useRef<HTMLInputElement>(null);
   const [structuredNotesLesson, setStructuredNotesLesson] = useState<any | null>(null);
+
+  // Modern Calendar Slot Filtering & Batch Actions
+  const [timePeriodFilter, setTimePeriodFilter] = useState<'all' | 'morning' | 'afternoon' | 'evening'>('all');
+  const [isCopyScheduleModalOpen, setIsCopyScheduleModalOpen] = useState(false);
+  const [targetCopyDays, setTargetCopyDays] = useState<number[]>([]);
+
+  // Time period classification helpers
+  const isMorningSlot = (startTime: string) => startTime >= '08:00' && startTime < '12:00';
+  const isAfternoonSlot = (startTime: string) => startTime >= '12:00' && startTime < '17:00';
+  const isEveningSlot = (startTime: string) => startTime >= '17:00' && startTime <= '22:00';
 
   // Helper to compute dates of current week (Sunday to Saturday) based on selectedDate
   const getWeekDates = (baseDateStr: string) => {
@@ -553,6 +566,103 @@ export const TeacherDashboard: React.FC = () => {
       toast.info(language === 'he' ? 'שעת הזמינות הוסרה.' : 'Availability slot removed.');
     },
   });
+
+  // Batch Add Slots Mutation
+  const addBatchSlotsMutation = useMutation({
+    mutationFn: async (slotsList: Array<{ startTime: string; endTime?: string }>) => {
+      const activeZoom = permanentZoomLink.trim() || calendarData?.defaultZoomLink || '';
+      return api.post(`/teachers/${user?.id}/slots/batch`, {
+        dayOfWeek: selectedDay,
+        slots: slotsList,
+        zoomLink: activeZoom,
+      });
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
+      toast.success(
+        language === 'he'
+          ? `נוספו ${res.data?.addedCount ?? ''} שעות זמינות בהצלחה!`
+          : `Added ${res.data?.addedCount ?? ''} availability slots!`
+      );
+    },
+    onError: (err: any) => {
+      toast.error(
+        err.response?.data?.message ||
+          (language === 'he' ? 'שגיאה בהוספת שעות זמינות' : 'Failed to add batch slots')
+      );
+    },
+  });
+
+  // Clear Day Slots Mutation
+  const clearDaySlotsMutation = useMutation({
+    mutationFn: async () => {
+      return api.delete(`/teachers/${user?.id}/slots/day/${selectedDay}`);
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
+      toast.info(
+        language === 'he'
+          ? `הוסרו ${res.data?.deletedCount || 0} שעות זמינות לא מוזמנות מיום ${DAYS_HE[selectedDay]}.`
+          : `Removed ${res.data?.deletedCount || 0} open slots for ${DAYS[selectedDay]}.`
+      );
+    },
+  });
+
+  // Copy Day Slots Mutation
+  const copyDaySlotsMutation = useMutation({
+    mutationFn: async (targetDays: number[]) => {
+      return api.post(`/teachers/${user?.id}/slots/copy-day`, {
+        sourceDayOfWeek: selectedDay,
+        targetDaysOfWeek: targetDays,
+      });
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
+      setIsCopyScheduleModalOpen(false);
+      setTargetCopyDays([]);
+      toast.success(
+        language === 'he'
+          ? `לוח הזמנים הועתק בהצלחה (${res.data?.addedCount || 0} שעות נפתחו בימים הנבחרים)!`
+          : `Schedule copied successfully (${res.data?.addedCount || 0} slots opened across target days)!`
+      );
+    },
+    onError: (err: any) => {
+      toast.error(
+        err.response?.data?.message ||
+          (language === 'he' ? 'שגיאה בהעתקת לוח הזמנים' : 'Failed to copy schedule')
+      );
+    },
+  });
+
+  const handleOpenPreset = (period: 'morning' | 'afternoon' | 'evening' | 'all') => {
+    const activeZoom = permanentZoomLink.trim() || calendarData?.defaultZoomLink;
+    if (!activeZoom) {
+      toast.warning(
+        language === 'he'
+          ? 'נא להזין את קישור הזום הקבוע שלך למעלה פעם אחת בלבד.'
+          : 'Please enter your permanent Zoom link above once before opening slots.'
+      );
+      zoomInputRef.current?.focus();
+      zoomInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    let targetBlocks = AVAILABILITY_SLOTS_25;
+    if (period === 'morning') targetBlocks = AVAILABILITY_SLOTS_25.filter((b) => isMorningSlot(b.start));
+    else if (period === 'afternoon') targetBlocks = AVAILABILITY_SLOTS_25.filter((b) => isAfternoonSlot(b.start));
+    else if (period === 'evening') targetBlocks = AVAILABILITY_SLOTS_25.filter((b) => isEveningSlot(b.start));
+
+    const validBlocks = targetBlocks.filter((b) => !isSlotInPast(selectedDate, b.start));
+
+    if (validBlocks.length === 0) {
+      toast.warning(language === 'he' ? 'כל השעות במקטע זה כבר עברו.' : 'All slots in this period are in the past.');
+      return;
+    }
+
+    addBatchSlotsMutation.mutate(
+      validBlocks.map((b) => ({ startTime: b.start, endTime: b.end }))
+    );
+  };
 
   // Assign homework mutation
   const assignHomeworkMutation = useMutation({
@@ -1202,172 +1312,352 @@ export const TeacherDashboard: React.FC = () => {
 
                 {(() => {
                   const currentBlocks = AVAILABILITY_SLOTS_25;
+                  const morningBlocks = currentBlocks.filter((b) => isMorningSlot(b.start));
+                  const afternoonBlocks = currentBlocks.filter((b) => isAfternoonSlot(b.start));
+                  const eveningBlocks = currentBlocks.filter((b) => isEveningSlot(b.start));
+
+                  const morningConfiguredCount = morningBlocks.filter((b) =>
+                    slots.some((s: any) => s.dayOfWeek === selectedDay && s.startTime === b.start)
+                  ).length;
+                  const afternoonConfiguredCount = afternoonBlocks.filter((b) =>
+                    slots.some((s: any) => s.dayOfWeek === selectedDay && s.startTime === b.start)
+                  ).length;
+                  const eveningConfiguredCount = eveningBlocks.filter((b) =>
+                    slots.some((s: any) => s.dayOfWeek === selectedDay && s.startTime === b.start)
+                  ).length;
+
+                  let displayedBlocks = currentBlocks;
+                  if (timePeriodFilter === 'morning') displayedBlocks = morningBlocks;
+                  else if (timePeriodFilter === 'afternoon') displayedBlocks = afternoonBlocks;
+                  else if (timePeriodFilter === 'evening') displayedBlocks = eveningBlocks;
 
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {currentBlocks.map((block) => {
-                        const existingSlot = slots.find(
-                          (s: any) =>
-                            s.dayOfWeek === selectedDay &&
-                            s.startTime === block.start
-                        );
+                    <div className="space-y-4">
+                      {/* Modern Toolbar: Period Filter Tabs + Batch Quick Actions */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 rounded-2xl bg-slate-100/70 dark:bg-slate-850/60 border border-slate-200/80 dark:border-slate-800">
+                        {/* Period Filter Tabs */}
+                        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+                          <button
+                            type="button"
+                            onClick={() => setTimePeriodFilter('all')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                              timePeriodFilter === 'all'
+                                ? 'bg-brand-teal-800 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>{language === 'he' ? 'כל השעות' : 'All Slots'}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                              timePeriodFilter === 'all' ? 'bg-brand-teal-900 text-brand-olive-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                            }`}>
+                              {currentBlocks.length}
+                            </span>
+                          </button>
 
-                        const slotLabel12h = formatSlotRange12Hour(block.start, block.end);
+                          <button
+                            type="button"
+                            onClick={() => setTimePeriodFilter('morning')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                              timePeriodFilter === 'morning'
+                                ? 'bg-brand-teal-800 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <Sun className="w-3.5 h-3.5 text-amber-500" />
+                            <span>{language === 'he' ? 'בוקר (8:00–12:00)' : 'Morning (8-12)'}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                              timePeriodFilter === 'morning' ? 'bg-brand-teal-900 text-brand-olive-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                            }`}>
+                              {morningConfiguredCount}/{morningBlocks.length}
+                            </span>
+                          </button>
 
-                        const bookedLesson = lessons.find((l: any) => {
-                          if (l.status === 'CANCELLED') return false;
-                          const lDateStr = new Date(l.scheduledAt).toISOString().split('T')[0];
-                          if (lDateStr !== selectedDate || l.status !== 'SCHEDULED') return false;
+                          <button
+                            type="button"
+                            onClick={() => setTimePeriodFilter('afternoon')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                              timePeriodFilter === 'afternoon'
+                                ? 'bg-brand-teal-800 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <Sun className="w-3.5 h-3.5 text-orange-500" />
+                            <span>{language === 'he' ? 'צהריים (12:00–17:00)' : 'Afternoon (12-5)'}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                              timePeriodFilter === 'afternoon' ? 'bg-brand-teal-900 text-brand-olive-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                            }`}>
+                              {afternoonConfiguredCount}/{afternoonBlocks.length}
+                            </span>
+                          </button>
 
-                          const lDate = new Date(l.scheduledAt);
-                          const lH = lDate.getHours();
-                          const lM = lDate.getMinutes();
-                          const lStartMs = (lH * 60 + lM) * 60 * 1000;
-                          const lDur = l.durationMinutes || 25;
-                          const lEndMs = lStartMs + lDur * 60 * 1000;
+                          <button
+                            type="button"
+                            onClick={() => setTimePeriodFilter('evening')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                              timePeriodFilter === 'evening'
+                                ? 'bg-brand-teal-800 text-white shadow-xs'
+                                : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>{language === 'he' ? 'ערב (17:00–22:00)' : 'Evening (5-10)'}</span>
+                            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                              timePeriodFilter === 'evening' ? 'bg-brand-teal-900 text-brand-olive-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                            }`}>
+                              {eveningConfiguredCount}/{eveningBlocks.length}
+                            </span>
+                          </button>
+                        </div>
 
-                          const [bH, bM] = block.start.split(':').map(Number);
-                          const bStartMs = (bH * 60 + bM) * 60 * 1000;
-                          return bStartMs >= lStartMs && bStartMs < lEndMs;
-                        });
+                        {/* Batch Actions Group */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPreset(timePeriodFilter)}
+                            disabled={addBatchSlotsMutation.isPending || isDateInPast(selectedDate)}
+                            className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-brand-teal-50 dark:hover:bg-slate-750 text-brand-teal-900 dark:text-brand-teal-200 text-xs font-bold border border-slate-200/90 dark:border-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                            title={language === 'he' ? 'פתח את כל השעות במקטע זה בבת אחת' : 'Open all slots in current period at once'}
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400" />
+                            <span>
+                              {timePeriodFilter === 'morning'
+                                ? (language === 'he' ? 'פתח את כל הבוקר' : 'Open Morning')
+                                : timePeriodFilter === 'afternoon'
+                                ? (language === 'he' ? 'פתח את כל הצהריים' : 'Open Afternoon')
+                                : timePeriodFilter === 'evening'
+                                ? (language === 'he' ? 'פתח את כל הערב' : 'Open Evening')
+                                : (language === 'he' ? 'פתח את כל היום' : 'Open Full Day')}
+                            </span>
+                          </button>
 
-                        if (bookedLesson) {
-                          const bookedDur = bookedLesson.durationMinutes || 25;
-                          return (
-                            <div
-                              key={block.start}
-                              className="p-3.5 rounded-2xl bg-brand-teal-900 text-white border border-brand-teal-950 shadow-xs flex flex-col justify-between min-h-[7rem]"
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTargetCopyDays([]);
+                              setIsCopyScheduleModalOpen(true);
+                            }}
+                            disabled={slots.filter((s: any) => s.dayOfWeek === selectedDay).length === 0}
+                            className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200/90 dark:border-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                            title={language === 'he' ? 'העתק את שעות יום זה לימים אחרים' : 'Copy this day schedule to other days'}
+                          >
+                            <Copy className="w-3.5 h-3.5 text-brand-olive-600 dark:text-brand-olive-400" />
+                            <span>{language === 'he' ? 'העתק לימים...' : 'Copy to Days...'}</span>
+                          </button>
+
+                          {slots.filter((s: any) => s.dayOfWeek === selectedDay).length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(language === 'he' ? 'האם להסיר את כל השעות הפתוחות (הלא מוזמנות) מיום זה?' : 'Clear all unbooked open slots for this day?')) {
+                                  clearDaySlotsMutation.mutate();
+                                }
+                              }}
+                              disabled={clearDaySlotsMutation.isPending}
+                              className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                              title={language === 'he' ? 'נקה שעות מיום זה' : 'Clear day slots'}
                             >
-                              <div>
-                                <div className="flex items-center justify-between text-[11px] font-extrabold uppercase text-brand-olive-300 mb-1">
-                                  <span>{slotLabel12h}</span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-teal-800">
-                                    {language === 'he' ? 'מוזמן' : 'Booked'}
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Modern Slot Cards Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {displayedBlocks.map((block) => {
+                          const existingSlot = slots.find(
+                            (s: any) =>
+                              s.dayOfWeek === selectedDay &&
+                              s.startTime === block.start
+                          );
+
+                          const slotLabel12h = formatSlotRange12Hour(block.start, block.end);
+
+                          const bookedLesson = lessons.find((l: any) => {
+                            if (l.status === 'CANCELLED') return false;
+                            const lDateStr = new Date(l.scheduledAt).toISOString().split('T')[0];
+                            if (lDateStr !== selectedDate || l.status !== 'SCHEDULED') return false;
+
+                            const lDate = new Date(l.scheduledAt);
+                            const lH = lDate.getHours();
+                            const lM = lDate.getMinutes();
+                            const lStartMs = (lH * 60 + lM) * 60 * 1000;
+                            const lDur = l.durationMinutes || 25;
+                            const lEndMs = lStartMs + lDur * 60 * 1000;
+
+                            const [bH, bM] = block.start.split(':').map(Number);
+                            const bStartMs = (bH * 60 + bM) * 60 * 1000;
+                            return bStartMs >= lStartMs && bStartMs < lEndMs;
+                          });
+
+                          // 1. Booked Lesson Card
+                          if (bookedLesson) {
+                            const bookedDur = bookedLesson.durationMinutes || 25;
+                            return (
+                              <div
+                                key={block.start}
+                                className="p-3.5 rounded-2xl bg-gradient-to-br from-brand-teal-900 to-slate-900 text-white border border-brand-teal-950 shadow-md flex flex-col justify-between min-h-[6.5rem] relative overflow-hidden"
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between gap-1 mb-1">
+                                    <span className="font-mono text-xs font-black text-brand-olive-300">
+                                      {slotLabel12h}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black shadow-xs">
+                                      {language === 'he' ? 'שיעור מוזמן' : 'Booked'}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs font-bold leading-tight truncate mt-1 text-white">
+                                    {bookedLesson.student?.user?.firstName} {bookedLesson.student?.user?.lastName}
+                                  </p>
+                                  <span className="text-[10px] text-brand-teal-200 font-semibold block mt-0.5">
+                                    {bookedDur} {language === 'he' ? 'דקות' : 'Min'}
                                   </span>
                                 </div>
-                                <p className="text-xs font-bold leading-tight truncate mt-1">
-                                  {bookedLesson.student?.user?.firstName} {bookedLesson.student?.user?.lastName}
-                                </p>
-                                <span className="text-[10px] text-brand-olive-300 font-semibold block mt-0.5">
-                                  {bookedDur} {language === 'he' ? 'דקות' : 'Min'}
-                                </span>
-                              </div>
-                              <a
-                                href={bookedLesson.zoomLink || 'https://zoom.us'}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-teal-200 hover:text-white pt-2"
-                              >
-                                <Video className="w-3.5 h-3.5" />
-                                {language === 'he' ? 'כניסה לזום' : 'Launch Zoom'}
-                              </a>
-                            </div>
-                          );
-                        }
 
-                        if (existingSlot) {
-                          return (
-                            <div
-                              key={block.start}
-                              className="p-3.5 rounded-2xl border-2 shadow-2xs flex flex-col justify-between min-h-[7rem] bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-emerald-200"
-                            >
-                              <div>
-                                <div className="flex items-center justify-between text-[11px] font-extrabold uppercase mb-1">
-                                  <span>{slotLabel12h}</span>
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                </div>
-                                <span className="text-xs font-black block">
-                                  {language === 'he' ? 'שעת זמינות פתוחה' : 'Available Slot'}
-                                </span>
-                                <span className="text-[10px] font-semibold opacity-90 block">
-                                  {language === 'he' ? 'פתוח לקביעת שיעור (25, 40, 55 דק׳)' : 'Open for student booking'}
-                                </span>
-
-                                {existingSlot.zoomLink ? (
+                                <div className="pt-2 border-t border-white/10 mt-2 flex items-center justify-between">
                                   <a
-                                    href={existingSlot.zoomLink}
+                                    href={bookedLesson.zoomLink || 'https://zoom.us'}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-[10px] font-black text-brand-teal-900 dark:text-brand-teal-200 mt-2 transition-colors max-w-full"
-                                    title={existingSlot.zoomLink}
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-brand-teal-200 hover:text-white transition-colors"
                                   >
-                                    <Video className="w-3.5 h-3.5 shrink-0 text-brand-teal-700 dark:text-brand-teal-400" />
-                                    <span className="truncate">Zoom Linked</span>
+                                    <Video className="w-3.5 h-3.5" />
+                                    <span>{language === 'he' ? 'כניסה לזום' : 'Launch Zoom'}</span>
                                   </a>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const activeZoom = permanentZoomLink.trim() || calendarData?.defaultZoomLink;
-                                      if (activeZoom) {
-                                        saveDefaultZoomMutation.mutate(activeZoom);
-                                      } else {
-                                        zoomInputRef.current?.focus();
-                                        toast.warning(language === 'he' ? 'נא להזין קישור זום למעלה' : 'Please enter Zoom link above');
-                                      }
-                                    }}
-                                    className="inline-flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400 hover:underline font-bold mt-1.5"
-                                    title={language === 'he' ? 'לחץ לחיבור קישור הזום הקבוע' : 'Attach permanent Zoom link'}
-                                  >
-                                    <Video className="w-3 h-3 shrink-0" />
-                                    <span>{language === 'he' ? 'חבר לזום קבוע' : 'Attach Zoom Link'}</span>
-                                  </button>
-                                )}
+                                </div>
                               </div>
+                            );
+                          }
 
-                              <button
-                                onClick={() => deleteSlotMutation.mutate(existingSlot.id)}
-                                className="text-[11px] text-rose-600 dark:text-rose-400 font-bold hover:underline self-end flex items-center gap-1 pt-2"
-                                title={language === 'he' ? 'הסר שעה פתוחה' : 'Remove available slot'}
+                          // 2. Open Available Slot Card
+                          if (existingSlot) {
+                            return (
+                              <div
+                                key={block.start}
+                                className="group relative p-3.5 rounded-2xl border-2 border-emerald-500 bg-gradient-to-br from-emerald-50 via-teal-50/40 to-emerald-50/20 dark:from-emerald-950/50 dark:via-slate-900 dark:to-teal-950/30 text-emerald-950 dark:text-emerald-100 shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[6.5rem]"
                               >
-                                <Trash2 className="w-3 h-3" />
-                                {language === 'he' ? 'הסר שעה' : 'Remove Slot'}
-                              </button>
-                            </div>
-                          );
-                        }
+                                <div>
+                                  {/* Card Header: Time + Status Badge */}
+                                  <div className="flex items-center justify-between gap-1 mb-1.5">
+                                    <span className="font-mono text-xs font-black tracking-tight text-emerald-900 dark:text-emerald-200">
+                                      {slotLabel12h}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 text-[10px] font-black border border-emerald-500/30">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                      <span>{language === 'he' ? 'זמין' : 'Available'}</span>
+                                    </span>
+                                  </div>
 
-                        // Unconfigured / empty slot
-                        const slotIsPast = isSlotInPast(selectedDate, block.start);
+                                  <p className="text-[11px] font-medium text-emerald-800/80 dark:text-emerald-300/80 leading-tight">
+                                    {language === 'he' ? 'פתוח לשיעורי 25, 40, 55 דק׳' : 'Open for 25, 40, 55 min sessions'}
+                                  </p>
+                                </div>
 
-                        if (slotIsPast) {
-                          return (
-                            <div
-                              key={block.start}
-                              className="p-3.5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 text-slate-400 dark:text-slate-600 flex flex-col justify-between min-h-[7rem] text-start select-none cursor-not-allowed opacity-60"
-                              title={language === 'he' ? 'תאריך או שעה שכבר עברו - לא ניתן להוסיף שעת זמינות' : 'Past date or time - cannot open slot'}
-                            >
-                              <span className="text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500 line-through">
-                                {slotLabel12h}
-                              </span>
-                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 dark:text-slate-500 pt-2">
-                                <Clock className="w-3.5 h-3.5" />
-                                <span>{language === 'he' ? 'זמן שעבר' : 'Past Slot'}</span>
+                                {/* Card Footer: Zoom Status & Remove Button */}
+                                <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 dark:border-emerald-900/60 mt-2">
+                                  {existingSlot.zoomLink ? (
+                                    <a
+                                      href={existingSlot.zoomLink}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1 text-[10px] font-black text-brand-teal-800 dark:text-brand-teal-300 hover:text-brand-teal-950 dark:hover:text-white transition-colors"
+                                      title={existingSlot.zoomLink}
+                                    >
+                                      <Video className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
+                                      <span className="truncate max-w-[85px]">{language === 'he' ? 'זום מחובר' : 'Zoom Linked'}</span>
+                                      <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                                    </a>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const activeZoom = permanentZoomLink.trim() || calendarData?.defaultZoomLink;
+                                        if (activeZoom) {
+                                          saveDefaultZoomMutation.mutate(activeZoom);
+                                        } else {
+                                          zoomInputRef.current?.focus();
+                                          toast.warning(language === 'he' ? 'נא להזין קישור זום למעלה' : 'Please enter Zoom link above');
+                                        }
+                                      }}
+                                      className="inline-flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400 font-bold hover:underline"
+                                      title={language === 'he' ? 'לחץ לחיבור קישור הזום הקבוע' : 'Attach permanent Zoom link'}
+                                    >
+                                      <Video className="w-3 h-3 shrink-0" />
+                                      <span>{language === 'he' ? 'חבר זום' : 'Attach Zoom'}</span>
+                                    </button>
+                                  )}
+
+                                  <button
+                                    onClick={() => deleteSlotMutation.mutate(existingSlot.id)}
+                                    disabled={deleteSlotMutation.isPending}
+                                    className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                    title={language === 'he' ? 'הסר שעת זמינות' : 'Remove slot'}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          );
-                        }
+                            );
+                          }
 
-                        return (
-                          <button
-                            key={block.start}
-                            onClick={() => handleOpenSlotModal(block, slotLabel12h)}
-                            className="p-3.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-teal-600 dark:hover:border-brand-teal-400 hover:bg-brand-teal-50/50 dark:hover:bg-brand-teal-950/30 text-slate-500 dark:text-slate-400 hover:text-brand-teal-900 dark:hover:text-brand-teal-200 transition-all flex flex-col justify-between min-h-[7rem] text-start group shadow-2xs"
-                          >
-                            <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300">
-                              {slotLabel12h}
-                            </span>
-                            <div className="flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 group-hover:text-brand-teal-900 dark:group-hover:text-brand-teal-100 pt-2">
-                              <Plus className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400" />
-                              <span>
-                                {language === 'he'
-                                  ? 'פתח שעת זמינות'
-                                  : 'Open Available Slot'}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
+                          // 3. Past Slot Card
+                          const slotIsPast = isSlotInPast(selectedDate, block.start);
+                          if (slotIsPast) {
+                            return (
+                              <div
+                                key={block.start}
+                                className="p-3.5 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 dark:text-slate-600 flex flex-col justify-between min-h-[6.5rem] text-start select-none cursor-not-allowed opacity-50"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-mono text-xs font-medium text-slate-400 line-through">
+                                    {slotLabel12h}
+                                  </span>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-800 text-slate-400">
+                                    {language === 'he' ? 'עבר' : 'Past'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 text-[11px] text-slate-400 pt-2">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  <span>{language === 'he' ? 'זמן שעבר' : 'Past'}</span>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // 4. Closed / Available to Open Slot Card
+                          return (
+                            <button
+                              key={block.start}
+                              onClick={() => handleOpenSlotModal(block, slotLabel12h)}
+                              disabled={addSlotMutation.isPending}
+                              className="group relative p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-brand-teal-500/70 dark:hover:border-brand-teal-400 hover:shadow-md transition-all flex flex-col justify-between min-h-[6.5rem] text-start shadow-2xs cursor-pointer active:scale-98"
+                            >
+                              <div className="flex items-center justify-between gap-1 w-full mb-1">
+                                <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300 transition-colors">
+                                  {slotLabel12h}
+                                </span>
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 group-hover:bg-brand-teal-50 dark:group-hover:bg-brand-teal-950/60 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300 transition-colors">
+                                  {language === 'he' ? 'סגור' : 'Closed'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center justify-between w-full pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2">
+                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-brand-teal-900 dark:group-hover:text-brand-teal-200 transition-colors flex items-center gap-1.5">
+                                  <div className="w-5 h-5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 group-hover:bg-brand-teal-800 group-hover:text-white flex items-center justify-center transition-colors">
+                                    <Plus className="w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
+                                  </div>
+                                  <span>{language === 'he' ? 'פתח שעה' : 'Open Slot'}</span>
+                                </span>
+                                <span className="text-[10px] font-bold text-brand-teal-600 dark:text-brand-teal-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  1-Click
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })()}
@@ -3639,6 +3929,122 @@ export const TeacherDashboard: React.FC = () => {
                     ? (language === 'he' ? 'פותח שעה...' : 'Opening Slot...')
                     : (language === 'he' ? 'אישור ופתיחת שעה' : 'Confirm & Open Slot')}
                 </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* COPY SCHEDULE TO OTHER DAYS MODAL */}
+      {isCopyScheduleModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-md w-full p-6 space-y-5 animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-brand-olive-50 dark:bg-brand-olive-950/80 text-brand-olive-700 dark:text-brand-olive-300 flex items-center justify-center font-bold">
+                  <Copy className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 dark:text-white text-base">
+                    {language === 'he' ? 'העתקת שעות זמינות לימים נוספים' : 'Copy Availability to Other Days'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {language === 'he'
+                      ? `העתק את ${slots.filter((s: any) => s.dayOfWeek === selectedDay).length} השעות מיום ${DAYS_HE[selectedDay]}`
+                      : `Copy ${slots.filter((s: any) => s.dayOfWeek === selectedDay).length} slots from ${DAYS[selectedDay]}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCopyScheduleModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Target Day Pickers */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  {language === 'he' ? 'בחר ימי יעד להעתקה:' : 'Select Target Days to Apply:'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const weekdays = [0, 1, 2, 3, 4, 5, 6].filter((d) => d !== selectedDay && d !== 6);
+                    setTargetCopyDays(weekdays);
+                  }}
+                  className="text-[11px] font-bold text-brand-teal-700 dark:text-brand-teal-300 hover:underline cursor-pointer"
+                >
+                  {language === 'he' ? 'בחר ימי חול (א׳–ה׳)' : 'Select Weekdays'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {DAYS.map((dName, dIdx) => {
+                  if (dIdx === selectedDay) return null;
+                  const isChecked = targetCopyDays.includes(dIdx);
+                  return (
+                    <button
+                      key={dIdx}
+                      type="button"
+                      onClick={() => {
+                        setTargetCopyDays((prev) =>
+                          prev.includes(dIdx) ? prev.filter((d) => d !== dIdx) : [...prev, dIdx]
+                        );
+                      }}
+                      className={`p-3 rounded-2xl border text-xs font-bold text-start flex items-center justify-between transition-all cursor-pointer ${
+                        isChecked
+                          ? 'bg-brand-teal-800 text-white border-brand-teal-800 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>{language === 'he' ? DAYS_HE[dIdx] : dName}</span>
+                      {isChecked ? (
+                        <Check className="w-4 h-4 text-brand-olive-300" />
+                      ) : (
+                        <span className="w-3.5 h-3.5 rounded-full border border-slate-300 dark:border-slate-600" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsCopyScheduleModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                {language === 'he' ? 'ביטול' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (targetCopyDays.length === 0) {
+                    toast.warning(language === 'he' ? 'נא לבחור לפחות יום יעד אחד' : 'Please select at least one target day');
+                    return;
+                  }
+                  copyDaySlotsMutation.mutate(targetCopyDays);
+                }}
+                disabled={copyDaySlotsMutation.isPending || targetCopyDays.length === 0}
+                className="px-5 py-2.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white text-xs font-bold shadow-md transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {copyDaySlotsMutation.isPending ? (
+                  <span>{language === 'he' ? 'מעתיק...' : 'Copying...'}</span>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>
+                      {language === 'he'
+                        ? `העתק ל-${targetCopyDays.length} ימים`
+                        : `Apply to ${targetCopyDays.length} Days`}
+                    </span>
+                  </>
+                )}
               </button>
             </div>
           </div>
