@@ -60,12 +60,20 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
+const isAllowedOrigin = (origin: string): boolean => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  // Allow local LAN IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x) on any port
+  if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+    return true;
+  }
+  return process.env.NODE_ENV !== 'production';
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else if (process.env.NODE_ENV !== 'production') {
+      if (isAllowedOrigin(origin || '')) {
         callback(null, true);
       } else {
         callback(new Error('Cross-Origin Request Blocked by CORS Security Policy'));

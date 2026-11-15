@@ -12,8 +12,8 @@ async function main() {
     startReminderJob();
 
     const PORT = parseInt(env.PORT, 10) || 5001;
-    app.listen(PORT, () => {
-      console.log(`LearnHebrew Backend API running on http://localhost:${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`LearnHebrew Backend API running on http://localhost:${PORT} and 0.0.0.0:${PORT}`);
       console.log(`Health endpoint: http://localhost:${PORT}/api/health`);
     });
   } catch (error) {

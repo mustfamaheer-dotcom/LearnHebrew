@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '../lib/api';
+
 /**
  * Resolves an avatar URL into a loadable image source URL.
  * Handles:
@@ -11,7 +13,7 @@ export function getAvatarUrl(avatarUrl?: string | null): string | undefined {
     return avatarUrl;
   }
   // Relative path from backend
-  const backendBase = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:5001/api/v1';
+  const backendBase = getApiBaseUrl();
   const origin = backendBase.replace(/\/api\/v1\/?$/, '');
   return `${origin}${avatarUrl.startsWith('/') ? '' : '/'}${avatarUrl}`;
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
-import { api } from '../../lib/api';
+import { api, API_BASE_URL } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { NotificationDrawer, NotificationItem } from './NotificationDrawer';
 import { playNotificationChime } from '../../utils/sound';
@@ -51,7 +51,7 @@ export const NotificationBell: React.FC = () => {
 
     // Setup SSE connection
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+      const baseUrl = API_BASE_URL;
       const sseUrl = `${baseUrl}/notifications/stream?token=${encodeURIComponent(accessToken)}`;
       
       // Native EventSource sends cookies automatically with credentials
