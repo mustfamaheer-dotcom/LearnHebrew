@@ -19,7 +19,6 @@ import { DriveViewerModal } from '../../components/common/DriveViewerModal';
 import { StructuredNotesEditorModal } from '../../components/lessons/StructuredNotesEditorModal';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
-import { LiveLessonCountdownIsland } from '../../components/lessons/LiveLessonCountdownIsland';
 import { TeacherShareModal } from '../../components/teacher/TeacherShareModal';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { haptics } from '../../utils/haptics';
@@ -980,9 +979,6 @@ export const TeacherDashboard: React.FC = () => {
             ? 'lg:ps-[calc(5rem+1.5rem)]'
             : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
         } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-6 sm:space-y-8 min-w-0`}>
-          {/* Live Imminent Lesson Countdown Island */}
-          <LiveLessonCountdownIsland lessons={lessons} userRole="TEACHER" />
-
           {/* Top Banner */}
           <div className="bg-gradient-to-r from-brand-teal-900 to-brand-teal-950 rounded-3xl p-5 sm:p-8 text-white shadow-md relative overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 relative z-10">
