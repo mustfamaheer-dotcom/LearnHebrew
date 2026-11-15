@@ -159,6 +159,36 @@ export async function deleteSlot(slotId: string) {
   return deleted;
 }
 
+export async function updateTeacherZoomLink(teacherIdOrUserId: string, zoomLink: string) {
+  const teacher = await getTeacherById(teacherIdOrUserId);
+  const trimmed = zoomLink.trim();
+  if (!trimmed || (!trimmed.startsWith('http://') && !trimmed.startsWith('https://'))) {
+    throw { status: 400, message: 'Zoom link must be a valid URL starting with https:// or http://' };
+  }
+
+  const updated = await prisma.teacher.update({
+    where: { id: teacher.id },
+    data: { defaultZoomLink: trimmed },
+  });
+
+  // Automatically update any open unbooked slots that might have had missing or placeholder zoom link
+  await prisma.timeSlot.updateMany({
+    where: {
+      teacherId: teacher.id,
+      isBooked: false,
+      OR: [
+        { zoomLink: null },
+        { zoomLink: '' },
+        { zoomLink: 'https://zoom.us/j/engrew-live' },
+      ],
+    },
+    data: { zoomLink: trimmed },
+  });
+
+  await cacheInvalidatePrefix('teachers:');
+  return updated;
+}
+
 export async function getTeacherStudents(teacherIdOrUserId: string) {
   const teacher = await getTeacherById(teacherIdOrUserId);
 

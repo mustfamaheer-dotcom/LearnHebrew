@@ -10,7 +10,7 @@ const addSlotSchema = z.object({
   endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Must be in HH:MM format').optional(),
   durationMinutes: z.number().int().optional(),
   slotType: z.nativeEnum(SlotType).optional(),
-  zoomLink: z.string().min(5, 'Zoom meeting link is required for availability slots'),
+  zoomLink: z.string().min(5, 'Zoom meeting link must be valid').optional(),
   saveAsDefault: z.boolean().optional(),
 });
 
@@ -73,6 +73,20 @@ export async function getTeacherStudentsHandler(req: AuthRequest, res: Response,
   try {
     const students = await teachersService.getTeacherStudents(req.params.id);
     res.json({ students });
+  } catch (error) {
+    next(error);
+  }
+}
+
+const updateZoomLinkSchema = z.object({
+  zoomLink: z.string().url('Must be a valid Zoom URL (e.g. https://zoom.us/j/...)'),
+});
+
+export async function updateTeacherZoomLinkHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { zoomLink } = updateZoomLinkSchema.parse(req.body);
+    const teacher = await teachersService.updateTeacherZoomLink(req.params.id, zoomLink);
+    res.json({ teacher, message: 'Default Zoom link updated successfully' });
   } catch (error) {
     next(error);
   }

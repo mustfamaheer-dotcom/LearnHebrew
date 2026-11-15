@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
@@ -165,6 +165,8 @@ export const TeacherDashboard: React.FC = () => {
   } | null>(null);
   const [slotZoomLink, setSlotZoomLink] = useState('');
   const [saveZoomAsDefault, setSaveZoomAsDefault] = useState(true);
+  const [permanentZoomLink, setPermanentZoomLink] = useState('');
+  const zoomInputRef = useRef<HTMLInputElement>(null);
   const [structuredNotesLesson, setStructuredNotesLesson] = useState<any | null>(null);
 
   // Helper to compute dates of current week (Sunday to Saturday) based on selectedDate
@@ -310,6 +312,16 @@ export const TeacherDashboard: React.FC = () => {
     enabled: !!user?.id,
   });
 
+  useEffect(() => {
+    if (calendarData?.defaultZoomLink) {
+      setPermanentZoomLink(calendarData.defaultZoomLink);
+      localStorage.setItem('engrew_teacher_zoom_link', calendarData.defaultZoomLink);
+    } else {
+      const saved = localStorage.getItem('engrew_teacher_zoom_link');
+      if (saved) setPermanentZoomLink(saved);
+    }
+  }, [calendarData?.defaultZoomLink]);
+
   // 2. Fetch Teacher Students
   const { data: studentsData } = useQuery({
     queryKey: ['teacherStudents', user?.id],
@@ -419,17 +431,41 @@ export const TeacherDashboard: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
       setIsConfiguringSlot(false);
       setSelectedSlotBlock(null);
-      const dur = vars.durationMinutes || 25;
+      const slotRange = formatSlotRange12Hour(vars.startTime, vars.endTime);
       toast.success(
         language === 'he'
-          ? `שעת הזמינות (${dur} דקות) עם קישור הזום נפתחה בהצלחה לתלמידים ולבעל הפלטפורמה!`
-          : `${dur}-minute availability slot with Zoom link opened for students & owner!`
+          ? `שעת הזמינות (${slotRange}) נפתחה בהצלחה עם קישור הזום הקבוע שלך!`
+          : `Availability slot (${slotRange}) opened with your permanent Zoom link!`
       );
     },
     onError: (err: any) => {
       toast.error(
         err.response?.data?.error ||
+          err.response?.data?.message ||
           (language === 'he' ? 'שגיאה בפתיחת שעת הזמינות' : 'Failed to open availability slot')
+      );
+    },
+  });
+
+  // Save permanent default Zoom meeting link mutation
+  const saveDefaultZoomMutation = useMutation({
+    mutationFn: async (link: string) => {
+      return api.patch(`/teachers/${user?.id}/zoom-link`, { zoomLink: link });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
+      localStorage.setItem('engrew_teacher_zoom_link', permanentZoomLink.trim());
+      toast.success(
+        language === 'he'
+          ? 'קישור הזום הקבוע נשמר בהצלחה! כל השעות שיפתחו ישתמשו בקישור זה אוטומטית.'
+          : 'Permanent Zoom link saved! All open availability slots will now use this link automatically.'
+      );
+    },
+    onError: (err: any) => {
+      toast.error(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          (language === 'he' ? 'שגיאה בשמירת קישור הזום' : 'Failed to save Zoom link')
       );
     },
   });
@@ -443,22 +479,35 @@ export const TeacherDashboard: React.FC = () => {
       );
       return;
     }
+
     const defaultZoom =
+      permanentZoomLink.trim() ||
       calendarData?.defaultZoomLink ||
       localStorage.getItem('engrew_teacher_zoom_link') ||
       '';
-    setSlotZoomLink(defaultZoom);
-    setSelectedSlotBlock({
-      dayOfWeek: selectedDay,
-      startTime: block.start,
-      endTime: block.end,
-      slotLabel,
-      formattedDate: new Date(selectedDate + 'T00:00:00').toLocaleDateString(
-        language === 'he' ? 'he-IL' : 'en-US',
-        { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }
-      ),
-    });
-    setIsConfiguringSlot(true);
+
+    // 1-CLICK INSTANT OPEN: If teacher already has their Zoom link set once!
+    if (defaultZoom && (defaultZoom.startsWith('http://') || defaultZoom.startsWith('https://'))) {
+      addSlotMutation.mutate({
+        dayOfWeek: selectedDay,
+        startTime: block.start,
+        endTime: block.end,
+        zoomLink: defaultZoom,
+        saveAsDefault: true,
+      });
+      return;
+    }
+
+    // Otherwise, guide the teacher to enter their Zoom link once in the field at the top
+    toast.warning(
+      language === 'he'
+        ? 'נא להזין את קישור הזום הקבוע שלך למעלה פעם אחת בלבד.'
+        : 'Please enter your permanent Zoom link above once before opening slots.'
+    );
+    if (zoomInputRef.current) {
+      zoomInputRef.current.focus();
+      zoomInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
   const handleConfirmSlot = () => {
@@ -923,6 +972,82 @@ export const TeacherDashboard: React.FC = () => {
                 </span>
               </div>
 
+              {/* Teacher Permanent Classroom Zoom Meeting Link Card (Enter once -> 1-click open all slots) */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-brand-teal-900/95 via-brand-teal-800 to-brand-olive-900 text-white shadow-lg border border-brand-teal-700/60 relative overflow-hidden">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+                  <div className="flex items-start sm:items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-brand-olive-300 shrink-0 border border-white/15 shadow-xs">
+                      <Video className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
+                          {language === 'he' ? 'קישור זום קבוע לשיעורים' : 'Permanent Classroom Zoom Link'}
+                        </h3>
+                        {permanentZoomLink && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-300 text-[10px] font-extrabold border border-emerald-400/30">
+                            <CheckCircle className="w-3 h-3" />
+                            <span>{language === 'he' ? 'מוגדר ופעיל' : 'Active & Ready'}</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-brand-teal-100/90 mt-0.5 max-w-xl leading-relaxed">
+                        {language === 'he'
+                          ? 'הזן את קישור הזום שלך פעם אחת בלבד. כל שעת זמינות שתוסיף תשתמש בקישור זה אוטומטית בלחיצה אחת — בלי צורך להזין אותו שוב ושוב!'
+                          : 'Enter your Zoom meeting link once. All availability slots you open will automatically use this link for seamless 1-click opening — no popups or repetitive typing!'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Input and Save Button */}
+                  <div className="flex items-center gap-2 w-full lg:w-auto">
+                    <div className="relative flex-1 lg:w-80">
+                      <input
+                        ref={zoomInputRef}
+                        type="url"
+                        value={permanentZoomLink}
+                        onChange={(e) => setPermanentZoomLink(e.target.value)}
+                        placeholder="https://zoom.us/j/1234567890"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 backdrop-blur-md text-white placeholder-brand-teal-200/50 text-xs font-mono border border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-olive-400 focus:bg-white/15 transition-all"
+                      />
+                      {permanentZoomLink && (
+                        <a
+                          href={permanentZoomLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="absolute end-2 top-1/2 -translate-y-1/2 p-1 text-brand-olive-300 hover:text-white transition-colors"
+                          title={language === 'he' ? 'בדוק קישור' : 'Test Zoom Link'}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const trimmed = permanentZoomLink.trim();
+                        if (!trimmed) {
+                          toast.warning(language === 'he' ? 'נא להזין קישור זום תקין' : 'Please enter a valid Zoom link');
+                          return;
+                        }
+                        if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+                          toast.warning(language === 'he' ? 'קישור הזום חייב להתחיל ב-https://' : 'Zoom link must start with https://');
+                          return;
+                        }
+                        saveDefaultZoomMutation.mutate(trimmed);
+                      }}
+                      disabled={saveDefaultZoomMutation.isPending}
+                      className="px-4 py-2.5 bg-brand-olive-400 hover:bg-brand-olive-300 active:scale-95 text-slate-950 rounded-xl text-xs font-black shadow-md transition-all whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
+                    >
+                      {saveDefaultZoomMutation.isPending
+                        ? (language === 'he' ? 'שומר...' : 'Saving...')
+                        : (language === 'he' ? 'שמור קישור' : 'Save Link')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Target Date Picker & Week Navigation Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700">
                 <div className="flex items-center gap-3">
@@ -1170,9 +1295,23 @@ export const TeacherDashboard: React.FC = () => {
                                     <span className="truncate">Zoom Linked</span>
                                   </a>
                                 ) : (
-                                  <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold block mt-1">
-                                    No Zoom Link
-                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const activeZoom = permanentZoomLink.trim() || calendarData?.defaultZoomLink;
+                                      if (activeZoom) {
+                                        saveDefaultZoomMutation.mutate(activeZoom);
+                                      } else {
+                                        zoomInputRef.current?.focus();
+                                        toast.warning(language === 'he' ? 'נא להזין קישור זום למעלה' : 'Please enter Zoom link above');
+                                      }
+                                    }}
+                                    className="inline-flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400 hover:underline font-bold mt-1.5"
+                                    title={language === 'he' ? 'לחץ לחיבור קישור הזום הקבוע' : 'Attach permanent Zoom link'}
+                                  >
+                                    <Video className="w-3 h-3 shrink-0" />
+                                    <span>{language === 'he' ? 'חבר לזום קבוע' : 'Attach Zoom Link'}</span>
+                                  </button>
                                 )}
                               </div>
 

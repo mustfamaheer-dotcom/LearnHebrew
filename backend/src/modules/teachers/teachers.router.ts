@@ -7,6 +7,7 @@ import {
   addTeacherSlotHandler,
   deleteTeacherSlotHandler,
   getTeacherStudentsHandler,
+  updateTeacherZoomLinkHandler,
 } from './teachers.controller';
 import { authenticate } from '../../middleware/auth';
 
@@ -20,6 +21,7 @@ router.get('/:id/slots', getTeacherSlotsHandler);
 // Protected routes (teacher private schedule, slot mutations, and students)
 router.use(authenticate);
 router.get('/:id/calendar', getTeacherCalendarHandler);
+router.patch('/:id/zoom-link', updateTeacherZoomLinkHandler);
 router.post('/:id/slots', addTeacherSlotHandler);
 router.delete('/:id/slots/:slotId', deleteTeacherSlotHandler);
 router.get('/:id/students', getTeacherStudentsHandler);
