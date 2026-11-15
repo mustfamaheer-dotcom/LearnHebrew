@@ -1196,25 +1196,30 @@ export const TeacherDashboard: React.FC = () => {
               </div>
 
               {/* Teacher Permanent Classroom Zoom Meeting Link Card (Enter once -> 1-click open all slots) */}
-              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-brand-teal-900/95 via-brand-teal-800 to-brand-olive-900 text-white shadow-lg border border-brand-teal-700/60 relative overflow-hidden">
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-teal-50/90 via-slate-50 to-emerald-50/40 dark:from-slate-900 dark:via-brand-teal-950 dark:to-slate-900 text-slate-900 dark:text-white shadow-xs border border-teal-200/80 dark:border-brand-teal-800/60 relative overflow-hidden transition-all">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
-                  <div className="flex items-start sm:items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-brand-olive-300 shrink-0 border border-white/15 shadow-xs">
-                      <Video className="w-6 h-6" />
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-brand-teal-100 dark:bg-white/10 flex items-center justify-center text-brand-teal-800 dark:text-brand-olive-300 shrink-0 border border-brand-teal-200 dark:border-white/15 shadow-2xs">
+                      <Video className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-extrabold text-sm sm:text-base text-white tracking-tight">
+                        <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white tracking-tight">
                           {language === 'he' ? 'קישור זום קבוע לשיעורים' : 'Permanent Classroom Zoom Link'}
                         </h3>
-                        {permanentZoomLink && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-300 text-[10px] font-extrabold border border-emerald-400/30">
-                            <CheckCircle className="w-3 h-3" />
+                        {permanentZoomLink ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-300 dark:border-emerald-800 shadow-2xs">
+                            <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                             <span>{language === 'he' ? 'מוגדר ופעיל' : 'Active & Ready'}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-extrabold border border-amber-300 dark:border-amber-800">
+                            <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                            <span>{language === 'he' ? 'לא הוגדר' : 'Not Set Yet'}</span>
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-brand-teal-100/90 mt-0.5 max-w-xl leading-relaxed">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-xl leading-relaxed">
                         {language === 'he'
                           ? 'הזן את קישור הזום שלך פעם אחת בלבד. כל שעת זמינות שתוסיף תשתמש בקישור זה אוטומטית בלחיצה אחת — בלי צורך להזין אותו שוב ושוב!'
                           : 'Enter your Zoom meeting link once. All availability slots you open will automatically use this link for seamless 1-click opening — no popups or repetitive typing!'}
@@ -1222,8 +1227,8 @@ export const TeacherDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Input and Save Button */}
-                  <div className="flex items-center gap-2 w-full lg:w-auto">
+                  {/* Input and Save Button - Full width & ergonomic on mobile phones */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
                     <div className="relative flex-1 lg:w-80">
                       <input
                         ref={zoomInputRef}
@@ -1231,14 +1236,14 @@ export const TeacherDashboard: React.FC = () => {
                         value={permanentZoomLink}
                         onChange={(e) => setPermanentZoomLink(e.target.value)}
                         placeholder="https://zoom.us/j/1234567890"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 backdrop-blur-md text-white placeholder-brand-teal-200/50 text-xs font-mono border border-white/20 focus:outline-none focus:ring-2 focus:ring-brand-olive-400 focus:bg-white/15 transition-all"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-xs font-mono border border-slate-300 dark:border-slate-700 focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 focus:border-brand-teal-500 shadow-2xs transition-all"
                       />
                       {permanentZoomLink && (
                         <a
                           href={permanentZoomLink}
                           target="_blank"
                           rel="noreferrer"
-                          className="absolute end-2 top-1/2 -translate-y-1/2 p-1 text-brand-olive-300 hover:text-white transition-colors"
+                          className="absolute end-2.5 top-1/2 -translate-y-1/2 p-1 text-brand-teal-600 dark:text-brand-olive-300 hover:text-brand-teal-800 dark:hover:text-white transition-colors"
                           title={language === 'he' ? 'בדוק קישור' : 'Test Zoom Link'}
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
@@ -1261,7 +1266,7 @@ export const TeacherDashboard: React.FC = () => {
                         saveDefaultZoomMutation.mutate(trimmed);
                       }}
                       disabled={saveDefaultZoomMutation.isPending}
-                      className="px-4 py-2.5 bg-brand-olive-400 hover:bg-brand-olive-300 active:scale-95 text-slate-950 rounded-xl text-xs font-black shadow-md transition-all whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
+                      className="w-full sm:w-auto px-5 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-700 dark:bg-brand-olive-400 dark:hover:bg-brand-olive-300 active:scale-95 text-white dark:text-slate-950 rounded-xl text-xs font-black shadow-xs transition-all whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50 text-center"
                     >
                       {saveDefaultZoomMutation.isPending
                         ? (language === 'he' ? 'שומר...' : 'Saving...')
