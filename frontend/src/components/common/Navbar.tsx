@@ -34,8 +34,8 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <header className="fixed top-0 inset-x-0 z-40 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/80 shadow-xs transition-colors duration-200">
-        <div className="w-full px-2.5 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20">
+        <div className="w-full px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
           {/* Logo & Brand Name */}
           <div className="flex items-center min-w-0 shrink-0">
             <Link to="/" className="flex items-center gap-1.5 sm:gap-3 group py-1 min-w-0 shrink-0">
@@ -116,7 +116,9 @@ export const Navbar: React.FC = () => {
             </button>
 
             {/* Real-time Notification Bell & Drawer */}
-            <NotificationBell />
+            <div className="relative me-1.5 sm:me-2 shrink-0 flex items-center">
+              <NotificationBell />
+            </div>
 
             {user ? (
               <div className="flex items-center gap-1 sm:gap-2">

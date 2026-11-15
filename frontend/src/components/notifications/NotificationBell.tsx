@@ -154,7 +154,11 @@ export const NotificationBell: React.FC = () => {
 
         {/* Luminous Pulsing Badge */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -end-1 min-w-[1rem] h-[1rem] px-0.5 rounded-full bg-rose-500 text-white font-black text-[9px] flex items-center justify-center shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse">
+          <span
+            className={`absolute -top-1.5 -end-1.5 h-[18px] flex items-center justify-center rounded-full bg-rose-500 text-white font-black text-[10px] leading-none shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse z-20 pointer-events-none box-border ${
+              unreadCount > 9 ? 'min-w-[18px] px-1.5' : 'w-[18px]'
+            }`}
+          >
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
