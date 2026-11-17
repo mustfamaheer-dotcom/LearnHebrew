@@ -210,37 +210,219 @@ export async function getStudentHomework(studentIdOrUserId: string) {
 
 export async function getStudentTransactions(studentIdOrUserId: string) {
   const student = await getStudentById(studentIdOrUserId);
-  const transactions = await prisma.balanceTransaction.findMany({
-    where: { studentId: student.id },
-    orderBy: { createdAt: 'desc' },
-  });
 
+  const [ledgers, studentPackages, balanceTransactions, studentBalances] = await Promise.all([
+    prisma.sessionBalanceLedger.findMany({
+      where: { studentId: student.id },
+      include: { sessionType: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.studentPackage.findMany({
+      where: { studentId: student.id },
+      include: {
+        package: true,
+        payment: {
+          include: {
+            approvedBy: { select: { firstName: true, lastName: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.balanceTransaction.findMany({
+      where: { studentId: student.id },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.studentSessionBalance.findMany({
+      where: { studentId: student.id },
+      include: { sessionType: true },
+    }),
+  ]);
+
+  // Map package reference IDs
+  const packageMap = new Map(studentPackages.map((p) => [p.id, p]));
+
+  // Find all lesson reference IDs from ledgers
+  const lessonIds = ledgers
+    .filter((l) => (l.reason === 'LESSON_BOOKING' || l.reason === 'LESSON_REFUND') && l.referenceId)
+    .map((l) => l.referenceId as string);
+
+  const lessons = lessonIds.length > 0
+    ? await prisma.lesson.findMany({
+        where: { id: { in: lessonIds } },
+        include: {
+          teacher: {
+            include: {
+              user: { select: { firstName: true, lastName: true, avatarUrl: true } },
+            },
+          },
+        },
+      })
+    : [];
+  const lessonMap = new Map(lessons.map((ls) => [ls.id, ls]));
+
+  // Build unified transactions array
+  const unifiedTransactions: any[] = [];
+
+  // Add ledgers
+  for (const l of ledgers) {
+    const pkg = l.referenceId ? packageMap.get(l.referenceId) : null;
+    const lesson = l.referenceId ? lessonMap.get(l.referenceId) : null;
+
+    let type = 'ADMIN_ADJUSTMENT';
+    if (l.reason === 'PACKAGE_ACTIVATION') type = 'PACKAGE_ACTIVATION';
+    else if (l.reason === 'LESSON_BOOKING') type = 'SESSION_BOOKING';
+    else if (l.reason === 'LESSON_REFUND') type = 'SESSION_REFUND';
+
+    let description = '';
+    if (l.reason === 'PACKAGE_ACTIVATION') {
+      const pkgName = pkg?.package?.name || 'Session Package';
+      description = `Package Activation: ${pkgName} (+${l.delta} x ${l.sessionType?.name || 'Session'})`;
+    } else if (l.reason === 'LESSON_BOOKING') {
+      const teacherName = lesson?.teacher?.user ? `${lesson.teacher.user.firstName} ${lesson.teacher.user.lastName}` : 'Hebrew Teacher';
+      description = `Lesson Booking: ${l.sessionType?.name || 'Session'} with ${teacherName}`;
+    } else if (l.reason === 'LESSON_REFUND') {
+      description = `Session Quota Restored (+${l.delta} x ${l.sessionType?.name || 'Session'})`;
+    } else {
+      description = `Quota Balance Adjustment (${l.delta > 0 ? '+' : ''}${l.delta})`;
+    }
+
+    const receiptNumber = `ENG-${new Date(l.createdAt).getFullYear()}${String(new Date(l.createdAt).getMonth() + 1).padStart(2, '0')}-${l.id.slice(0, 6).toUpperCase()}`;
+
+    unifiedTransactions.push({
+      id: l.id,
+      receiptNumber,
+      amount: l.delta,
+      balanceAfter: l.balanceAfter,
+      type,
+      rawReason: l.reason,
+      description,
+      createdAt: l.createdAt,
+      sessionType: l.sessionType,
+      packageDetails: pkg ? {
+        id: pkg.id,
+        name: pkg.package?.name,
+        nameHe: pkg.package?.nameHe,
+        price: pkg.package?.price,
+        currency: pkg.package?.currency || 'USD',
+        lessonsTotal: pkg.lessonsTotal,
+        lessonsUsed: pkg.lessonsUsed,
+        validityDays: pkg.package?.validityDays || 30,
+        startDate: pkg.startDate,
+        endDate: pkg.endDate,
+        paymentStatus: pkg.payment?.status || 'APPROVED',
+        paymentMethod: pkg.payment?.notes ? 'Verified Payment Transfer' : 'Direct Activation',
+        approvedAt: pkg.payment?.approvedAt || pkg.createdAt,
+      } : null,
+      lessonDetails: lesson ? {
+        id: lesson.id,
+        scheduledAt: lesson.scheduledAt,
+        durationMinutes: lesson.durationMinutes,
+        lessonType: lesson.lessonType,
+        status: lesson.status,
+        teacherName: `${lesson.teacher?.user?.firstName || ''} ${lesson.teacher?.user?.lastName || ''}`.trim(),
+        meetingUrl: lesson.zoomLink,
+      } : null,
+      studentDetails: {
+        id: student.id,
+        name: `${student.user.firstName} ${student.user.lastName}`,
+        email: student.user.email,
+        level: student.level,
+      },
+    });
+  }
+
+  // Also include any standalone balanceTransaction records if present
+  for (const bt of balanceTransactions) {
+    unifiedTransactions.push({
+      id: bt.id,
+      receiptNumber: `ENG-${new Date(bt.createdAt).getFullYear()}${String(new Date(bt.createdAt).getMonth() + 1).padStart(2, '0')}-${bt.id.slice(0, 6).toUpperCase()}`,
+      amount: Number(bt.amount),
+      balanceAfter: Number(bt.balanceAfter),
+      type: bt.type,
+      rawReason: bt.type,
+      description: bt.description || 'Account Transaction',
+      createdAt: bt.createdAt,
+      studentDetails: {
+        id: student.id,
+        name: `${student.user.firstName} ${student.user.lastName}`,
+        email: student.user.email,
+        level: student.level,
+      },
+    });
+  }
+
+  // Also include standalone studentPackages if not referenced by a ledger
+  const referencedPackageIds = new Set(ledgers.map((l) => l.referenceId).filter(Boolean));
+  for (const sp of studentPackages) {
+    if (!referencedPackageIds.has(sp.id)) {
+      const receiptNumber = `ENG-PKG-${new Date(sp.createdAt).getFullYear()}${String(new Date(sp.createdAt).getMonth() + 1).padStart(2, '0')}-${sp.id.slice(0, 6).toUpperCase()}`;
+      unifiedTransactions.push({
+        id: sp.id,
+        receiptNumber,
+        amount: sp.lessonsTotal,
+        balanceAfter: sp.lessonsTotal - sp.lessonsUsed,
+        type: 'PACKAGE_ACTIVATION',
+        rawReason: 'PACKAGE_ACTIVATION',
+        description: `Package Purchase: ${sp.package?.name || 'Session Package'} (+${sp.lessonsTotal} sessions)`,
+        createdAt: sp.createdAt,
+        packageDetails: {
+          id: sp.id,
+          name: sp.package?.name,
+          nameHe: sp.package?.nameHe,
+          price: sp.package?.price,
+          currency: sp.package?.currency || 'USD',
+          lessonsTotal: sp.lessonsTotal,
+          lessonsUsed: sp.lessonsUsed,
+          validityDays: sp.package?.validityDays || 30,
+          startDate: sp.startDate,
+          endDate: sp.endDate,
+          paymentStatus: sp.payment?.status || 'APPROVED',
+          paymentMethod: 'Verified Payment / Bank Wire',
+          approvedAt: sp.payment?.approvedAt || sp.createdAt,
+        },
+        studentDetails: {
+          id: student.id,
+          name: `${student.user.firstName} ${student.user.lastName}`,
+          email: student.user.email,
+          level: student.level,
+        },
+      });
+    }
+  }
+
+  // Sort unified transactions descending by date
+  unifiedTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // Calculate summary
   let totalDeposited = 0;
   let totalSpent = 0;
   let totalRefunded = 0;
 
-  transactions.forEach((tx) => {
+  unifiedTransactions.forEach((tx) => {
     const amt = Number(tx.amount);
     if (tx.type === 'SESSION_BOOKING') {
       totalSpent += Math.abs(amt);
     } else if (tx.type === 'SESSION_REFUND') {
       totalRefunded += amt;
-    } else if (tx.type === 'ADMIN_ADJUSTMENT') {
+    } else if (tx.type === 'PACKAGE_ACTIVATION' || tx.type === 'ADMIN_ADJUSTMENT') {
       if (amt > 0) totalDeposited += amt;
       else totalSpent += Math.abs(amt);
     }
   });
 
+  const totalBalance = studentBalances.reduce((acc, sb) => acc + sb.balance, 0);
+
   return {
     studentId: student.id,
-    currentBalance: Number(student.balance || 0),
+    currentBalance: totalBalance || Number(student.balance || 0),
     summary: {
       totalDeposited,
       totalSpent,
       totalRefunded,
-      transactionCount: transactions.length,
+      transactionCount: unifiedTransactions.length,
     },
-    transactions,
+    transactions: unifiedTransactions,
   };
 }
 

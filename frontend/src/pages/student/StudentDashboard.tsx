@@ -82,7 +82,10 @@ import {
   CalendarCheck,
   CalendarDays,
   Info,
+  Printer,
 } from 'lucide-react';
+import { ReceiptModal } from '../../components/receipts/ReceiptModal';
+import { ReceiptData } from '../../utils/receiptGenerator';
 
 const DEFAULT_LEVEL_TABS = [
   { code: 'BEGINNER', labelEn: 'Beginner (Alef)', labelHe: 'מתחיל (רמה א׳)' },
@@ -290,6 +293,116 @@ export const StudentDashboard: React.FC = () => {
 
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<'ALL' | 'BOOKINGS' | 'DEPOSITS' | 'REFUNDS'>('ALL');
   const [transactionSearchQuery, setTransactionSearchQuery] = useState('');
+
+  // Official Receipt & PDF Modal State
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedReceiptData, setSelectedReceiptData] = useState<ReceiptData | null>(null);
+
+  const handleOpenReceipt = (tx: any) => {
+    const data: ReceiptData = {
+      id: tx.id,
+      receiptNumber: tx.receiptNumber || `ENG-${new Date(tx.createdAt).getFullYear()}${String(new Date(tx.createdAt).getMonth() + 1).padStart(2, '0')}-${tx.id.slice(0, 6).toUpperCase()}`,
+      type: tx.type,
+      amount: Number(tx.amount),
+      balanceAfter: Number(tx.balanceAfter || 0),
+      description: tx.description,
+      createdAt: tx.createdAt,
+      sessionType: tx.sessionType,
+      packageDetails: tx.packageDetails || (activePackage ? {
+        id: activePackage.id,
+        name: activePackage.package?.name,
+        nameHe: activePackage.package?.nameHe,
+        price: activePackage.package?.price,
+        currency: activePackage.package?.currency || 'USD',
+        lessonsTotal: activePackage.lessonsTotal,
+        lessonsUsed: activePackage.lessonsUsed,
+        validityDays: activePackage.package?.validityDays || 30,
+        startDate: activePackage.startDate,
+        endDate: activePackage.endDate,
+        paymentStatus: 'APPROVED',
+        paymentMethod: 'Verified Payment / Bank Wire',
+      } : null),
+      lessonDetails: tx.lessonDetails,
+      studentDetails: tx.studentDetails || {
+        id: user?.id,
+        name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Student',
+        email: user?.email || '',
+        level: dashboard?.student?.level || 'Beginner',
+      },
+    };
+    setSelectedReceiptData(data);
+    setIsReceiptModalOpen(true);
+  };
+
+  const handleOpenPackageReceipt = () => {
+    if (!activePackage) return;
+    const data: ReceiptData = {
+      id: activePackage.id,
+      receiptNumber: `ENG-PKG-${new Date(activePackage.createdAt).getFullYear()}${String(new Date(activePackage.createdAt).getMonth() + 1).padStart(2, '0')}-${activePackage.id.slice(0, 6).toUpperCase()}`,
+      type: 'PACKAGE_ACTIVATION',
+      amount: activePackage.lessonsTotal,
+      balanceAfter: activePackage.lessonsTotal - activePackage.lessonsUsed,
+      description: `Package Purchase: ${activePackage.package?.name || 'Session Package'}`,
+      createdAt: activePackage.createdAt,
+      packageDetails: {
+        id: activePackage.id,
+        name: activePackage.package?.name,
+        nameHe: activePackage.package?.nameHe,
+        price: activePackage.package?.price,
+        currency: activePackage.package?.currency || 'USD',
+        lessonsTotal: activePackage.lessonsTotal,
+        lessonsUsed: activePackage.lessonsUsed,
+        validityDays: activePackage.package?.validityDays || 30,
+        startDate: activePackage.startDate,
+        endDate: activePackage.endDate,
+        paymentStatus: 'APPROVED',
+        paymentMethod: 'Verified Payment / Bank Wire',
+      },
+      studentDetails: {
+        id: user?.id,
+        name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Student',
+        email: user?.email || '',
+        level: dashboard?.student?.level || 'Beginner',
+      },
+    };
+    setSelectedReceiptData(data);
+    setIsReceiptModalOpen(true);
+  };
+
+  const handleOpenLessonReceipt = (lesson: any) => {
+    const data: ReceiptData = {
+      id: lesson.id,
+      receiptNumber: `ENG-BKG-${new Date(lesson.scheduledAt).getFullYear()}${String(new Date(lesson.scheduledAt).getMonth() + 1).padStart(2, '0')}-${lesson.id.slice(0, 6).toUpperCase()}`,
+      type: 'SESSION_BOOKING',
+      amount: -1,
+      balanceAfter: totalAvailableSessions,
+      description: `Private Lesson with ${lesson.teacher?.user?.firstName || 'Teacher'}`,
+      createdAt: lesson.createdAt || lesson.scheduledAt,
+      sessionType: {
+        name: `${lesson.durationMinutes || 25}min`,
+        durationMinutes: lesson.durationMinutes || 25,
+        labelEn: `${lesson.durationMinutes || 25}-Min Live Session`,
+        labelHe: `שיעור חי ${lesson.durationMinutes || 25} דקות`,
+      },
+      lessonDetails: {
+        id: lesson.id,
+        scheduledAt: lesson.scheduledAt,
+        durationMinutes: lesson.durationMinutes,
+        lessonType: lesson.lessonType,
+        status: lesson.status,
+        teacherName: `${lesson.teacher?.user?.firstName || ''} ${lesson.teacher?.user?.lastName || ''}`.trim(),
+        meetingUrl: lesson.zoomLink,
+      },
+      studentDetails: {
+        id: user?.id,
+        name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Student',
+        email: user?.email || '',
+        level: dashboard?.student?.level || 'Beginner',
+      },
+    };
+    setSelectedReceiptData(data);
+    setIsReceiptModalOpen(true);
+  };
 
   // 2. Fetch Available Teachers for Booking
   const { data: teachersData } = useQuery({
@@ -1197,11 +1310,17 @@ export const StudentDashboard: React.FC = () => {
                           </span>
                         </div>
 
-                        <div className="pt-1.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800/60">
-                          <span>{language === 'he' ? 'בתוקף עד:' : 'Valid until:'}</span>
-                          <span className="font-semibold text-slate-700 dark:text-slate-300">
-                            {activePackage ? new Date(activePackage.endDate).toLocaleDateString() : '—'}
-                          </span>
+                        <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800/60">
+                          <span>{language === 'he' ? 'בתוקף עד:' : 'Valid until:'} <strong className="text-slate-700 dark:text-slate-300 font-bold">{activePackage ? new Date(activePackage.endDate).toLocaleDateString() : '—'}</strong></span>
+                          <button
+                            type="button"
+                            onClick={handleOpenPackageReceipt}
+                            className="px-2.5 py-1 rounded-lg bg-brand-teal-50 hover:bg-brand-teal-100 dark:bg-brand-teal-950/70 dark:hover:bg-brand-teal-900 text-brand-teal-800 dark:text-brand-teal-300 text-[10px] font-black flex items-center gap-1 border border-brand-teal-200 dark:border-brand-teal-800 transition-colors cursor-pointer shadow-2xs"
+                            title={language === 'he' ? 'הדפס קבלה וחשבונית לחבילה' : 'Print Package Invoice & Receipt'}
+                          >
+                            <Printer className="w-3 h-3 text-brand-teal-700 dark:text-brand-teal-300" />
+                            <span>{language === 'he' ? 'קבלה / חשבונית' : 'Package Receipt'}</span>
+                          </button>
                         </div>
                       </div>
                     ) : (
@@ -1324,6 +1443,14 @@ export const StudentDashboard: React.FC = () => {
                         >
                           <RefreshCw className="w-3.5 h-3.5 text-teal-500" />
                           <span>{language === 'he' ? 'שינוי מועד' : 'Reschedule'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenLessonReceipt(upcomingLessons[0])}
+                          className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-colors border border-slate-200/80 dark:border-slate-700 shadow-2xs"
+                          title={language === 'he' ? 'הדפס אישור הזמנת שיעור ושובר' : 'Print Booking Slip & Voucher'}
+                        >
+                          <Printer className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
                         </button>
                       </div>
                     ) : (
@@ -2365,6 +2492,16 @@ export const StudentDashboard: React.FC = () => {
                             >
                               <RefreshCw className="w-3.5 h-3.5 text-teal-500" />
                               <span>{language === 'he' ? 'שינוי מועד' : 'Reschedule'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenLessonReceipt(l)}
+                              title={language === 'he' ? 'הדפס אישור הזמנה ושובר כניסה לשיעור' : 'Print Booking Slip & Voucher'}
+                              className="px-3 py-2 bg-slate-100 dark:bg-slate-750 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
+                            >
+                              <Printer className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
+                              <span className="hidden sm:inline">{language === 'he' ? 'אישור' : 'Receipt'}</span>
                             </button>
 
                             {l.zoomLink && (
@@ -4405,15 +4542,16 @@ export const StudentDashboard: React.FC = () => {
                 {(() => {
                   const filtered = studentTransactions.filter((tx: any) => {
                     if (transactionTypeFilter === 'BOOKINGS' && tx.type !== 'SESSION_BOOKING') return false;
-                    if (transactionTypeFilter === 'DEPOSITS' && (tx.type !== 'ADMIN_ADJUSTMENT' || Number(tx.amount) <= 0)) return false;
+                    if (transactionTypeFilter === 'DEPOSITS' && tx.type !== 'PACKAGE_ACTIVATION' && (tx.type !== 'ADMIN_ADJUSTMENT' || Number(tx.amount) <= 0)) return false;
                     if (transactionTypeFilter === 'REFUNDS' && tx.type !== 'SESSION_REFUND') return false;
 
                     if (!transactionSearchQuery) return true;
                     const q = transactionSearchQuery.toLowerCase();
                     const desc = (tx.description || '').toLowerCase();
                     const type = (tx.type || '').toLowerCase();
+                    const rcp = (tx.receiptNumber || '').toLowerCase();
                     const amt = String(tx.amount);
-                    return desc.includes(q) || type.includes(q) || amt.includes(q);
+                    return desc.includes(q) || type.includes(q) || amt.includes(q) || rcp.includes(q);
                   });
 
                   if (filtered.length === 0) {
@@ -4447,6 +4585,7 @@ export const StudentDashboard: React.FC = () => {
                               <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תיאור ופרטים' : 'Description / Note'}</th>
                               <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תאריך ושעה' : 'Date & Time'}</th>
                               <th className="py-3.5 px-4 text-center">{language === 'he' ? 'סטטוס' : 'Status'}</th>
+                              <th className="py-3.5 px-4 text-center">{language === 'he' ? 'קבלה / הדפסה' : 'Receipt / PDF'}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900/60 font-medium">
@@ -4524,6 +4663,19 @@ export const StudentDashboard: React.FC = () => {
                                       <span>{language === 'he' ? 'הושלם' : 'Completed'}</span>
                                     </span>
                                   </td>
+
+                                  {/* Receipt / Print Action */}
+                                  <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenReceipt(tx)}
+                                      className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-brand-teal-50 dark:bg-slate-800 dark:hover:bg-brand-teal-950/70 border border-slate-200 dark:border-slate-700 hover:border-brand-teal-300 dark:hover:border-brand-teal-700 text-slate-700 hover:text-brand-teal-800 dark:text-slate-300 dark:hover:text-brand-teal-300 font-extrabold text-xs transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                                      title={language === 'he' ? 'הדפס קבלה ואישור עסקה' : 'Print Official Receipt & Voucher'}
+                                    >
+                                      <Printer className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
+                                      <span>{language === 'he' ? 'קבלה' : 'Receipt'}</span>
+                                    </button>
+                                  </td>
                                 </tr>
                               );
                             })}
@@ -4593,13 +4745,23 @@ export const StudentDashboard: React.FC = () => {
                                 </p>
                               )}
 
-                              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60 dark:border-slate-800">
-                                <span className="text-slate-500 dark:text-slate-400 font-medium">
-                                  {language === 'he' ? 'מכסה לאחר פעולה:' : 'Quota after:'}
-                                </span>
-                                <span className="font-extrabold text-slate-900 dark:text-white">
-                                  {Number(tx.balanceAfter || 0)} {language === 'he' ? 'שיעורים' : 'units'}
-                                </span>
+                              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60 dark:border-slate-800">
+                                <div>
+                                  <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block">
+                                    {language === 'he' ? 'מכסה לאחר פעולה:' : 'Quota after:'}
+                                  </span>
+                                  <span className="font-extrabold text-slate-900 dark:text-white">
+                                    {Number(tx.balanceAfter || 0)} {language === 'he' ? 'שיעורים' : 'units'}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenReceipt(tx)}
+                                  className="px-3 py-1.5 rounded-xl bg-brand-teal-50 hover:bg-brand-teal-100 dark:bg-brand-teal-950/70 dark:hover:bg-brand-teal-900 text-brand-teal-800 dark:text-brand-teal-300 font-extrabold text-xs flex items-center gap-1.5 border border-brand-teal-200 dark:border-brand-teal-800 shadow-2xs active:scale-95 cursor-pointer"
+                                >
+                                  <Printer className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-300" />
+                                  <span>{language === 'he' ? 'הדפס קבלה' : 'Print Receipt'}</span>
+                                </button>
                               </div>
                             </div>
                           );
@@ -5161,6 +5323,14 @@ export const StudentDashboard: React.FC = () => {
         isOpen={!!selectedCert}
         certificate={selectedCert}
         onClose={() => setSelectedCert(null)}
+      />
+
+      {/* Official Receipt & Voucher PDF Modal */}
+      <ReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        data={selectedReceiptData}
+        language={language}
       />
     </div>
   );
