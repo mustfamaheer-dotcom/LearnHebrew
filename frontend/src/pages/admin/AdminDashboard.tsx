@@ -14,6 +14,7 @@ import { ReviewsAndFeedbackTab } from '../../components/admin/ReviewsAndFeedback
 import { PackagesManagementTab } from '../../components/admin/PackagesManagementTab';
 import { TeachersCalendarTab } from '../../components/admin/TeachersCalendarTab';
 import { EnterpriseTabsContainer } from '../../components/admin/EnterpriseTabsContainer';
+import { usePermissions, Can } from '../../hooks/usePermissions';
 import { LevelsTab } from '../../components/admin/LevelsTab';
 import { SessionTypesTab } from '../../components/admin/SessionTypesTab';
 import { RolesPermissionsTab } from '../../components/admin/RolesPermissionsTab';
@@ -284,6 +285,8 @@ export const AdminDashboard: React.FC = () => {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const { can, isSuperAdmin } = usePermissions();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
@@ -967,6 +970,7 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'מבט כולל ומדדים',
       icon: BarChart2,
       badge: null,
+      permission: undefined,
     },
     {
       id: 'landing_cms',
@@ -974,6 +978,7 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'ניהול עמוד הבית',
       icon: Sliders,
       badge: 'Live',
+      permission: 'settings:manage',
     },
     {
       id: 'users',
@@ -981,6 +986,7 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'ניהול משתמשים',
       icon: Users,
       badge: usersData?.length || 0,
+      permission: 'users:view',
     },
     {
       id: 'teachers',
@@ -988,6 +994,7 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'מורים ומשבצות 25 דק׳',
       icon: GraduationCap,
       badge: teachersData?.length || 0,
+      permission: 'teachers:view_all',
     },
     {
       id: 'teachers_calendar',
@@ -995,6 +1002,7 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'יומן מורים מפורט',
       icon: CalendarRange,
       badge: 'Matrix',
+      permission: 'teachers:manage_slots',
     },
     {
       id: 'packages',
@@ -1002,6 +1010,7 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'חבילות ומחירים',
       icon: Layers,
       badge: packagesData?.length || 0,
+      permission: 'packages:view',
     },
     {
       id: 'bookings',
@@ -1009,6 +1018,7 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'שיעורים ויומן',
       icon: Calendar,
       badge: lessonsData?.length || 0,
+      permission: 'lessons:view_all',
     },
     {
       id: 'surveys',
@@ -1016,6 +1026,7 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'משובים וסקרים',
       icon: MessageSquare,
       badge: surveysData?.length || 0,
+      permission: 'reviews:view',
     },
     {
       id: 'reminders_hub',
@@ -1024,6 +1035,7 @@ export const AdminDashboard: React.FC = () => {
       icon: BellRing,
       badge: 'Live',
       badgeColor: 'bg-emerald-500 text-white',
+      permission: 'reminders:trigger_engine',
     },
     {
       id: 'enterprise',
@@ -1039,52 +1051,60 @@ export const AdminDashboard: React.FC = () => {
           label: 'Levels & Curriculum',
           labelHe: 'רמות לימוד ומסלולים',
           icon: Layers,
+          permission: 'levels:view',
         },
         {
           id: 'session_types',
           label: 'Session Types (25/40/55m)',
           labelHe: 'סוגי מפגשים ותמחור',
           icon: Clock,
+          permission: 'settings:manage',
         },
         {
           id: 'roles',
           label: 'Roles & RBAC Matrix',
           labelHe: 'תפקידים והרשאות (RBAC)',
           icon: ShieldCheck,
+          permission: 'roles:manage',
         },
         {
           id: 'payments',
           label: 'Payments Review',
           labelHe: 'בדיקת תשלומי חבילות',
           icon: Receipt,
+          permission: 'payments:view_all',
         },
         {
           id: 'exams',
           label: 'Level Transition Exams',
           labelHe: 'מבחני מעבר רמה',
           icon: Award,
+          permission: 'exams:view',
         },
         {
           id: 'review_links',
           label: 'Secret Review Links',
           labelHe: 'קישורי משוב חד-פעמיים',
           icon: Link2,
+          permission: 'reviews:manage_links',
         },
         {
           id: 'point_rules',
           label: 'Game Point Rules',
           labelHe: 'חוקי נקודות משחקים',
           icon: Coins,
+          permission: 'rewards:view_rules',
         },
         {
           id: 'languages',
           label: 'Languages Setup',
           labelHe: 'ניהול שפות אם ויעד',
           icon: Globe,
+          permission: 'languages:manage',
         },
       ],
     },
-    ...(currentUser?.role === 'SUPER_ADMIN'
+    ...(currentUser?.role === 'SUPER_ADMIN' || can('audit:view_logs')
       ? [
           {
             id: 'system_logs',
@@ -1093,17 +1113,45 @@ export const AdminDashboard: React.FC = () => {
             icon: Terminal,
             badge: 'Live',
             badgeColor: 'bg-rose-500 text-white',
+            permission: 'audit:view_logs',
           },
         ]
       : []),
   ];
+
+  const authorizedNavItems = useMemo(() => {
+    return navItems
+      .map((item: any) => {
+        if (item.children) {
+          const allowedChildren = item.children.filter((ch: any) => !ch.permission || can(ch.permission));
+          if (allowedChildren.length === 0) return null;
+          return { ...item, children: allowedChildren };
+        }
+        return (!item.permission || can(item.permission)) ? item : null;
+      })
+      .filter(Boolean);
+  }, [navItems, can]);
+
+  const isCurrentTabAuthorized = useMemo(() => {
+    if (isSuperAdmin) return true;
+    const directItem = navItems.find((n: any) => n.id === activeTab);
+    if (directItem) {
+      return !directItem.permission || can(directItem.permission);
+    }
+    const enterpriseItem = navItems.find((n: any) => n.id === 'enterprise');
+    const child = enterpriseItem?.children?.find((c: any) => c.id === activeTab);
+    if (child) {
+      return !child.permission || can(child.permission);
+    }
+    return true;
+  }, [activeTab, navItems, can, isSuperAdmin]);
 
   return (
     <div className="min-h-screen w-full relative">
       <div className="w-full">
         {/* Apple-Style Glassy Left Sidebar */}
         <GlassSidebar
-          navItems={navItems}
+          navItems={authorizedNavItems}
           activeTab={activeTab}
           onTabChange={handleTabChange}
           user={{
@@ -1126,7 +1174,31 @@ export const AdminDashboard: React.FC = () => {
             ? 'lg:ps-[calc(5rem+1.5rem)]'
             : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
         } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8`}>
-          {/* TAB 1: OVERVIEW & KPIS */}
+          {!isCurrentTabAuthorized ? (
+            <div className="p-8 sm:p-12 rounded-3xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 text-center space-y-4 shadow-sm my-8">
+              <div className="w-16 h-16 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto ring-4 ring-amber-400/20">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {language === 'he' ? 'אין הרשאת גישה ללשונית זו' : 'Access Restricted by Role Policy'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  {language === 'he'
+                    ? 'תפקיד המשתמש שלך אינו מורשה לצפות בתוכן לשונית זו על פי הגדרות ה-RBAC של המנהל.'
+                    : 'Your account role does not possess the granular permissions required to access this section per administrative RBAC configurations.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleTabChange('overview')}
+                className="px-5 py-2.5 rounded-xl bg-brand-teal-800 text-white font-bold text-xs hover:bg-brand-teal-900 transition-all cursor-pointer shadow-xs"
+              >
+                {language === 'he' ? 'חזרה ללוח המחוונים הראשי' : 'Return to Overview'}
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* TAB 1: OVERVIEW & KPIS */}
           {activeTab === 'overview' && (
             <div className="space-y-8 animate-fade-in">
               {/* 1. Executive Top Banner */}
@@ -2370,13 +2442,15 @@ export const AdminDashboard: React.FC = () => {
                     : 'Comprehensive access control to inspect, edit, assign packages, configure Hebrew levels, and manage all accounts.'
                 }
                 action={
-                  <button
-                    onClick={() => setIsCreatingUser(true)}
-                    className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4 text-slate-950" />
-                    <span>{t('admin.createUserBtn')}</span>
-                  </button>
+                  can('users:create') ? (
+                    <button
+                      onClick={() => setIsCreatingUser(true)}
+                      className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4 text-slate-950" />
+                      <span>{t('admin.createUserBtn')}</span>
+                    </button>
+                  ) : null
                 }
               />
 
@@ -2675,45 +2749,51 @@ export const AdminDashboard: React.FC = () => {
                               <td className="py-3.5 px-4 text-end">
                                 <div className="inline-flex items-center gap-1.5 justify-end">
                                   {/* Deep User Management Button */}
-                                  <button
-                                    onClick={() => handleOpenEditUser(u)}
-                                    title={language === 'he' ? 'ניהול מלא ועריכת משתמש' : 'Full User Governance & Edit'}
-                                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-200/80 dark:border-slate-700"
-                                  >
-                                    <Sliders className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
-                                    <span className="hidden sm:inline">{language === 'he' ? 'ניהול' : 'Manage'}</span>
-                                  </button>
+                                  {can('users:edit') && (
+                                    <button
+                                      onClick={() => handleOpenEditUser(u)}
+                                      title={language === 'he' ? 'ניהול מלא ועריכת משתמש' : 'Full User Governance & Edit'}
+                                      className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-200/80 dark:border-slate-700"
+                                    >
+                                      <Sliders className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
+                                      <span className="hidden sm:inline">{language === 'he' ? 'ניהול' : 'Manage'}</span>
+                                    </button>
+                                  )}
 
                                   {/* Quick Reset Password */}
-                                  <button
-                                    onClick={() => resetPasswordMutation.mutate(u.id)}
-                                    title={language === 'he' ? 'איפוס סיסמה' : 'Reset Password'}
-                                    className="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
-                                  >
-                                    <KeyRound className="w-3.5 h-3.5" />
-                                  </button>
+                                  {can('users:reset_password') && (
+                                    <button
+                                      onClick={() => resetPasswordMutation.mutate(u.id)}
+                                      title={language === 'he' ? 'איפוס סיסמה' : 'Reset Password'}
+                                      className="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
+                                    >
+                                      <KeyRound className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
 
                                   {/* Deactivate / Delete */}
-                                  <button
-                                    onClick={async () => {
-                                      const confirmed = await confirmDialog({
-                                        title: 'Delete User Account',
-                                        titleHe: 'מחיקת חשבון משתמש',
-                                        message: `Are you sure you want to permanently delete ${u.firstName} ${u.lastName} (${u.email})?`,
-                                        messageHe: `האם למחוק לצמיתות את המשתמש ${u.firstName} ${u.lastName} (${u.email})?`,
-                                        confirmText: 'Delete Account',
-                                        confirmTextHe: 'מחק משתמש',
-                                        variant: 'danger',
-                                      });
-                                      if (confirmed) {
-                                        deleteUserMutation.mutate(u.id);
-                                      }
-                                    }}
-                                    title={language === 'he' ? 'מחיקת משתמש' : 'Delete User'}
-                                    className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                  {can('users:delete') && (
+                                    <button
+                                      onClick={async () => {
+                                        const confirmed = await confirmDialog({
+                                          title: 'Delete User Account',
+                                          titleHe: 'מחיקת חשבון משתמש',
+                                          message: `Are you sure you want to permanently delete ${u.firstName} ${u.lastName} (${u.email})?`,
+                                          messageHe: `האם למחוק לצמיתות את המשתמש ${u.firstName} ${u.lastName} (${u.email})?`,
+                                          confirmText: 'Delete Account',
+                                          confirmTextHe: 'מחק משתמש',
+                                          variant: 'danger',
+                                        });
+                                        if (confirmed) {
+                                          deleteUserMutation.mutate(u.id);
+                                        }
+                                      }}
+                                      title={language === 'he' ? 'מחיקת משתמש' : 'Delete User'}
+                                      className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -2844,20 +2924,24 @@ export const AdminDashboard: React.FC = () => {
                       <ExternalLink className="w-4 h-4 text-brand-teal-300" />
                       <span>{language === 'he' ? 'צפה בדף הנחיתה' : 'View on Landing Page'}</span>
                     </a>
-                    <button
-                      onClick={() => setIsAssigningPkg(true)}
-                      className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/20 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
-                    >
-                      <UserCheck className="w-4 h-4 text-brand-olive-300" />
-                      <span>{language === 'he' ? 'הקצה חבילה לתלמיד' : 'Assign to Student'}</span>
-                    </button>
-                    <button
-                      onClick={handleOpenCreatePackage}
-                      className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
-                    >
-                      <Plus className="w-4 h-4 text-slate-950" />
-                      <span>{language === 'he' ? 'צור חבילה חדשה' : 'Create Package'}</span>
-                    </button>
+                    {can('packages:assign') && (
+                      <button
+                        onClick={() => setIsAssigningPkg(true)}
+                        className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/20 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
+                      >
+                        <UserCheck className="w-4 h-4 text-brand-olive-300" />
+                        <span>{language === 'he' ? 'הקצה חבילה לתלמיד' : 'Assign to Student'}</span>
+                      </button>
+                    )}
+                    {can('packages:create') && (
+                      <button
+                        onClick={handleOpenCreatePackage}
+                        className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4 text-slate-950" />
+                        <span>{language === 'he' ? 'צור חבילה חדשה' : 'Create Package'}</span>
+                      </button>
+                    )}
                   </div>
                 }
               />
@@ -2950,43 +3034,49 @@ export const AdminDashboard: React.FC = () => {
                         </span>
 
                         <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => {
-                              setAssignPkgId(pkg.id);
-                              setIsAssigningPkg(true);
-                            }}
-                            className="p-2 rounded-xl text-slate-500 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 hover:bg-brand-teal-50 dark:hover:bg-slate-800 transition-colors"
-                            title={language === 'he' ? 'הקצה לתלמיד' : 'Assign to student'}
-                          >
-                            <UserCheck className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleOpenEditPackage(pkg)}
-                            className="p-2 rounded-xl text-slate-500 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 hover:bg-brand-teal-50 dark:hover:bg-slate-800 transition-colors"
-                            title={language === 'he' ? 'ערוך חבילה' : 'Edit package'}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={async () => {
-                              const confirmed = await confirmDialog({
-                                title: 'Delete Package',
-                                titleHe: 'מחיקת חבילת שיעורים',
-                                message: `Are you sure you want to permanently delete package "${pkg.name}"? It will be removed from all catalogs and the landing page.`,
-                                messageHe: `האם למחוק לצמיתות את חבילת השיעורים "${pkg.nameHe || pkg.name}"? היא תוסר מכל הקטלוגים ומדף הנחיתה.`,
-                                confirmText: 'Delete Package',
-                                confirmTextHe: 'מחק חבילה',
-                                variant: 'danger',
-                              });
-                              if (confirmed) {
-                                deletePackageMutation.mutate(pkg.id);
-                              }
-                            }}
-                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                            title={language === 'he' ? 'מחק חבילה' : 'Delete package'}
-                          >
-                            <Trash2 className="w-4 h-4 text-rose-500" />
-                          </button>
+                          {can('packages:assign') && (
+                            <button
+                              onClick={() => {
+                                setAssignPkgId(pkg.id);
+                                setIsAssigningPkg(true);
+                              }}
+                              className="p-2 rounded-xl text-slate-500 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 hover:bg-brand-teal-50 dark:hover:bg-slate-800 transition-colors"
+                              title={language === 'he' ? 'הקצה לתלמיד' : 'Assign to student'}
+                            >
+                              <UserCheck className="w-4 h-4" />
+                            </button>
+                          )}
+                          {can('packages:edit') && (
+                            <button
+                              onClick={() => handleOpenEditPackage(pkg)}
+                              className="p-2 rounded-xl text-slate-500 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 hover:bg-brand-teal-50 dark:hover:bg-slate-800 transition-colors"
+                              title={language === 'he' ? 'ערוך חבילה' : 'Edit package'}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {can('packages:delete') && (
+                            <button
+                              onClick={async () => {
+                                const confirmed = await confirmDialog({
+                                  title: 'Delete Package',
+                                  titleHe: 'מחיקת חבילת שיעורים',
+                                  message: `Are you sure you want to permanently delete package "${pkg.name}"? It will be removed from all catalogs and the landing page.`,
+                                  messageHe: `האם למחוק לצמיתות את חבילת השיעורים "${pkg.nameHe || pkg.name}"? היא תוסר מכל הקטלוגים ומדף הנחיתה.`,
+                                  confirmText: 'Delete Package',
+                                  confirmTextHe: 'מחק חבילה',
+                                  variant: 'danger',
+                                });
+                                if (confirmed) {
+                                  deletePackageMutation.mutate(pkg.id);
+                                }
+                              }}
+                              className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                              title={language === 'he' ? 'מחק חבילה' : 'Delete package'}
+                            >
+                              <Trash2 className="w-4 h-4 text-rose-500" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -3308,7 +3398,7 @@ export const AdminDashboard: React.FC = () => {
                                     <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">No Zoom Link</span>
                                   )}
 
-                                  {l.recordedSession?.driveLink && (
+                                  {l.recordedSession?.driveLink && can('lessons:view_recordings') && (
                                     <a
                                       href={l.recordedSession.driveLink}
                                       target="_blank"
@@ -3325,30 +3415,36 @@ export const AdminDashboard: React.FC = () => {
                               {/* Management Actions */}
                               <td className="py-3.5 px-4 text-end">
                                 {isScheduled ? (
-                                  <button
-                                    onClick={async () => {
-                                      const confirmed = await confirmDialog({
-                                        title: 'Cancel Lesson & Refund Session',
-                                        titleHe: 'ביטול שיעור והחזרת מפגש',
-                                        message: `Cancel this scheduled lesson? The reserved session will be returned immediately to the student's package balance.`,
-                                        messageHe: `האם לבטל שיעור זה? המפגש שהוזמן יוחזר באופן מיידי למכסת החבילה של התלמיד.`,
-                                        confirmText: 'Cancel & Refund',
-                                        confirmTextHe: 'ביטול והחזר מפגש',
-                                        variant: 'danger',
-                                      });
-                                      if (confirmed) {
-                                        cancelLessonMutation.mutate({
-                                          id: l.id,
-                                          reason: 'Admin cancelled session via command center',
+                                  can('lessons:cancel') ? (
+                                    <button
+                                      onClick={async () => {
+                                        const confirmed = await confirmDialog({
+                                          title: 'Cancel Lesson & Refund Session',
+                                          titleHe: 'ביטול שיעור והחזרת מפגש',
+                                          message: `Cancel this scheduled lesson? The reserved session will be returned immediately to the student's package balance.`,
+                                          messageHe: `האם לבטל שיעור זה? המפגש שהוזמן יוחזר באופן מיידי למכסת החבילה של התלמיד.`,
+                                          confirmText: 'Cancel & Refund',
+                                          confirmTextHe: 'ביטול והחזר מפגש',
+                                          variant: 'danger',
                                         });
-                                      }
-                                    }}
-                                    disabled={cancelLessonMutation.isPending}
-                                    className="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 font-bold text-xs border border-rose-200 dark:border-rose-800 transition-colors inline-flex items-center gap-1.5"
-                                  >
-                                    <XCircle className="w-3.5 h-3.5 text-rose-500" />
-                                    <span>{language === 'he' ? 'ביטול והחזר' : 'Cancel & Refund'}</span>
-                                  </button>
+                                        if (confirmed) {
+                                          cancelLessonMutation.mutate({
+                                            id: l.id,
+                                            reason: 'Admin cancelled session via command center',
+                                          });
+                                        }
+                                      }}
+                                      disabled={cancelLessonMutation.isPending}
+                                      className="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 font-bold text-xs border border-rose-200 dark:border-rose-800 transition-colors inline-flex items-center gap-1.5"
+                                    >
+                                      <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                                      <span>{language === 'he' ? 'ביטול והחזר' : 'Cancel & Refund'}</span>
+                                    </button>
+                                  ) : (
+                                    <span className="text-slate-400 dark:text-slate-500 text-[11px] italic">
+                                      {language === 'he' ? 'מתוזמן' : 'Scheduled'}
+                                    </span>
+                                  )
                                 ) : (
                                   <span className="text-slate-400 dark:text-slate-500 text-[11px] italic">
                                     {isCompleted ? 'Finished' : 'Archived'}
@@ -3379,6 +3475,8 @@ export const AdminDashboard: React.FC = () => {
           {/* TAB 9: PRE-LESSON REMINDER ENGINE & NOTIFICATION HUB */}
           {activeTab === 'reminders_hub' && (
             <ReminderNotificationHubTab currentUserRole={currentUser?.role} />
+          )}
+            </>
           )}
         </main>
       </div>

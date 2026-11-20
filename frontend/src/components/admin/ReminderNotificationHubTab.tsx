@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../hooks/useTranslation';
+import { usePermissions } from '../../hooks/usePermissions';
 import { toast } from '../../store/toastStore';
 import {
   Bell,
@@ -36,6 +37,7 @@ export const ReminderNotificationHubTab: React.FC<ReminderNotificationHubTabProp
   const { language } = useTranslation();
   const isHe = language === 'he';
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
 
   // Active sub-tab inside the hub
   const [hubTab, setHubTab] = useState<'rules' | 'broadcast' | 'history'>('rules');
@@ -227,14 +229,16 @@ export const ReminderNotificationHubTab: React.FC<ReminderNotificationHubTabProp
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={() => triggerSweepMutation.mutate()}
-              disabled={triggerSweepMutation.isPending}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs transition-all shadow-md flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${triggerSweepMutation.isPending ? 'animate-spin' : ''}`} />
-              <span>{triggerSweepMutation.isPending ? (isHe ? 'סורק עכשיו...' : 'Scanning...') : (isHe ? 'הפעל סריקה מיידית' : 'Trigger Sweep Now')}</span>
-            </button>
+            {can('reminders:trigger_engine') && (
+              <button
+                onClick={() => triggerSweepMutation.mutate()}
+                disabled={triggerSweepMutation.isPending}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs transition-all shadow-md flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${triggerSweepMutation.isPending ? 'animate-spin' : ''}`} />
+                <span>{triggerSweepMutation.isPending ? (isHe ? 'סורק עכשיו...' : 'Scanning...') : (isHe ? 'הפעל סריקה מיידית' : 'Trigger Sweep Now')}</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 refetchStats();
@@ -737,14 +741,20 @@ export const ReminderNotificationHubTab: React.FC<ReminderNotificationHubTabProp
               </div>
 
               <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={broadcastMutation.isPending}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{broadcastMutation.isPending ? (isHe ? 'משדר לכל המשתמשים...' : 'Broadcasting...') : (isHe ? 'שדר התראה מיידית לכל המשתמשים' : 'Dispatch Live Broadcast to Audience')}</span>
-                </button>
+                {can('notifications:send_manual') ? (
+                  <button
+                    type="submit"
+                    disabled={broadcastMutation.isPending}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{broadcastMutation.isPending ? (isHe ? 'משדר לכל המשתמשים...' : 'Broadcasting...') : (isHe ? 'שדר התראה מיידית לכל המשתמשים' : 'Dispatch Live Broadcast to Audience')}</span>
+                  </button>
+                ) : (
+                  <p className="text-xs text-amber-700 dark:text-amber-300 italic text-center p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800">
+                    {isHe ? 'אין הרשאת שידור התראות ידניות (notifications:send_manual)' : 'Action restricted: missing permission notifications:send_manual'}
+                  </p>
+                )}
               </div>
             </form>
           </div>

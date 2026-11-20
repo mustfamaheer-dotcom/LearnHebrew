@@ -1,6 +1,7 @@
 import { Router, Response, NextFunction } from 'express';
 import { prisma } from '../../config/database';
 import { authenticate, AuthRequest, requireRoles } from '../../middleware/auth';
+import { requirePermission } from '../../middleware/permission';
 import { notificationService } from './notifications.service';
 import { NotificationCategory, Role } from '@prisma/client';
 import { executeReminderCheck } from '../../jobs/reminderJob';
@@ -77,6 +78,7 @@ router.get(
 router.post(
   '/reminders/trigger-check',
   requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  requirePermission('reminders:trigger_engine'),
   async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const result = await executeReminderCheck();

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '../../hooks/useTranslation';
+import { usePermissions } from '../../hooks/usePermissions';
 import { paymentsApi } from '../../lib/enterpriseApi';
 import { PaymentModel } from '../../types';
 import { toast } from '../../store/toastStore';
@@ -27,6 +28,7 @@ import { PageHeaderBanner } from '../common/PageHeaderBanner';
 export const PaymentsReviewTab: React.FC = () => {
   const { language } = useTranslation();
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
   const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
@@ -261,23 +263,32 @@ export const PaymentsReviewTab: React.FC = () => {
                     <td className="p-4 text-end">
                       {p.status === 'PENDING' ? (
                         <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => approveMutation.mutate(p.id)}
-                            disabled={approveMutation.isPending}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs active:scale-95 disabled:opacity-50"
-                          >
-                            {language === 'he' ? 'אשר והקצה' : 'Approve & Credit'}
-                          </button>
-                          <button
-                            onClick={() => {
-                              const reason = prompt(language === 'he' ? 'ציין סיבת דחייה:' : 'Enter rejection reason:');
-                              if (reason !== null) rejectMutation.mutate({ id: p.id, reason });
-                            }}
-                            disabled={rejectMutation.isPending}
-                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 rounded-xl text-xs font-bold transition border border-rose-200 dark:border-rose-800 active:scale-95"
-                          >
-                            {language === 'he' ? 'דחה' : 'Reject'}
-                          </button>
+                          {can('payments:approve') && (
+                            <button
+                              onClick={() => approveMutation.mutate(p.id)}
+                              disabled={approveMutation.isPending}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs active:scale-95 disabled:opacity-50"
+                            >
+                              {language === 'he' ? 'אשר והקצה' : 'Approve & Credit'}
+                            </button>
+                          )}
+                          {can('payments:reject') && (
+                            <button
+                              onClick={() => {
+                                const reason = prompt(language === 'he' ? 'ציין סיבת דחייה:' : 'Enter rejection reason:');
+                                if (reason !== null) rejectMutation.mutate({ id: p.id, reason });
+                              }}
+                              disabled={rejectMutation.isPending}
+                              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 rounded-xl text-xs font-bold transition border border-rose-200 dark:border-rose-800 active:scale-95"
+                            >
+                              {language === 'he' ? 'דחה' : 'Reject'}
+                            </button>
+                          )}
+                          {!can('payments:approve') && !can('payments:reject') && (
+                            <span className="text-[11px] font-semibold text-slate-400 italic">
+                              {language === 'he' ? 'צפייה בלבד' : 'View only'}
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <span className="text-[11px] font-semibold text-slate-400">

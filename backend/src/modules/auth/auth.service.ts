@@ -7,6 +7,7 @@ import {
 } from '../../utils/jwt';
 import { logAuditEvent } from '../../utils/audit';
 import { logSystemEvent } from '../../utils/systemLogger';
+import { getRolePermissions } from '../roles/roles.service';
 import { LogCategory, LogLevel, LanguagePref } from '@prisma/client';
 import crypto from 'crypto';
 
@@ -222,7 +223,8 @@ export async function login(
   });
 
   const { passwordHash: _, ...safeUser } = user;
-  return { accessToken, refreshToken, user: safeUser };
+  const permissions = await getRolePermissions(user.role);
+  return { accessToken, refreshToken, user: { ...safeUser, permissions } };
 }
 
 export async function refreshToken(oldToken: string, ipAddress?: string, userAgent?: string) {
@@ -331,7 +333,8 @@ export async function getCurrentUser(userId: string) {
 
   if (!user) throw { status: 404, message: 'User not found' };
   const { passwordHash: _, ...safeUser } = user;
-  return safeUser;
+  const permissions = await getRolePermissions(user.role);
+  return { ...safeUser, permissions };
 }
 
 export async function updateProfile(

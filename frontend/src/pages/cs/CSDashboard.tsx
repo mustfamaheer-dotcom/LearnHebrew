@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useSidebarStore } from '../../store/sidebarStore';
 import { toast } from '../../store/toastStore';
 import { haptics } from '../../utils/haptics';
@@ -38,6 +39,7 @@ export const CSDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
   const { isCollapsed } = useSidebarStore();
+  const { can } = usePermissions();
 
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'bookings' | 'attendance' | 'surveys'>('overview');
@@ -108,7 +110,7 @@ export const CSDashboard: React.FC = () => {
     return balances.some((b: any) => b.balance > 0 && b.expiresAt && new Date(b.expiresAt) <= sevenDaysFromNow);
   });
 
-  // Sidebar Nav Items
+  // Sidebar Nav Items strictly gated by customizable role permissions
   const navItems = [
     {
       id: 'overview',
@@ -123,6 +125,7 @@ export const CSDashboard: React.FC = () => {
       labelHe: 'תלמידים ויתרות מפגשים',
       icon: Users,
       badge: totalStudents > 0 ? String(totalStudents) : null,
+      permission: 'students:view_balance',
     },
     {
       id: 'bookings',
@@ -131,6 +134,7 @@ export const CSDashboard: React.FC = () => {
       icon: Calendar,
       badge: upcomingLessons.length > 0 ? String(upcomingLessons.length) : null,
       badgeColor: 'bg-blue-500 text-white',
+      permission: 'lessons:view_all',
     },
     {
       id: 'attendance',
@@ -138,6 +142,7 @@ export const CSDashboard: React.FC = () => {
       labelHe: 'מעקב נוכחות וביטולים',
       icon: CheckCircle2,
       badge: null,
+      permission: 'lessons:mark_attendance',
     },
     {
       id: 'surveys',
@@ -145,8 +150,19 @@ export const CSDashboard: React.FC = () => {
       labelHe: 'משובים וסקרים',
       icon: MessageSquare,
       badge: surveysData.length > 0 ? String(surveysData.length) : null,
+      permission: 'surveys:view_analytics',
     },
   ];
+
+  const authorizedNavItems = useMemo(() => {
+    return navItems.filter((item: any) => !item.permission || can(item.permission));
+  }, [navItems, can]);
+
+  const isCurrentTabAuthorized = useMemo(() => {
+    const currentItem = navItems.find((item) => item.id === activeTab);
+    if (!currentItem || !currentItem.permission) return true;
+    return can(currentItem.permission);
+  }, [navItems, activeTab, can]);
 
   return (
     <div className="min-h-screen w-full relative">
@@ -157,7 +173,7 @@ export const CSDashboard: React.FC = () => {
       <div className="w-full">
         {/* Apple-Style Glassy Left Sidebar */}
         <GlassSidebar
-          navItems={navItems}
+          navItems={authorizedNavItems}
           activeTab={activeTab}
           onTabChange={(tabId) => {
             haptics.tap();
@@ -184,6 +200,34 @@ export const CSDashboard: React.FC = () => {
               : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
           } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8 pb-32 lg:pb-12`}
         >
+          {!isCurrentTabAuthorized ? (
+            <div className="p-8 sm:p-12 rounded-3xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center space-y-4 shadow-xs">
+              <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center mx-auto shadow-inner">
+                <ShieldAlert className="w-7 h-7" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-base font-bold text-amber-950 dark:text-amber-200">
+                  {language === 'he' ? 'אין הרשאת גישה ללשונית זו' : 'Access Restricted by Role Policy'}
+                </h3>
+                <p className="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                  {language === 'he'
+                    ? 'תפקידך הנוכחי אינו מורשה לצפות במידע או בפעולות בלשונית זו לפי הגדרות המערכת הדינמיות.'
+                    : 'Your current account role does not have authorization to view this section according to active platform RBAC policy.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const fallback = authorizedNavItems[0]?.id || 'overview';
+                  setActiveTab(fallback as any);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all active:scale-95"
+              >
+                {language === 'he' ? 'חזור ללשונית מורשית' : 'Return to Available Tab'}
+              </button>
+            </div>
+          ) : (
+            <>
           {/* TAB 1: OVERVIEW & RAPID SUPPORT */}
           {activeTab === 'overview' && (
             <div className="space-y-8 animate-fade-in">
@@ -523,15 +567,19 @@ export const CSDashboard: React.FC = () => {
                               )}
                             </td>
                             <td className="py-4 px-5 text-end">
-                              <button
-                                onClick={() => {
-                                  setSelectedStudent(u);
-                                  setIsBookingModalOpen(true);
-                                }}
-                                className="px-3 py-1.5 rounded-xl bg-brand-teal-50 hover:bg-brand-teal-100 text-brand-teal-800 dark:bg-brand-teal-950/60 dark:text-brand-teal-300 border border-brand-teal-200/60 dark:border-brand-teal-800/60 font-bold text-xs"
-                              >
-                                {language === 'he' ? 'תיאום שיעור' : 'Book Session'}
-                              </button>
+                              {can('lessons:book') ? (
+                                <button
+                                  onClick={() => {
+                                    setSelectedStudent(u);
+                                    setIsBookingModalOpen(true);
+                                  }}
+                                  className="px-3 py-1.5 rounded-xl bg-brand-teal-50 hover:bg-brand-teal-100 text-brand-teal-800 dark:bg-brand-teal-950/60 dark:text-brand-teal-300 border border-brand-teal-200/60 dark:border-brand-teal-800/60 font-bold text-xs"
+                                >
+                                  {language === 'he' ? 'תיאום שיעור' : 'Book Session'}
+                                </button>
+                              ) : (
+                                <span className="text-slate-400 italic text-[11px]">-</span>
+                              )}
                             </td>
                           </tr>
                         );
@@ -768,6 +816,8 @@ export const CSDashboard: React.FC = () => {
                 </div>
               </div>
           )}
+            </>
+          )}
         </main>
       </div>
 
@@ -863,14 +913,8 @@ export const CSDashboard: React.FC = () => {
       >
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4/5 h-10 bg-gradient-to-r from-brand-teal-500/20 via-teal-400/25 to-brand-olive-500/20 blur-xl pointer-events-none -z-10" />
 
-        <div className="relative rounded-full py-2 px-3 floating-capsule-shell grid grid-cols-5 items-center justify-around gap-1">
-          {[
-            { id: 'overview', label: language === 'he' ? 'מדדים' : 'Overview', icon: BarChart2 },
-            { id: 'students', label: language === 'he' ? 'תלמידים' : 'Students', icon: Users, badge: totalStudents > 0 ? String(totalStudents) : null },
-            { id: 'bookings', label: language === 'he' ? 'שיעורים' : 'Bookings', icon: Calendar, badge: upcomingLessons.length > 0 ? String(upcomingLessons.length) : null },
-            { id: 'attendance', label: language === 'he' ? 'נוכחות' : 'Attendance', icon: CheckCircle2 },
-            { id: 'surveys', label: language === 'he' ? 'משובים' : 'Surveys', icon: MessageSquare },
-          ].map((item) => {
+        <div className="relative rounded-full py-2 px-3 floating-capsule-shell flex items-center justify-around gap-1">
+          {authorizedNavItems.map((item: any) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
@@ -900,7 +944,7 @@ export const CSDashboard: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-bold tracking-tight mt-0.5 truncate">{item.label}</span>
+                <span className="text-[10px] font-bold tracking-tight mt-0.5 truncate">{language === 'he' ? item.labelHe : item.label}</span>
               </button>
             );
           })}

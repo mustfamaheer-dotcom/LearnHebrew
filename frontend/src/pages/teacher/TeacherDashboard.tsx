@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
@@ -22,6 +22,7 @@ import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { TeacherShareModal } from '../../components/teacher/TeacherShareModal';
 import { TeachersCalendarTab } from '../../components/admin/TeachersCalendarTab';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
+import { usePermissions } from '../../hooks/usePermissions';
 import { haptics } from '../../utils/haptics';
 import { getGoogleCalendarUrl, downloadIcsFile } from '../../utils/calendarSync';
 import { isGoogleDriveUrl, detectAttachmentType } from '../../lib/driveUtils';
@@ -67,6 +68,7 @@ import {
   Sun,
   Moon,
   Copy,
+  ShieldAlert,
 } from 'lucide-react';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -128,6 +130,7 @@ export const TeacherDashboard: React.FC = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { isCollapsed } = useSidebarStore();
+  const { can } = usePermissions();
 
   const [activeTab, setActiveTab] = useState<'calendar' | 'calendar_monitor' | 'lessons' | 'students' | 'homework' | 'recordings' | 'games'>(() => {
     const searchTab = new URLSearchParams(window.location.search).get('tab');
@@ -919,6 +922,7 @@ export const TeacherDashboard: React.FC = () => {
       labelHe: 'הגדרת שעות זמינות',
       icon: CalendarIcon,
       badge: slots.length,
+      permission: 'teachers:manage_slots',
     },
     {
       id: 'calendar_monitor',
@@ -926,6 +930,7 @@ export const TeacherDashboard: React.FC = () => {
       labelHe: 'מעקב יומן ו-4 שבועות',
       icon: CalendarRange,
       badge: lessons.length > 0 ? `${lessons.length}` : 'Matrix',
+      permission: 'lessons:view_all',
     },
     {
       id: 'lessons',
@@ -933,6 +938,7 @@ export const TeacherDashboard: React.FC = () => {
       labelHe: 'שיעורים מתוכננים',
       icon: Video,
       badge: lessons.length,
+      permission: 'lessons:view_all',
     },
     {
       id: 'students',
@@ -940,6 +946,7 @@ export const TeacherDashboard: React.FC = () => {
       labelHe: 'פרופיל והתקדמות תלמידים',
       icon: Users,
       badge: studentsData?.length || 0,
+      permission: 'students:view_progress',
     },
     {
       id: 'homework',
@@ -947,6 +954,7 @@ export const TeacherDashboard: React.FC = () => {
       labelHe: 'שיעורי בית וקובצי PDF',
       icon: BookOpen,
       badge: homeworkData?.length || 0,
+      permission: 'students:view_progress',
     },
     {
       id: 'recordings',
@@ -954,6 +962,7 @@ export const TeacherDashboard: React.FC = () => {
       labelHe: 'שיעורים מוקלטים (Drive)',
       icon: PlayCircle,
       badge: recordedSessionsData?.length || 0,
+      permission: 'lessons:view_recordings',
     },
     {
       id: 'games',
@@ -961,15 +970,25 @@ export const TeacherDashboard: React.FC = () => {
       labelHe: 'משחקים מותאמים',
       icon: Gamepad2,
       badge: gamesData?.length || 0,
+      permission: 'games:view',
     },
   ];
+
+  const authorizedNavItems = useMemo(() => {
+    return navItems.filter((item: any) => !item.permission || can(item.permission));
+  }, [navItems, can]);
+
+  const isCurrentTabAuthorized = useMemo(() => {
+    const item = navItems.find((n: any) => n.id === activeTab);
+    return !item?.permission || can(item.permission);
+  }, [activeTab, navItems, can]);
 
   return (
     <div className="min-h-screen w-full relative">
       <div className="w-full">
         {/* Apple-Style Glassy Left Sidebar */}
         <GlassSidebar
-          navItems={navItems}
+          navItems={authorizedNavItems}
           activeTab={activeTab}
           onTabChange={(tabId) => {
             setActiveTab(tabId as any);
@@ -990,7 +1009,31 @@ export const TeacherDashboard: React.FC = () => {
             ? 'lg:ps-[calc(5rem+1.5rem)]'
             : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
         } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-6 sm:space-y-8 min-w-0`}>
-          {/* Dynamic Page Header Banner - Updates according to activeTab (as in Admin) */}
+          {!isCurrentTabAuthorized ? (
+            <div className="p-8 sm:p-12 rounded-3xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-800 text-center space-y-4 shadow-sm my-8">
+              <div className="w-16 h-16 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto ring-4 ring-amber-400/20">
+                <ShieldAlert className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {language === 'he' ? 'אין הרשאת גישה ללשונית זו' : 'Access Restricted by Role Policy'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  {language === 'he'
+                    ? 'תפקיד המשתמש שלך אינו מורשה לצפות בתוכן לשונית זו על פי הגדרות ה-RBAC של המנהל.'
+                    : 'Your account role does not possess the granular permissions required to access this section per administrative RBAC configurations.'}
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveTab('calendar')}
+                className="px-5 py-2.5 rounded-xl bg-brand-teal-800 text-white font-bold text-xs hover:bg-brand-teal-900 transition-all cursor-pointer shadow-xs"
+              >
+                {language === 'he' ? 'חזרה ללוח הזמנים' : 'Return to Schedule'}
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Dynamic Page Header Banner - Updates according to activeTab (as in Admin) */}
           {activeTab === 'calendar' && (
             <PageHeaderBanner
               badgeIcon={CalendarIcon}
@@ -2805,6 +2848,8 @@ export const TeacherDashboard: React.FC = () => {
                 )}
               </div>
             </div>
+          )}
+            </>
           )}
         </main>
       </div>

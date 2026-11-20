@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { usePermissions } from '../../hooks/usePermissions';
 import { haptics } from '../../utils/haptics';
 import {
   Layers,
@@ -123,13 +124,27 @@ export const PlatformSettingsNavModal: React.FC<PlatformSettingsNavModalProps> =
   onSelectTab,
 }) => {
   const { language } = useTranslation();
+  const { can } = usePermissions();
   const [searchTerm, setSearchTerm] = useState('');
 
   if (!isOpen) return null;
 
   const isHe = language === 'he';
 
-  const filteredModules = PLATFORM_SETTINGS_MODULES.filter((m) => {
+  const modulePermissions: Record<EnterpriseSubTab, string> = {
+    levels: 'levels:view',
+    session_types: 'settings:manage',
+    roles: 'roles:manage',
+    payments: 'payments:view_all',
+    exams: 'exams:view',
+    review_links: 'reviews:manage_links',
+    point_rules: 'rewards:view_rules',
+    languages: 'languages:manage',
+  };
+
+  const authorizedModules = PLATFORM_SETTINGS_MODULES.filter((m) => can(modulePermissions[m.id]));
+
+  const filteredModules = authorizedModules.filter((m) => {
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase();
     return (

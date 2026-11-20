@@ -70,6 +70,25 @@ export async function updateRolePermissions(
   });
 }
 
+export async function getRolePermissions(roleName: string): Promise<string[]> {
+  if (roleName === 'SUPER_ADMIN') {
+    const all = await prisma.permission.findMany({ select: { code: true } });
+    return all.map((p) => p.code);
+  }
+
+  const roleDef = await prisma.roleDefinition.findFirst({
+    where: { name: roleName },
+    include: {
+      permissions: {
+        where: { granted: true },
+        include: { permission: true },
+      },
+    },
+  });
+
+  return roleDef ? roleDef.permissions.map((rp) => rp.permission.code) : [];
+}
+
 export async function deleteRole(roleId: string) {
   const role = await prisma.roleDefinition.findUnique({ where: { id: roleId } });
   if (!role) throw { status: 404, message: 'Role not found' };

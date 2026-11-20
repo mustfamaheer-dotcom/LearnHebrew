@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { paymentsApi, languagesApi, levelsApi } from '../../lib/enterpriseApi';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSidebarStore } from '../../store/sidebarStore';
+import { usePermissions } from '../../hooks/usePermissions';
 import { toast } from '../../store/toastStore';
 import { haptics } from '../../utils/haptics';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
@@ -33,6 +34,7 @@ import {
   UploadCloud,
   FileCheck,
   ShieldCheck,
+  ShieldAlert,
   TrendingUp,
 } from 'lucide-react';
 
@@ -41,6 +43,7 @@ export const SalesDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
   const { isCollapsed } = useSidebarStore();
+  const { can } = usePermissions();
 
   // Active navigation tab
   const [activeTab, setActiveTab] = useState<'overview' | 'students' | 'payments' | 'packages'>('overview');
@@ -195,7 +198,7 @@ export const SalesDashboard: React.FC = () => {
   const pendingPayments = safePayments.filter((p: any) => p.status === 'PENDING').length;
   const approvedPayments = safePayments.filter((p: any) => p.status === 'APPROVED').length;
 
-  // Sidebar Nav Items
+  // Sidebar Nav Items strictly gated by customizable role permissions
   const navItems = [
     {
       id: 'overview',
@@ -210,6 +213,7 @@ export const SalesDashboard: React.FC = () => {
       labelHe: 'מאגר תלמידים',
       icon: Users,
       badge: totalStudents > 0 ? String(totalStudents) : null,
+      permission: 'users:view',
     },
     {
       id: 'payments',
@@ -218,6 +222,7 @@ export const SalesDashboard: React.FC = () => {
       icon: Wallet,
       badge: pendingPayments > 0 ? String(pendingPayments) : null,
       badgeColor: 'bg-amber-500 text-white',
+      permission: 'payments:view_all',
     },
     {
       id: 'packages',
@@ -225,8 +230,19 @@ export const SalesDashboard: React.FC = () => {
       labelHe: 'חבילות ומחירון',
       icon: Layers,
       badge: safePackages.length > 0 ? String(safePackages.length) : null,
+      permission: 'packages:view',
     },
   ];
+
+  const authorizedNavItems = useMemo(() => {
+    return navItems.filter((item: any) => !item.permission || can(item.permission));
+  }, [navItems, can]);
+
+  const isCurrentTabAuthorized = useMemo(() => {
+    const currentItem = navItems.find((item) => item.id === activeTab);
+    if (!currentItem || !currentItem.permission) return true;
+    return can(currentItem.permission);
+  }, [navItems, activeTab, can]);
 
   return (
     <div className="min-h-screen w-full relative">
@@ -237,7 +253,7 @@ export const SalesDashboard: React.FC = () => {
       <div className="w-full">
         {/* Apple-Style Glassy Left Sidebar */}
         <GlassSidebar
-          navItems={navItems}
+          navItems={authorizedNavItems}
           activeTab={activeTab}
           onTabChange={(tabId) => {
             haptics.tap();
@@ -264,6 +280,34 @@ export const SalesDashboard: React.FC = () => {
               : 'lg:ps-[calc(18rem+1.75rem)] xl:ps-[calc(20rem+2.25rem)]'
           } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8 pb-32 lg:pb-12`}
         >
+          {!isCurrentTabAuthorized ? (
+            <div className="p-8 sm:p-12 rounded-3xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center space-y-4 shadow-xs">
+              <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center mx-auto shadow-inner">
+                <ShieldAlert className="w-7 h-7" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="text-base font-bold text-amber-950 dark:text-amber-200">
+                  {language === 'he' ? 'אין הרשאת גישה ללשונית זו' : 'Access Restricted by Role Policy'}
+                </h3>
+                <p className="text-xs text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                  {language === 'he'
+                    ? 'תפקידך הנוכחי אינו מורשה לצפות במידע או בפעולות בלשונית זו לפי הגדרות המערכת הדינמיות.'
+                    : 'Your current account role does not have authorization to view this section according to active platform RBAC policy.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const fallback = authorizedNavItems[0]?.id || 'overview';
+                  setActiveTab(fallback as any);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition-all active:scale-95"
+              >
+                {language === 'he' ? 'חזור ללשונית מורשית' : 'Return to Available Tab'}
+              </button>
+            </div>
+          ) : (
+            <>
           {/* TAB 1: OVERVIEW & PIPELINE */}
           {activeTab === 'overview' && (
             <div className="space-y-8 animate-fade-in">
@@ -288,22 +332,26 @@ export const SalesDashboard: React.FC = () => {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsCreatingStudent(true)}
-                      className="px-4 py-2.5 rounded-xl bg-white text-brand-teal-950 hover:bg-brand-olive-300 transition-all font-black text-xs shadow-md flex items-center gap-2 active:scale-95"
-                    >
-                      <Plus className="w-4 h-4 text-brand-teal-900" />
-                      <span>{language === 'he' ? 'רישום תלמיד חדש' : 'New Student'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsRegisteringPayment(true)}
-                      className="px-4 py-2.5 rounded-xl bg-brand-olive-400/20 hover:bg-brand-olive-400/30 border border-brand-olive-300/40 text-brand-olive-200 transition-all font-black text-xs shadow-xs flex items-center gap-2 active:scale-95"
-                    >
-                      <UploadCloud className="w-4 h-4 text-brand-olive-300" />
-                      <span>{language === 'he' ? 'הגשת אסמכתת תשלום' : 'Submit Payment Proof'}</span>
-                    </button>
+                    {can('users:create') && (
+                      <button
+                        type="button"
+                        onClick={() => setIsCreatingStudent(true)}
+                        className="px-4 py-2.5 rounded-xl bg-white text-brand-teal-950 hover:bg-brand-olive-300 transition-all font-black text-xs shadow-md flex items-center gap-2 active:scale-95"
+                      >
+                        <Plus className="w-4 h-4 text-brand-teal-900" />
+                        <span>{language === 'he' ? 'רישום תלמיד חדש' : 'New Student'}</span>
+                      </button>
+                    )}
+                    {can('payments:create') && (
+                      <button
+                        type="button"
+                        onClick={() => setIsRegisteringPayment(true)}
+                        className="px-4 py-2.5 rounded-xl bg-brand-olive-400/20 hover:bg-brand-olive-400/30 border border-brand-olive-300/40 text-brand-olive-200 transition-all font-black text-xs shadow-xs flex items-center gap-2 active:scale-95"
+                      >
+                        <UploadCloud className="w-4 h-4 text-brand-olive-300" />
+                        <span>{language === 'he' ? 'הגשת אסמכתת תשלום' : 'Submit Payment Proof'}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -646,15 +694,19 @@ export const SalesDashboard: React.FC = () => {
                             )}
                           </td>
                           <td className="py-4 px-5 text-end">
-                            <button
-                              onClick={() => {
-                                setPaymentForm({ ...paymentForm, studentId: u.id });
-                                setIsRegisteringPayment(true);
-                              }}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 font-bold text-xs transition-colors"
-                            >
-                              + {language === 'he' ? 'תשלום' : 'Payment'}
-                            </button>
+                            {can('payments:create') ? (
+                              <button
+                                onClick={() => {
+                                  setPaymentForm({ ...paymentForm, studentId: u.id });
+                                  setIsRegisteringPayment(true);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 font-bold text-xs transition-colors"
+                              >
+                                + {language === 'he' ? 'תשלום' : 'Payment'}
+                              </button>
+                            ) : (
+                              <span className="text-slate-400 italic text-[11px]">-</span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -686,13 +738,15 @@ export const SalesDashboard: React.FC = () => {
                     : 'Submit proof screenshots automatically converted to WebP for audit, track admin approvals, and credit 30-day session packages.'
                 }
                 action={
-                  <button
-                    onClick={() => setIsRegisteringPayment(true)}
-                    className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4 text-slate-950" />
-                    <span>{language === 'he' ? 'צרף תשלום חדש' : 'Submit New Payment'}</span>
-                  </button>
+                  can('payments:create') ? (
+                    <button
+                      onClick={() => setIsRegisteringPayment(true)}
+                      className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4 text-slate-950" />
+                      <span>{language === 'he' ? 'צרף תשלום חדש' : 'Submit New Payment'}</span>
+                    </button>
+                  ) : null
                 }
               />
 
@@ -714,13 +768,15 @@ export const SalesDashboard: React.FC = () => {
                   ))}
                 </div>
 
-                <button
-                  onClick={() => setIsRegisteringPayment(true)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>{language === 'he' ? 'צרף תשלום חדש' : 'Submit New Payment'}</span>
-                </button>
+                {can('payments:create') && (
+                  <button
+                    onClick={() => setIsRegisteringPayment(true)}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{language === 'he' ? 'צרף תשלום חדש' : 'Submit New Payment'}</span>
+                  </button>
+                )}
               </div>
 
               {/* Payments Table */}
@@ -860,20 +916,24 @@ export const SalesDashboard: React.FC = () => {
                         <Clock className="w-3.5 h-3.5" />
                         <span>{language === 'he' ? 'תוקף: 30 יום בלבד' : 'Valid: 30 days max'}</span>
                       </span>
-                      <button
-                        onClick={() => {
-                          setPaymentForm({ ...paymentForm, packageId: pkg.id });
-                          setIsRegisteringPayment(true);
-                        }}
-                        className="px-3.5 py-1.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs"
-                      >
-                        {language === 'he' ? 'בחר למכירה' : 'Select'}
-                      </button>
+                      {can('payments:create') && (
+                        <button
+                          onClick={() => {
+                            setPaymentForm({ ...paymentForm, packageId: pkg.id });
+                            setIsRegisteringPayment(true);
+                          }}
+                          className="px-3.5 py-1.5 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs"
+                        >
+                          {language === 'he' ? 'בחר למכירה' : 'Select'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+          )}
+            </>
           )}
         </main>
       </div>
@@ -1275,13 +1335,8 @@ export const SalesDashboard: React.FC = () => {
       >
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4/5 h-10 bg-gradient-to-r from-brand-teal-500/20 via-teal-400/25 to-brand-olive-500/20 blur-xl pointer-events-none -z-10" />
 
-        <div className="relative rounded-full py-2 px-3 floating-capsule-shell grid grid-cols-4 items-center justify-around gap-1">
-          {[
-            { id: 'overview', label: language === 'he' ? 'מדדים' : 'Overview', icon: BarChart2 },
-            { id: 'students', label: language === 'he' ? 'תלמידים' : 'Students', icon: Users, badge: totalStudents > 0 ? String(totalStudents) : null },
-            { id: 'payments', label: language === 'he' ? 'תשלומים' : 'Payments', icon: Wallet, badge: pendingPayments > 0 ? String(pendingPayments) : null },
-            { id: 'packages', label: language === 'he' ? 'חבילות' : 'Packages', icon: Layers },
-          ].map((item) => {
+        <div className="relative rounded-full py-2 px-3 floating-capsule-shell flex items-center justify-around gap-1">
+          {authorizedNavItems.map((item: any) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
@@ -1311,7 +1366,7 @@ export const SalesDashboard: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-bold tracking-tight mt-0.5 truncate">{item.label}</span>
+                <span className="text-[10px] font-bold tracking-tight mt-0.5 truncate">{language === 'he' ? item.labelHe : item.label}</span>
               </button>
             );
           })}

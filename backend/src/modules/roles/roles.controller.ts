@@ -1,5 +1,15 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../../middleware/auth';
 import * as service from './roles.service';
+
+export async function getMyPermissions(req: AuthRequest, res: Response) {
+  const roleName = req.user?.role;
+  if (!roleName) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const permissions = await service.getRolePermissions(roleName);
+  res.json({ role: roleName, permissions });
+}
 
 export async function getMatrix(req: Request, res: Response) {
   const data = await service.listRolesWithPermissions();

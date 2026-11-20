@@ -1,12 +1,13 @@
 import { Router, Response, NextFunction } from 'express';
 import { prisma } from '../../config/database';
 import { authenticate, requireRoles, AuthRequest } from '../../middleware/auth';
+import { requirePermission } from '../../middleware/permission';
 import { Role, LogLevel, LogCategory, Prisma } from '@prisma/client';
 
 const router = Router();
 
-// Strictly locked to Platform Owner (SUPER_ADMIN)
-router.use(authenticate, requireRoles(Role.SUPER_ADMIN));
+// Strictly locked to Platform Owner (SUPER_ADMIN) or authorized role with audit:view_logs permission
+router.use(authenticate, requireRoles(Role.SUPER_ADMIN, Role.ADMIN), requirePermission('audit:view_logs'));
 
 /**
  * 1. GET /api/v1/system-logs/stats

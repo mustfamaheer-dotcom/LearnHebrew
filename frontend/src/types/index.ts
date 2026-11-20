@@ -18,6 +18,7 @@ export interface User {
   avatarUrl?: string;
   isActive: boolean;
   mustChangePw: boolean;
+  permissions?: string[];
   studentProfile?: StudentProfile;
   teacherProfile?: TeacherProfile;
 }
