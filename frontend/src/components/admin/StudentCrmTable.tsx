@@ -18,7 +18,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ArrowUpDown,
-  Smartphone,
   Globe,
   UserCheck,
   PlusCircle,
@@ -883,10 +882,6 @@ export const StudentCrmTable: React.FC<StudentCrmTableProps> = ({
         <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
           <UserCheck className="w-3.5 h-3.5 text-blue-500" />
           <span>Sales Agent</span>
-        </div>
-        <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-          <Smartphone className="w-3.5 h-3.5 text-teal-500" />
-          <span>Mobile App</span>
         </div>
         <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
           <Globe className="w-3.5 h-3.5 text-purple-500" />
