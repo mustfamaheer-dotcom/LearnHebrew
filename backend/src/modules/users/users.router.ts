@@ -7,6 +7,10 @@ import {
   deleteUserHandler,
   resetPasswordHandler,
   updateNotificationPreferencesHandler,
+  getFamilyHandler,
+  createChildHandler,
+  linkFamilyHandler,
+  unlinkFamilyHandler,
 } from './users.controller';
 import { authenticate, requireRoles } from '../../middleware/auth';
 import { requirePermission } from '../../middleware/permission';
@@ -24,5 +28,11 @@ router.patch('/:id', requireRoles(Role.ADMIN, Role.SUPER_ADMIN, Role.SALES), req
 router.delete('/:id', requireRoles(Role.ADMIN, Role.SUPER_ADMIN), requirePermission('users:delete'), deleteUserHandler);
 router.post('/:id/reset-password', requireRoles(Role.ADMIN, Role.SUPER_ADMIN), requirePermission('users:reset_password'), resetPasswordHandler);
 router.put('/:id/notification-preferences', updateNotificationPreferencesHandler);
+
+// Family / Parent & Child account management
+router.get('/:id/family', getFamilyHandler);
+router.post('/:id/children', requireRoles(Role.ADMIN, Role.SUPER_ADMIN, Role.SALES), requirePermission('users:create'), createChildHandler);
+router.post('/:id/link-family', requireRoles(Role.ADMIN, Role.SUPER_ADMIN, Role.SALES), requirePermission('users:edit'), linkFamilyHandler);
+router.delete('/:id/unlink-family', requireRoles(Role.ADMIN, Role.SUPER_ADMIN, Role.SALES), requirePermission('users:edit'), unlinkFamilyHandler);
 
 export default router;

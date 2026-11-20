@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import * as studentsService from './students.service';
+import * as usersService from '../users/users.service';
 import { AuthRequest } from '../../middleware/auth';
 import { HebrewLevel } from '@prisma/client';
 
@@ -112,6 +113,25 @@ export async function generateCertificateHandler(req: AuthRequest, res: Response
   try {
     const cert = await studentsService.generateCertificate(req.params.id, req.body);
     res.json({ certificate: cert, message: 'Certificate generated successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getStudentFamilyProfilesHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const family = await usersService.getFamilyForUser(req.user!.userId);
+    res.json(family);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function switchStudentFamilyProfileHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const targetUserId = req.params.targetUserId;
+    const result = await usersService.switchFamilyProfile(req.user!.userId, targetUserId);
+    res.json(result);
   } catch (error) {
     next(error);
   }

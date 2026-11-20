@@ -12,6 +12,8 @@ import {
   getStudentProgressHandler,
   getStudentCertificatesHandler,
   generateCertificateHandler,
+  getStudentFamilyProfilesHandler,
+  switchStudentFamilyProfileHandler,
 } from './students.controller';
 import { authenticate } from '../../middleware/auth';
 import { validateUuidParam } from '../../middleware/validateUuid';
@@ -20,6 +22,10 @@ import { authorizeStudentAccess } from '../../middleware/ownership';
 const router = Router();
 
 router.use(authenticate);
+
+// Family profile switcher endpoints (must precede /:id routes)
+router.get('/family/profiles', getStudentFamilyProfilesHandler);
+router.post('/family/switch/:targetUserId', switchStudentFamilyProfileHandler);
 
 // List all students (Admin/Teacher restricted inside controller/service)
 router.get('/', listStudentsHandler);

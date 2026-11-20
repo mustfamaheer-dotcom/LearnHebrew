@@ -5,8 +5,12 @@ import { AuthRequest } from '../../middleware/auth';
 import { Role, HebrewLevel } from '@prisma/client';
 
 const createUserSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  parentId: z.string().optional(),
+  isParent: z.boolean().optional(),
+  familyRole: z.string().optional(),
+  password: z.string().min(6).optional(),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   role: z.nativeEnum(Role).optional(),
@@ -24,6 +28,10 @@ const updateUserSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   email: z.string().email().optional(),
+  phone: z.string().optional(),
+  parentId: z.string().nullable().optional(),
+  isParent: z.boolean().optional(),
+  familyRole: z.string().nullable().optional(),
   role: z.nativeEnum(Role).optional(),
   roleDefinitionId: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
@@ -108,6 +116,59 @@ export async function updateNotificationPreferencesHandler(req: AuthRequest, res
     const targetUserId = req.params.id === 'me' ? req.user!.userId : req.params.id;
     const updated = await usersService.updateNotificationPreferences(targetUserId, req.body);
     res.json({ preferences: updated });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getFamilyHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const family = await usersService.getFamilyForUser(req.params.id);
+    res.json(family);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createChildHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const parentId = req.params.id;
+    const data = createUserSchema.parse({
+      ...req.body,
+      parentId,
+      role: Role.STUDENT,
+      isParent: false,
+      familyRole: req.body.familyRole || 'CHILD',
+    });
+    const child = await usersService.createUser({
+      ...data,
+      createdById: req.user!.userId,
+    });
+    res.status(201).json({ user: child });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function linkFamilyHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const parentId = req.params.id;
+    const { childUserId, familyRole } = req.body;
+    if (!childUserId) {
+      return res.status(400).json({ message: 'childUserId is required' });
+    }
+    const updated = await usersService.linkFamily(parentId, childUserId, familyRole);
+    res.json({ user: updated, message: 'Child successfully linked to parent' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function unlinkFamilyHandler(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const childUserId = req.params.id;
+    const updated = await usersService.unlinkFamily(childUserId);
+    res.json({ user: updated, message: 'User unlinked from family' });
   } catch (error) {
     next(error);
   }

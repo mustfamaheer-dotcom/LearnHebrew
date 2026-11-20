@@ -24,6 +24,8 @@ import { ReviewLinksTab } from '../../components/admin/ReviewLinksTab';
 import { PointRulesTab } from '../../components/admin/PointRulesTab';
 import { LanguagesTab } from '../../components/admin/LanguagesTab';
 import { PlatformSettingsNavModal } from '../../components/admin/PlatformSettingsNavModal';
+import { FamilyManagementModal } from '../../components/admin/FamilyManagementModal';
+import { AddChildModal } from '../../components/admin/AddChildModal';
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { sessionTypesApi, levelsApi, languagesApi, rolesApi } from '../../lib/enterpriseApi';
@@ -100,6 +102,8 @@ import {
   Minus,
   Tag,
   Edit2,
+  Phone,
+  Baby,
 } from 'lucide-react';
 
 // Custom outline Home icon with inner circle door matching iOS pill island aesthetic
@@ -307,6 +311,15 @@ export const AdminDashboard: React.FC = () => {
   const [newUserLevelId, setNewUserLevelId] = useState('');
   const [newUserSpecialties, setNewUserSpecialties] = useState('Modern Hebrew, Conversational, Grammar');
   const [newUserBio, setNewUserBio] = useState('');
+  const [newUserPhone, setNewUserPhone] = useState('');
+  const [newUserAccountType, setNewUserAccountType] = useState<'INDIVIDUAL' | 'PARENT' | 'CHILD'>('INDIVIDUAL');
+  const [newUserParentId, setNewUserParentId] = useState('');
+
+  // Family & Parent-Child Account Governance State
+  const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
+  const [selectedFamilyUser, setSelectedFamilyUser] = useState<any | null>(null);
+  const [isAddChildModalOpen, setIsAddChildModalOpen] = useState(false);
+  const [addChildParent, setAddChildParent] = useState<any | null>(null);
 
   // Modern Package Management State
   const [isCreatingPackage, setIsCreatingPackage] = useState(false);
@@ -648,6 +661,9 @@ export const AdminDashboard: React.FC = () => {
       setNewUserEmail('');
       setNewUserFirst('');
       setNewUserLast('');
+      setNewUserPhone('');
+      setNewUserAccountType('INDIVIDUAL');
+      setNewUserParentId('');
       toast.success(
         language === 'he' ? 'המשתמש נוצר בהצלחה!' : 'User created successfully!'
       );
@@ -906,11 +922,26 @@ export const AdminDashboard: React.FC = () => {
       userStatusFilter === 'ALL' ||
       (userStatusFilter === 'ACTIVE' && u.isActive !== false) ||
       (userStatusFilter === 'INACTIVE' && u.isActive === false);
+    const term = userSearchTerm.trim().toLowerCase();
     const matchesSearch =
-      u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-      u.firstName.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-      u.lastName.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-      (u.id && u.id.toLowerCase().includes(userSearchTerm.toLowerCase()));
+      !term ||
+      u.email?.toLowerCase().includes(term) ||
+      u.firstName?.toLowerCase().includes(term) ||
+      u.lastName?.toLowerCase().includes(term) ||
+      (u.phone && u.phone.toLowerCase().includes(term)) ||
+      (u.parent?.email && u.parent.email.toLowerCase().includes(term)) ||
+      (u.parent?.phone && u.parent.phone.toLowerCase().includes(term)) ||
+      (u.parent?.firstName && u.parent.firstName.toLowerCase().includes(term)) ||
+      (u.parent?.lastName && u.parent.lastName.toLowerCase().includes(term)) ||
+      (Array.isArray(u.children) &&
+        u.children.some(
+          (c: any) =>
+            (c.email && c.email.toLowerCase().includes(term)) ||
+            (c.phone && c.phone.toLowerCase().includes(term)) ||
+            (c.firstName && c.firstName.toLowerCase().includes(term)) ||
+            (c.lastName && c.lastName.toLowerCase().includes(term))
+        )) ||
+      (u.id && u.id.toLowerCase().includes(term));
     return matchesRole && matchesStatus && matchesSearch;
   });
 
@@ -2627,12 +2658,35 @@ export const AdminDashboard: React.FC = () => {
                                         {u.firstName?.charAt(0) || 'U'}
                                       </div>
                                       <div className="min-w-0">
-                                        <p className="font-bold text-slate-900 dark:text-white truncate">
-                                          {u.firstName} {u.lastName}
-                                        </p>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <p className="font-bold text-slate-900 dark:text-white truncate">
+                                            {u.firstName} {u.lastName}
+                                          </p>
+                                          {/* Family Badges */}
+                                          {(u.isParent || (u.children && u.children.length > 0)) && (
+                                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 inline-flex items-center gap-1">
+                                              <Users className="w-2.5 h-2.5" />
+                                              <span>{language === 'ar' ? 'رب أسرة' : language === 'he' ? 'ראש משפחה' : 'Parent'}</span>
+                                              {u.children?.length ? ` (${u.children.length})` : ''}
+                                            </span>
+                                          )}
+                                          {(u.parentId || u.familyRole === 'CHILD') && (
+                                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 inline-flex items-center gap-1">
+                                              <Baby className="w-2.5 h-2.5" />
+                                              <span>{language === 'ar' ? 'ابن' : language === 'he' ? 'ילד' : 'Child'}</span>
+                                              {u.parent ? ` • ${u.parent.firstName}` : ''}
+                                            </span>
+                                          )}
+                                        </div>
                                         <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate" title={u.email}>
                                           {u.email}
                                         </p>
+                                        {u.phone && (
+                                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono flex items-center gap-1 mt-0.5" title={u.phone}>
+                                            <Phone className="w-2.5 h-2.5 text-slate-400" />
+                                            <span>{u.phone}</span>
+                                          </p>
+                                        )}
                                       </div>
                                     </div>
                                   </td>
@@ -2759,25 +2813,43 @@ export const AdminDashboard: React.FC = () => {
                                   {/* Actions */}
                                   <td className="py-3.5 px-4 text-end">
                                     <div className="inline-flex items-center gap-1.5 justify-end">
+                                      {/* Family Tree / Management Button */}
+                                      {(u.isParent || u.parentId || (u.children && u.children.length > 0) || u.role === 'STUDENT') && (
+                                        <button
+                                          onClick={() => {
+                                            setSelectedFamilyUser(u);
+                                            setIsFamilyModalOpen(true);
+                                          }}
+                                          title={language === 'ar' ? 'عرض إدارة العائلة والحسابات التابعة' : language === 'he' ? 'צפייה וניהול חשבון משפחתי' : 'View Family Tree & Sub-accounts'}
+                                          className="p-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 transition-colors border border-indigo-200/60 dark:border-indigo-800 cursor-pointer"
+                                        >
+                                          <Users className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+
+                                      {/* Quick Add Child to this parent */}
+                                      {(u.isParent || u.role === 'STUDENT') && !u.parentId && (
+                                        <button
+                                          onClick={() => {
+                                            setAddChildParent(u);
+                                            setIsAddChildModalOpen(true);
+                                          }}
+                                          title={language === 'ar' ? 'إضافة ابن تحت هذا الحساب' : language === 'he' ? 'הוסף חשבון ילד תחת הורה זה' : 'Add Child Account under this Parent'}
+                                          className="p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 transition-colors border border-emerald-200/60 dark:border-emerald-800 cursor-pointer"
+                                        >
+                                          <UserPlus className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+
                                       {/* Deep User Management Button */}
                                       <button
                                         onClick={() => handleOpenEditUser(u)}
                                         title={language === 'he' ? 'ניהול מלא ועריכת משתמש' : 'Full User Governance & Edit'}
-                                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-200/80 dark:border-slate-700"
+                                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-200/80 dark:border-slate-700 cursor-pointer"
                                       >
                                         <Sliders className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
                                         <span className="hidden sm:inline">{language === 'he' ? 'ניהול' : 'Manage'}</span>
                                       </button>
-                                      {can('users:edit') && (
-                                        <button
-                                          onClick={() => handleOpenEditUser(u)}
-                                          title={language === 'he' ? 'ניהול מלא ועריכת משתמש' : 'Full User Governance & Edit'}
-                                          className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-200/80 dark:border-slate-700"
-                                        >
-                                          <Sliders className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
-                                          <span className="hidden sm:inline">{language === 'he' ? 'ניהול' : 'Manage'}</span>
-                                        </button>
-                                      )}
 
                                       {/* Quick Reset Password */}
                                       <button
@@ -3700,6 +3772,67 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
+            {/* Phone & Family Linkage */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'ar' ? 'رقم الهاتف' : language === 'he' ? 'מספר טלפון' : 'Phone Number'}
+                </label>
+                <input
+                  type="text"
+                  placeholder="+972..."
+                  value={newUserPhone}
+                  onChange={(e) => setNewUserPhone(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-brand-teal-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  {language === 'ar' ? 'نوع الحساب العائلي' : language === 'he' ? 'סוג חשבון משפחתי' : 'Family Account Type'}
+                </label>
+                <select
+                  value={newUserAccountType}
+                  onChange={(e) => setNewUserAccountType(e.target.value as any)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:ring-2 focus:ring-brand-teal-500 focus:outline-hidden"
+                >
+                  <option value="INDIVIDUAL">{language === 'ar' ? 'حساب فردي عادي' : language === 'he' ? 'חשבון יחיד רגיל' : 'Individual Account'}</option>
+                  <option value="PARENT">{language === 'ar' ? 'حساب ولي أمر (رب أسرة)' : language === 'he' ? 'חשבון הורה (ראש משפחה)' : 'Parent / Family Head'}</option>
+                  <option value="CHILD">{language === 'ar' ? 'حساب ابن تابع لولي أمر' : language === 'he' ? 'חשבון ילד מקושר להורה' : 'Child linked to Parent'}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* If Child Account, select Parent */}
+            {newUserAccountType === 'CHILD' && (
+              <div className="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 space-y-2">
+                <label className="font-bold text-indigo-900 dark:text-indigo-200 block">
+                  {language === 'ar' ? 'اختر حساب ولي الأمر التابع له:' : language === 'he' ? 'בחר חשבון הורה מקשר:' : 'Select Parent Account:'}
+                </label>
+                <select
+                  value={newUserParentId}
+                  onChange={(e) => {
+                    const pid = e.target.value;
+                    setNewUserParentId(pid);
+                    const selectedParent = (usersData || []).find((u: any) => u.id === pid);
+                    if (selectedParent && !newUserPhone && selectedParent.phone) {
+                      setNewUserPhone(selectedParent.phone);
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-bold text-xs"
+                >
+                  <option value="">-- {language === 'ar' ? 'اختر ولي الأمر' : language === 'he' ? 'בחר הורה' : 'Select Parent'} --</option>
+                  {(usersData || [])
+                    .filter((u: any) => u.isParent || u.role === 'STUDENT')
+                    .map((p: any) => (
+                      <option key={p.id} value={p.id}>
+                        {p.firstName} {p.lastName} ({p.email}) {p.phone ? `• ${p.phone}` : ''}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+
             {/* 2. Platform Role & Permissions Linkage */}
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/70 border border-slate-200/80 dark:border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
@@ -3952,11 +4085,15 @@ export const AdminDashboard: React.FC = () => {
                 }
                 createUserMutation.mutate({
                   email: newUserEmail,
+                  phone: newUserPhone || undefined,
                   password: newUserPass,
                   firstName: newUserFirst,
                   lastName: newUserLast,
                   role: newUserRole,
                   roleDefinitionId: newUserRoleDefId || undefined,
+                  parentId: newUserAccountType === 'CHILD' ? newUserParentId : undefined,
+                  isParent: newUserAccountType === 'PARENT',
+                  familyRole: newUserAccountType === 'PARENT' ? 'PARENT' : newUserAccountType === 'CHILD' ? 'CHILD' : undefined,
                   nativeLanguageId: isStudent ? newUserNativeLangId : undefined,
                   learningLanguageId: isStudent ? newUserLearningLangId : undefined,
                   levelId: isStudent ? newUserLevelId : undefined,
@@ -5413,6 +5550,31 @@ export const AdminDashboard: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }}
 />
+
+      {/* Family Governance & Tree Modal */}
+      <FamilyManagementModal
+        isOpen={isFamilyModalOpen}
+        onClose={() => {
+          setIsFamilyModalOpen(false);
+          setSelectedFamilyUser(null);
+        }}
+        user={selectedFamilyUser}
+        onOpenAddChild={(parent) => {
+          setAddChildParent(parent);
+          setIsAddChildModalOpen(true);
+        }}
+      />
+
+      {/* Add Child to Family Modal */}
+      <AddChildModal
+        isOpen={isAddChildModalOpen}
+        onClose={() => {
+          setIsAddChildModalOpen(false);
+          setAddChildParent(null);
+        }}
+        parentUser={addChildParent}
+        levels={safeLevels}
+      />
     </div >
   );
 };

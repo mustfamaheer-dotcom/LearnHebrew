@@ -22,6 +22,7 @@ import { StructuredNotesViewer } from '../../components/lessons/StructuredNotesV
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { CertificateModal, CertificateData } from '../../components/common/CertificateModal';
 import { StudentBookingFlow } from '../../components/student/StudentBookingFlow';
+import { FamilyProfileSwitcher } from '../../components/student/FamilyProfileSwitcher';
 import { isGoogleDriveUrl, getVideoEmbedUrl } from '../../lib/driveUtils';
 import {
   formatSlotRange12Hour,
@@ -1254,6 +1255,9 @@ export const StudentDashboard: React.FC = () => {
         } p-4 sm:p-6 lg:pe-7 xl:pe-9 lg:pt-8 xl:pt-8 min-h-[calc(100vh-4rem)] sm:min-h-[calc(100vh-5rem)] space-y-8 pb-36 sm:pb-40 lg:pb-12`}>
           {/* Live Imminent Lesson Countdown Island */}
           <LiveLessonCountdownIsland lessons={upcomingLessons} userRole="STUDENT" />
+
+          {/* Unified Family Profile Switcher (When account has linked parent/child profiles) */}
+          <FamilyProfileSwitcher />
 
           {/* TAB 1: OVERVIEW & STATUS */}
           {activeTab === 'overview' && (

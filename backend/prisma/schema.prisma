@@ -236,6 +236,12 @@ model User {
   learningLanguageId String?
   learningLanguage   Language?       @relation("LearningLanguage", fields: [learningLanguageId], references: [id], onDelete: SetNull)
   avatarUrl          String?
+  phone              String?
+  parentId           String?
+  parent             User?           @relation("FamilyMembers", fields: [parentId], references: [id], onDelete: SetNull)
+  children           User[]          @relation("FamilyMembers")
+  isParent           Boolean         @default(false)
+  familyRole         String?         // "PARENT", "CHILD", "SPOUSE"
   isActive           Boolean         @default(true)
   mustChangePw       Boolean         @default(true)
   failedLogins       Int             @default(0)
@@ -262,6 +268,8 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([phone])
+  @@index([parentId])
 }
 
 model UserNotificationPreference {
