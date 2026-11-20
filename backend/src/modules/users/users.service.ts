@@ -67,6 +67,34 @@ export async function listUsers(filters: {
               level: true,
               levelModel: true,
               totalPoints: true,
+              lastLessonAt: true,
+              packages: {
+                include: { package: true },
+                orderBy: { createdAt: 'desc' },
+              },
+              payments: {
+                orderBy: { createdAt: 'desc' },
+                take: 3,
+              },
+              lessons: {
+                where: { status: 'SCHEDULED' },
+                orderBy: { scheduledAt: 'asc' },
+                take: 1,
+                include: {
+                  teacher: {
+                    include: {
+                      user: {
+                        select: {
+                          id: true,
+                          firstName: true,
+                          lastName: true,
+                          avatarUrl: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
               sessionBalances: {
                 include: { sessionType: true },
               },
@@ -95,6 +123,34 @@ export async function listUsers(filters: {
           level: true,
           totalPoints: true,
           streakDays: true,
+          lastLessonAt: true,
+          packages: {
+            include: { package: true },
+            orderBy: { createdAt: 'desc' },
+          },
+          payments: {
+            orderBy: { createdAt: 'desc' },
+            take: 3,
+          },
+          lessons: {
+            where: { status: 'SCHEDULED' },
+            orderBy: { scheduledAt: 'asc' },
+            take: 1,
+            include: {
+              teacher: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                      avatarUrl: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
           sessionBalances: {
             include: { sessionType: true },
           },

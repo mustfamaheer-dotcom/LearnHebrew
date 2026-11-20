@@ -26,6 +26,7 @@ import { LanguagesTab } from '../../components/admin/LanguagesTab';
 import { PlatformSettingsNavModal } from '../../components/admin/PlatformSettingsNavModal';
 import { FamilyManagementModal } from '../../components/admin/FamilyManagementModal';
 import { AddChildModal } from '../../components/admin/AddChildModal';
+import { StudentCrmTable } from '../../components/admin/StudentCrmTable';
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { sessionTypesApi, levelsApi, languagesApi, rolesApi } from '../../lib/enterpriseApi';
@@ -320,6 +321,7 @@ export const AdminDashboard: React.FC = () => {
   const [selectedFamilyUser, setSelectedFamilyUser] = useState<any | null>(null);
   const [isAddChildModalOpen, setIsAddChildModalOpen] = useState(false);
   const [addChildParent, setAddChildParent] = useState<any | null>(null);
+  const [userTableViewMode, setUserTableViewMode] = useState<'CRM' | 'MATRIX'>('CRM');
 
   // Modern Package Management State
   const [isCreatingPackage, setIsCreatingPackage] = useState(false);
@@ -2556,8 +2558,85 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Filters & Search Toolbar */}
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 transition-colors">
+                  {/* View Mode Toggle Bar */}
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xs">
+                      <button
+                        type="button"
+                        onClick={() => setUserTableViewMode('CRM')}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+                          userTableViewMode === 'CRM'
+                            ? 'bg-brand-teal-800 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>{language === 'ar' ? 'عرض إدارة الطلاب وعائلاتهم (CRM)' : language === 'he' ? 'טבלת CRM תלמידים ומשפחות' : 'Students & Family CRM'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUserTableViewMode('MATRIX')}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+                          userTableViewMode === 'MATRIX'
+                            ? 'bg-brand-teal-800 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>{language === 'ar' ? 'شبكة كل المستخدمين' : language === 'he' ? 'כל המשתמשים' : 'All Users Grid'}</span>
+                      </button>
+                    </div>
+
+                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      {userTableViewMode === 'CRM' && (
+                        <span className="flex items-center gap-1 text-teal-600 dark:text-teal-400 font-bold">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {language === 'ar' ? 'البحث بالهاتف (+972...) يظهر ولي الأمر وجميع أبنائه' : language === 'he' ? 'חיפוש טלפון מציג את ההורה וכל ילדיו' : 'Phone search links parent & all children'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {userTableViewMode === 'CRM' ? (
+                    <StudentCrmTable
+                      users={usersData || []}
+                      teachers={teachersData || []}
+                      packages={packagesData || []}
+                      onOpenFamilyModal={(u) => {
+                        setSelectedFamilyUser(u);
+                        setIsFamilyModalOpen(true);
+                      }}
+                      onOpenAddChildModal={(p) => {
+                        setAddChildParent(p);
+                        setIsAddChildModalOpen(true);
+                      }}
+                      onToggleStatus={(userId, currentStatus) => {
+                        updateUserMutation.mutate({
+                          id: userId,
+                          data: { isActive: !currentStatus },
+                        });
+                      }}
+                      onResetPassword={async (u) => {
+                        const confirmed = await confirmDialog({
+                          title: language === 'he' ? 'איפוס סיסמה' : 'Reset Password',
+                          titleHe: 'איפוס סיסמה',
+                          message: `Reset password for ${u.firstName} ${u.lastName} (${u.email})?`,
+                          messageHe: `האם לאפס את הסיسמה עבור ${u.firstName} ${u.lastName}?`,
+                          confirmText: 'Reset Password',
+                          confirmTextHe: 'אפס סיسמה',
+                        });
+                        if (confirmed) {
+                          resetPasswordMutation.mutate(u.id);
+                        }
+                      }}
+                      language={language}
+                      isRtl={language === 'he' || language === 'ar'}
+                      initialSearch={userSearchTerm}
+                    />
+                  ) : (
+                    <>
+                      {/* Filters & Search Toolbar */}
+                      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 transition-colors">
                     <div className="relative flex-1 max-w-md">
                       <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute start-3 top-1/2 -translate-y-1/2" />
                       <input
@@ -2922,8 +3001,10 @@ export const AdminDashboard: React.FC = () => {
                       </table>
                     </div>
                   </div>
-                </div>
+                </>
               )}
+            </div>
+          )}
 
               {/* TAB 4: TEACHERS & 25-MIN SLOTS */}
               {activeTab === 'teachers' && (

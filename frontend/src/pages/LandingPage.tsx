@@ -42,6 +42,10 @@ import {
 export const LandingPage: React.FC = () => {
   const { t, language } = useTranslation();
   const user = useAuthStore((state) => state.user);
+  const isAr = language === 'ar';
+  const isHe = language === 'he';
+  const isRtl = isAr || isHe;
+  const loc = (ar: string, he: string, en: string) => (isAr ? ar : isHe ? he : en);
 
   // Audio preview state for interactive Alef-Bet widget
   const [playingWord, setPlayingWord] = useState<string | null>(null);
@@ -69,38 +73,46 @@ export const LandingPage: React.FC = () => {
 
   const config = settingsData || {};
 
-  // Bilingual fallbacks
-  const badge =
-    language === 'he'
-      ? config.badgeHe || 'האקדמיה המובילה לעברית ואנגלית'
-      : config.badgeEn || 'Premier Modern Hebrew & English Academy';
+  // Trilingual fallbacks
+  const badge = isAr
+    ? config.badgeAr || t('landing.badge') || 'الأكاديمية الرائدة لتعليم اللغة العبرية والإنجليزية'
+    : isHe
+    ? config.badgeHe || 'האקדמיה המובילה לעברית ואנגלית'
+    : config.badgeEn || 'Premier Modern Hebrew & English Academy';
 
-  const heroTitle =
-    language === 'he'
-      ? config.heroTitleHe || 'לדבר עברית מודרנית בביטחון ובטבעיות'
-      : config.heroTitleEn || 'Speak Real Modern Hebrew with Confident Fluency';
+  const heroTitle = isAr
+    ? config.heroTitleAr || t('landing.heroTitle') || 'تحدث العبرية المعاصرة بطلاقة وثقة تامة'
+    : isHe
+    ? config.heroTitleHe || 'לדבר עברית מודרנית בביטחון ובטבעיות'
+    : config.heroTitleEn || 'Speak Real Modern Hebrew with Confident Fluency';
 
-  const heroSubtitle =
-    language === 'he'
-      ? config.heroSubtitleHe ||
-        'שיעורים פרטיים ממוקדים של 25 דקות עם מורים מוסמכים מישראל, משחקים חווייתיים, הקלטות וידאו לכל שיעור וליווי אישי מותאם לקצב שלך.'
-      : config.heroSubtitleEn ||
-        'Live 1-on-1 private video lessons (25-minute focused sessions) with certified native tutors in Israel, interactive gamification, and permanent cloud recordings.';
+  const heroSubtitle = isAr
+    ? config.heroSubtitleAr ||
+      t('landing.heroSubtitle') ||
+      'حصص فردية مباشرة مركزة مدتها 25 دقيقة مع معلمين ناطقين أصليين، ألعاب تفاعلية، تسجيلات فيديو لكل درس، ومتابعة دقيقة مخصصة لسرعة تقدمك.'
+    : isHe
+    ? config.heroSubtitleHe ||
+      'שיעורים פרטיים ממוקדים של 25 דקות עם מורים מוסמכים מישראל, משחקים חווייתיים, הקלטות וידאו לכל שיעור וליווי אישי מותאם לקצב שלך.'
+    : config.heroSubtitleEn ||
+      'Live 1-on-1 private video lessons (25-minute focused sessions) with certified native tutors in Israel, interactive gamification, and permanent cloud recordings.';
 
-  const ctaStudent =
-    language === 'he'
-      ? config.ctaStudentHe || 'מעבר ללוח הבקרה שלי'
-      : config.ctaStudentEn || 'Go to My Dashboard';
+  const ctaStudent = isAr
+    ? config.ctaStudentAr || t('landing.ctaStudent') || 'الانتقال إلى لوحة التحكم'
+    : isHe
+    ? config.ctaStudentHe || 'מעבר ללוח הבקרה שלי'
+    : config.ctaStudentEn || 'Go to My Dashboard';
 
-  const ctaLogin =
-    language === 'he'
-      ? config.ctaLoginHe || 'התחל ללמוד עכשיו'
-      : config.ctaLoginEn || 'Start Learning Today';
+  const ctaLogin = isAr
+    ? config.ctaLoginAr || t('landing.ctaLogin') || 'ابدأ التعلم الآن'
+    : isHe
+    ? config.ctaLoginHe || 'התחל ללמוד עכשיו'
+    : config.ctaLoginEn || 'Start Learning Today';
 
-  const announcement =
-    language === 'he'
-      ? config.announcementHe || 'מבצע מיוחד: 50 נקודות בונוס XP והקלטת וידאו לכל שיעור ראשון'
-      : config.announcementEn || 'Special Offer: 50 Bonus XP points and full video recording included with your first lesson';
+  const announcement = isAr
+    ? config.announcementAr || 'عرض خاص: احصل على 50 نقطة إضافية وتسجيل فيديو كامل مع أول حصة دراسية لك!'
+    : isHe
+    ? config.announcementHe || 'מבצע מיוחד: 50 נקודות בונוס XP והקלטת וידאו לכל שיעור ראשון'
+    : config.announcementEn || 'Special Offer: 50 Bonus XP points and full video recording included with your first lesson';
 
   // Stats Counters
   const stats = config.stats && config.stats.length > 0 ? config.stats : [
@@ -108,24 +120,28 @@ export const LandingPage: React.FC = () => {
       num: '500+',
       labelEn: 'Active Hebrew Learners',
       labelHe: 'תלמידים פעילים בעולם',
+      labelAr: 'متعلم نشط للغة العبرية',
       icon: 'users',
     },
     {
       num: '2,400+',
       labelEn: '25-Min Focused Lessons',
       labelHe: 'שיעורים ממוקדים של 25 דק׳',
+      labelAr: 'حصة مركزة (25 دقيقة)',
       icon: 'clock',
     },
     {
       num: '98.8%',
       labelEn: 'Fluency Retention Rate',
       labelHe: 'שיעור הצלחה ושימור שפה',
+      labelAr: 'معدل الاحتفاظ باللغة والطلاقة',
       icon: 'trending',
     },
     {
       num: '4.95 / 5',
       labelEn: 'Average Teacher Rating',
       labelHe: 'דירוג מורים ממוצע',
+      labelAr: 'متوسط تقييم المعلمين',
       icon: 'star',
     },
   ];
@@ -139,25 +155,31 @@ export const LandingPage: React.FC = () => {
             icon: 'video',
             titleEn: '25-Minute Focused Live Lessons',
             titleHe: 'שיעורים חיים ממוקדים של 25 דקות',
+            titleAr: 'حصص مباشرة مركزة مدتها 25 دقيقة',
             descEn:
               'High-intensity 25-minute private 1-on-1 sessions designed for maximum cognitive retention without fatigue.',
             descHe: 'מפגשים אישיים של 25 דקות המתוכננים לקליטה מיטבית וללא עומס קוגניטיבי.',
+            descAr: 'جلسات فردية تفاعلية ومكثفة مدتها 25 دقيقة مصممة لتحقيق أعلى استيعاب ذهني دون أي إجهاد.',
           },
           {
             icon: 'gamepad',
             titleEn: 'Real Hebrew Interactive Games',
             titleHe: 'משחקי שפה אינטראקטיביים אמיתיים',
+            titleAr: 'ألعاب تعليمية تفاعلية للغة العبرية',
             descEn:
               'Interactive 3D Alef-Bet flashcards with native audio pronunciation, timed vocabulary quizzes, and matching challenges.',
             descHe: 'כרטיסיות תלת-ממד עם הגייה קולית, חידונים מתוזמנים ואתגרי התאמת מילים לצבירת נקודות.',
+            descAr: 'بطاقات Alef-Bet ثلاثية الأبعاد مع نطق صوتي أصلي، مسابقات كلمات سريعة، وتحديات مطابقة لكسب النقاط.',
           },
           {
             icon: 'drive',
             titleEn: 'Lesson Recordings & Notes',
             titleHe: 'הקלטות וידאו וסיכומי שיעור',
+            titleAr: 'تسجيلات الدروس وملاحظات المعلم',
             descEn:
               'Access Google Drive recordings and teacher notes after every class to review grammar and vocabulary anytime.',
             descHe: 'גישה נוחה להקלטות Google Drive ולהערות המורה לאחר כל מפגש לחיזוק הלמידה.',
+            descAr: 'وصول مباشر لتسجيلات Google Drive وملاحظات المعلم التفصيلية بعد كل حصة لمراجعة المفردات في أي وقت.',
           },
         ];
 
@@ -165,111 +187,129 @@ export const LandingPage: React.FC = () => {
   const defaultTestimonials = [
     {
       name: 'Michael Bronstein',
-      location: 'New York, USA',
+      location: isAr ? 'نيويورك، الولايات المتحدة' : 'New York, USA',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
       rating: 5,
-      levelTag: 'Alef - Beginner',
+      levelTag: loc('ألف - مبتدئ', 'רמה א׳ - מתחיל', 'Alef - Beginner'),
       teacherName: 'Maya Ben-David',
       textEn:
         'The 25-minute format is a genius invention! I can easily fit a lesson during my lunch break. My teacher explains Hebrew verb roots (Shoresh) with incredible clarity.',
       textHe:
         'מתכונת 25 הדקות היא פשוט המצאה גאונית! אני קובע שיעור בהפסקת הצהריים בעבודה. המורה מסבירה שורשים ודקדוק בבהירות מדהימה.',
+      textAr:
+        'نظام الـ 25 دقيقة فكرة عبقرية بحق! يمكنني حضور حصة بسهولة أثناء استراحة الغداء. المعلمة تشرح جذور الأفعال وقواعد الصرف بوضوح فائق.',
     },
     {
       name: 'Rachel Dayan',
-      location: 'London, UK',
+      location: isAr ? 'لندن، المملكة المتحدة' : 'London, UK',
       avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
       rating: 5,
-      levelTag: 'Bet - Elementary',
+      levelTag: loc('بيت - أساسي', 'רמה ב׳ - יסודי', 'Bet - Elementary'),
       teacherName: 'Daniel Mizrahi',
       textEn:
         'The Google Drive recorded sessions and interactive games make revision so engaging. I went from zero to holding full conversations with Israeli relatives in 3 months!',
       textHe:
         'הקלטות הווידאו ומשחקי השפה עם הנקודות עושים את כל ההבדל. התחלתי מאפס והיום אני מנהלת שיחות חופשיות עם המשפחה בישראל!',
+      textAr:
+        'تسجيلات الفيديو على Google Drive وألعاب النقاط تجعل المراجعة ممتعة للغاية. بدأت من الصفر والآن أتحدث بطلاقة مع أقاربي بعد 3 أشهر فقط!',
     },
     {
       name: 'Daniel Chen',
-      location: 'Toronto, Canada',
+      location: isAr ? 'تورونتو، كندا' : 'Toronto, Canada',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
       rating: 5,
-      levelTag: 'Gimel - Intermediate',
+      levelTag: loc('جيمل - متوسط', 'רמה ג׳ - בינוני', 'Gimel - Intermediate'),
       teacherName: 'Noam Levi',
       textEn:
         'Strict Israel Timing (IDT) schedule and 1-on-1 focus makes Engrew the most authentic and reliable Hebrew academy available. Noam is patient and exceptionally skilled.',
       textHe:
         'סנכרון מדויק לשעון ישראל ויחס אישי של אחד-על-אחד הפכו את Engrew לפלטפורמה הכי מקצועית שיש. נעם סבלני ומלמד בצורה מעולה.',
+      textAr:
+        'التزامن الدقيق مع توقيت إسرائيل والتركيز الفردي 1-على-1 جعل إنجرو المنصة الأكثر احترافية ومصداقية. نوعام صبور وأسلوبه ممتاز في التدريس.',
     },
     {
       name: 'Sophie Laurent',
-      location: 'Paris, France',
+      location: isAr ? 'باريس، فرنسا' : 'Paris, France',
       avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
       rating: 5,
-      levelTag: 'Dalet - Upper Intermediate',
+      levelTag: loc('دالت - فوق المتوسط', 'רמה ד׳ - מתקדם נמוך', 'Dalet - Upper Intermediate'),
       teacherName: 'Liora Katz',
       textEn:
         'I work in tech and needed conversational Hebrew for meetings in Tel Aviv. The specialized vocabulary and slang focus helped me pass my Israeli job interview!',
       textHe:
         'אני עובדת בהייטק והייתי צריכה עברית עסקית לפגישות בתל אביב. אוצר המילים המעשי והסלנג עזרו לי לעבור ראיון עבודה בחברה ישראלית!',
+      textAr:
+        'أعمل في مجال التكنولوجيا وكنت بحاجة للعبرية المعاصرة لاجتماعات تل أبيب. التركيز على المفردات المهنية ساعدني في اجتياز مقابلة العمل بنجاح!',
     },
     {
       name: 'David Miller',
-      location: 'Miami, Florida',
+      location: isAr ? 'ميامي، فلوريدا' : 'Miami, Florida',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
       rating: 5,
-      levelTag: 'Alef - Beginner',
+      levelTag: loc('ألف - مبتدئ', 'רמה א׳ - מתחיל', 'Alef - Beginner'),
       teacherName: 'Talia Friedman',
       textEn:
         'The homework assignments with the built-in PDF viewer and teacher audio feedback are top notch. I look forward to my lessons every Tuesday and Thursday.',
       textHe:
         'שיעורי הבית עם צפיית ה-PDF המובנית ומשובי השמע מהמורה ברמה הגבוהה ביותר. אני מחכה לשיעורים שלי בכל שלישי וחמישי.',
+      textAr:
+        'الواجبات المنزلية مع قارئ PDF المدمج والملاحظات الصوتية من المعلمة ممتازة للغاية. أنتظر حصصي بشغف كل ثلاثاء وخميس.',
     },
     {
       name: 'Elena Rostova',
-      location: 'Berlin, Germany',
+      location: isAr ? 'برلين، ألمانيا' : 'Berlin, Germany',
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
       rating: 5,
-      levelTag: 'Gimel - Intermediate',
+      levelTag: loc('جيمل - متوسط', 'רמה ג׳ - בינוני', 'Gimel - Intermediate'),
       teacherName: 'Erez Golan',
       textEn:
         'The XP leaderboard and gamification kept me motivated daily. Erez is such an encouraging teacher who makes complex binyanim easy to understand.',
       textHe:
         'לוח המובילים והמשחקים שמרו על המוטיבציה שלי בכל יום. ארז מורה מעודד שמפשט גזרות ובניינים מורכבים בצורה קלה להבנה.',
+      textAr:
+        'لوحة المتصدرين ونقاط الألعاب تحفزني يومياً. إيريز معلم رائع يبسط القواعد المعقدة وأوزان الأفعال بطريقة سهلة وممتعة جداً.',
     },
     {
       name: 'Julian Meyer',
-      location: 'Zurich, Switzerland',
+      location: isAr ? 'زيورخ، سويسرا' : 'Zurich, Switzerland',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
       rating: 5,
-      levelTag: 'Hei - Advanced',
+      levelTag: loc('هي - متقدم', 'רמה ה׳ - מתקדם', 'Hei - Advanced'),
       teacherName: 'Maya Ben-David',
       textEn:
         'After studying Hebrew in university for years, Engrew finally gave me the spontaneous speaking confidence I lacked. The 25m private format is unbeatable.',
       textHe:
         'אחרי שנים של לימוד עברית באוניברסיטה, Engrew סוף סוף העניקה לי את הביטחון לדבר בספונטניות. הפורמט של 25 דקות פשוט מנצח.',
+      textAr:
+        'بعد سنوات من دراسة العبرية في الجامعة، منحتني إنجرو أخيراً الثقة في التحدث التلقائي. نظام الحصص الفردية 25 دقيقة لا يُعلى عليه.',
     },
     {
       name: 'Sarah Al-Mansoor',
-      location: 'Dubai, UAE',
+      location: isAr ? 'دبي، الإمارات' : 'Dubai, UAE',
       avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=200',
       rating: 5,
-      levelTag: 'Alef - Beginner',
+      levelTag: loc('ألف - مبتدئ', 'רמה א׳ - מתחיל', 'Alef - Beginner'),
       teacherName: 'Karim Mahmoud',
       textEn:
         'The teachers are culturally welcoming and so patient. Learning the Alef-Bet through the interactive 3D flashcards was smooth and enjoyable.',
       textHe:
         'המורים מקבלים בחום ובסבלנות רבה. לימוד האלף-בית דרך כרטיסיות השמע האינטראקטיביות היה מהנה וקל להפליא.',
+      textAr:
+        'المعلمون ودودون وصبورون للغاية. تعلمت حروف الأبجدية عبر بطاقات الفلاش ثلاثية الأبعاد بنطق واضح وكان الأمر ممتعاً وسلساً.',
     },
     {
       name: 'Marcos Silva',
-      location: 'Buenos Aires, Argentina',
+      location: isAr ? 'بوينس آيرس، الأرجنتين' : 'Buenos Aires, Argentina',
       avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200',
       rating: 5,
-      levelTag: 'Bet - Elementary',
+      levelTag: loc('بيت - أساسي', 'רמה ב׳ - יסודי', 'Bet - Elementary'),
       teacherName: 'Noam Levi',
       textEn:
         'Great platform! Fast booking, instant Zoom links, and my sessions balance is clearly visible. Every minute of the 25 minutes is utilized efficiently.',
       textHe:
         'פלטפורמה נהדרת! קביעת שיעורים מהירה, קישורי זום מיידיים ומכסת שיעורים שקופה. כל דקה מ-25 הדקות מנוצלת ביעילות מקסימלית.',
+      textAr:
+        'منصة ممتازة وسريعة الحجز، روابط Zoom فورية ورصيد الحصص واضح ومباشر. كل دقيقة من الـ 25 دقيقة تُستثمر بأعلى كفاءة.',
     },
   ];
 
@@ -289,12 +329,12 @@ export const LandingPage: React.FC = () => {
 
   // Curated Interactive Soundboard Words
   const soundboardWords = [
-    { he: 'שָׁלוֹם', phonetic: 'Sha-lom', en: language === 'he' ? 'שלום / ברכה' : 'Hello & Peace' },
-    { he: 'סַבָּבָה', phonetic: 'Sa-ba-ba', en: language === 'he' ? 'מעולה / אחלה' : 'Awesome & Great' },
-    { he: 'תּוֹדָה רַבָּה', phonetic: 'To-da Ra-ba', en: language === 'he' ? 'תודה מעומק הלב' : 'Thank you very much' },
-    { he: 'מַה נִּשְׁמַע?', phonetic: 'Ma Nish-ma?', en: language === 'he' ? 'איך הולך?' : "How's it going?" },
-    { he: 'יַאלְלָה!', phonetic: 'Yal-la!', en: language === 'he' ? 'קדימה / זזנו' : "Let's do this!" },
-    { he: 'בְּתֵאָבוֹן', phonetic: 'Be-te-a-von', en: language === 'he' ? 'אכילה מהנה' : 'Bon Appétit' },
+    { he: 'שָׁלוֹם', phonetic: 'Sha-lom', trans: loc('مرحباً / سلام', 'שלום / ברכה', 'Hello & Peace') },
+    { he: 'סַבָּבָה', phonetic: 'Sa-ba-ba', trans: loc('رائع / تمام', 'מעולה / אחלה', 'Awesome & Great') },
+    { he: 'תּוֹדָה רַבָּה', phonetic: 'To-da Ra-ba', trans: loc('شكراً جزيلاً', 'תודה מעומק הלב', 'Thank you very much') },
+    { he: 'מַה נִּשְׁמַע?', phonetic: 'Ma Nish-ma?', trans: loc('كيف الحال؟ / شو الأخبار؟', 'איך הולך?', "How's it going?") },
+    { he: 'יַאלְלָה!', phonetic: 'Yal-la!', trans: loc('يلا! / هيا بنا!', 'קדימה / זזנו', "Let's do this!") },
+    { he: 'בְּתֵאָבוֹן', phonetic: 'Be-te-a-von', trans: loc('بالهناء والشفاء / صحتين', 'אכילה מהנה', 'Bon Appétit') },
   ];
 
   // Interactive Hebrew Pronunciation Sample
@@ -332,26 +372,34 @@ export const LandingPage: React.FC = () => {
           {
             qEn: 'Why are lessons strictly 25 minutes long?',
             qHe: 'למה השיעורים הם בדיוק 25 דקות?',
+            qAr: 'لماذا مدة الحصص 25 دقيقة تحديداً؟',
             aEn: 'Cognitive linguistics research demonstrates that intensive 25-minute 1-on-1 language sessions yield up to 40% higher retention compared to long 60-minute classes, eliminating attention fatigue.',
             aHe: 'מחקרים בבלשנות קוגניטיבית מראים שמפגשים ממוקדים של 25 דקות מאפשרים קליטה וזיכרון גבוהים ב-40% ביחס לשיעורים ארוכים ומעייפים.',
+            aAr: 'تؤكد أبحاث اللسانيات المعرفية أن الحصص الفردية المكثفة لمدة 25 دقيقة تحقق نسبة استيعاب وحفظ أعلى بنسبة تصل إلى 40% مقارنة بالحصص الطويلة الممتدة لـ 60 دقيقة، مع تفادي التشتت والإرهاق الذهني.',
           },
           {
             qEn: 'What time zone are the lesson slots based on?',
             qHe: 'לפי איזה אזור זמן נקבעים השיעורים?',
+            qAr: 'وفقاً لأي منطقة زمنية يتم جدولة الحصص؟',
             aEn: 'All schedules coordinate with Israel Timing (IDT/IST, UTC+2 / UTC+3 in Tel Aviv & Jerusalem) and are automatically displayed in clean 12-hour AM/PM format.',
             aHe: 'כל לוחות הזמנים מסונכרנים לשעון ישראל (UTC+2 / UTC+3) ומוצגים בפורמט נוח של 12 שעות עם ציון AM ו-PM.',
+            aAr: 'جميع مواعيد الحصص منسقة بدقة وفقاً لتوقيت إسرائيل (UTC+2 / UTC+3 في القدس وتل أبيب)، ويتم عرضها بوضوح بنظام 12 ساعة مع مؤشرات AM وPM لتسهيل الاختيار.',
           },
           {
             qEn: 'How do Google Drive recordings work?',
             qHe: 'כיצד פועלות הקלטות השיעורים ב-Google Drive?',
+            qAr: 'كيف تعمل تسجيلات الدروس على Google Drive؟',
             aEn: 'Following every 25-minute class, your teacher attaches a secure Google Drive video link directly to your student dashboard alongside vocabulary notes.',
             aHe: 'בסיום כל שיעור, המורה מצרף קישור וידאו ישיר מ-Google Drive ללוח הבקרה שלך יחד עם סיכום אוצר המילים וההערות.',
+            aAr: 'بعد انتهاء كل حصة مدتها 25 دقيقة، يرفق معلمك رابط فيديو آمن على Google Drive مباشرة في لوحة تحكم الطالب الخاصة بك بالإضافة إلى ملخص القواعد والمفردات.',
           },
           {
             qEn: 'Can I earn points by playing the language games?',
             qHe: 'האם צבירת נקודות במשחקים משפיעה על הדירוג?',
+            qAr: 'هل يمكنني كسب نقاط خبرة من خلال الألعاب التعليمية؟',
             aEn: 'Yes! Playing 3D flashcards, quizzes, and word matching earns gamification points that rank you on the public Hebrew Academy leaderboard.',
             aHe: 'כן בהחלט! תרגול בכרטיסיות שמע, חידונים והתאמות מילים מעניק נקודות שמקדמות אותך בלוח המובילים של האקדמיה.',
+            aAr: 'نعم بالتأكيد! التدرب عبر بطاقات الفلاش ثلاثية الأبعاد، المسابقات التفاعلية، ومطابقة الكلمات يمنحك نقاطاً ترفع ترتيبك في لوحة صدارة الأكاديمية.',
           },
         ];
 
@@ -689,7 +737,7 @@ export const LandingPage: React.FC = () => {
                   href="#packages"
                   className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3.5 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-800/90 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 backdrop-blur-md transition-all shadow-2xs hover:shadow-md text-center"
                 >
-                  {language === 'he' ? 'צפייה במסלולים וחבילות לימוד' : 'Explore Learning Packages'}
+                  {loc('استكشف باقات التعلم', 'צפייה במסלולים וחבילות לימוד', 'Explore Learning Packages')}
                 </a>
               </div>
 
@@ -697,7 +745,7 @@ export const LandingPage: React.FC = () => {
               {hasAnySocials && (
                 <div className="pt-1 flex items-center gap-2">
                   <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    {language === 'he' ? 'קהילה ברשתות:' : 'Community:'}
+                    {loc('مجتمعنا:', 'קהילה ברשתות:', 'Community:')}
                   </span>
                   <div className="flex items-center gap-1.5">
                     {hasSocialLink(socials.whatsapp) && (
@@ -752,15 +800,15 @@ export const LandingPage: React.FC = () => {
               <div className="pt-2.5 border-t border-slate-200/60 dark:border-slate-800 flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 text-[10px] sm:text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
                   <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
-                  <span>{language === 'he' ? 'מורים מוסמכים מישראל' : 'Native Certified Tutors'}</span>
+                  <span>{loc('معلمون ناطقون أصليون ومعتمدون', 'מורים מוסמכים מישראל', 'Native Certified Tutors')}</span>
                 </span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 text-[10px] sm:text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
                   <Clock className="w-3 h-3 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
-                  <span>{language === 'he' ? '25 דק׳ למיקוד שיא' : '25-Min Focused Slots'}</span>
+                  <span>{loc('حصص 25 دقيقة لتركيز فائق', '25 דק׳ למיקוד שיא', '25-Min Focused Slots')}</span>
                 </span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 text-[10px] sm:text-[11px] font-semibold text-slate-700 dark:text-slate-300 shadow-2xs">
                   <Globe2 className="w-3 h-3 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
-                  <span>{language === 'he' ? 'שעון ישראל (IST/IDT)' : 'Israel Timing (IST)'}</span>
+                  <span>{loc('توقيت إسرائيل (IST)', 'שעון ישראל (IST/IDT)', 'Israel Timing (IST)')}</span>
                 </span>
               </div>
             </div>
@@ -779,7 +827,7 @@ export const LandingPage: React.FC = () => {
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
                     <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                      {language === 'he' ? 'שיעור 1-על-1 אינטראקטיבי' : 'Live 1-on-1 Session'}
+                      {loc('حصة فردية تفاعلية 1-على-1', 'שיעור 1-על-1 אינטראקטיבי', 'Live 1-on-1 Session')}
                     </span>
                   </div>
                   <div className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] sm:text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
@@ -792,10 +840,10 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
                     <span className="flex items-center gap-1.5 text-brand-teal-800 dark:text-brand-teal-300 font-extrabold text-[10px] sm:text-xs truncate">
                       <Volume2 className="w-3.5 h-3.5 text-brand-teal-600 dark:text-teal-400 shrink-0" />
-                      <span>{language === 'he' ? 'לוח שמע חי — לחץ להגייה' : 'Live Audio — Tap to Listen'}</span>
+                      <span>{loc('صوت حي — اضغط للنطق', 'לוח שמע חי — לחץ להגייה', 'Live Audio — Tap to Listen')}</span>
                     </span>
                     <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono shrink-0">
-                      {language === 'he' ? 'הגייה ישראלית' : 'Native Israeli'}
+                      {loc('نطق محلي أصلي', 'הגייה ישראלית', 'Native Israeli')}
                     </span>
                   </div>
 
@@ -828,7 +876,7 @@ export const LandingPage: React.FC = () => {
                               isPlaying ? 'text-teal-100' : 'text-slate-400 dark:text-slate-500'
                             }`}
                           >
-                            {word.en}
+                            {word.trans}
                           </span>
 
                           {isPlaying && (
@@ -845,7 +893,7 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <Video className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
                     <span className="font-bold text-slate-700 dark:text-slate-300 truncate text-[10px] sm:text-xs">
-                      {language === 'he' ? 'חדר Zoom מאובטח + הקלטת Drive' : 'Zoom HD + Cloud Recording'}
+                      {loc('غرفة Zoom فائقة الدقة + تسجيل سحابي', 'חדר Zoom מאובטח + הקלטת Drive', 'Zoom HD + Cloud Recording')}
                     </span>
                   </div>
                   <span className="text-[9px] sm:text-[10px] font-extrabold text-brand-teal-800 dark:text-brand-teal-400 font-mono shrink-0">
@@ -866,7 +914,7 @@ export const LandingPage: React.FC = () => {
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 relative z-10 text-center">
             {stats.map((st: any, idx: number) => {
-              const label = language === 'he' ? st.labelHe || st.labelEn : st.labelEn;
+              const label = isAr ? st.labelAr || st.labelEn : isHe ? st.labelHe || st.labelEn : st.labelEn;
               return (
                 <div key={idx} className="space-y-1">
                   <div className="text-2xl sm:text-4xl font-black text-brand-olive-300 font-mono tracking-tight">
@@ -886,15 +934,17 @@ export const LandingPage: React.FC = () => {
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
         <div className="text-center mb-12 sm:mb-16">
           <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-400 uppercase tracking-wider block mb-2">
-            {language === 'he' ? 'הדרך המהירה לשליטה בעברית' : 'The Fastest Route to Fluency'}
+            {loc('أسرع طريق نحو الطلاقة', 'הדרך המהירה לשליטה בעברית', 'The Fastest Route to Fluency')}
           </span>
           <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            {language === 'he' ? 'איך זה עובד ב-3 שלבים פשוטים' : 'How Engrew Works in 3 Simple Steps'}
+            {loc('كيف تعمل إنجرو في 3 خطوات بسيطة', 'איך זה עובד ב-3 שלבים פשוטים', 'How Engrew Works in 3 Simple Steps')}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs sm:text-base max-w-xl mx-auto">
-            {language === 'he'
-              ? 'מתודולוגיה מדויקת שנבנתה לאנשים עסוקים שרוצים תוצאות אמיתיות בדיבור.'
-              : 'Engineered for busy professionals who want tangible results in speaking.'}
+            {loc(
+              'منهجية مصممة خصيصاً للمحترفين والأفراد الراغبين في تحقيق نتائج ملموسة في التحدث.',
+              'מתודולוגיה מדויקת שנבנתה לאנשים עסוקים שרוצים תוצאות אמיתיות בדיבור.',
+              'Engineered for busy professionals who want tangible results in speaking.'
+            )}
           </p>
         </div>
 
@@ -906,12 +956,14 @@ export const LandingPage: React.FC = () => {
                 1
               </div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">
-                {language === 'he' ? 'הזמנה ב-30 שניות' : 'Book in 30 Seconds'}
+                {loc('الحجز في 30 ثانية', 'הזמנה ב-30 שניות', 'Book in 30 Seconds')}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                {language === 'he'
-                  ? 'בחר את המורה הישראלי המועדף עליך וקבע משבצת של 25 דקות המסונכרנת לשעון ישראל בפורמט 12 שעות AM/PM.'
-                  : 'Select your preferred native instructor and book any 25-minute slot synchronized to Israel Timing (IDT) with AM/PM ease.'}
+                {loc(
+                  'اختر معلمك المفضل واحجز أي فترة 25 دقيقة متزامنة مع توقيت إسرائيل بنظام 12 ساعة AM/PM بكل سهولة.',
+                  'בחר את המורה הישראלי המועדף עליך וקבע משבצת של 25 דקות המסונכרנת לשעון ישראל בפורמט 12 שעות AM/PM.',
+                  'Select your preferred native instructor and book any 25-minute slot synchronized to Israel Timing (IDT) with AM/PM ease.'
+                )}
               </p>
             </div>
           </div>
@@ -923,12 +975,14 @@ export const LandingPage: React.FC = () => {
                 2
               </div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">
-                {language === 'he' ? 'שיעור וידאו ממוקד 1-על-1' : 'Live 1-on-1 Video Class'}
+                {loc('حصة فيديو مباشرة 1-على-1', 'שיעור וידאו ממוקד 1-על-1', 'Live 1-on-1 Video Class')}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                {language === 'he'
-                  ? 'התחבר בלחיצה לשיעור Zoom אישי, דבר עברית מודרנית מהדקה הראשונה בלי לחץ ובלי עומס קוגניטיבי.'
-                  : 'Join via 1-click Zoom and converse in contemporary Hebrew from minute one with zero cognitive fatigue.'}
+                {loc(
+                  'انضم بنقرة واحدة عبر Zoom وتحدث العبرية المعاصرة من الدقيقة الأولى بدون أي إجهاد ذهني.',
+                  'התחבר בלחיצה לשיעור Zoom אישי, דבר עברית מודרנית מהדקה הראשונה בלי לחץ ובלי עומס קוגניטיבי.',
+                  'Join via 1-click Zoom and converse in contemporary Hebrew from minute one with zero cognitive fatigue.'
+                )}
               </p>
             </div>
           </div>
@@ -940,12 +994,14 @@ export const LandingPage: React.FC = () => {
                 3
               </div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">
-                {language === 'he' ? 'הקלטות, סיכומים ומשחקים' : 'Replays, Notes & Gamification'}
+                {loc('التسجيلات، الملاحظات والألعاب', 'הקלטות, סיכומים ומשחקים', 'Replays, Notes & Gamification')}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                {language === 'he'
-                  ? 'צפה בהקלטת השיעור ב-Google Drive, עיין בהערות המורה ותרגל בכרטיסיות שמע וחידונים לצבירת נקודות XP.'
-                  : 'Review your Google Drive video replay, study structured notes, and reinforce vocabulary with gamified quizzes for XP.'}
+                {loc(
+                  'راجع تسجيل الحصة على Google Drive، وذاكر الملاحظات المنظمة، وعزز المفردات بالألعاب التفاعلية لكسب نقاط XP.',
+                  'צפה בהקלטת השיעור ב-Google Drive, עיין בהערות המורה ותרגל בכרטיסיות שמע וחידונים לצבירת נקודות XP.',
+                  'Review your Google Drive video replay, study structured notes, and reinforce vocabulary with gamified quizzes for XP.'
+                )}
               </p>
             </div>
           </div>
@@ -956,22 +1012,24 @@ export const LandingPage: React.FC = () => {
       <section className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
         <div className="text-center mb-12 sm:mb-16">
           <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-400 uppercase tracking-wider block mb-2">
-            {language === 'he' ? 'מותאם במיוחד ללמידה מודרנית' : 'Engineered for Modern Acquisition'}
+            {loc('منظومة تعليمية متكاملة لنجاحك', 'מותאם במיוחד ללמידה מודרנית', 'Engineered for Modern Acquisition')}
           </span>
           <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
             {t('landing.featuresTitle')}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs sm:text-base max-w-xl mx-auto">
-            {language === 'he'
-              ? 'כל מה שנדרש כדי לקרוא, לכתוב ולשוחח בעברית עכשווית בביטחון.'
-              : 'Everything you need to read, write, and converse fluently in contemporary Hebrew.'}
+            {loc(
+              'كل ما تحتاجه للقراءة، الكتابة، والتحدث بالعبرية المعاصرة بطلاقة وثقة.',
+              'כל מה שנדרש כדי לקרוא, לכתוב ולשוחח בעברית עכשווית בביטחון.',
+              'Everything you need to read, write, and converse fluently in contemporary Hebrew.'
+            )}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {features.map((feat: any, idx: number) => {
-            const title = language === 'he' ? feat.titleHe || feat.titleEn : feat.titleEn;
-            const desc = language === 'he' ? feat.descHe || feat.descEn : feat.descEn;
+            const title = isAr ? feat.titleAr || feat.titleEn : isHe ? feat.titleHe || feat.titleEn : feat.titleEn;
+            const desc = isAr ? feat.descAr || feat.descEn : isHe ? feat.descHe || feat.descEn : feat.descEn;
 
             const iconStyles = [
               'bg-brand-teal-50 dark:bg-brand-teal-950/80 text-brand-teal-800 dark:text-brand-teal-300 border-brand-teal-200/80 dark:border-brand-teal-800',
@@ -1013,33 +1071,37 @@ export const LandingPage: React.FC = () => {
           <div className="grid lg:grid-cols-12 gap-8 items-center relative z-10">
             <div className="lg:col-span-7 space-y-4">
               <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-brand-olive-300 text-xs font-bold border border-white/15">
-                {language === 'he' ? 'המחקר המדעי מאחורי מתכונת 25 הדקות' : 'Cognitive Science Behind 25-Min Format'}
+                {loc('الأساس العلمي لنمط الـ 25 دقيقة', 'המחקר המדעי מאחורי מתכונת 25 הדקות', 'Cognitive Science Behind 25-Min Format')}
               </span>
               <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
-                {language === 'he'
-                  ? 'מדוע שיעורים ממוקדים בני 25 דקות יעילים יותר'
-                  : 'Why 25-Minute Focused Sessions Work Better'}
+                {loc(
+                  'لماذا تُعد الحصص المركزة (25 دقيقة) أكثر فاعلية؟',
+                  'מדוע שיעורים ממוקדים בני 25 דקות יעילים יותר',
+                  'Why 25-Minute Focused Sessions Work Better'
+                )}
               </h2>
               <p className="text-brand-teal-100 text-xs sm:text-sm leading-relaxed">
-                {language === 'he'
-                  ? 'שיעורים מסורתיים של 60 דקות גורמים לעומס קוגניטיבי וירידה בריכוז. Engrew משתמשת באימונים ממוקדים של 25 דקות המסונכרנים לשעון ישראל בפורמט 12 שעות.'
-                  : 'Traditional 60-minute tutoring sessions lead to cognitive overload and diminishing recall. Engrew utilizes high-frequency 25-minute immersive intervals calibrated in 12-hour Israel Timing (Asia/Jerusalem).'}
+                {loc(
+                  'تؤدي الجلسات التقليدية التي تمتد لـ 60 دقيقة إلى تشتت الانتباه وتراجع الاستيعاب. تعتمد إنجرو فترات مكثفة مدتها 25 دقيقة متزامنة مع توقيت إسرائيل لضمان أعلى مستوى من التركيز دون إرهاق ذهني.',
+                  'שיעורים מסורתיים של 60 דקות גורמים לעומס קוגניטיבי וירידה בריכוז. Engrew משתמשת באימונים ממוקדים של 25 דקות המסונכרנים לשעון ישראל בפורמט 12 שעות.',
+                  'Traditional 60-minute tutoring sessions lead to cognitive overload and diminishing recall. Engrew utilizes high-frequency 25-minute immersive intervals calibrated in 12-hour Israel Timing (Asia/Jerusalem).'
+                )}
               </p>
               <div className="grid sm:grid-cols-2 gap-4 pt-2">
                 <div className="p-4 rounded-2xl bg-white/10 border border-white/15">
                   <h4 className="text-xl font-black text-white">
-                    {language === 'he' ? '40% יותר' : '40% Higher'}
+                    {loc('أعلى بنسبة 40%', '40% יותר', '40% Higher')}
                   </h4>
                   <p className="text-xs text-brand-teal-100 mt-1">
-                    {language === 'he' ? 'כושר זכירת אוצר מילים' : 'Vocabulary retention rate'}
+                    {loc('في استرجاع وحفظ المفردات', 'כושר זכירת אוצר מילים', 'Vocabulary retention rate')}
                   </p>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/10 border border-white/15">
                   <h4 className="text-xl font-black text-white">
-                    {language === 'he' ? 'ללא שחיקה ועייפות' : 'Zero Burnout'}
+                    {loc('بدون إرهاق ذهني', 'ללא שחיקה ועייפות', 'Zero Burnout')}
                   </h4>
                   <p className="text-xs text-brand-teal-100 mt-1">
-                    {language === 'he' ? 'משתלב בקלות ביום עבודה עמוס' : 'Fits smoothly into busy workdays'}
+                    {loc('تناسب جدول أعمالك اليومي المزدحم بكل سلاسة', 'משתלב בקלות ביום עבודה עמוס', 'Fits smoothly into busy workdays')}
                   </p>
                 </div>
               </div>
@@ -1047,24 +1109,26 @@ export const LandingPage: React.FC = () => {
 
             <div className="lg:col-span-5 bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20 space-y-3">
               <h3 className="font-bold text-sm text-brand-olive-300 uppercase tracking-wider">
-                {language === 'he' ? 'לוח זמנים מסונכרן לשעון ישראל (IST)' : 'Israel Timing (IST) Schedule'}
+                {loc('جدول متزامن مع توقيت إسرائيل (IST)', 'לוח זמנים מסונכרן לשעון ישראל (IST)', 'Israel Timing (IST) Schedule')}
               </h3>
               <p className="text-xs text-brand-teal-100">
-                {language === 'he'
-                  ? 'קבע שיעורים עם מורים מקצועיים בירושלים ותל אביב במרווחים ברורים של 12 שעות AM/PM:'
-                  : 'Book native teachers live in Tel Aviv & Jerusalem with clear 12-hour AM/PM intervals:'}
+                {loc(
+                  'احجز حصصك مباشرة مع معلمين في القدس وتل أبيب بفترات واضحة بنظام 12 ساعة AM/PM:',
+                  'קבע שיעורים עם מורים מקצועיים בירושלים ותל אביב במרווחים ברורים של 12 שעות AM/PM:',
+                  'Book native teachers live in Tel Aviv & Jerusalem with clear 12-hour AM/PM intervals:'
+                )}
               </p>
               <div className="space-y-2 pt-2">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/10 text-xs">
-                  <span>{language === 'he' ? 'משבצת בוקר:' : 'Morning Slot:'}</span>
+                  <span>{loc('فترة الصباح:', 'משבצת בוקר:', 'Morning Slot:')}</span>
                   <span className="font-mono font-bold text-brand-olive-300">09:00 AM – 09:25 AM IST</span>
                 </div>
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/10 text-xs">
-                  <span>{language === 'he' ? 'משבצת צהריים:' : 'Afternoon Slot:'}</span>
+                  <span>{loc('فترة الظهيرة:', 'משבצת צהריים:', 'Afternoon Slot:')}</span>
                   <span className="font-mono font-bold text-brand-olive-300">02:30 PM – 02:55 PM IST</span>
                 </div>
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/10 text-xs">
-                  <span>{language === 'he' ? 'משבצת ערב:' : 'Evening Slot:'}</span>
+                  <span>{loc('فترة المساء:', 'משבצת ערב:', 'Evening Slot:')}</span>
                   <span className="font-mono font-bold text-brand-olive-300">06:00 PM – 06:25 PM IST</span>
                 </div>
               </div>
@@ -1077,7 +1141,7 @@ export const LandingPage: React.FC = () => {
       <section id="packages" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
         <div className="text-center mb-12 sm:mb-16">
           <span className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 uppercase tracking-wider block mb-2">
-            {language === 'he' ? 'מסלולי השקעה שקופים' : 'Transparent Investment'}
+            {loc('استثمار شفاف وباقات مرنة', 'מסלולי השקעה שקופים', 'Transparent Investment')}
           </span>
           <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
             {t('landing.packagesTitle')}
@@ -1093,7 +1157,7 @@ export const LandingPage: React.FC = () => {
           <button
             type="button"
             onClick={() => scrollPackages('left')}
-            aria-label={language === 'he' ? 'גלול שמאלה' : 'Scroll left'}
+            aria-label={loc('مرر لليسار', 'גלול שמאלה', 'Scroll left')}
             disabled={!canScrollLeft}
             className="flex absolute left-0 sm:-left-3 lg:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
           >
@@ -1104,7 +1168,7 @@ export const LandingPage: React.FC = () => {
           <button
             type="button"
             onClick={() => scrollPackages('right')}
-            aria-label={language === 'he' ? 'גלול ימינה' : 'Scroll right'}
+            aria-label={loc('مرر لليمين', 'גלול ימינה', 'Scroll right')}
             disabled={!canScrollRight}
             className="flex absolute right-0 sm:-right-3 lg:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
           >
@@ -1131,8 +1195,8 @@ export const LandingPage: React.FC = () => {
           >
             {activePackages.map((pkg: any, idx: number) => {
               const isFeatured = pkg.isPopular || idx === 1;
-              const name = language === 'he' && pkg.nameHe ? pkg.nameHe : pkg.name;
-              const desc = language === 'he' && pkg.descriptionHe ? pkg.descriptionHe : pkg.description;
+              const name = isAr && pkg.nameAr ? pkg.nameAr : language === 'he' && pkg.nameHe ? pkg.nameHe : pkg.name;
+              const desc = isAr && pkg.descriptionAr ? pkg.descriptionAr : language === 'he' && pkg.descriptionHe ? pkg.descriptionHe : pkg.description;
               const items = pkg.sessionItems || [];
               const sessionSummary =
                 items.length > 0
@@ -1140,15 +1204,15 @@ export const LandingPage: React.FC = () => {
                       .map(
                         (si: any) =>
                           `${si.quantity}x ${
-                            language === 'he'
+                            isAr
+                              ? si.sessionType?.labelAr || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25} دقيقة`
+                              : language === 'he'
                               ? si.sessionType?.labelHe || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25} דק׳`
                               : si.sessionType?.labelEn || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25}m`
                           }`
                       )
                       .join(' + ')
-                  : language === 'he'
-                  ? `${pkg.totalLessons} שיעורים פרטיים 1-על-1`
-                  : `${pkg.totalLessons} Private 1-on-1 Lessons`;
+                  : loc(`${pkg.totalLessons} حصص فردية 1-على-1`, `${pkg.totalLessons} שיעורים פרטיים 1-על-1`, `${pkg.totalLessons} Private 1-on-1 Lessons`);
 
               if (isFeatured) {
                 return (
@@ -1157,11 +1221,11 @@ export const LandingPage: React.FC = () => {
                     className="w-[85vw] sm:w-[360px] md:w-[380px] shrink-0 snap-center bg-gradient-to-b from-brand-teal-900 via-brand-teal-950 to-brand-teal-950 text-white p-7 sm:p-8 rounded-3xl shadow-xl relative flex flex-col justify-between ring-2 ring-brand-olive-400 select-auto transition-transform duration-200 hover:-translate-y-1"
                   >
                     <span className="absolute -top-3 start-1/2 -translate-x-1/2 bg-brand-olive-500 text-slate-950 text-[10px] sm:text-[11px] font-black uppercase px-3 py-1 rounded-full shadow-xs tracking-wider">
-                      {language === 'he' ? 'הבחירה הפופולרית ביותר' : 'Most Popular Choice'}
+                      {loc('الخيار الأكثر طلباً', 'הבחירה הפופולרית ביותר', 'Most Popular Choice')}
                     </span>
                     <div>
                       <span className="text-xs font-bold text-brand-olive-300 uppercase tracking-wider">
-                        {language === 'he' ? 'התקדמות מואצת' : 'Accelerated Fluency'}
+                        {loc('طلاقة سريعة ومكثفة', 'התקדמות מואצת', 'Accelerated Fluency')}
                       </span>
                       <h3 className="text-xl sm:text-2xl font-bold text-white mt-1 mb-2">{name}</h3>
                       <p className="text-xs sm:text-sm text-brand-teal-100 mb-6">{desc}</p>
@@ -1175,9 +1239,7 @@ export const LandingPage: React.FC = () => {
                           isLightOnDark={true}
                         />
                         <span className="text-xs font-normal text-brand-teal-200 block mt-1">
-                          {language === 'he'
-                            ? `/ תוקף ל-${pkg.validityDays} יום`
-                            : `/ ${pkg.validityDays} days validity`}
+                          {loc(`/ صلاحية لـ ${pkg.validityDays} يوماً`, `/ תוקף ל-${pkg.validityDays} יום`, `/ ${pkg.validityDays} days validity`)}
                         </span>
                       </div>
                       <ul className="space-y-3 text-xs sm:text-sm text-brand-teal-100 mb-8">
@@ -1187,19 +1249,15 @@ export const LandingPage: React.FC = () => {
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
-                          {language === 'he'
-                            ? 'הקלטות וידאו מלאות ב-Google Drive'
-                            : 'Full Google Drive video recordings'}
+                          {loc('تسجيلات فيديو كاملة على Google Drive', 'הקלטות וידאו מלאות ב-Google Drive', 'Full Google Drive video recordings')}
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
-                          {language === 'he'
-                            ? 'שיעורי בית ותרגול אינטראקטיבי'
-                            : 'Custom homework with PDF viewer'}
+                          {loc('واجبات منزلية مخصصة مع قارئ PDF مدمج', 'שיעורי בית ותרגול אינטראקטיבי', 'Custom homework with PDF viewer')}
                         </li>
                         <li className="flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
-                          {language === 'he' ? 'משוב אישי וצבירת נקודות' : 'Dedicated teacher feedback'}
+                          {loc('ملاحظات وتقييم مستمر من المعلم', 'משוב אישי וצבירת נקודות', 'Dedicated teacher feedback')}
                         </li>
                       </ul>
                     </div>
@@ -1227,7 +1285,7 @@ export const LandingPage: React.FC = () => {
                 >
                   <div>
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {language === 'he' ? 'חבילת לימוד' : 'Learning Package'}
+                      {loc('باقة تعليمية', 'חבילת לימוד', 'Learning Package')}
                     </span>
                     <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 mb-2">
                       {name}
@@ -1242,9 +1300,7 @@ export const LandingPage: React.FC = () => {
                         size="xl"
                       />
                       <span className="text-xs font-normal text-slate-500 dark:text-slate-400 block mt-1">
-                        {language === 'he'
-                          ? `/ תוקף ל-${pkg.validityDays} יום`
-                          : `/ ${pkg.validityDays} days validity`}
+                        {loc(`/ صلاحية لـ ${pkg.validityDays} يوماً`, `/ תוקף ל-${pkg.validityDays} יום`, `/ ${pkg.validityDays} days validity`)}
                       </span>
                     </div>
                     <ul className="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-8">
@@ -1254,15 +1310,11 @@ export const LandingPage: React.FC = () => {
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
-                        {language === 'he'
-                          ? 'מורים מוסמכים מישראל (שעון IST)'
-                          : 'Certified native teachers (IST)'}
+                        {loc('معلمون معتمدون بتوقيت إسرائيل (IST)', 'מורים מוסמכים מישראל (שעון IST)', 'Certified native teachers (IST)')}
                       </li>
                       <li className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
-                        {language === 'he'
-                          ? 'משחקי שפה ותרגול הגייה קולי'
-                          : 'Interactive games & audio voice'}
+                        {loc('ألعاب تفاعلية ونطق صوتي للمفردات', 'משחקי שפה ותרגול הגייה קולי', 'Interactive games & audio voice')}
                       </li>
                     </ul>
                   </div>
@@ -1304,9 +1356,7 @@ export const LandingPage: React.FC = () => {
               ))}
             </div>
             <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-              {language === 'he'
-                ? 'החלק אופקית או השתמש בחצים לצפייה בכל החבילות'
-                : 'Swipe horizontally or use arrows to compare all packages'}
+              {loc('مرر أفقياً أو استخدم الأسهم لمقارنة كافة الباقات', 'החלק אופקית או השתמש בחצים לצפייה בכל החבילות', 'Swipe horizontally or use arrows to compare all packages')}
             </span>
           </div>
         )}
@@ -1317,15 +1367,17 @@ export const LandingPage: React.FC = () => {
         <div className="text-center mb-10 sm:mb-14">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-black uppercase tracking-wider mb-2 border border-emerald-500/20">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{language === 'he' ? 'משובים חיים של תלמידים' : 'Verified Student Reviews'}</span>
+            <span>{loc('تقييمات وآراء الطلاب المعتمدة', 'משובים חיים של תלמידים', 'Verified Student Reviews')}</span>
           </div>
           <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            {language === 'he' ? 'מה התלמידים שלנו אומרים' : 'Loved by Hebrew Students Worldwide'}
+            {loc('محل ثقة طلاب العبرية حول العالم', 'מה התלמידים שלנו אומרים', 'Loved by Hebrew Students Worldwide')}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs sm:text-base max-w-2xl mx-auto">
-            {language === 'he'
-              ? 'משובים אמיתיים מתלמידים שלומדים עברית מודרנית עם Engrew במפגשים אישיים של 25 דקות.'
-              : 'Authentic reviews and testimonials from students mastering conversational Hebrew through private 25-minute sessions.'}
+            {loc(
+              'آراء وتجارب حقيقية لطلابنا الذين أتقنوا المحادثة بالعبرية من خلال حصصنا الفردية المركزة مدة 25 دقيقة.',
+              'משובים אמיתיים מתלמידים שלומדים עברית מודרנית עם Engrew במפגשים אישיים של 25 דקות.',
+              'Authentic reviews and testimonials from students mastering conversational Hebrew through private 25-minute sessions.'
+            )}
           </p>
         </div>
 
@@ -1335,7 +1387,7 @@ export const LandingPage: React.FC = () => {
           <button
             type="button"
             onClick={() => scrollFeedback('left')}
-            aria-label={language === 'he' ? 'משוב קודם' : 'Previous feedback'}
+            aria-label={loc('مشاهدة التقييم السابق', 'משוב קודם', 'Previous feedback')}
             disabled={!canScrollFeedbackLeft}
             className="flex absolute left-0 sm:-left-3 lg:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
           >
@@ -1346,7 +1398,7 @@ export const LandingPage: React.FC = () => {
           <button
             type="button"
             onClick={() => scrollFeedback('right')}
-            aria-label={language === 'he' ? 'משוב הבא' : 'Next feedback'}
+            aria-label={loc('مشاهدة التقييم التالي', 'משוב הבא', 'Next feedback')}
             disabled={!canScrollFeedbackRight}
             className="flex absolute right-0 sm:-right-3 lg:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
           >
@@ -1372,7 +1424,7 @@ export const LandingPage: React.FC = () => {
             }}
           >
             {testimonials.map((t: any, idx: number) => {
-              const quote = language === 'he' && t.textHe ? t.textHe : t.textEn;
+              const quote = isAr && t.textAr ? t.textAr : isHe && t.textHe ? t.textHe : t.textEn;
               const initials = t.name
                 ? t.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
                 : 'S';
@@ -1433,7 +1485,7 @@ export const LandingPage: React.FC = () => {
                     {t.teacherName && (
                       <div className="text-end shrink-0 hidden sm:block">
                         <span className="text-[10px] text-slate-400 block font-medium">
-                          {language === 'he' ? 'מורה מלווה' : 'Teacher'}
+                          {loc('المعلم المعتمد:', 'מורה מלווה', 'Teacher')}
                         </span>
                         <span className="text-[11px] font-bold text-brand-olive-600 dark:text-brand-olive-400">
                           {t.teacherName}
@@ -1471,20 +1523,22 @@ export const LandingPage: React.FC = () => {
       <section className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
         <div className="text-center mb-10">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            {language === 'he' ? 'שאלות נפוצות' : 'Frequently Asked Questions'}
+            {loc('الأسئلة الشائعة', 'שאלות נפוצות', 'Frequently Asked Questions')}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-            {language === 'he'
-              ? 'כל מה שחשוב לדעת על הפלטפורמה והשיעורים'
-              : 'Everything you need to know about the platform.'}
+            {loc(
+              'كل ما تود معرفته عن منصة إنجرو وطريقة الحصص التفاعلية.',
+              'כל מה שחשוב לדעת על הפלטפורמה והשיעורים',
+              'Everything you need to know about the platform.'
+            )}
           </p>
         </div>
 
         <div className="space-y-3">
           {faqs.map((faq: any, idx: number) => {
             const isOpen = openFaqIndex === idx;
-            const q = language === 'he' ? faq.qHe || faq.qEn : faq.qEn;
-            const a = language === 'he' ? faq.aHe || faq.aEn : faq.aEn;
+            const q = isAr ? faq.qAr || faq.qEn : isHe ? faq.qHe || faq.qEn : faq.qEn;
+            const a = isAr ? faq.aAr || faq.aEn : isHe ? faq.aHe || faq.aEn : faq.aEn;
 
             return (
               <div
@@ -1532,9 +1586,7 @@ export const LandingPage: React.FC = () => {
                   Engrew
                 </span>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {language === 'he'
-                    ? 'האקדמיה המובילה לעברית ואנגלית'
-                    : 'Premier Modern Hebrew & English Academy'}
+                  {loc('الأكاديمية الرائدة لتعليم اللغة العبرية والإنجليزية', 'האקדמיה המובילה לעברית ואנגלית', 'Premier Modern Hebrew & English Academy')}
                 </p>
               </div>
             </div>
@@ -1592,12 +1644,16 @@ export const LandingPage: React.FC = () => {
 
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-3">
             <p>
-              &copy; {new Date().getFullYear()} Engrew Hebrew & English Academy. All rights reserved.
+              {loc(
+                `© ${new Date().getFullYear()} أكاديمية إنجرو للغة العبرية والإنجليزية. جميع الحقوق محفوظة.`,
+                `© ${new Date().getFullYear()} Engrew Hebrew & English Academy. כל הזכויות שמורות.`,
+                `© ${new Date().getFullYear()} Engrew Hebrew & English Academy. All rights reserved.`
+              )}
             </p>
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1">
                 <Globe2 className="w-3.5 h-3.5 text-brand-teal-700" />
-                {language === 'he' ? 'שרת מאובטח ושעון ישראל' : 'Secure Cloud · Israel Timing'}
+                {loc('سحابة مشفرة آمنة · توقيت إسرائيل', 'שרת מאובטח ושעון ישראל', 'Secure Cloud · Israel Timing')}
               </span>
             </div>
           </div>
