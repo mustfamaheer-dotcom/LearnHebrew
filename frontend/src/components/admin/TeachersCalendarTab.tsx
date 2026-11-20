@@ -40,13 +40,13 @@ interface TeachersCalendarTabProps {
 }
 
 const DAYS_HEADER = [
-  { dayIndex: 1, labelEn: 'Mon', labelHe: 'שני', fullEn: 'Monday', fullHe: 'יום שני' },
-  { dayIndex: 2, labelEn: 'Tue', labelHe: 'שלישי', fullEn: 'Tuesday', fullHe: 'יום שלישי' },
-  { dayIndex: 3, labelEn: 'Wed', labelHe: 'רביעי', fullEn: 'Wednesday', fullHe: 'יום רביעי' },
-  { dayIndex: 4, labelEn: 'Thu', labelHe: 'חמישי', fullEn: 'Thursday', fullHe: 'יום חמישי' },
-  { dayIndex: 5, labelEn: 'Fri', labelHe: 'שישי', fullEn: 'Friday', fullHe: 'יום שישי' },
-  { dayIndex: 6, labelEn: 'Sat', labelHe: 'שבת', fullEn: 'Saturday', fullHe: 'יום שבת' },
-  { dayIndex: 0, labelEn: 'Sun', labelHe: 'ראשון', fullEn: 'Sunday', fullHe: 'יום ראשון' },
+  { dayIndex: 1, labelEn: 'Mon', labelHe: 'שני', labelAr: 'الإثنين', fullEn: 'Monday', fullHe: 'יום שני', fullAr: 'يوم الإثنين' },
+  { dayIndex: 2, labelEn: 'Tue', labelHe: 'שלישי', labelAr: 'الثلاثاء', fullEn: 'Tuesday', fullHe: 'יום שלישי', fullAr: 'يوم الثلاثاء' },
+  { dayIndex: 3, labelEn: 'Wed', labelHe: 'רביעי', labelAr: 'الأربعاء', fullEn: 'Wednesday', fullHe: 'יום רביעי', fullAr: 'يوم الأربعاء' },
+  { dayIndex: 4, labelEn: 'Thu', labelHe: 'חמישי', labelAr: 'الخميس', fullEn: 'Thursday', fullHe: 'יום חמישי', fullAr: 'يوم الخميس' },
+  { dayIndex: 5, labelEn: 'Fri', labelHe: 'שישי', labelAr: 'الجمعة', fullEn: 'Friday', fullHe: 'יום שישי', fullAr: 'يوم الجمعة' },
+  { dayIndex: 6, labelEn: 'Sat', labelHe: 'שבת', labelAr: 'السبت', fullEn: 'Saturday', fullHe: 'יום שבת', fullAr: 'يوم السبت' },
+  { dayIndex: 0, labelEn: 'Sun', labelHe: 'ראשון', labelAr: 'الأحد', fullEn: 'Sunday', fullHe: 'יום ראשון', fullAr: 'يوم الأحد' },
 ];
 
 export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
@@ -56,6 +56,8 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
   const { language } = useTranslation();
   const queryClient = useQueryClient();
   const isHe = language === 'he';
+  const isAr = language === 'ar';
+  const isRtl = isHe || isAr;
 
   // 1. View & Filter States
   const [viewMode, setViewMode] = useState<CalendarViewMode>('matrix');
@@ -577,12 +579,19 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
               <table className="w-full text-start text-xs border-collapse">
                 <thead className="bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-300 font-extrabold uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
                   <tr>
-                    <th className="py-3.5 px-4 text-start w-24 border-e border-slate-200/60 dark:border-slate-800">
-                      {isHe ? 'שעה' : 'Time'}
+                    <th className="py-4 px-4 text-center w-28 border-e border-slate-200/60 dark:border-slate-800 text-xs sm:text-sm font-black">
+                      {isHe ? 'שעה' : isAr ? 'الوقت' : 'Time'}
                     </th>
                     {DAYS_HEADER.map((d) => (
-                      <th key={d.dayIndex} className="py-3.5 px-4 text-center border-e border-slate-200/60 dark:border-slate-800 last:border-e-0 min-w-[110px]">
-                        {isHe ? d.labelHe : d.labelEn}
+                      <th key={d.dayIndex} className="py-4 px-4 text-center border-e border-slate-200/60 dark:border-slate-800 last:border-e-0 min-w-[130px] sm:min-w-[145px]">
+                        <div className="flex flex-col items-center">
+                          <span className="font-black text-xs sm:text-sm text-slate-850 dark:text-slate-100">
+                            {isAr ? d.labelAr : isHe ? d.labelHe : d.labelEn}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-semibold mt-0.5 capitalize">
+                            {isAr ? d.fullAr : isHe ? d.fullHe : d.fullEn}
+                          </span>
+                        </div>
                       </th>
                     ))}
                   </tr>
@@ -590,9 +599,9 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {uniqueTimes.map((timeStr) => {
                     return (
-                      <tr key={timeStr} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                        {/* Time Column */}
-                        <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200 border-e border-slate-200/60 dark:border-slate-800 whitespace-nowrap bg-slate-50/30 dark:bg-slate-850/30">
+                      <tr key={timeStr} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                        {/* Time Column - Prominent & Large */}
+                        <td className="py-3.5 px-4 font-mono font-black text-xs sm:text-sm text-slate-800 dark:text-slate-100 border-e border-slate-200/60 dark:border-slate-800 whitespace-nowrap bg-slate-50/50 dark:bg-slate-850/50 text-center">
                           {timeStr}
                         </td>
 
@@ -608,140 +617,43 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                             );
                           }
 
-                          const isPopoverOpen =
+                          const isSelectedSlot =
                             activePopover?.time === timeStr && activePopover?.dayIndex === d.dayIndex;
 
                           return (
                             <td
                               key={d.dayIndex}
-                              className="py-2.5 px-3 border-e border-slate-200/60 dark:border-slate-800 last:border-e-0 relative"
+                              className="py-3 px-3 border-e border-slate-200/60 dark:border-slate-800 last:border-e-0"
                             >
-                              {/* 4 Segmented Bars Pill (Exact Match to Image 1 & Image 3) */}
+                              {/* 4 Segmented Bars Pill - Large, Prominent & High Clarity */}
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (isPopoverOpen) {
-                                    setActivePopover(null);
-                                  } else {
-                                    setActivePopover({
-                                      time: timeStr,
-                                      dayIndex: d.dayIndex,
-                                      dayLabel: isHe ? d.fullHe : d.fullEn,
-                                      targetDates: breakdown.weekDetails,
-                                    });
-                                  }
+                                  setActivePopover({
+                                    time: timeStr,
+                                    dayIndex: d.dayIndex,
+                                    dayLabel: isAr ? d.fullAr : isHe ? d.fullHe : d.fullEn,
+                                    targetDates: breakdown.weekDetails,
+                                  });
                                 }}
-                                className="w-full h-7 rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 flex gap-1 items-center justify-between border border-slate-200 dark:border-slate-700 hover:ring-2 hover:ring-brand-teal-500/40 transition-all cursor-pointer shadow-2xs"
-                                title={isHe ? 'לחץ לצפייה בפירוט 4 השבועות' : 'Click to inspect 4-week availability breakdown'}
+                                className={`w-full h-10 sm:h-11 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 flex gap-1.5 items-center justify-between border transition-all cursor-pointer shadow-2xs group ${
+                                  isSelectedSlot
+                                    ? 'ring-2 ring-brand-teal-500 border-brand-teal-500 bg-brand-teal-50/50 dark:bg-brand-teal-950/50 shadow-md'
+                                    : 'border-slate-200 dark:border-slate-700/80 hover:border-brand-teal-500 hover:ring-2 hover:ring-brand-teal-500/30'
+                                }`}
+                                title={`${isAr ? d.fullAr : isHe ? d.fullHe : d.fullEn} ${timeStr} • ${4 - breakdown.unavailableCount}/4 ${isAr ? 'متاح' : isHe ? 'זמינים' : 'available'} • ${isAr ? 'انقر لعرض التفاصيل' : isHe ? 'לחץ לצפייה בפרטים' : 'Click to inspect 4-week availability breakdown'}`}
                               >
                                 {breakdown.weekDetails.map((w, idx) => (
                                   <div
                                     key={idx}
-                                    className={`flex-1 h-full rounded-xs transition-colors ${
+                                    className={`flex-1 h-full rounded-md transition-all ${
                                       w.isBooked
-                                        ? 'bg-rose-500 hover:bg-rose-600'
-                                        : 'bg-emerald-500 hover:bg-emerald-600'
+                                        ? 'bg-rose-500 group-hover:bg-rose-600 shadow-2xs'
+                                        : 'bg-emerald-500 group-hover:bg-emerald-600 shadow-2xs'
                                     }`}
                                   />
                                 ))}
                               </button>
-
-                              {/* Interactive Popover (Matching Image 3 exactly) */}
-                              {isPopoverOpen && (
-                                <div className="absolute top-full start-2 sm:start-4 mt-2 z-50 w-72 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl p-4 text-start animate-in fade-in zoom-in-95 duration-150">
-                                  <div className="flex items-start justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                                    <div>
-                                      <h4 className="font-black text-xs text-slate-900 dark:text-white">
-                                        {breakdown.unavailableCount > 0
-                                          ? `${breakdown.unavailableCount}/4 ${isHe ? 'לא זמינים ב-30 הימים הקרובים' : 'unavailable in the next 30 days'}`
-                                          : (isHe ? '4/4 זמינים במלואם לחוג קבוע' : '4/4 Available in next 30 days')}
-                                      </h4>
-                                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                        {isHe
-                                          ? `מועדי יום ${d.labelHe} בשעה ${timeStr}`
-                                          : `These ${d.fullEn} dates at ${timeStr}`}
-                                      </p>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActivePopover(null);
-                                      }}
-                                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </div>
-
-                                  {/* List of 4 weeks breakdown */}
-                                  <div className="py-2.5 space-y-2">
-                                    {breakdown.weekDetails.map((w, idx) => (
-                                      <div
-                                        key={idx}
-                                        className={`p-2 rounded-xl text-xs border ${
-                                          w.isBooked
-                                            ? 'bg-rose-50/70 dark:bg-rose-950/40 border-rose-200/80 dark:border-rose-900/60'
-                                            : 'bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-900/60'
-                                        }`}
-                                      >
-                                        <div className="flex items-center justify-between font-bold">
-                                          <span className="text-slate-900 dark:text-white text-[11px]">
-                                            {w.formattedDate}
-                                          </span>
-                                          <span
-                                            className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                                              w.isBooked
-                                                ? 'bg-rose-600 text-white'
-                                                : 'bg-emerald-600 text-white'
-                                            }`}
-                                          >
-                                            {w.isBooked ? (isHe ? 'תפוס' : 'Booked') : (isHe ? 'פנוי' : 'Available')}
-                                          </span>
-                                        </div>
-
-                                        {w.lesson ? (
-                                          <div className="mt-1 pt-1 border-t border-rose-200/50 dark:border-rose-800/40 text-[10px] text-slate-700 dark:text-slate-300">
-                                            <p className="font-semibold truncate">
-                                              {w.lesson.lessonType === 'REGULAR'
-                                                ? (isHe ? 'חוג קבוע (Regular)' : 'Regular Class')
-                                                : (isHe ? 'שיעור בודד (One-time)' : 'One-time Lesson')}
-                                              {' • '}
-                                              {w.lesson.student?.user ? `${w.lesson.student.user.firstName} ${w.lesson.student.user.lastName}` : 'Student'}
-                                            </p>
-                                            <p className="text-slate-400 font-mono mt-0.5">
-                                              {timeStr} – {calculateSlotEndTime(timeStr, w.lesson.durationMinutes || 25)}
-                                            </p>
-                                          </div>
-                                        ) : w.isBooked ? (
-                                          <p className="mt-1 text-[10px] text-rose-700 dark:text-rose-300 italic">
-                                            {isHe ? 'מועד סגור / הוזמן' : 'Closed or reserved slot'}
-                                          </p>
-                                        ) : (
-                                          <p className="mt-0.5 text-[10px] text-emerald-700 dark:text-emerald-300">
-                                            {isHe ? 'פתוח להזמנה שבועית או בודדת' : 'Open for recurring or single booking'}
-                                          </p>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  {/* Popover Action Button (Matching Image 3 "Start from...") */}
-                                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setActivePopover(null);
-                                        setViewMode('detailed');
-                                      }}
-                                      className="w-full py-1.5 px-3 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-xs"
-                                    >
-                                      <CalendarDays className="w-3.5 h-3.5 text-brand-olive-300" />
-                                      <span>{isHe ? 'צפה בלוח השבועי המפורט' : 'View in Detailed Calendar'}</span>
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
                             </td>
                           );
                         })}
@@ -997,7 +909,207 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                 onClick={() => setSelectedLessonModal(null)}
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors"
               >
-                {isHe ? 'סגור' : 'Close'}
+                {isHe ? 'סגור' : isAr ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LARGE & CLEAR 4-WEEK SLOT DETAILS MODAL */}
+      {activePopover && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setActivePopover(null)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl sm:max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-teal-700 to-indigo-700 text-white flex items-center justify-center shrink-0 shadow-sm ring-4 ring-brand-teal-500/20">
+                  <CalendarRange className="w-6 h-6 text-brand-olive-300" />
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                      {activePopover.dayLabel} • {activePopover.time}
+                    </h3>
+                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold border border-slate-200 dark:border-slate-700">
+                      {activePopover.time} – {calculateSlotEndTime(activePopover.time, 25)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {activeTeacher ? `${activeTeacher.user?.firstName} ${activeTeacher.user?.lastName}` : 'Teacher'}
+                    </span>
+                    <span>•</span>
+                    <span>{isHe ? 'מחזור חודשי של 4 שבועות' : isAr ? 'دورة شهرية من 4 أسابيع' : '4-Week Monthly Cycle Breakdown'}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePopover(null)}
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                title={isHe ? 'סגור' : isAr ? 'إغلاق' : 'Close'}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Overall 4-Week Status Summary Banner */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`w-3 h-3 rounded-full ${
+                    activePopover.targetDates.filter(w => !w.isBooked).length === 4
+                      ? 'bg-emerald-500'
+                      : activePopover.targetDates.filter(w => !w.isBooked).length > 0
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                  }`} />
+                  <p className="text-sm font-black text-slate-900 dark:text-white">
+                    {activePopover.targetDates.filter(w => !w.isBooked).length}/4 {isHe ? 'שבועות פנויים להזמנה' : isAr ? 'أسابيع متاحة للحجز' : 'Weeks Available for Booking'}
+                  </p>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {activePopover.targetDates.some(w => w.isBooked)
+                    ? (isHe ? 'חלק מהתאריכים כבר הוזמנו על ידי תלמידים (שיעורים קבועים או בודדים)' : isAr ? 'بعض المواعيد محجوزة مسبقاً من قبل الطلاب' : 'Some upcoming dates are booked by students (Regular or One-time)')
+                    : (isHe ? 'המשבצת פנויה לחלוטין לחוג שבועי קבוע (Regular) או שיעורים בודדים' : isAr ? 'الفترة شاغرة بالكامل ومتاحة للحجز الأسبوعي المنتظم أو الدروس الفردية' : 'Fully open for recurring weekly regular bookings or individual lessons')}
+                </p>
+              </div>
+
+              {/* Mini visual indicator */}
+              <div className="flex items-center gap-1.5 w-36 h-5 bg-slate-200 dark:bg-slate-750 p-1 rounded-xl shrink-0">
+                {activePopover.targetDates.map((w, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex-1 h-full rounded-sm transition-colors ${
+                      w.isBooked ? 'bg-rose-500' : 'bg-emerald-500'
+                    }`}
+                    title={`Week ${idx + 1}: ${w.isBooked ? 'Booked' : 'Available'}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* 4 Spacious Date Cards */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                {isHe ? 'פירוט לפי שבועות ותאריכים' : isAr ? 'تفاصيل المواعيد لكل أسبوع' : 'Detailed Week-by-Week Breakdown'}
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {activePopover.targetDates.map((w, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-2xl border transition-all ${
+                      w.isBooked
+                        ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200/90 dark:border-rose-900/60 shadow-xs'
+                        : 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/90 dark:border-emerald-900/60 shadow-xs'
+                    }`}
+                  >
+                    {/* Week Index & Status Chip */}
+                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        {isHe ? `שבוע ${idx + 1}` : isAr ? `الأسبوع ${idx + 1}` : `Week ${idx + 1}`}
+                      </span>
+                      <span
+                        className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
+                          w.isBooked
+                            ? 'bg-rose-600 text-white shadow-2xs'
+                            : 'bg-emerald-600 text-white shadow-2xs'
+                        }`}
+                      >
+                        {w.isBooked ? (isHe ? 'תפוס / מוזמן' : isAr ? 'محجوز' : 'Booked') : (isHe ? 'פנוי' : isAr ? 'متاح' : 'Available')}
+                      </span>
+                    </div>
+
+                    {/* Date and Time */}
+                    <div className="mt-3">
+                      <div className="flex items-center gap-2 text-xs font-black text-slate-900 dark:text-white">
+                        <CalendarDays className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 shrink-0" />
+                        <span>{w.formattedDate}</span>
+                      </div>
+                      <p className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 mt-1 ps-6">
+                        {activePopover.time} – {calculateSlotEndTime(activePopover.time, w.lesson?.durationMinutes || 25)}
+                      </p>
+                    </div>
+
+                    {/* Booked Student Details or Availability Explanation */}
+                    {w.lesson ? (
+                      <div className="mt-3 pt-2.5 border-t border-rose-200/60 dark:border-rose-800/50 space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5 font-black text-slate-900 dark:text-white truncate">
+                            <User className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                            <span className="truncate">
+                              {w.lesson.student?.user
+                                ? `${w.lesson.student.user.firstName} ${w.lesson.student.user.lastName}`
+                                : 'Student'}
+                            </span>
+                          </div>
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                            w.lesson.lessonType === 'REGULAR'
+                              ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          }`}>
+                            {w.lesson.lessonType === 'REGULAR'
+                              ? (isHe ? 'חוג קבוע' : isAr ? 'حجز منتظم' : 'Regular')
+                              : (isHe ? 'שיעור בודד' : isAr ? 'درس فردي' : 'One-time')}
+                          </span>
+                        </div>
+                        {w.lesson.student?.user?.email && (
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                            {w.lesson.student.user.email}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLessonModal(w.lesson)}
+                          className="w-full mt-1 py-1.5 px-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
+                        >
+                          <Video className="w-3.5 h-3.5 text-brand-teal-700" />
+                          <span>{isHe ? 'צפה בפרטי שיعור וקישור Zoom' : isAr ? 'عرض تفاصيل الدرس ورابط Zoom' : 'View Lesson Details & Zoom'}</span>
+                        </button>
+                      </div>
+                    ) : w.isBooked ? (
+                      <div className="mt-3 pt-2 text-[11px] text-rose-700 dark:text-rose-300 italic font-medium">
+                        {isHe ? 'מועד סגור או תפוס' : isAr ? 'الموعد محجوز أو مغلق' : 'Closed or reserved slot'}
+                      </div>
+                    ) : (
+                      <div className="mt-3 pt-2.5 border-t border-emerald-200/60 dark:border-emerald-800/50 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{isHe ? 'פנוי לחוג קבוע או שיעור בודד' : isAr ? 'متاح للحجز المنتظم أو الفردي' : 'Open for recurring or single booking'}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Bottom Actions */}
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setActivePopover(null);
+                  setViewMode('detailed');
+                }}
+                className="w-full sm:w-auto py-2.5 px-5 rounded-2xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-black text-xs flex items-center justify-center gap-2 shadow-xs transition-all"
+              >
+                <CalendarDays className="w-4 h-4 text-brand-olive-300" />
+                <span>{isHe ? 'צפה בלוח השבועי המפורט' : isAr ? 'عرض في التقويم الأسبوعي المفصل' : 'View in Detailed Calendar'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePopover(null)}
+                className="w-full sm:w-auto py-2.5 px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold text-xs transition-colors"
+              >
+                {isHe ? 'סגור' : isAr ? 'إغلاق' : 'Close'}
               </button>
             </div>
           </div>
