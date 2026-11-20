@@ -3260,43 +3260,6 @@ export const AdminDashboard: React.FC = () => {
                             </span>
 
                             <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => {
-                                  setAssignPkgId(pkg.id);
-                                  setIsAssigningPkg(true);
-                                }}
-                                className="p-2 rounded-xl text-slate-500 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 hover:bg-brand-teal-50 dark:hover:bg-slate-800 transition-colors"
-                                title={language === 'he' ? 'הקצה לתלמיד' : 'Assign to student'}
-                              >
-                                <UserCheck className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleOpenEditPackage(pkg)}
-                                className="p-2 rounded-xl text-slate-500 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 hover:bg-brand-teal-50 dark:hover:bg-slate-800 transition-colors"
-                                title={language === 'he' ? 'ערוך חבילה' : 'Edit package'}
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  const confirmed = await confirmDialog({
-                                    title: 'Delete Package',
-                                    titleHe: 'מחיקת חבילת שיעורים',
-                                    message: `Are you sure you want to permanently delete package "${pkg.name}"? It will be removed from all catalogs and the landing page.`,
-                                    messageHe: `האם למחוק לצמיתות את חבילת השיעורים "${pkg.nameHe || pkg.name}"? היא תוסר מכל הקטלוגים ומדף הנחיתה.`,
-                                    confirmText: 'Delete Package',
-                                    confirmTextHe: 'מחק חבילה',
-                                    variant: 'danger',
-                                  });
-                                  if (confirmed) {
-                                    deletePackageMutation.mutate(pkg.id);
-                                  }
-                                }}
-                                className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                                title={language === 'he' ? 'מחק חבילה' : 'Delete package'}
-                              >
-                                <Trash2 className="w-4 h-4 text-rose-500" />
-                              </button>
                               {can('packages:assign') && (
                                 <button
                                   onClick={() => {
