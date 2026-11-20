@@ -225,10 +225,15 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
         month: 'short',
         day: 'numeric',
       });
+      const shortDate = dateObj.toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', {
+        month: 'numeric',
+        day: 'numeric',
+      });
 
       return {
         dateStr: dStr,
         formattedDate,
+        shortDate,
         isBooked,
         lesson: bookedLesson,
       };
@@ -585,14 +590,23 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
               <table className="w-full text-start text-xs border-collapse">
                 <thead className="bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-300 font-extrabold uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
                   <tr>
-                    <th className="py-4 px-4 text-center w-28 border-e border-slate-200/60 dark:border-slate-800 text-xs sm:text-sm font-black">
-                      {isAr ? 'الوقت' : isHe ? 'שעה' : 'Time'}
+                    <th className="py-4 px-4 text-center w-32 sm:w-36 border-e border-slate-200/60 dark:border-slate-800 text-xs sm:text-sm font-black bg-slate-100/60 dark:bg-slate-800/60">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <Clock className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 mb-0.5" />
+                        <span>{isAr ? 'الوقت' : isHe ? 'שעה' : 'Time'}</span>
+                        <span className="text-[10px] text-slate-400 font-medium lowercase">
+                          {isAr ? '25 دقيقة' : isHe ? '25 דק׳' : '25 min'}
+                        </span>
+                      </div>
                     </th>
                     {DAYS_HEADER.map((d) => (
-                      <th key={d.dayIndex} className="py-4 px-4 text-center border-e border-slate-200/60 dark:border-slate-800 last:border-e-0 min-w-[130px] sm:min-w-[145px]">
-                        <div className="flex flex-col items-center">
-                          <span className="font-black text-xs sm:text-sm text-slate-850 dark:text-slate-100">
+                      <th key={d.dayIndex} className="py-4 px-4 text-center border-e border-slate-200/60 dark:border-slate-800 last:border-e-0 min-w-[165px] sm:min-w-[185px]">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="font-black text-sm text-slate-900 dark:text-slate-100">
                             {isAr ? d.labelAr : isHe ? d.labelHe : d.labelEn}
+                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            {isAr ? d.fullAr : isHe ? d.fullHe : d.fullEn}
                           </span>
                         </div>
                       </th>
@@ -604,8 +618,18 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                     return (
                       <tr key={timeStr} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                         {/* Time Column - Prominent & Large */}
-                        <td className="py-3.5 px-4 font-mono font-black text-xs sm:text-sm text-slate-800 dark:text-slate-100 border-e border-slate-200/60 dark:border-slate-800 whitespace-nowrap bg-slate-50/50 dark:bg-slate-850/50 text-center">
-                          {timeStr}
+                        <td className="py-4 px-3 font-mono font-black text-xs sm:text-sm text-slate-800 dark:text-slate-100 border-e border-slate-200/60 dark:border-slate-800 whitespace-nowrap bg-slate-50/50 dark:bg-slate-850/50 text-center">
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                              {timeStr}
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                              – {calculateSlotEndTime(timeStr, 25)}
+                            </span>
+                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-800 dark:text-brand-teal-300 border border-brand-teal-200/60 dark:border-brand-teal-800">
+                              25m
+                            </span>
+                          </div>
                         </td>
 
                         {/* 7 Days Columns */}
@@ -623,12 +647,14 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                           const isSelectedSlot =
                             activePopover?.time === timeStr && activePopover?.dayIndex === d.dayIndex;
 
+                          const availableCount = 4 - breakdown.unavailableCount;
+
                           return (
                             <td
                               key={d.dayIndex}
                               className="py-3 px-3 border-e border-slate-200/60 dark:border-slate-800 last:border-e-0"
                             >
-                              {/* 4 Segmented Bars Pill - Large, Prominent & High Clarity */}
+                              {/* Large, Prominent, Highly Clear Slot Button */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -639,23 +665,71 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                                     targetDates: breakdown.weekDetails,
                                   });
                                 }}
-                                className={`w-full h-10 sm:h-11 rounded-xl bg-slate-100 dark:bg-slate-800 p-1 flex gap-1.5 items-center justify-between border transition-all cursor-pointer shadow-2xs group ${
+                                className={`w-full min-h-[82px] sm:min-h-[88px] p-2 sm:p-2.5 rounded-2xl flex flex-col justify-between border transition-all cursor-pointer shadow-xs group ${
                                   isSelectedSlot
-                                    ? 'ring-2 ring-brand-teal-500 border-brand-teal-500 bg-brand-teal-50/50 dark:bg-brand-teal-950/50 shadow-md'
-                                    : 'border-slate-200 dark:border-slate-700/80 hover:border-brand-teal-500 hover:ring-2 hover:ring-brand-teal-500/30'
+                                    ? 'ring-3 ring-brand-teal-500 border-brand-teal-500 bg-brand-teal-50/70 dark:bg-brand-teal-950/70 shadow-md scale-[1.02]'
+                                    : 'bg-slate-50/80 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700/80 hover:border-brand-teal-500 hover:ring-2 hover:ring-brand-teal-400/40 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md'
                                 }`}
-                                title={`${isAr ? d.fullAr : isHe ? d.fullHe : d.fullEn} ${timeStr} • ${4 - breakdown.unavailableCount}/4 ${isAr ? 'متاح' : isHe ? 'זמינים' : 'available'} • ${isAr ? 'انقر لعرض التفاصيل' : isHe ? 'לחץ לצפייה בפרטים' : 'Click to inspect 4-week availability breakdown'}`}
+                                title={`${isAr ? d.fullAr : isHe ? d.fullHe : d.fullEn} ${timeStr} • ${availableCount}/4 ${isAr ? 'متاح' : isHe ? 'זמינים' : 'available'} • ${isAr ? 'انقر لعرض التفاصيل الكاملة' : isHe ? 'לחץ לצפייה בפירוט המלא' : 'Click to inspect full slot details'}`}
                               >
-                                {breakdown.weekDetails.map((w, idx) => (
-                                  <div
-                                    key={idx}
-                                    className={`flex-1 h-full rounded-md transition-all ${
-                                      w.isBooked
-                                        ? 'bg-rose-500 group-hover:bg-rose-600 shadow-2xs'
-                                        : 'bg-emerald-500 group-hover:bg-emerald-600 shadow-2xs'
+                                {/* Top status header inside slot */}
+                                <div className="w-full flex items-center justify-between gap-1 text-[11px] pb-1.5 border-b border-slate-200/60 dark:border-slate-700/60">
+                                  <span
+                                    className={`font-black text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                                      availableCount === 4
+                                        ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300'
+                                        : availableCount === 0
+                                        ? 'bg-rose-100 dark:bg-rose-950/70 text-rose-800 dark:text-rose-300'
+                                        : 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300'
                                     }`}
-                                  />
-                                ))}
+                                  >
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full ${
+                                        availableCount === 4
+                                          ? 'bg-emerald-500'
+                                          : availableCount === 0
+                                          ? 'bg-rose-500'
+                                          : 'bg-amber-500'
+                                      }`}
+                                    />
+                                    <span>
+                                      {availableCount}/4 {isAr ? 'متاح' : isHe ? 'פנוי' : 'Available'}
+                                    </span>
+                                  </span>
+
+                                  <span className="text-[10px] font-bold text-slate-400 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-400 flex items-center gap-0.5 transition-colors">
+                                    <span>{isAr ? 'تفاصيل' : isHe ? 'פירוט' : 'Details'}</span>
+                                    <ChevronRight className={`w-3 h-3 transition-transform ${isRtl ? 'group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'}`} />
+                                  </span>
+                                </div>
+
+                                {/* 4 Segmented Week Pill Cards */}
+                                <div className="w-full grid grid-cols-4 gap-1.5 pt-1.5">
+                                  {breakdown.weekDetails.map((w, idx) => (
+                                    <div
+                                      key={idx}
+                                      className={`h-9 sm:h-10 rounded-lg flex flex-col items-center justify-center transition-all relative overflow-hidden shadow-2xs ${
+                                        w.isBooked
+                                          ? 'bg-rose-500 group-hover:bg-rose-600 text-white'
+                                          : 'bg-emerald-500 group-hover:bg-emerald-600 text-white'
+                                      }`}
+                                      title={`Week ${idx + 1} (${w.formattedDate}): ${
+                                        w.isBooked
+                                          ? w.lesson?.student?.user
+                                            ? `Booked: ${w.lesson.student.user.firstName} ${w.lesson.student.user.lastName}`
+                                            : 'Booked'
+                                          : 'Available'
+                                      }`}
+                                    >
+                                      <span className="text-[10px] font-black leading-none">
+                                        {isAr ? `أ${idx + 1}` : isHe ? `ש${idx + 1}` : `W${idx + 1}`}
+                                      </span>
+                                      <span className="text-[8px] font-bold opacity-90 leading-tight mt-0.5 truncate px-0.5">
+                                        {w.shortDate || w.dateStr.slice(5)}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
                               </button>
                             </td>
                           );
@@ -928,30 +1002,33 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
           onClick={() => setActivePopover(null)}
         >
           <div
-            className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl sm:max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-150"
+            className="bg-white dark:bg-slate-900 rounded-3xl max-w-4xl lg:max-w-5xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6 max-h-[92vh] overflow-y-auto animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             <div className="flex items-start justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-teal-700 to-indigo-700 text-white flex items-center justify-center shrink-0 shadow-sm ring-4 ring-brand-teal-500/20">
-                  <CalendarRange className="w-6 h-6 text-brand-olive-300" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-teal-700 to-indigo-700 text-white flex items-center justify-center shrink-0 shadow-md ring-4 ring-brand-teal-500/20">
+                  <CalendarRange className="w-7 h-7 text-brand-olive-300" />
                 </div>
                 <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                       {activePopover.dayLabel} • {activePopover.time}
                     </h3>
-                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold border border-slate-200 dark:border-slate-700">
-                      {activePopover.time} – {calculateSlotEndTime(activePopover.time, 25)}
+                    <span className="font-mono text-xs px-3 py-1 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 font-extrabold border border-brand-teal-200 dark:border-brand-teal-800">
+                      {activePopover.time} – {calculateSlotEndTime(activePopover.time, 25)} (25m)
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className="font-bold text-slate-850 dark:text-slate-100 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-brand-teal-600" />
                       {activeTeacher ? `${activeTeacher.user?.firstName} ${activeTeacher.user?.lastName}` : 'Teacher'}
                     </span>
                     <span>•</span>
-                    <span>{isHe ? 'מחזור חודשי של 4 שבועות' : isAr ? 'دورة شهرية من 4 أسابيع' : '4-Week Monthly Cycle Breakdown'}</span>
+                    <span>{isHe ? 'מחזור חודשי מפורט של 4 שבועות' : isAr ? 'تفاصيل الدورة الشهرية (4 أسابيع متتالية)' : 'Detailed 4-Week Monthly Cycle Breakdown'}</span>
+                    <span>•</span>
+                    <span className="text-[11px] text-slate-400">{ISRAEL_TZ_LABEL}</span>
                   </p>
                 </div>
               </div>
@@ -961,135 +1038,151 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                 className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 title={isHe ? 'סגור' : isAr ? 'إغلاق' : 'Close'}
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
             {/* Overall 4-Week Status Summary Banner */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className={`w-3 h-3 rounded-full ${
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-3.5 h-3.5 rounded-full ${
                     activePopover.targetDates.filter(w => !w.isBooked).length === 4
-                      ? 'bg-emerald-500'
+                      ? 'bg-emerald-500 ring-4 ring-emerald-400/20'
                       : activePopover.targetDates.filter(w => !w.isBooked).length > 0
-                      ? 'bg-amber-500'
-                      : 'bg-rose-500'
+                      ? 'bg-amber-500 ring-4 ring-amber-400/20'
+                      : 'bg-rose-500 ring-4 ring-rose-400/20'
                   }`} />
-                  <p className="text-sm font-black text-slate-900 dark:text-white">
-                    {activePopover.targetDates.filter(w => !w.isBooked).length}/4 {isHe ? 'שבועות פנויים להזמנה' : isAr ? 'أسابيع متاحة للحجز' : 'Weeks Available for Booking'}
+                  <p className="text-base font-black text-slate-900 dark:text-white">
+                    {activePopover.targetDates.filter(w => !w.isBooked).length}/4 {isHe ? 'שבועות פנויים לחלוטין' : isAr ? 'أسابيع متاحة للحجز' : 'Weeks Available for Booking'}
                   </p>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
                   {activePopover.targetDates.some(w => w.isBooked)
-                    ? (isHe ? 'חלק מהתאריכים כבר הוזמנו על ידי תלמידים (שיעורים קבועים או בודדים)' : isAr ? 'بعض المواعيد محجوزة مسبقاً من قبل الطلاب' : 'Some upcoming dates are booked by students (Regular or One-time)')
-                    : (isHe ? 'המשבצת פנויה לחלוטין לחוג שבועי קבוע (Regular) או שיעורים בודדים' : isAr ? 'الفترة شاغرة بالكامل ومتاحة للحجز الأسبوعي المنتظم أو الدروس الفردية' : 'Fully open for recurring weekly regular bookings or individual lessons')}
+                    ? (isHe ? 'חלק מהתאריכים כבר הוזמנו על ידי תלמידים (שיעורים קבועים או בودדים). תאריכים פנויים זמינים לשיעורים בודדים.' : isAr ? 'بعض المواعيد محجوزة مسبقاً من قِبل الطلاب (حصص أسبوعية منتظمة أو فردية). الأسابيع الشاغرة متاحة للحجز الفردي.' : 'Some upcoming dates are already reserved by students. Remaining open weeks are available for one-time lesson bookings.')
+                    : (isHe ? 'המשבצת פנויה לחלוטין בכל 4 השבועות הבאים – אידיאלית לחוג שבועי קבוע (Regular) או שיעורים בודדים!' : isAr ? 'الفترة شاغرة بالكامل في الأسابيع الـ4 القادمة – مثالية للحجز الأسبوعي المنتظم (Regular) أو الدروس الفردية!' : 'The time slot is fully open across all 4 weeks – optimal for recurring weekly regular bookings or individual classes!')}
                 </p>
               </div>
 
-              {/* Mini visual indicator */}
-              <div className="flex items-center gap-1.5 w-36 h-5 bg-slate-200 dark:bg-slate-750 p-1 rounded-xl shrink-0">
+              {/* Visual 4-Step Availability Strip */}
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-750 shrink-0">
                 {activePopover.targetDates.map((w, idx) => (
                   <div
                     key={idx}
-                    className={`flex-1 h-full rounded-sm transition-colors ${
-                      w.isBooked ? 'bg-rose-500' : 'bg-emerald-500'
-                    }`}
-                    title={`Week ${idx + 1}: ${w.isBooked ? 'Booked' : 'Available'}`}
-                  />
+                    className="flex flex-col items-center gap-1"
+                  >
+                    <div
+                      className={`w-9 h-7 rounded-lg flex items-center justify-center font-black text-[10px] text-white shadow-xs ${
+                        w.isBooked ? 'bg-rose-500' : 'bg-emerald-500'
+                      }`}
+                    >
+                      {isAr ? `أ${idx + 1}` : isHe ? `ש${idx + 1}` : `W${idx + 1}`}
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">
+                      {w.isBooked ? (isAr ? 'محجوز' : isHe ? 'תפוס' : 'Booked') : (isAr ? 'متاح' : isHe ? 'פנוי' : 'Open')}
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
 
-            {/* 4 Spacious Date Cards */}
+            {/* 4 Spacious Date Cards in 4-column layout */}
             <div className="space-y-3">
-              <h4 className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                {isHe ? 'פירוט לפי שבועות ותאריכים' : isAr ? 'تفاصيل المواعيد لكل أسبوع' : 'Detailed Week-by-Week Breakdown'}
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
+                  <span>{isHe ? 'פירוט מדויק לפי שבועות ותאריכים' : isAr ? 'تفاصيل المواعيد لكل أسبوع بدقة' : 'Detailed Week-by-Week Breakdown'}</span>
+                </h4>
+                <span className="text-[11px] text-slate-400 font-semibold">
+                  {isAr ? 'اضغط على أي حصة محجوزة لعرض بياناتها' : isHe ? 'לחץ על שיעור לצפייה בפרטים מלאים' : 'Click booked lesson to inspect full info'}
+                </span>
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {activePopover.targetDates.map((w, idx) => (
                   <div
                     key={idx}
-                    className={`p-4 rounded-2xl border transition-all ${
+                    className={`p-4 rounded-3xl border transition-all flex flex-col justify-between ${
                       w.isBooked
                         ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200/90 dark:border-rose-900/60 shadow-xs'
                         : 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/90 dark:border-emerald-900/60 shadow-xs'
                     }`}
                   >
-                    {/* Week Index & Status Chip */}
-                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60">
-                      <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                        {isHe ? `שבוע ${idx + 1}` : isAr ? `الأسبوع ${idx + 1}` : `Week ${idx + 1}`}
-                      </span>
-                      <span
-                        className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
-                          w.isBooked
-                            ? 'bg-rose-600 text-white shadow-2xs'
-                            : 'bg-emerald-600 text-white shadow-2xs'
-                        }`}
-                      >
-                        {w.isBooked ? (isHe ? 'תפוס / מוזמן' : isAr ? 'محجوز' : 'Booked') : (isHe ? 'פנוי' : isAr ? 'متاح' : 'Available')}
-                      </span>
-                    </div>
-
-                    {/* Date and Time */}
-                    <div className="mt-3">
-                      <div className="flex items-center gap-2 text-xs font-black text-slate-900 dark:text-white">
-                        <CalendarDays className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 shrink-0" />
-                        <span>{w.formattedDate}</span>
+                    <div>
+                      {/* Week Index & Status Chip */}
+                      <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60">
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                          {isHe ? `שבוע ${idx + 1}` : isAr ? `الأسبوع ${idx + 1}` : `Week ${idx + 1}`}
+                        </span>
+                        <span
+                          className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
+                            w.isBooked
+                              ? 'bg-rose-600 text-white shadow-2xs'
+                              : 'bg-emerald-600 text-white shadow-2xs'
+                          }`}
+                        >
+                          {w.isBooked ? (isHe ? 'תפוס / מוזמן' : isAr ? 'محجوز' : 'Booked') : (isHe ? 'פנוי' : isAr ? 'متاح' : 'Available')}
+                        </span>
                       </div>
-                      <p className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 mt-1 ps-6">
-                        {activePopover.time} – {calculateSlotEndTime(activePopover.time, w.lesson?.durationMinutes || 25)}
-                      </p>
-                    </div>
 
-                    {/* Booked Student Details or Availability Explanation */}
-                    {w.lesson ? (
-                      <div className="mt-3 pt-2.5 border-t border-rose-200/60 dark:border-rose-800/50 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-1.5 font-black text-slate-900 dark:text-white truncate">
-                            <User className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                            <span className="truncate">
-                              {w.lesson.student?.user
-                                ? `${w.lesson.student.user.firstName} ${w.lesson.student.user.lastName}`
-                                : 'Student'}
+                      {/* Date and Time */}
+                      <div className="mt-3 space-y-1">
+                        <div className="flex items-center gap-1.5 text-xs font-black text-slate-900 dark:text-white">
+                          <CalendarDays className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400 shrink-0" />
+                          <span>{w.formattedDate}</span>
+                        </div>
+                        <p className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400 ps-5">
+                          {activePopover.time} – {calculateSlotEndTime(activePopover.time, w.lesson?.durationMinutes || 25)}
+                        </p>
+                      </div>
+
+                      {/* Booked Student Details or Availability Explanation */}
+                      {w.lesson ? (
+                        <div className="mt-3 pt-2.5 border-t border-rose-200/60 dark:border-rose-800/50 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1.5 font-black text-slate-900 dark:text-white truncate">
+                              <User className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                              <span className="truncate">
+                                {w.lesson.student?.user
+                                  ? `${w.lesson.student.user.firstName} ${w.lesson.student.user.lastName}`
+                                  : 'Student'}
+                              </span>
+                            </div>
+                            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                              w.lesson.lessonType === 'REGULAR'
+                                ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                            }`}>
+                              {w.lesson.lessonType === 'REGULAR'
+                                ? (isHe ? 'חוג קבוע' : isAr ? 'حجز منتظم' : 'Regular')
+                                : (isHe ? 'שיעור בודד' : isAr ? 'درس فردي' : 'One-time')}
                             </span>
                           </div>
-                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
-                            w.lesson.lessonType === 'REGULAR'
-                              ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
-                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                          }`}>
-                            {w.lesson.lessonType === 'REGULAR'
-                              ? (isHe ? 'חוג קבוע' : isAr ? 'حجز منتظم' : 'Regular')
-                              : (isHe ? 'שיעור בודד' : isAr ? 'درس فردي' : 'One-time')}
-                          </span>
+                          {w.lesson.student?.user?.email && (
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                              {w.lesson.student.user.email}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedLessonModal(w.lesson)}
+                            className="w-full mt-1.5 py-1.5 px-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                          >
+                            <Video className="w-3.5 h-3.5 text-brand-teal-700" />
+                            <span>{isHe ? 'צפה בפרטי שיעור ו-Zoom' : isAr ? 'تفاصيل الدرس ورابط Zoom' : 'View Lesson & Zoom'}</span>
+                          </button>
                         </div>
-                        {w.lesson.student?.user?.email && (
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                            {w.lesson.student.user.email}
-                          </p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedLessonModal(w.lesson)}
-                          className="w-full mt-1 py-1.5 px-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
-                        >
-                          <Video className="w-3.5 h-3.5 text-brand-teal-700" />
-                          <span>{isHe ? 'צפה בפרטי שיعור וקישור Zoom' : isAr ? 'عرض تفاصيل الدرس ورابط Zoom' : 'View Lesson Details & Zoom'}</span>
-                        </button>
-                      </div>
-                    ) : w.isBooked ? (
-                      <div className="mt-3 pt-2 text-[11px] text-rose-700 dark:text-rose-300 italic font-medium">
-                        {isHe ? 'מועד סגור או תפוס' : isAr ? 'الموعد محجوز أو مغلق' : 'Closed or reserved slot'}
-                      </div>
-                    ) : (
-                      <div className="mt-3 pt-2.5 border-t border-emerald-200/60 dark:border-emerald-800/50 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>{isHe ? 'פנוי לחוג קבוע או שיעור בודד' : isAr ? 'متاح للحجز المنتظم أو الفردي' : 'Open for recurring or single booking'}</span>
-                      </div>
-                    )}
+                      ) : w.isBooked ? (
+                        <div className="mt-3 pt-2 text-[11px] text-rose-700 dark:text-rose-300 italic font-medium">
+                          {isHe ? 'מועד סגור או תפוס' : isAr ? 'الموعد محجوز أو مغلق' : 'Closed or reserved slot'}
+                        </div>
+                      ) : (
+                        <div className="mt-3 pt-2.5 border-t border-emerald-200/60 dark:border-emerald-800/50 text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>{isHe ? 'פנוי לחוג קבוע או שיעור בודד' : isAr ? 'متاح للحجز المنتظم أو الفردي' : 'Open for recurring or single booking'}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

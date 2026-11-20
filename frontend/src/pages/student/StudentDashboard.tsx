@@ -88,14 +88,68 @@ import {
 import { ReceiptModal } from '../../components/receipts/ReceiptModal';
 import { ReceiptData } from '../../utils/receiptGenerator';
 
+const LEVEL_AR_MAP: Record<string, string> = {
+  BEGINNER: 'مبتدئ (المستوى الأول - أليف)',
+  ELEMENTARY: 'أساسي (المستوى الثاني - بيت)',
+  INTERMEDIATE: 'متوسط (المستوى الثالث - جيميل)',
+  UPPER_INTERMEDIATE: 'فوق المتوسط (المستوى الرابع - داليت)',
+  ADVANCED: 'متقدم (المستوى الخامس - هي)',
+  FLUENT: 'طلاقة تامة (المستوى السادس - فاف)',
+};
+
 const DEFAULT_LEVEL_TABS = [
-  { code: 'BEGINNER', labelEn: 'Beginner (Alef)', labelHe: 'מתחיל (רמה א׳)' },
-  { code: 'ELEMENTARY', labelEn: 'Elementary (Bet)', labelHe: 'יסודי (רמה ב׳)' },
-  { code: 'INTERMEDIATE', labelEn: 'Intermediate (Gimel)', labelHe: 'בינוני (רמה ג׳)' },
-  { code: 'UPPER_INTERMEDIATE', labelEn: 'Upper Intermediate (Dalet)', labelHe: 'מעל בינוני (רמה ד׳)' },
-  { code: 'ADVANCED', labelEn: 'Advanced (He)', labelHe: 'מתקדם (רמה ה׳)' },
-  { code: 'FLUENT', labelEn: 'Fluent (Vav)', labelHe: 'שליטה מלאה (רמה ו׳)' },
+  { code: 'BEGINNER', labelEn: 'Beginner (Alef)', labelHe: 'מתחיל (רמה א׳)', labelAr: 'مبتدئ (المستوى الأول - أليف)' },
+  { code: 'ELEMENTARY', labelEn: 'Elementary (Bet)', labelHe: 'יסודי (רמה ב׳)', labelAr: 'أساسي (المستوى الثاني - بيت)' },
+  { code: 'INTERMEDIATE', labelEn: 'Intermediate (Gimel)', labelHe: 'בינוני (רמה ג׳)', labelAr: 'متوسط (المستوى الثالث - جيميل)' },
+  { code: 'UPPER_INTERMEDIATE', labelEn: 'Upper Intermediate (Dalet)', labelHe: 'מעל בינוני (רמה ד׳)', labelAr: 'فوق المتوسط (المستوى الرابع - داليت)' },
+  { code: 'ADVANCED', labelEn: 'Advanced (He)', labelHe: 'מתקדם (רמה ה׳)', labelAr: 'متقدم (المستوى الخامس - هي)' },
+  { code: 'FLUENT', labelEn: 'Fluent (Vav)', labelHe: 'שליטה מלאה (רמה ו׳)', labelAr: 'طلاقة تامة (المستوى السادس - فاف)' },
 ];
+
+const GAME_TYPE_LABELS: Record<string, { en: string; he: string; ar: string }> = {
+  PRONUNCIATION: { en: 'Pronunciation', he: 'הגייה ודיבור', ar: 'نطق وتحدث' },
+  WORD_SCRAMBLE: { en: 'Word Scramble', he: 'סידור אותיות', ar: 'ترتيب الحروف' },
+  MATCHING: { en: 'Word Matching', he: 'התאמת מילים', ar: 'مطابقة الكلمات' },
+  SENTENCE_BUILDER: { en: 'Sentence Builder', he: 'בניית משפטים', ar: 'بناء الجمل' },
+  QUIZ: { en: 'Quick Quiz', he: 'חידון מהיר', ar: 'اختبار سريع' },
+  SPEED_ROUND: { en: 'Speed Round', he: 'סיבוב מהיר', ar: 'جولة السرعة' },
+  FLASHCARD: { en: 'Flashcards', he: 'כרטיסיות זיכרון', ar: 'بطاقات الذاكرة' },
+};
+
+const GAME_AR_MAP: Record<string, { title: string; desc: string }> = {
+  'Hebrew Alphabet Mastery': {
+    title: 'إتقان الأبجدية العبرية (الأوتسوت)',
+    desc: 'تعلم ونطق حروف اللغة العبرية مع أمثلة صوتية وتمارين مطابقة تفاعلية.',
+  },
+  'Daily Hebrew Vocabulary': {
+    title: 'مفردات عبرية يومية أساسية',
+    desc: 'تدرب على الكلمات والمصطلحات الشائعة في الحياة اليومية، المطاعم، والمحادثات.',
+  },
+  'Basic Hebrew Verbs & Conjugation': {
+    title: 'الأفعال الأساسية وتصريفها في العبرية',
+    desc: 'تدرب على تصريف الأفعال الشائعة في زمن الماضي والحاضر بأسلوب تفاعلي.',
+  },
+  'Food & Shopping Hebrew': {
+    title: 'عبرية التسوق والمطاعم والأسواق',
+    desc: 'مفردات وجمل عملية للشراء في السوبرماركت والمطاعم والتحدث مع البائعين.',
+  },
+  'Hebrew Number Sprint': {
+    title: 'تحدي الأرقام العبرية السريع',
+    desc: 'اختبر سرعتك في قراءة وحساب الأرقام العبرية تحت ضغط الوقت.',
+  },
+  'Hebrew Sentence Constructor': {
+    title: 'بناء وتركيب الجمل العبرية',
+    desc: 'رتب الكلمات في الترتيب القواعدي الصحيح لتكوين جمل عبرية سليمة وفصيحة.',
+  },
+  'Hebrew Greetings & Introductions': {
+    title: 'التحيات والتعارف في اللغة العبرية',
+    desc: 'تعلم كيف تقدم نفسك وتسأل عن أحوال الآخرين بطلاقة وثقة.',
+  },
+  'Travel & Directions in Israel': {
+    title: 'السفر والاتجاهات والمواصلات',
+    desc: 'محادثات ومصطلحات مفيدة للتنقل وسؤال المارة عن الاتجاهات والأماكن.',
+  },
+};
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
@@ -1941,7 +1995,7 @@ export const StudentDashboard: React.FC = () => {
                                     : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
                                 }`}
                               >
-                                {lessonDur}m
+                                {isAr ? `${lessonDur} دقيقة` : isHe ? `${lessonDur} דק׳` : `${lessonDur}m`}
                               </span>
                             </div>
                             <span className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -2770,7 +2824,7 @@ export const StudentDashboard: React.FC = () => {
                                             {isAr && session.titleAr ? session.titleAr : isHe && session.titleHe ? session.titleHe : session.title}
                                           </p>
                                           <div className={`flex items-center gap-2 mt-1 text-[11px] font-semibold ${isSelected ? 'text-brand-teal-100' : 'text-slate-600 dark:text-slate-300'}`}>
-                                            <span>{session.durationMinutes}m</span>
+                                            <span>{isAr ? `${session.durationMinutes} دقيقة` : isHe ? `${session.durationMinutes} דק׳` : `${session.durationMinutes}m`}</span>
                                             <span>•</span>
                                             <span>{new Date(session.createdAt).toLocaleDateString()}</span>
                                           </div>
@@ -2823,7 +2877,7 @@ export const StudentDashboard: React.FC = () => {
                                   <div className={`flex items-center gap-2 mt-1 text-[11px] font-semibold ${isSelected ? 'text-brand-teal-100' : 'text-slate-600 dark:text-slate-300'}`}>
                                     <span>{session.category}</span>
                                     <span>•</span>
-                                    <span>{session.durationMinutes}m</span>
+                                    <span>{isAr ? `${session.durationMinutes} دقيقة` : isHe ? `${session.durationMinutes} דק׳` : `${session.durationMinutes}m`}</span>
                                   </div>
                                 </div>
                                 <PlayCircle
@@ -3015,13 +3069,13 @@ export const StudentDashboard: React.FC = () => {
               <PageHeaderBanner
                 badgeIcon={Gamepad2}
                 badgeText={isAr ? 'ألعاب تعليمية واختبارات تفاعلية' : isHe ? 'משחקי לימוד וחידונים' : 'Interactive Hebrew Learning Games'}
-                statusText="Active"
+                statusText={isAr ? 'نشط' : isHe ? 'פעיל' : 'Active'}
                 title={t('games.title')}
                 description={t('games.subtitle')}
                 action={
                   <span className="text-xs font-bold px-3.5 py-1.5 bg-white/15 backdrop-blur-md text-white rounded-full border border-white/20">
                     {isAr ? 'مخصص لمستواك التعليمي:' : isHe ? 'מותאם לרמתך:' : 'Filtered for your level:'}{' '}
-                    {t(`levels.${student?.level || 'BEGINNER'}`)}
+                    {isAr ? (LEVEL_AR_MAP[student?.level || 'BEGINNER'] || t(`levels.${student?.level || 'BEGINNER'}`)) : t(`levels.${student?.level || 'BEGINNER'}`)}
                   </span>
                 }
               />
@@ -3123,62 +3177,66 @@ export const StudentDashboard: React.FC = () => {
                             ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300 border-sky-200 dark:border-sky-800'
                             : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
 
-                        return (
-                          <div
-                            key={game.id}
-                            className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 hover:border-brand-teal-300 dark:hover:border-brand-teal-500 hover:shadow-xs transition-all flex flex-col justify-between h-full"
-                          >
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[11px] font-extrabold uppercase px-2.5 py-0.5 bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 rounded-md border border-brand-teal-100 dark:border-brand-teal-800">
-                                    {game.gameType}
-                                  </span>
-                                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${levelColor}`}>
-                                    {t(`levels.${game.level || 'BEGINNER'}`)}
-                                  </span>
-                                </div>
-                                <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-300 bg-brand-olive-50 dark:bg-brand-olive-950/60 px-2 py-0.5 rounded-md border border-brand-olive-200 dark:border-brand-olive-800">
-                                  +{game.pointsReward} {isAr ? 'نقطة' : isHe ? 'נק׳' : 'pts'}
+                      const gameTitle = isAr && GAME_AR_MAP[game.title]?.title ? GAME_AR_MAP[game.title].title : isAr && game.titleAr ? game.titleAr : isHe && game.titleHe ? game.titleHe : game.title;
+                      const gameDesc = isAr && GAME_AR_MAP[game.title]?.desc ? GAME_AR_MAP[game.title].desc : isAr && game.descriptionAr ? game.descriptionAr : isHe && game.descriptionHe ? game.descriptionHe : game.description;
+                      const gameTypeLabel = isAr ? GAME_TYPE_LABELS[game.gameType]?.ar || game.gameType : isHe ? GAME_TYPE_LABELS[game.gameType]?.he || game.gameType : GAME_TYPE_LABELS[game.gameType]?.en || game.gameType;
+
+                      return (
+                        <div
+                          key={game.id}
+                          className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700 hover:border-brand-teal-300 dark:hover:border-brand-teal-500 hover:shadow-xs transition-all flex flex-col justify-between h-full"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-extrabold uppercase px-2.5 py-0.5 bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 rounded-md border border-brand-teal-100 dark:border-brand-teal-800">
+                                  {gameTypeLabel}
+                                </span>
+                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${levelColor}`}>
+                                  {isAr ? (LEVEL_AR_MAP[game.level || 'BEGINNER'] || t(`levels.${game.level || 'BEGINNER'}`)) : t(`levels.${game.level || 'BEGINNER'}`)}
                                 </span>
                               </div>
-
-                              {/* Lesson Link or Teacher Customization Badge */}
-                              {game.lesson ? (
-                                <div className="px-3 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/50 border border-brand-teal-200/60 dark:border-brand-teal-800 text-[11px] text-brand-teal-900 dark:text-brand-teal-300 font-semibold flex items-center gap-1.5">
-                                  <Video className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
-                                  <span>
-                                    {isAr
-                                      ? `تدريب مباشر مرتبط بدرسك (${game.lesson.durationMinutes || 25} دقيقة)`
-                                      : isHe
-                                      ? `תרגול ישיר לשיעור שלך (${game.lesson.durationMinutes || 25} דק׳)`
-                                      : `Practice linked to your lesson (${game.lesson.durationMinutes || 25} min)`}
-                                  </span>
-                                </div>
-                              ) : game.createdBy ? (
-                                <div className="px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300">
-                                  {isAr
-                                    ? `مخصص بواسطة المعلم: ${game.createdBy.firstName}`
-                                    : isHe
-                                    ? `הותאם ע״י מורה: ${game.createdBy.firstName}`
-                                    : `Customized by: Teacher ${game.createdBy.firstName}`}
-                                </div>
-                              ) : null}
-
-                              <div>
-                                <h3 className="font-bold text-slate-900 dark:text-white text-base mb-1">
-                                  {isAr && game.titleAr ? game.titleAr : isHe ? game.titleHe : game.title}
-                                </h3>
-                                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                                  {game.description}
-                                </p>
-                              </div>
+                              <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-300 bg-brand-olive-50 dark:bg-brand-olive-950/60 px-2 py-0.5 rounded-md border border-brand-olive-200 dark:border-brand-olive-800">
+                                +{game.pointsReward} {isAr ? 'نقطة' : isHe ? 'נק׳' : 'pts'}
+                              </span>
                             </div>
 
-                            <button
-                              onClick={() => setActiveGame(game)}
-                              className="mt-6 w-full py-3 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
-                            >
+                            {/* Lesson Link or Teacher Customization Badge */}
+                            {game.lesson ? (
+                              <div className="px-3 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/50 border border-brand-teal-200/60 dark:border-brand-teal-800 text-[11px] text-brand-teal-900 dark:text-brand-teal-300 font-semibold flex items-center gap-1.5">
+                                <Video className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
+                                <span>
+                                  {isAr
+                                    ? `تدريب مباشر مرتبط بدرسك (${game.lesson.durationMinutes || 25} دقيقة)`
+                                    : isHe
+                                    ? `תרגול ישיר לשיעור שלך (${game.lesson.durationMinutes || 25} דק׳)`
+                                    : `Practice linked to your lesson (${game.lesson.durationMinutes || 25} min)`}
+                                </span>
+                              </div>
+                            ) : game.createdBy ? (
+                              <div className="px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300">
+                                {isAr
+                                  ? `مخصص بواسطة المعلم: ${game.createdBy.firstName}`
+                                  : isHe
+                                  ? `הותאם ע״י מורה: ${game.createdBy.firstName}`
+                                  : `Customized by: Teacher ${game.createdBy.firstName}`}
+                              </div>
+                            ) : null}
+
+                            <div>
+                              <h3 className="font-bold text-slate-900 dark:text-white text-base mb-1">
+                                {gameTitle}
+                              </h3>
+                              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                {gameDesc}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => setActiveGame(game)}
+                            className="mt-6 w-full py-3 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                          >
                               <Gamepad2 className="w-4 h-4 text-brand-olive-300" />
                               <span>{isAr ? 'ابدأ اللعب' : isHe ? 'התחל לשחק' : 'Start Playing'}</span>
                             </button>
@@ -3277,7 +3335,7 @@ export const StudentDashboard: React.FC = () => {
                     {availableLevels.map((lvl: any) => {
                       const isSelected = activeLeaderboardLevel === lvl.code;
                       const isMyLevel = studentLevelFromDashboard === lvl.code;
-                      const label = isAr && lvl.labelAr ? lvl.labelAr : isHe && lvl.labelHe ? lvl.labelHe : (lvl.labelEn || t(`levels.${lvl.code}`));
+                      const label = isAr ? (LEVEL_AR_MAP[lvl.code] || lvl.labelAr || t(`levels.${lvl.code}`)) : isHe && lvl.labelHe ? lvl.labelHe : (lvl.labelEn || t(`levels.${lvl.code}`));
 
                       return (
                         <button
@@ -3324,7 +3382,7 @@ export const StudentDashboard: React.FC = () => {
                           {isViewingMyLevel ? (
                             isAr ? (
                               <>
-                                أنت تنافس في دوري <span className="underline decoration-brand-teal-500 underline-offset-4">{currentLevelObj?.labelAr || currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span>
+                                أنت تنافس في دوري <span className="underline decoration-brand-teal-500 underline-offset-4">{LEVEL_AR_MAP[activeLeaderboardLevel] || currentLevelObj?.labelAr || t(`levels.${activeLeaderboardLevel}`)}</span>
                                 {myRankNumber
                                   ? ` • ترتيبك: المركز #${myRankNumber} من بين ${leaderboardData.length} طلاب (${myRankEntry?.totalPoints || 0} نقطة XP)`
                                   : ` • لا توجد نقاط مسجلة لهذه الفترة بعد (${student?.totalPoints || 0} إجمالي نقاط XP)`}
@@ -3347,7 +3405,7 @@ export const StudentDashboard: React.FC = () => {
                           ) : (
                             isAr ? (
                               <>
-                                عرض ترتيب <span className="font-black text-slate-900 dark:text-white">{currentLevelObj?.labelAr || currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span> ({leaderboardData.length} طلاب مصنفون)
+                                عرض ترتيب <span className="font-black text-slate-900 dark:text-white">{LEVEL_AR_MAP[activeLeaderboardLevel] || currentLevelObj?.labelAr || t(`levels.${activeLeaderboardLevel}`)}</span> ({leaderboardData.length} طلاب مصنفون)
                               </>
                             ) : isHe ? (
                               <>
@@ -3393,7 +3451,7 @@ export const StudentDashboard: React.FC = () => {
                       <div className="order-2 sm:order-1 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center shadow-xs">
                         <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-extrabold text-[11px] mb-2">
                           <Medal className="w-3.5 h-3.5 text-slate-400" />
-                          <span>#2 Silver</span>
+                          <span>{isAr ? '#2 المركز الفضي' : isHe ? '#2 כסף' : '#2 Silver'}</span>
                         </div>
                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-400 to-slate-600 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-slate-300 dark:ring-slate-700 mb-2 shrink-0">
                           {leaderboardData[1].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '2'}
@@ -3402,7 +3460,7 @@ export const StudentDashboard: React.FC = () => {
                           {leaderboardData[1].name}
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
-                          {isAr && leaderboardData[1].levelLabelAr ? leaderboardData[1].levelLabelAr : isHe && leaderboardData[1].levelLabelHe
+                          {isAr ? (LEVEL_AR_MAP[leaderboardData[1].level] || leaderboardData[1].levelLabelAr || t(`levels.${leaderboardData[1].level || 'BEGINNER'}`)) : isHe && leaderboardData[1].levelLabelHe
                             ? leaderboardData[1].levelLabelHe
                             : (leaderboardData[1].levelLabelEn || t(`levels.${leaderboardData[1].level || 'BEGINNER'}`))}
                         </span>
@@ -3421,7 +3479,7 @@ export const StudentDashboard: React.FC = () => {
                         </div>
                         <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-extrabold text-[11px] mb-2 mt-1">
                           <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                          <span>#1 Gold</span>
+                          <span>{isAr ? '#1 المركز الذهبي' : isHe ? '#1 זהב' : '#1 Gold'}</span>
                         </div>
                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-lg flex items-center justify-center shadow-lg ring-4 ring-amber-300 dark:ring-amber-500/60 mb-2 shrink-0">
                           {leaderboardData[0].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '1'}
@@ -3430,7 +3488,7 @@ export const StudentDashboard: React.FC = () => {
                           {leaderboardData[0].name}
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300/60 mt-1">
-                          {isAr && leaderboardData[0].levelLabelAr ? leaderboardData[0].levelLabelAr : isHe && leaderboardData[0].levelLabelHe
+                          {isAr ? (LEVEL_AR_MAP[leaderboardData[0].level] || leaderboardData[0].levelLabelAr || t(`levels.${leaderboardData[0].level || 'BEGINNER'}`)) : isHe && leaderboardData[0].levelLabelHe
                             ? leaderboardData[0].levelLabelHe
                             : (leaderboardData[0].levelLabelEn || t(`levels.${leaderboardData[0].level || 'BEGINNER'}`))}
                         </span>
@@ -3445,7 +3503,7 @@ export const StudentDashboard: React.FC = () => {
                       <div className="order-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center text-center shadow-xs">
                         <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-900/10 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 font-extrabold text-[11px] mb-2">
                           <Award className="w-3.5 h-3.5 text-amber-700" />
-                          <span>#3 Bronze</span>
+                          <span>{isAr ? '#3 المركز البرونزي' : isHe ? '#3 ארד' : '#3 Bronze'}</span>
                         </div>
                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-700 to-amber-900 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-amber-700/40 mb-2 shrink-0">
                           {leaderboardData[2].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '3'}
@@ -3454,7 +3512,7 @@ export const StudentDashboard: React.FC = () => {
                           {leaderboardData[2].name}
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
-                          {isAr && leaderboardData[2].levelLabelAr ? leaderboardData[2].levelLabelAr : isHe && leaderboardData[2].levelLabelHe
+                          {isAr ? (LEVEL_AR_MAP[leaderboardData[2].level] || leaderboardData[2].levelLabelAr || t(`levels.${leaderboardData[2].level || 'BEGINNER'}`)) : isHe && leaderboardData[2].levelLabelHe
                             ? leaderboardData[2].levelLabelHe
                             : (leaderboardData[2].levelLabelEn || t(`levels.${leaderboardData[2].level || 'BEGINNER'}`))}
                         </span>
@@ -3592,7 +3650,7 @@ export const StudentDashboard: React.FC = () => {
                                 </td>
                                 <td className="py-3">
                                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                    {isAr && entry.levelLabelAr ? entry.levelLabelAr : isHe && entry.levelLabelHe
+                                    {isAr ? (LEVEL_AR_MAP[entry.level] || entry.levelLabelAr || t(`levels.${entry.level || 'BEGINNER'}`)) : isHe && entry.levelLabelHe
                                       ? entry.levelLabelHe
                                       : (entry.levelLabelEn || t(`levels.${entry.level || 'BEGINNER'}`))}
                                   </span>
@@ -3601,7 +3659,7 @@ export const StudentDashboard: React.FC = () => {
                                   {entry.streakDays > 0 ? (
                                     <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
                                       <Flame className="w-3.5 h-3.5 text-amber-500" />
-                                      <span>{entry.streakDays}d</span>
+                                      <span>{isAr ? `${entry.streakDays} يوم` : isHe ? `${entry.streakDays} ימים` : `${entry.streakDays}d`}</span>
                                     </span>
                                   ) : (
                                     <span className="text-slate-300 dark:text-slate-600">—</span>
