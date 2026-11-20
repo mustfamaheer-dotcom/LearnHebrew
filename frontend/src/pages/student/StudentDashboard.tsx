@@ -125,6 +125,10 @@ const StudentProgressTab = React.lazy(() =>
 export const StudentDashboard: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const { t, language } = useTranslation();
+  const isHe = language === 'he';
+  const isAr = language === 'ar';
+  const isRtl = isHe || isAr;
+  const loc = (ar: string, he: string, en: string) => (isAr ? ar : isHe ? he : en);
   const queryClient = useQueryClient();
   const location = useLocation();
   const { isCollapsed } = useSidebarStore();
@@ -214,13 +218,15 @@ export const StudentDashboard: React.FC = () => {
       haptics.success();
       triggerConfetti.celebrate();
       toast.success(
-        language === 'he'
+        isAr
+          ? `تم تفعيل كود الخصم ${res.data.code} بنجاح!`
+          : isHe
           ? `קוד קופון ${res.data.code} הופעל בהצלחה!`
           : `Promo code ${res.data.code} applied successfully!`
       );
     } catch (err: any) {
       haptics.error();
-      const msg = err.response?.data?.message || err.response?.data?.error || (language === 'he' ? 'קוד קופון לא תקין או פג תוקף' : 'Invalid or expired coupon code');
+      const msg = err.response?.data?.message || err.response?.data?.error || (isAr ? 'كود القسيمة غير صالح أو منتهي الصلاحية' : isHe ? 'קוד קופון לא תקין או פג תוקף' : 'Invalid or expired coupon code');
       toast.error(msg);
       setAppliedCoupon(null);
     } finally {
@@ -507,21 +513,21 @@ export const StudentDashboard: React.FC = () => {
       setBookingError(null);
       const dur = vars.durationMinutes || 25;
       toast.success(
-        language === 'he'
+        isAr
+          ? `تم حجز الحصة (${dur} دقيقة) بنجاح! تم خصم حصة واحدة من باقتك.`
+          : isHe
           ? `שיעור (${dur} דקות) הוזמן בהצלחה! נוכה שיעור 1 מחבילת השיעורים שלך.`
           : `${dur}-Minute Lesson booked successfully! 1 session deducted from your package quota.`,
-        language === 'he' ? 'ההזמנה אושרה' : 'Booking Confirmed'
+        isAr ? 'تم تأكيد الحجز' : isHe ? 'ההזמנה אושרה' : 'Booking Confirmed'
       );
     },
     onError: (err: any) => {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.error ||
-        (language === 'he'
-          ? 'שגיאה בהזמנת השיעור. אנא ודא שיש לך מכסת שיעורים פעילה בחבילה.'
-          : 'Failed to book lesson. Please verify your session package quota.');
+        (isAr ? 'تعذر حجز الحصة. يرجى التأكد من توفر رصيد حصص كافٍ في باقتك.' : isHe ? 'שגיאה בהזמנת השיעור. אנא ודא שיש לך מכסת שיעורים פעילה בחבילה.' : 'Failed to book lesson. Please verify your session package quota.');
       setBookingError(msg);
-      toast.error(msg, language === 'he' ? 'שגיאה בהזמנה' : 'Booking Error');
+      toast.error(msg, isAr ? 'خطأ في الحجز' : isHe ? 'שגיאה בהזמנה' : 'Booking Error');
     },
   });
 
@@ -547,21 +553,21 @@ export const StudentDashboard: React.FC = () => {
       setBookingError(null);
       const totalBooked = res.data?.totalLessons || vars.recurringSlots.length * 4;
       toast.success(
-        language === 'he'
+        isAr
+          ? `تم حجز ${totalBooked} حصص أسبوعية منتظمة بنجاح للأسابيع الـ 4 القادمة!`
+          : isHe
           ? `נקבעו בהצלחה ${totalBooked} שיעורים שבועיים קבועים ל-4 השבועות הקרובים!`
           : `Successfully booked ${totalBooked} regular weekly lessons across the next 4 weeks!`,
-        language === 'he' ? 'חוג שבועי קבוע אושר' : 'Regular Booking Confirmed'
+        isAr ? 'تم تأكيد الحجز الأسبوعي المنتظم' : isHe ? 'חוג שבועי קבוע אושר' : 'Regular Booking Confirmed'
       );
     },
     onError: (err: any) => {
       const msg =
         err.response?.data?.message ||
         err.response?.data?.error ||
-        (language === 'he'
-          ? 'שגיאה בהזמנת השיעורים הקבועים. אנא ודא שיתרת החבילה שלך מספיקה.'
-          : 'Failed to book regular schedule. Please verify your monthly package balance.');
+        (isAr ? 'تعذر حجز الجدول الأسبوعي المنتظم. يرجى التأكد من كفاية رصيد باقتك الشهرية.' : isHe ? 'שגיאה בהזמנת השיעורים הקבועים. אנא ודא שיתרת החבילה שלך מספיקה.' : 'Failed to book regular schedule. Please verify your monthly package balance.');
       setBookingError(msg);
-      toast.error(msg, language === 'he' ? 'שגיאה בהזמנה' : 'Booking Error');
+      toast.error(msg, isAr ? 'خطأ في الحجز' : isHe ? 'שגיאה בהזמנה' : 'Booking Error');
     },
   });
 
@@ -575,7 +581,7 @@ export const StudentDashboard: React.FC = () => {
       setSubmittingHwId(null);
       setHwNote('');
       toast.success(
-        language === 'he' ? 'שיעורי הבית הוגשו בהצלחה!' : 'Homework turned in successfully!'
+        isAr ? 'تم تسليم الواجب بنجاح!' : isHe ? 'שיעורי הבית הוגשו בהצלחה!' : 'Homework turned in successfully!'
       );
     },
   });
@@ -641,9 +647,7 @@ export const StudentDashboard: React.FC = () => {
       setRatingLessonTarget(null);
       setLessonRatingError(null);
       toast.success(
-        language === 'he'
-          ? 'תודה על הדירוג! משוב השיעור נשמר בהצלחה.'
-          : 'Thank you! Lesson rating submitted successfully.'
+        isAr ? 'شكراً لك! تم إرسال تقييم الحصة بنجاح.' : isHe ? 'תודה על הדירוג! משוב השיעור נשמר בהצלחה.' : 'Thank you! Lesson rating submitted successfully.'
       );
     },
     onError: (err: any) => {
@@ -653,9 +657,7 @@ export const StudentDashboard: React.FC = () => {
         err.message ||
         '';
       const guidance =
-        language === 'he'
-          ? 'שגיאה בשמירת דירוג השיעור. אנא בדוק את החיבור לרשת ונסה שוב.'
-          : 'Failed to submit lesson rating. Please verify your connection and try again.';
+        isAr ? 'فشل إرسال تقييم الدرس. يرجى التحقق من الاتصال وإعادة المحاولة.' : isHe ? 'שגיאה בשמירת דירוג השיעור. אנא בדוק את החיבור לרשת ונסה שוב.' : 'Failed to submit lesson rating. Please verify your connection and try again.';
       const full = serverMsg ? `${serverMsg} • ${guidance}` : guidance;
       setLessonRatingError(full);
       toast.error(full);
@@ -685,9 +687,7 @@ export const StudentDashboard: React.FC = () => {
       setRatingTeacherTarget(null);
       setTeacherRatingError(null);
       toast.success(
-        language === 'he'
-          ? 'תודה רבה! דירוג המורה נשמר וציון המורה עודכן.'
-          : 'Thank you! Teacher rating submitted and instructor score updated.'
+        isAr ? 'شكراً جزيلاً! تم إرسال تقييم المعلم وتحديث معدله.' : isHe ? 'תודה רבה! דירוג המורה נשמר וציון המורה עודכן.' : 'Thank you! Teacher rating submitted and instructor score updated.'
       );
     },
     onError: (err: any) => {
@@ -697,9 +697,7 @@ export const StudentDashboard: React.FC = () => {
         err.message ||
         '';
       const guidance =
-        language === 'he'
-          ? 'שגיאה בשמירת דירוג המורה. אנא בדוק את החיבור לרשת ונסה שוב.'
-          : 'Failed to submit teacher survey. Please verify your connection and try again.';
+        isAr ? 'فشل إرسال تقييم المعلم. يرجى التحقق من الاتصال وإعادة المحاولة.' : isHe ? 'שגיאה בשמירת דירוג המורה. אנא בדוק את החיבור לרשת ונסה שוב.' : 'Failed to submit teacher survey. Please verify your connection and try again.';
       const full = serverMsg ? `${serverMsg} • ${guidance}` : guidance;
       setTeacherRatingError(full);
       toast.error(full);
@@ -809,7 +807,7 @@ export const StudentDashboard: React.FC = () => {
         return {
           hasConflict: true,
           conflictingWeek: i + 1,
-          conflictingDate: targetDate.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+          conflictingDate: targetDate.toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', {
             month: 'short',
             day: 'numeric',
           }),
@@ -833,7 +831,9 @@ export const StudentDashboard: React.FC = () => {
     } else {
       if (selectedRegularSlots.length >= maxWeeklyRegularSlots) {
         const msg =
-          language === 'he'
+          isAr
+            ? `لقد وصلت إلى الحد الأقصى المسموح به في باقتك: ${maxWeeklyRegularSlots} مواعيد أسبوعية منتظمة (${maxWeeklyRegularSlots * 4} حصص في الشهر).`
+            : isHe
             ? `הגעת למקסימום המותר בחבילה שלך: ${maxWeeklyRegularSlots} מועדים שבועיים קבועים (${maxWeeklyRegularSlots * 4} שיעורים בחודש).`
             : `You have reached the maximum allowed for your package: ${maxWeeklyRegularSlots} regular weekly slot(s) (${maxWeeklyRegularSlots * 4} sessions/month).`;
         setBookingError(msg);
@@ -847,14 +847,16 @@ export const StudentDashboard: React.FC = () => {
 
   const handleRegularBookingSubmit = () => {
     if (!selectedTeacherId) {
-      const err = language === 'he' ? 'אנא בחר מורה מוסמך.' : 'Please select a certified teacher.';
+      const err = isAr ? 'يرجى اختيار معلم معتمد.' : isHe ? 'אנא בחר מורה מוסמך.' : 'Please select a certified teacher.';
       setBookingError(err);
       toast.warning(err);
       return;
     }
     if (selectedRegularSlots.length === 0) {
       const err =
-        language === 'he'
+        isAr
+          ? 'يرجى تحديد موعد أسبوعي منتظم واحد على الأقل.'
+          : isHe
           ? 'אנא בחר לפחות מועד שבועי קבוע אחד לקביעת החוג.'
           : 'Please select at least one weekly regular slot.';
       setBookingError(err);
@@ -863,7 +865,9 @@ export const StudentDashboard: React.FC = () => {
     }
     if (selectedRegularSlots.length > maxWeeklyRegularSlots) {
       const err =
-        language === 'he'
+        isAr
+          ? `تتيح باقتك الشهرية ${maxWeeklyRegularSlots} مواعيد أسبوعية منتظمة كحد أقصى.`
+          : isHe
           ? `החבילה החודשית שלך מאפשרת לכל היותר ${maxWeeklyRegularSlots} מועדים שבועיים קבועים.`
           : `Your monthly package allows at most ${maxWeeklyRegularSlots} regular weekly slot(s).`;
       setBookingError(err);
@@ -872,15 +876,17 @@ export const StudentDashboard: React.FC = () => {
     }
     if (!hasEnoughBalanceForRegular) {
       const err =
-        language === 'he'
-          ? `יתרת השיעורים שלך אינה מספיקה לקביעת חוג שבועי קבוע ל-4 שבועות (${requiredSessionsForRegular} שיעורים נדרשים, יתרתך: ${selectedSessionBalance?.balance || 0}). ניתן להזמין שיعורים בודדים בלשונית 'שיעור בודד'.`
+        isAr
+          ? `رصيد حصصك غير كافٍ لحجز جدول أسبوعي منتظم لـ 4 أسابيع (${requiredSessionsForRegular} حصص مطلوبة، رصيدك: ${selectedSessionBalance?.balance || 0}). يمكنك حجز حصص فردية من تبويب 'حصة فردية'.`
+          : isHe
+          ? `יתרת השיעורים שלך אינה מספיקה לקביעת חוג שבועי קבוע ל-4 שבועות (${requiredSessionsForRegular} שיעורים נדרשים, יתרתך: ${selectedSessionBalance?.balance || 0}). ניתן להזמין שיעורים בודדים בלשונית 'שיעור בודד'.`
           : `Insufficient balance for a 4-week regular schedule (${requiredSessionsForRegular} sessions required, your balance: ${selectedSessionBalance?.balance || 0}). You can book single sessions in the 'One-Time Lesson' tab or renew your package.`;
       setBookingError(err);
       toast.warning(err);
       return;
     }
     if (!student?.id) {
-      const err = language === 'he' ? 'פרופיל התלמיד לא זוהה.' : 'Student profile not detected.';
+      const err = isAr ? 'لم يتم العثور على ملف تعريف الطالب.' : isHe ? 'פרופיל התלמיד לא זוהה.' : 'Student profile not detected.';
       setBookingError(err);
       toast.error(err);
       return;
@@ -890,7 +896,9 @@ export const StudentDashboard: React.FC = () => {
       const conflict = checkRegularSlotConflict(selectedTeacher, slot.dayOfWeek, slot.startTime, selectedDuration);
       if (conflict.hasConflict) {
         const err =
-          language === 'he'
+          isAr
+            ? `يوجد تعارض في الموعد المحدد: المعلم محجوز مسبقاً في الأسبوع ${conflict.conflictingWeek} (${conflict.conflictingDate}) الساعة ${slot.startTime}.`
+            : isHe
             ? `נמצאה התנגשות במועד הנבחר: המורה תפוס בשבוע ${conflict.conflictingWeek} (${conflict.conflictingDate}) בשעה ${slot.startTime}.`
             : `Schedule conflict: Teacher is already booked on Week ${conflict.conflictingWeek} (${conflict.conflictingDate}) at ${slot.startTime}.`;
         setBookingError(err);
@@ -1038,7 +1046,9 @@ export const StudentDashboard: React.FC = () => {
   const handleBookingSubmit = () => {
     if (!hasEnoughBalance) {
       const err =
-        language === 'he'
+        isAr
+          ? `لا تتوفر لديك حصص في الباقة لحصة مدتها ${selectedDuration} دقيقة. يرجى التواصل مع فريق Engrew لشحن باقة جديدة.`
+          : isHe
           ? `אין לך שיעורים זמינים בחבילה עבור שיעור של ${selectedDuration} דקות. אנא פנה לצוות Engrew להוספת חבילת שיעורים.`
           : `You have 0 available sessions for ${selectedDuration}-minute lessons in your active package. Please contact Engrew support to assign a lesson package.`;
       setBookingError(err);
@@ -1047,7 +1057,9 @@ export const StudentDashboard: React.FC = () => {
     }
     if (!selectedTeacherId || !bookingDate || !selectedSlotTime) {
       const err =
-        language === 'he'
+        isAr
+          ? 'يرجى اختيار المعلم والتاريخ وموعد الحصة المتاح.'
+          : isHe
           ? 'אנא בחר מורה, תאריך ושעת שיעור פנויה.'
           : 'Please select teacher, date, and available slot.';
       setBookingError(err);
@@ -1055,7 +1067,7 @@ export const StudentDashboard: React.FC = () => {
       return;
     }
     if (!student?.id) {
-      const err = language === 'he' ? 'פרופיל התלמיד לא זוהה.' : 'Student profile not detected.';
+      const err = isAr ? 'لم يتم العثور على ملف تعريف الطالب.' : isHe ? 'פרופיל התלמיד לא זוהה.' : 'Student profile not detected.';
       setBookingError(err);
       toast.error(err);
       return;
@@ -1091,7 +1103,7 @@ export const StudentDashboard: React.FC = () => {
             setMobileMenuOpen(false);
           }}
           user={user}
-          panelSubtitle={language === 'he' ? 'אקדמיה לעברית ואנגלית' : 'Engrew Hebrew & English Academy'}
+          panelSubtitle={isAr ? 'أكاديمية إنجرو للغة العبرية والإنجليزية' : isHe ? 'אקדמיה לעברית ואנגלית' : 'Engrew Hebrew & English Academy'}
           isOpenMobile={mobileMenuOpen}
           onCloseMobile={() => setMobileMenuOpen(false)}
           customSlot={
@@ -1106,7 +1118,7 @@ export const StudentDashboard: React.FC = () => {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className="w-11 py-2 px-1 rounded-2xl bg-brand-teal-50 dark:bg-brand-teal-950/60 border border-brand-teal-300 dark:border-brand-teal-800 hover:bg-brand-teal-100 dark:hover:bg-brand-teal-900/60 transition-all flex flex-col items-center justify-center cursor-pointer shadow-xs active:scale-95"
-                    aria-label={language === 'he' ? `מכסת שיעורים: ${totalAvailableSessions}` : `Session Units: ${totalAvailableSessions}`}
+                    aria-label={isAr ? `رصيد الحصص: ${totalAvailableSessions}` : isHe ? `מכסת שיעורים: ${totalAvailableSessions}` : `Session Units: ${totalAvailableSessions}`}
                   >
                     <Layers className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-300 shrink-0" />
                     <span className="text-[10px] font-black text-brand-teal-900 dark:text-brand-teal-200 mt-1 leading-none truncate max-w-full">
@@ -1117,7 +1129,7 @@ export const StudentDashboard: React.FC = () => {
                   {/* Floating Tooltip Pill on Hover */}
                   <div className="hidden lg:flex absolute start-[calc(100%+0.65rem)] top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 items-center gap-2">
                     <Layers className="w-3.5 h-3.5 text-brand-olive-400" />
-                    <span>{language === 'he' ? 'שיעורים זמינים:' : 'Sessions Left:'}</span>
+                    <span>{isAr ? 'الحصص المتبقية:' : isHe ? 'שיעורים זמינים:' : 'Sessions Left:'}</span>
                     <span className="text-emerald-300 font-black">{totalAvailableSessions}</span>
                   </div>
                 </div>
@@ -1134,7 +1146,7 @@ export const StudentDashboard: React.FC = () => {
                   {/* Floating Tooltip Pill on Hover */}
                   <div className="hidden lg:flex absolute start-[calc(100%+0.65rem)] top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-slate-950 text-white text-xs font-bold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-50 items-center gap-2">
                     <Award className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{language === 'he' ? 'נקודות למידה:' : 'Points Earned:'}</span>
+                    <span>{isAr ? 'النقاط المكتسبة:' : isHe ? 'נקודות למידה:' : 'Points Earned:'}</span>
                     <span className="text-amber-300 font-black">{student?.totalPoints || 0} XP</span>
                   </div>
                 </div>
@@ -1149,16 +1161,16 @@ export const StudentDashboard: React.FC = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 border border-brand-teal-200/80 dark:border-brand-teal-800/80 hover:bg-brand-teal-100 dark:hover:bg-brand-teal-900/60 transition-colors text-start cursor-pointer"
-                  title={language === 'he' ? 'צפה במכסת השיעורים והחבילות' : 'View Session Packages & Balances'}
+                  title={isAr ? 'عرض باقات الحصص والأرصدة' : isHe ? 'צפה במכסת השיעורים והחבילות' : 'View Session Packages & Balances'}
                 >
                   <div className="flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-300 shrink-0" />
                     <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                      {language === 'he' ? 'שיעורים זמינים' : 'Sessions Left'}
+                      {isAr ? 'الحصص المتبقية' : isHe ? 'שיעורים זמינים' : 'Sessions Left'}
                     </span>
                   </div>
                   <span className="text-xs font-black text-brand-teal-900 dark:text-brand-teal-200">
-                    {totalAvailableSessions} {language === 'he' ? 'שיעורים' : 'units'}
+                    {totalAvailableSessions} {isAr ? 'حصص' : isHe ? 'שיעורים' : 'units'}
                   </span>
                 </button>
                 <div className="text-center p-2 rounded-xl bg-slate-50/60 dark:bg-slate-800/40">
@@ -1167,14 +1179,14 @@ export const StudentDashboard: React.FC = () => {
                     <span>{student?.totalPoints || 0}</span>
                   </div>
                   <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
-                    {language === 'he' ? 'נקודות למידה' : 'Points Earned'}
+                    {isAr ? 'النقاط المكتسبة' : isHe ? 'נקודות למידה' : 'Points Earned'}
                   </p>
                 </div>
               </div>
             )
           }
           actionButton={{
-            label: language === 'he' ? 'הזמנת שיעור 25 דק׳' : 'Book 25-Min Lesson',
+            label: isAr ? 'حجز حصة 25 دقيقة' : isHe ? 'הזמנת שיעור 25 דק׳' : 'Book 25-Min Lesson',
             onClick: () => setIsBookingModalOpen(true),
             icon: Plus,
           }}
@@ -1203,7 +1215,9 @@ export const StudentDashboard: React.FC = () => {
                       {t('dashboard.welcome', { name: user?.firstName || 'Student' })}
                     </h1>
                     <p className="text-brand-teal-100 text-sm mt-1 max-w-xl leading-relaxed">
-                      {language === 'he'
+                      {isAr
+                        ? 'واصل تقدمك نحو إتقان اللغة العبرية مع حصص فردية تفاعلية مدتها 25 دقيقة، وألعاب تعليمية ممتعة، وملاحظات مباشرة من معلمك المعتمد.'
+                        : isHe
                         ? 'המשך להתקדם לעבר שטף בדיבור בעברית עם שיעורים ממוקדים של 25 דקות, משחקים חווייתיים ומשוב אישי מהמורה.'
                         : 'Keep progressing towards Hebrew fluency with high-retention 25-minute live lessons, interactive games, and teacher feedback.'}
                     </p>
@@ -1218,14 +1232,14 @@ export const StudentDashboard: React.FC = () => {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       className="bg-white/10 hover:bg-white/20 transition-all cursor-pointer backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[110px] border border-white/15 group"
-                      title={language === 'he' ? 'צפה בחבילות ומכסת שיעורים' : 'View Session Packages & Balances'}
+                      title={isAr ? 'عرض باقات الحصص والأرصدة' : isHe ? 'צפה בחבילות ומכסת שיעורים' : 'View Session Packages & Balances'}
                     >
                       <div className="flex items-center justify-center gap-1 text-emerald-300 font-extrabold text-lg sm:text-xl group-hover:scale-105 transition-transform">
                         <Layers className="w-5 h-5 text-emerald-300 shrink-0" />
                         <span>{totalAvailableSessions}</span>
                       </div>
                       <p className="text-[10px] sm:text-[11px] font-semibold text-brand-teal-100 uppercase mt-0.5">
-                        {language === 'he' ? 'מפגשים זמינים' : 'Sessions Left'}
+                        {isAr ? 'الحصص المتبقية' : isHe ? 'מפגשים זמינים' : 'Sessions Left'}
                       </p>
                     </button>
 
@@ -1244,13 +1258,13 @@ export const StudentDashboard: React.FC = () => {
                       type="button"
                       onClick={() => setIsExamsAndPackagesModalOpen(true)}
                       className="flex items-center gap-2.5 px-4 py-3 sm:py-3.5 bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white rounded-2xl font-bold text-xs sm:text-sm border border-white/20 shadow-md backdrop-blur-md cursor-pointer group"
-                      title={language === 'he' ? 'חבילות שיעורים ומבחנים' : 'Session Packages & Exams'}
+                      title={isAr ? 'باقات الحصص والاختبارات' : isHe ? 'חבילות שיעורים ומבחנים' : 'Session Packages & Exams'}
                     >
                       <div className="p-1 rounded-lg bg-emerald-400/20 text-emerald-300 group-hover:scale-110 transition-transform">
                         <Layers className="w-4 h-4 text-emerald-300 shrink-0" />
                       </div>
                       <span className="whitespace-nowrap font-extrabold">
-                        {language === 'he' ? 'חבילות שיעורים ומבחנים' : 'Session Packages & Exams'}
+                        {isAr ? 'باقات الحصص والاختبارات' : isHe ? 'חבילות שיעורים ומבחנים' : 'Session Packages & Exams'}
                       </span>
                     </button>
                   </div>
@@ -1279,15 +1293,17 @@ export const StudentDashboard: React.FC = () => {
                         }`}
                       >
                         {remainingLessons > 0
-                          ? (language === 'he' ? 'פעיל' : 'Active')
-                          : (language === 'he' ? 'פג תוקף' : 'Expired')}
+                          ? (isAr ? 'نشط' : isHe ? 'פעיל' : 'Active')
+                          : (isAr ? 'منتهي الصلاحية' : isHe ? 'פג תוקף' : 'Expired')}
                       </span>
                     </div>
 
                     {activePackage ? (
                       <div className="space-y-3">
                         <h2 className="text-lg font-bold text-slate-900 dark:text-white truncate">
-                          {language === 'he'
+                          {isAr && activePackage.package?.nameAr
+                            ? activePackage.package?.nameAr
+                            : isHe
                             ? activePackage.package?.nameHe
                             : activePackage.package?.nameEn}
                         </h2>
@@ -1297,9 +1313,7 @@ export const StudentDashboard: React.FC = () => {
                           </span>
                           <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                             / {activePackage.lessonsTotal}{' '}
-                            {language === 'he'
-                              ? 'שיעורים בני 25 דק׳ נותרו'
-                              : '25-min lessons remaining'}
+                            {isAr ? 'حصص 25 دقيقة متبقية' : isHe ? 'שיעורים בני 25 דק׳ נותרו' : '25-min lessons remaining'}
                           </span>
                         </div>
 
@@ -1313,23 +1327,23 @@ export const StudentDashboard: React.FC = () => {
                         <div className="flex justify-between text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                           <span>
                             {activePackage.lessonsUsed}{' '}
-                            {language === 'he' ? 'שיעורים הושלמו' : 'lessons completed'}
+                            {isAr ? 'حصص مكتملة' : isHe ? 'שיעורים הושלמו' : 'lessons completed'}
                           </span>
                           <span>
-                            {percentUsed}% {language === 'he' ? 'נוצל' : 'used'}
+                            {percentUsed}% {isAr ? 'مستخدمة' : isHe ? 'נוצל' : 'used'}
                           </span>
                         </div>
 
                         <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800/60">
-                          <span>{language === 'he' ? 'בתוקף עד:' : 'Valid until:'} <strong className="text-slate-700 dark:text-slate-300 font-bold">{activePackage ? new Date(activePackage.endDate).toLocaleDateString() : '—'}</strong></span>
+                          <span>{isAr ? 'صالح حتى:' : isHe ? 'בתוקף עד:' : 'Valid until:'} <strong className="text-slate-700 dark:text-slate-300 font-bold">{activePackage ? new Date(activePackage.endDate).toLocaleDateString() : '—'}</strong></span>
                           <button
                             type="button"
                             onClick={handleOpenPackageReceipt}
                             className="px-2.5 py-1 rounded-lg bg-brand-teal-50 hover:bg-brand-teal-100 dark:bg-brand-teal-950/70 dark:hover:bg-brand-teal-900 text-brand-teal-800 dark:text-brand-teal-300 text-[10px] font-black flex items-center gap-1 border border-brand-teal-200 dark:border-brand-teal-800 transition-colors cursor-pointer shadow-2xs"
-                            title={language === 'he' ? 'הדפס קבלה וחשבונית לחבילה' : 'Print Package Invoice & Receipt'}
+                            title={isAr ? 'طباعة فاتورة وإيصال الباقة' : isHe ? 'הדפס קבלה וחשבונית לחבילה' : 'Print Package Invoice & Receipt'}
                           >
                             <Printer className="w-3 h-3 text-brand-teal-700 dark:text-brand-teal-300" />
-                            <span>{language === 'he' ? 'קבלה / חשבונית' : 'Package Receipt'}</span>
+                            <span>{isAr ? 'إيصال الباقة' : isHe ? 'קבלה / חשבונית' : 'Package Receipt'}</span>
                           </button>
                         </div>
                       </div>
@@ -1340,10 +1354,10 @@ export const StudentDashboard: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            {language === 'he' ? 'אין חבילה פעילה' : 'No active package'}
+                            {isAr ? 'لا توجد باقة نشطة' : isHe ? 'אין חבילה פעילה' : 'No active package'}
                           </p>
                           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                            {language === 'he' ? 'פנה למנהל לרכישת חבילת שיעורים' : 'Contact sales to acquire a session package'}
+                            {isAr ? 'تواصل مع الإدارة للحصول على باقة حصص' : isHe ? 'פנה למנהל לרכישת חבילת שיעורים' : 'Contact sales to acquire a session package'}
                           </p>
                         </div>
                       </div>
@@ -1356,7 +1370,7 @@ export const StudentDashboard: React.FC = () => {
                       className="w-full py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
                     >
                       <Plus className="w-4 h-4 text-brand-olive-300" />
-                      <span>{language === 'he' ? 'הזמן שיעור 25 דק׳' : 'Book 25-Min Slot'}</span>
+                      <span>{isAr ? 'حجز موعد 25 دقيقة' : isHe ? 'הזמן שיעור 25 דק׳' : 'Book 25-Min Slot'}</span>
                     </button>
                   </div>
                 </div>
@@ -1374,7 +1388,7 @@ export const StudentDashboard: React.FC = () => {
                         </span>
                       </div>
                       <span className="px-2.5 py-0.5 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 text-xs font-bold border border-brand-teal-200 dark:border-brand-teal-800">
-                        {language === 'he' ? 'מתכונת 25 דקות' : '25 Min Format'}
+                        {isAr ? 'نظام 25 دقيقة' : isHe ? 'מתכונת 25 דקות' : '25 Min Format'}
                       </span>
                     </div>
 
@@ -1390,7 +1404,7 @@ export const StudentDashboard: React.FC = () => {
                               {upcomingLessons[0].teacher?.user?.lastName}
                             </h3>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                              {language === 'he' ? 'מורה מוסמך לעברית' : 'Certified Hebrew Instructor'}
+                              {isAr ? 'معلم عبرية معتمد' : isHe ? 'מורה מוסמך לעברית' : 'Certified Hebrew Instructor'}
                             </p>
                           </div>
                         </div>
@@ -1401,14 +1415,16 @@ export const StudentDashboard: React.FC = () => {
                             <span className="truncate">
                               {formatIsraelDateTime(upcomingLessons[0].scheduledAt, {
                                 includeWeekday: true,
-                                locale: language === 'he' ? 'he-IL' : 'en-US',
+                                locale: isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US',
                               })}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
                             <Globe2 className="w-3.5 h-3.5 text-brand-olive-600 dark:text-brand-olive-400 shrink-0" />
                             <span>
-                              {language === 'he'
+                              {isAr
+                                ? 'حصة 25 دقيقة • بتوقيت القدس'
+                                : isHe
                                 ? 'שיעור 25 דקות • שעון ישראל'
                                 : `25-Minute Session • ${ISRAEL_TZ_LABEL}`}
                             </span>
@@ -1422,10 +1438,10 @@ export const StudentDashboard: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            {language === 'he' ? 'אין שיעורים קרובים' : 'No upcoming lessons scheduled'}
+                            {isAr ? 'لا توجد دروس قادمة مجدولة' : isHe ? 'אין שיעורים קרובים' : 'No upcoming lessons scheduled'}
                           </p>
                           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                            {language === 'he' ? 'קבע שיעור 25 דקות עם מורה פרטי' : 'Book a 25-minute 1-on-1 session'}
+                            {isAr ? 'حجز حصة فردية مدتها 25 دقيقة' : isHe ? 'קבע שיעור 25 דקות עם מורה פרטי' : 'Book a 25-minute 1-on-1 session'}
                           </p>
                         </div>
                       </div>
@@ -1443,7 +1459,7 @@ export const StudentDashboard: React.FC = () => {
                             className="flex-1 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
                           >
                             <Video className="w-4 h-4" />
-                            <span>{language === 'he' ? 'זום' : 'Join Zoom'}</span>
+                            <span>{isAr ? 'دخول Zoom' : isHe ? 'זום' : 'Join Zoom'}</span>
                           </a>
                         )}
                         <button
@@ -1452,13 +1468,13 @@ export const StudentDashboard: React.FC = () => {
                           className="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-slate-200/80 dark:border-slate-700"
                         >
                           <RefreshCw className="w-3.5 h-3.5 text-teal-500" />
-                          <span>{language === 'he' ? 'שינוי מועד' : 'Reschedule'}</span>
+                          <span>{isAr ? 'تعديل الموعد' : isHe ? 'שינוי מועד' : 'Reschedule'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleOpenLessonReceipt(upcomingLessons[0])}
                           className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-colors border border-slate-200/80 dark:border-slate-700 shadow-2xs"
-                          title={language === 'he' ? 'הדפס אישור הזמנת שיעור ושובר' : 'Print Booking Slip & Voucher'}
+                          title={isAr ? 'طباعة إشعار حجز الحصة والقسيمة' : isHe ? 'הדפס אישור הזמנת שיעור ושובר' : 'Print Booking Slip & Voucher'}
                         >
                           <Printer className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
                         </button>
@@ -1469,7 +1485,7 @@ export const StudentDashboard: React.FC = () => {
                         className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 text-center"
                       >
                         <CalendarIcon className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
-                        <span>{language === 'he' ? 'קבע את השיעור הבא' : 'Schedule Next Lesson'}</span>
+                        <span>{isAr ? 'حدد موعد الدرس القادم' : isHe ? 'קבע את השיעור הבא' : 'Schedule Next Lesson'}</span>
                       </button>
                     )}
                   </div>
@@ -1489,8 +1505,8 @@ export const StudentDashboard: React.FC = () => {
                       </div>
                       <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold border border-slate-200/80 dark:border-slate-700">
                         {recentHomework.filter((h: any) => h.status === 'ASSIGNED').length > 0
-                          ? `${recentHomework.filter((h: any) => h.status === 'ASSIGNED').length} ${language === 'he' ? 'ממתינים' : 'pending'}`
-                          : language === 'he' ? 'הכל נבדק' : 'Up to date'}
+                          ? `${recentHomework.filter((h: any) => h.status === 'ASSIGNED').length} ${isAr ? 'قيد المراجعة' : isHe ? 'ממתינים' : 'pending'}`
+                          : isAr ? 'مكتمل حتى الآن' : isHe ? 'הכל נבדק' : 'Up to date'}
                       </span>
                     </div>
 
@@ -1509,7 +1525,7 @@ export const StudentDashboard: React.FC = () => {
                                   {hw.title}
                                 </span>
                                 <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-                                  {language === 'he' ? 'להגשה בקרוב' : 'Due soon'}
+                                  {isAr ? 'يستحق التسليم قريباً' : isHe ? 'להגשה בקרוב' : 'Due soon'}
                                 </span>
                               </div>
                               <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">
@@ -1521,7 +1537,7 @@ export const StudentDashboard: React.FC = () => {
                                   onClick={() => setSubmittingHwId(hw.id)}
                                   className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 hover:underline flex items-center gap-1"
                                 >
-                                  {language === 'he' ? 'הגש שיעורים ←' : 'Submit Work →'}
+                                  {isAr ? 'تسليم الحل ←' : isHe ? 'הגש שיעורים ←' : 'Submit Work →'}
                                 </button>
                               </div>
 
@@ -1532,9 +1548,7 @@ export const StudentDashboard: React.FC = () => {
                                     value={hwNote}
                                     onChange={(e) => setHwNote(e.target.value)}
                                     placeholder={
-                                      language === 'he'
-                                        ? 'הוסף הערות או קישור לפתרון שיעורי הבית...'
-                                        : 'Add your homework submission notes or link...'
+                                      isAr ? 'أضف ملاحظاتك أو رابط تسليم الواجب هنا...' : isHe ? 'הוסף הערות או קישור לפתרון שיעורי הבית...' : 'Add your homework submission notes or link...'
                                     }
                                     className="w-full p-2 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-1 focus:ring-brand-teal-800"
                                   />
@@ -1543,7 +1557,7 @@ export const StudentDashboard: React.FC = () => {
                                       onClick={() => setSubmittingHwId(null)}
                                       className="px-2 py-1 text-xs text-slate-500 dark:text-slate-400 font-semibold"
                                     >
-                                      {language === 'he' ? 'ביטול' : 'Cancel'}
+                                      {isAr ? 'إلغاء' : isHe ? 'ביטול' : 'Cancel'}
                                     </button>
                                     <button
                                       onClick={() =>
@@ -1554,7 +1568,7 @@ export const StudentDashboard: React.FC = () => {
                                       }
                                       className="px-3 py-1 text-xs bg-brand-teal-800 dark:bg-brand-teal-700 text-white font-bold rounded-lg shadow-2xs"
                                     >
-                                      {language === 'he' ? 'הגש' : 'Turn In'}
+                                      {isAr ? 'تسليم' : isHe ? 'הגש' : 'Turn In'}
                                     </button>
                                   </div>
                                 </div>
@@ -1569,10 +1583,10 @@ export const StudentDashboard: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            {language === 'he' ? 'כל המשימות הושלמו!' : 'All caught up!'}
+                            {isAr ? 'تم إنجاز كافة المهام بنجاح!' : isHe ? 'כל המשימות הושלמו!' : 'All caught up!'}
                           </p>
                           <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                            {language === 'he' ? 'אין שיעורי בית ממתינים לבדיקה' : 'No homework pending review'}
+                            {isAr ? 'لا توجد واجبات بانتظار المراجعة' : isHe ? 'אין שיעורי בית ממתינים לבדיקה' : 'No homework pending review'}
                           </p>
                         </div>
                       </div>
@@ -1585,7 +1599,7 @@ export const StudentDashboard: React.FC = () => {
                       className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 text-center"
                     >
                       <BookOpen className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
-                      <span>{language === 'he' ? 'צפה בכל שיעורי הבית' : 'View All Homework'}</span>
+                      <span>{isAr ? 'عرض كل الواجبات' : isHe ? 'צפה בכל שיעורי הבית' : 'View All Homework'}</span>
                     </button>
                   </div>
                 </div>
@@ -1597,7 +1611,9 @@ export const StudentDashboard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-brand-teal-800 dark:text-brand-teal-400" />
                     <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                      {language === 'he'
+                      {isAr
+                        ? 'الدروس الأخيرة وتسجيلات Google Drive'
+                        : isHe
                         ? 'שיעורים אחרונים והקלטות Google Drive'
                         : 'Recent Lessons & Google Drive Recordings'}
                     </h2>
@@ -1606,7 +1622,7 @@ export const StudentDashboard: React.FC = () => {
                     onClick={() => setActiveTab('lessons')}
                     className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 hover:underline"
                   >
-                    {language === 'he' ? 'צפה בהכל ←' : 'View All →'}
+                    {isAr ? 'عرض الكل ←' : isHe ? 'צפה בהכל ←' : 'View All →'}
                   </button>
                 </div>
                 {recentLessons.slice(0, 2).map((lesson: any) => (
@@ -1616,12 +1632,12 @@ export const StudentDashboard: React.FC = () => {
                   >
                     <div>
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                        {language === 'he' ? 'שיעור 25 דק׳ עם' : '25m Lesson with'}{' '}
+                        {isAr ? 'حصة 25 دقيقة مع' : isHe ? 'שיעור 25 דק׳ עם' : '25m Lesson with'}{' '}
                         {lesson.teacher?.user?.firstName} {lesson.teacher?.user?.lastName}
                       </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
                         {new Date(lesson.scheduledAt).toLocaleDateString()} •{' '}
-                        {language === 'he' ? '25 דק׳ (שעון ישראל)' : '25 min (IST)'}
+                        {isAr ? '25 دقيقة (توقيت القدس)' : isHe ? '25 דק׳ (שעון ישראל)' : '25 min (IST)'}
                       </p>
                     </div>
                     {lesson.recordingUrl && (
@@ -1632,14 +1648,16 @@ export const StudentDashboard: React.FC = () => {
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 hover:underline"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
-                        <span>{language === 'he' ? 'צפייה בהקלטה' : 'Watch Recording'}</span>
+                        <span>{isAr ? 'مشاهدة التسجيل' : isHe ? 'צפייה בהקלטה' : 'Watch Recording'}</span>
                       </a>
                     )}
                   </div>
                 ))}
                 {recentLessons.length === 0 && (
                   <p className="text-xs text-slate-400 py-4 text-center">
-                    {language === 'he'
+                    {isAr
+                      ? 'لم تكتمل أي حصص بعد. احجز أول حصة لك مدتها 25 دقيقة لتبدأ!'
+                      : isHe
                       ? 'טרם הושלמו שיעורים. הזמן שיעור ראשון בן 25 דקות!'
                       : 'No completed lessons yet. Book your first 25-minute lesson to start!'}
                   </p>
@@ -1656,15 +1674,13 @@ export const StudentDashboard: React.FC = () => {
                       </div>
                       <div>
                         <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                          <span>{language === 'he' ? 'תעודות סיום רשמיות' : 'Official Certificates of Completion'}</span>
+                          <span>{isAr ? 'شهادات التخرج والإنجاز الرسمية' : isHe ? 'תעודות סיום רשמיות' : 'Official Certificates of Completion'}</span>
                           <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
-                            {certificatesData.length} {language === 'he' ? 'הוענקו' : 'Awarded'}
+                            {certificatesData.length} {isAr ? 'تم منحها' : isHe ? 'הוענקו' : 'Awarded'}
                           </span>
                         </h2>
                         <p className="text-xs text-slate-600 dark:text-slate-400">
-                          {language === 'he'
-                            ? 'תעודות חתומות עם קוד אימות רשמי הניתנות להדפסה ושמירה ב-PDF'
-                            : 'Verified milestone credentials with serial verification numbers, ready to print & download'}
+                          {isAr ? 'شهادات إنجاز معتمدة برموز تحقق رسمية جاهزة للطباعة والتحميل' : isHe ? 'תעודות חתומות עם קוד אימות רשמי הניתנות להדפסה ושמירה ב-PDF' : 'Verified milestone credentials with serial verification numbers, ready to print & download'}
                         </p>
                       </div>
                     </div>
@@ -1682,29 +1698,29 @@ export const StudentDashboard: React.FC = () => {
                               {cert.certificateNumber}
                             </span>
                             <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                              {new Date(cert.completionDate).toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US')}
+                              {new Date(cert.completionDate).toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US')}
                             </span>
                           </div>
                           <h3 className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                            {language === 'he' && cert.packageNameHe ? cert.packageNameHe : cert.packageName}
+                            {isAr && cert.packageNameAr ? cert.packageNameAr : isHe && cert.packageNameHe ? cert.packageNameHe : cert.packageName}
                           </h3>
                           <p className="text-xs font-semibold text-brand-teal-700 dark:text-brand-teal-400 flex items-center gap-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>{language === 'he' && cert.levelAchievedHe ? cert.levelAchievedHe : cert.levelAchieved}</span>
+                            <span>{isAr && cert.levelAchievedAr ? cert.levelAchievedAr : isHe && cert.levelAchievedHe ? cert.levelAchievedHe : cert.levelAchieved}</span>
                           </p>
                         </div>
 
                         <div className="pt-4 mt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
                           <span className="text-[10px] text-slate-400 flex items-center gap-1">
                             <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                            {language === 'he' ? 'אימות חתום' : 'Verified Serial'}
+                            {isAr ? 'رمز تحقق معتمد' : isHe ? 'אימות חתום' : 'Verified Serial'}
                           </span>
                           <button
                             onClick={() => setSelectedCert(cert)}
                             className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
                           >
                             <Award className="w-3.5 h-3.5" />
-                            <span>{language === 'he' ? 'הצג תעודה רשמית' : 'View Certificate'}</span>
+                            <span>{isAr ? 'عرض الشهادة الرسمية' : isHe ? 'הצג תעודה רשמית' : 'View Certificate'}</span>
                           </button>
                         </div>
                       </div>
@@ -1720,13 +1736,11 @@ export const StudentDashboard: React.FC = () => {
             <div className="space-y-6">
               <PageHeaderBanner
                 badgeIcon={Repeat}
-                badgeText={language === 'he' ? 'מערכת הזמנת שיעורים חכמה • בחירת מועד ומורה' : 'Smart Booking Engine • Select Time & Teacher'}
+                badgeText={isAr ? 'محرك الحجز الذكي • اختر الوقت والمعلم' : isHe ? 'מערכת הזמנת שיעורים חכמה • בחירת מועד ומורה' : 'Smart Booking Engine • Select Time & Teacher'}
                 statusText="Live"
-                title={language === 'he' ? 'קביעת שיעורים וחוגים (One-Time & Regular Booking)' : 'Session & Regular Booking Hub'}
+                title={isAr ? 'حجز الدروس والحصص المنتظمة' : isHe ? 'קביעת שיעורים וחוגים (One-Time & Regular Booking)' : 'Session & Regular Booking Hub'}
                 description={
-                  language === 'he'
-                    ? 'בחר סוג שיעור (בודד או שבועי קבוע), בחר את השעה הרצויה מהלוח, ובדוק בזמן אמת אילו מורים פנויים לשעה זו או החלף מורה בקלות.'
-                    : 'Choose your session type, pick your desired time from the calendar, and instantly see which certified teachers are available or easily switch instructors.'
+                  isAr ? 'اختر نوع الجلسة، وحدد الوقت المطلوب من التقويم، واطلع فوراً على المعلمين المتاحين أو بدّل المعلم بكل سهولة.' : isHe ? 'בחר סוג שיעור (בודד או שבועי קבוע), בחר את השעה הרצויה מהלוח, ובדוק בזמן אמת אילו מורים פנויים לשעה זו או החלף מורה בקלות.' : 'Choose your session type, pick your desired time from the calendar, and instantly see which certified teachers are available or easily switch instructors.'
                 }
               />
 
@@ -1752,14 +1766,12 @@ export const StudentDashboard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Video className="w-5 h-5 text-brand-teal-800 dark:text-brand-teal-400" />
                     <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                      {language === 'he'
-                        ? 'שיעורים חיים קרובים'
-                        : 'Upcoming Live Sessions'}
+                      {isAr ? 'الدروس المباشرة القادمة' : isHe ? 'שיעורים חיים קרובים' : 'Upcoming Live Sessions'}
                     </h2>
                   </div>
                   <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-300 bg-brand-olive-50 dark:bg-brand-olive-950/60 px-2.5 py-0.5 rounded-full border border-brand-olive-200 dark:border-brand-olive-800">
                     {upcomingLessons.length}{' '}
-                    {language === 'he' ? 'מתוזמנים' : 'Scheduled'}
+                    {isAr ? 'مجدولة' : isHe ? 'מתוזמנים' : 'Scheduled'}
                   </span>
                 </div>
 
@@ -1790,15 +1802,15 @@ export const StudentDashboard: React.FC = () => {
                                       : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
                                   }`}
                                 >
-                                  {lessonDur} {language === 'he' ? 'דקות' : 'Min'}
+                                  {lessonDur} {isAr ? 'دقيقة' : isHe ? 'דקות' : 'Min'}
                                 </span>
                               </div>
                               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                 {formatIsraelDateTime(l.scheduledAt, {
                                   includeWeekday: true,
-                                  locale: language === 'he' ? 'he-IL' : 'en-US',
+                                  locale: isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US',
                                 })}{' '}
-                                • {lessonDur} {language === 'he' ? 'דק׳ (שעון ישראל)' : `min (${ISRAEL_TZ_LABEL})`}
+                                • {lessonDur} {isAr ? 'دقيقة (توقيت القدس)' : isHe ? 'דק׳ (שעון ישראל)' : `min (${ISRAEL_TZ_LABEL})`}
                               </p>
                             </div>
                           </div>
@@ -1817,7 +1829,7 @@ export const StudentDashboard: React.FC = () => {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={() => haptics.tap()}
-                              title={language === 'he' ? 'הוסף ל-Google Calendar' : 'Add to Google Calendar'}
+                              title={isAr ? 'إضافة إلى تقويم Google' : isHe ? 'הוסף ל-Google Calendar' : 'Add to Google Calendar'}
                               className="px-2.5 py-2 bg-slate-100 dark:bg-slate-750 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
                             >
                               <Calendar className="w-3.5 h-3.5 text-blue-500" />
@@ -1838,7 +1850,7 @@ export const StudentDashboard: React.FC = () => {
                                   teacherName: l.teacher?.user?.firstName,
                                 });
                               }}
-                              title={language === 'he' ? 'הורד קובץ iCal / Outlook' : 'Download Apple / Outlook (.ics)'}
+                              title={isAr ? 'تحميل ملف التقويم (.ics)' : isHe ? 'הורד קובץ iCal / Outlook' : 'Download Apple / Outlook (.ics)'}
                               className="px-2.5 py-2 bg-slate-100 dark:bg-slate-750 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
                             >
                               <Download className="w-3.5 h-3.5 text-emerald-500" />
@@ -1851,17 +1863,17 @@ export const StudentDashboard: React.FC = () => {
                               className="px-3.5 py-2 bg-slate-100 dark:bg-slate-750 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 border border-slate-200 dark:border-slate-700"
                             >
                               <RefreshCw className="w-3.5 h-3.5 text-teal-500" />
-                              <span>{language === 'he' ? 'שינוי מועד' : 'Reschedule'}</span>
+                              <span>{isAr ? 'تعديل الموعد' : isHe ? 'שינוי מועד' : 'Reschedule'}</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => handleOpenLessonReceipt(l)}
-                              title={language === 'he' ? 'הדפס אישור הזמנה ושובר כניסה לשיעור' : 'Print Booking Slip & Voucher'}
+                              title={isAr ? 'طباعة إشعار وتأكيد الحجز' : isHe ? 'הדפס אישור הזמנה ושובר כניסה לשיעור' : 'Print Booking Slip & Voucher'}
                               className="px-3 py-2 bg-slate-100 dark:bg-slate-750 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
                             >
                               <Printer className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
-                              <span className="hidden sm:inline">{language === 'he' ? 'אישור' : 'Receipt'}</span>
+                              <span className="hidden sm:inline">{isAr ? 'إيصال' : isHe ? 'אישור' : 'Receipt'}</span>
                             </button>
 
                             {l.zoomLink && (
@@ -1872,7 +1884,7 @@ export const StudentDashboard: React.FC = () => {
                                 className="px-4 py-2 bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-bold text-xs rounded-xl shadow-2xs flex items-center gap-2"
                               >
                                 <Video className="w-4 h-4" />
-                                <span>{language === 'he' ? 'כניסה לשיעור בזום' : 'Join Zoom Lesson'}</span>
+                                <span>{isAr ? 'الدخول إلى قاعة Zoom' : isHe ? 'כניסה לשיעור בזום' : 'Join Zoom Lesson'}</span>
                               </a>
                             )}
                           </div>
@@ -1882,7 +1894,9 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400 py-6 text-center">
-                    {language === 'he'
+                    {isAr
+                      ? 'لا توجد دروس قادمة. انتقل إلى تبويب حجز حصة لاختيار موعد مناسب.'
+                      : isHe
                       ? 'אין שיעורים קרובים. היכנס ללשונית הזמנת שיעור לקביעת מועד נוח.'
                       : 'No upcoming lessons. Head over to Book Session to reserve your next lesson.'}
                   </p>
@@ -1895,13 +1909,11 @@ export const StudentDashboard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-brand-teal-800 dark:text-brand-teal-400" />
                     <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                      {language === 'he'
-                        ? 'שיעורים שהושלמו והקלטות'
-                        : 'Completed Lessons & Recordings'}
+                      {isAr ? 'الدروس المكتملة والتسجيلات' : isHe ? 'שיעורים שהושלמו והקלטות' : 'Completed Lessons & Recordings'}
                     </h2>
                   </div>
                   <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                    {language === 'he' ? 'הוקלט עבור החזרה שלך' : 'Recorded for your review'}
+                    {isAr ? 'مسجل لمراجعته في أي وقت' : isHe ? 'הוקלט עבור החזרה שלך' : 'Recorded for your review'}
                   </span>
                 </div>
 
@@ -1917,7 +1929,7 @@ export const StudentDashboard: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                                {language === 'he' ? `שיעור (${lessonDur} דק׳) עם` : `${lessonDur}m Lesson with`}{' '}
+                                {isAr ? `حصة (${lessonDur} دقيقة) مع` : isHe ? `שיעור (${lessonDur} דק׳) עם` : `${lessonDur}m Lesson with`}{' '}
                                 {lesson.teacher?.user?.firstName} {lesson.teacher?.user?.lastName}
                               </span>
                               <span
@@ -1955,14 +1967,12 @@ export const StudentDashboard: React.FC = () => {
                                 >
                                   <PlayCircle className="w-3.5 h-3.5 text-brand-olive-600" />
                                   <span>
-                                    {language === 'he'
-                                      ? 'צפייה בהקלטה במערכת'
-                                      : 'Watch Recording In-App'}
+                                    {isAr ? 'مشاهدة التسجيل في المنصة' : isHe ? 'צפייה בהקלטה במערכת' : 'Watch Recording In-App'}
                                   </span>
                                 </button>
                               ) : (
                                 <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">
-                                  {language === 'he' ? 'ההקלטה תועלה בקרוב' : 'Recording uploading soon'}
+                                  {isAr ? 'سيتم رفع التسجيل قريباً' : isHe ? 'ההקלטה תועלה בקרוב' : 'Recording uploading soon'}
                                 </span>
                               )}
                             </div>
@@ -1975,11 +1985,13 @@ export const StudentDashboard: React.FC = () => {
                                   type="button"
                                   onClick={() => openRateLesson(lesson)}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-bold hover:bg-amber-500/20 transition-colors"
-                                  title={language === 'he' ? 'לחץ לעריכת דירוג השיעור' : 'Click to edit lesson rating'}
+                                  title={isAr ? 'اضغط لتعديل تقييم الدرس' : isHe ? 'לחץ לעריכת דירוג השיעור' : 'Click to edit lesson rating'}
                                 >
                                   <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                                   <span>
-                                    {language === 'he'
+                                    {isAr
+                                      ? `الدرس: ${lesson.feedback.qualityRating}/5`
+                                      : isHe
                                       ? `שיעור: ${lesson.feedback.qualityRating}/5`
                                       : `Lesson: ${lesson.feedback.qualityRating}/5`}
                                   </span>
@@ -1991,7 +2003,7 @@ export const StudentDashboard: React.FC = () => {
                                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 text-xs font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all shadow-2xs"
                                 >
                                   <Star className="w-3.5 h-3.5 text-amber-500" />
-                                  <span>{language === 'he' ? 'דרג שיעור' : 'Rate Lesson'}</span>
+                                  <span>{isAr ? 'تقييم الحصة' : isHe ? 'דרג שיעור' : 'Rate Lesson'}</span>
                                 </button>
                               )}
 
@@ -2001,11 +2013,13 @@ export const StudentDashboard: React.FC = () => {
                                   type="button"
                                   onClick={() => openRateTeacher(lesson)}
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20 text-xs font-bold hover:bg-purple-500/20 transition-colors"
-                                  title={language === 'he' ? 'לחץ לעריכת דירוג המורה' : 'Click to edit teacher rating'}
+                                  title={isAr ? 'اضغط لتعديل تقييم المعلم' : isHe ? 'לחץ לעריכת דירוג המורה' : 'Click to edit teacher rating'}
                                 >
                                   <Award className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                                   <span>
-                                    {language === 'he'
+                                    {isAr
+                                      ? `المعلم: ${lesson.teacher.surveys[0].overallRating}/5`
+                                      : isHe
                                       ? `מורה: ${lesson.teacher.surveys[0].overallRating}/5`
                                       : `Teacher: ${lesson.teacher.surveys[0].overallRating}/5`}
                                   </span>
@@ -2017,7 +2031,7 @@ export const StudentDashboard: React.FC = () => {
                                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 text-xs font-bold hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-all shadow-2xs"
                                 >
                                   <Award className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                                  <span>{language === 'he' ? 'דרג מורה' : 'Rate Teacher'}</span>
+                                  <span>{isAr ? 'تقييم المعلم' : isHe ? 'דרג מורה' : 'Rate Teacher'}</span>
                                 </button>
                               )}
                             </div>
@@ -2031,7 +2045,7 @@ export const StudentDashboard: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                   <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
                                   <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                                    {language === 'he' ? 'דירוג איכות השיעור' : 'Rate Lesson Quality'}
+                                    {isAr ? 'تقييم جودة الحصة' : isHe ? 'דירוג איכות השיעור' : 'Rate Lesson Quality'}
                                   </span>
                                 </div>
                                 <button
@@ -2049,7 +2063,7 @@ export const StudentDashboard: React.FC = () => {
                                   <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                                   <div className="flex-1">
                                     <span className="font-bold block">
-                                      {language === 'he' ? 'שימת לב נדרשת:' : 'Action Required:'}
+                                      {isAr ? 'إجراء مطلوب:' : isHe ? 'שימת לב נדרשת:' : 'Action Required:'}
                                     </span>
                                     <p className="mt-0.5 leading-relaxed">{lessonRatingError}</p>
                                   </div>
@@ -2059,7 +2073,7 @@ export const StudentDashboard: React.FC = () => {
                               {/* Star Rating with Dynamic Live Guidance */}
                               <div>
                                 <span className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
-                                  {language === 'he' ? 'בחר דירוג לשיעור (1–5 כוכבים):' : 'Select Lesson Rating (1–5 Stars):'}
+                                  {isAr ? 'اختر تقييم الحصة (1-5 نجوم):' : isHe ? 'בחר דירוג לשיעור (1–5 כוכבים):' : 'Select Lesson Rating (1–5 Stars):'}
                                 </span>
                                 <div className="flex items-center gap-1.5">
                                   {[1, 2, 3, 4, 5].map((star) => {
@@ -2098,13 +2112,13 @@ export const StudentDashboard: React.FC = () => {
                                 {/* Pace */}
                                 <div>
                                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    {language === 'he' ? 'קצב השיעור:' : 'Lesson Pace:'}
+                                    {isAr ? 'سرعة وإيقاع الحصة:' : isHe ? 'קצב השיעור:' : 'Lesson Pace:'}
                                   </label>
                                   <div className="flex gap-1.5">
                                     {[
-                                      { val: 1, labelHe: 'איטי', labelEn: 'Slow' },
-                                      { val: 3, labelHe: 'מתאים בדיוק', labelEn: 'Just Right' },
-                                      { val: 5, labelHe: 'מהיר', labelEn: 'Fast' },
+                                      { val: 1, labelAr: 'بطيء', labelHe: 'איטי', labelEn: 'Slow' },
+                                      { val: 3, labelAr: 'مناسب جداً', labelHe: 'מתאים בדיוק', labelEn: 'Just Right' },
+                                      { val: 5, labelAr: 'سريع', labelHe: 'מהיר', labelEn: 'Fast' },
                                     ].map((item) => (
                                       <button
                                         key={item.val}
@@ -2116,7 +2130,7 @@ export const StudentDashboard: React.FC = () => {
                                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                                         }`}
                                       >
-                                        {language === 'he' ? item.labelHe : item.labelEn}
+                                        {isAr ? item.labelAr : isHe ? item.labelHe : item.labelEn}
                                       </button>
                                     ))}
                                   </div>
@@ -2125,13 +2139,13 @@ export const StudentDashboard: React.FC = () => {
                                 {/* Difficulty */}
                                 <div>
                                   <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                    {language === 'he' ? 'רמת קושי:' : 'Difficulty:'}
+                                    {isAr ? 'مستوى الصعوبة:' : isHe ? 'רמת קושי:' : 'Difficulty:'}
                                   </label>
                                   <div className="flex gap-1.5">
                                     {[
-                                      { val: 1, labelHe: 'קל', labelEn: 'Easy' },
-                                      { val: 3, labelHe: 'מאוזן', labelEn: 'Balanced' },
-                                      { val: 5, labelHe: 'מאתגר', labelEn: 'Challenging' },
+                                      { val: 1, labelAr: 'سهل', labelHe: 'קל', labelEn: 'Easy' },
+                                      { val: 3, labelAr: 'متوازن', labelHe: 'מאוזן', labelEn: 'Balanced' },
+                                      { val: 5, labelAr: 'تحدي', labelHe: 'מאתגר', labelEn: 'Challenging' },
                                     ].map((item) => (
                                       <button
                                         key={item.val}
@@ -2143,7 +2157,7 @@ export const StudentDashboard: React.FC = () => {
                                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50'
                                         }`}
                                       >
-                                        {language === 'he' ? item.labelHe : item.labelEn}
+                                        {isAr ? item.labelAr : isHe ? item.labelHe : item.labelEn}
                                       </button>
                                     ))}
                                   </div>
@@ -2153,16 +2167,14 @@ export const StudentDashboard: React.FC = () => {
                               {/* Optional Comment */}
                               <div>
                                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                  {language === 'he' ? 'משוב נוסף על השיעור (אופציונלי):' : 'Additional Lesson Feedback (optional):'}
+                                  {isAr ? 'ملاحظات إضافية حول الدرس (اختياري):' : isHe ? 'משוב נוסף על השיעור (אופציונלי):' : 'Additional Lesson Feedback (optional):'}
                                 </label>
                                 <input
                                   type="text"
                                   value={lessonComment}
                                   onChange={(e) => setLessonComment(e.target.value)}
                                   placeholder={
-                                    language === 'he'
-                                      ? 'מה אהבת בשיעור? מה תרצה לתרגל יותר בפעם הבאה?...'
-                                      : 'What did you learn? Any areas to focus on next time?...'
+                                    isAr ? 'ماذا تعلمت في هذه الحصة؟ هل هناك نقاط تود التركيز عليها لاحقاً؟...' : isHe ? 'מה אהבת בשיעור? מה תרצה לתרגל יותר בפעם הבאה?...' : 'What did you learn? Any areas to focus on next time?...'
                                   }
                                   className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs outline-none focus:ring-2 focus:ring-amber-500"
                                 />
@@ -2175,7 +2187,7 @@ export const StudentDashboard: React.FC = () => {
                                   onClick={() => setRatingLessonTarget(null)}
                                   className="px-3 py-1.5 text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-200/50 rounded-xl"
                                 >
-                                  {language === 'he' ? 'ביטול' : 'Cancel'}
+                                  {isAr ? 'إلغاء' : isHe ? 'ביטול' : 'Cancel'}
                                 </button>
                                 <button
                                   type="button"
@@ -2183,7 +2195,9 @@ export const StudentDashboard: React.FC = () => {
                                   onClick={() => {
                                     if (!lessonRatingVal || lessonRatingVal < 1) {
                                       setLessonRatingError(
-                                        language === 'he'
+                                        isAr
+                                          ? 'يرجى اختيار التقييم (1-5 نجوم) بالضغط على النجوم أعلاه قبل الإرسال.'
+                                          : isHe
                                           ? 'אנא בחר דירוג (1–5 כוכבים) על ידי לחיצה על הכוכבים למעלה לפני השליחה.'
                                           : 'Please select a star rating (1–5 stars) above before submitting.'
                                       );
@@ -2202,8 +2216,8 @@ export const StudentDashboard: React.FC = () => {
                                   <CheckCircle2 className="w-4 h-4" />
                                   <span>
                                     {submitLessonFeedbackMutation.isPending
-                                      ? language === 'he' ? 'שולח...' : 'Submitting...'
-                                      : language === 'he' ? 'שלח דירוג שיעור' : 'Submit Lesson Rating'}
+                                      ? isAr ? 'جاري الإرسال...' : isHe ? 'שולח...' : 'Submitting...'
+                                      : isAr ? 'إرسال تقييم الحصة' : isHe ? 'שלח דירוג שיעור' : 'Submit Lesson Rating'}
                                   </span>
                                 </button>
                               </div>
@@ -2218,7 +2232,9 @@ export const StudentDashboard: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                   <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                   <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                                    {language === 'he'
+                                    {isAr
+                                      ? `تقييم وملاحظات المعلم: ${lesson.teacher?.user?.firstName || 'المعلم'}`
+                                      : isHe
                                       ? `דירוג והערכת מורה: ${lesson.teacher?.user?.firstName || 'המורה'}`
                                       : `Rate Teacher: ${lesson.teacher?.user?.firstName || 'Teacher'}`}
                                   </span>
@@ -2238,7 +2254,7 @@ export const StudentDashboard: React.FC = () => {
                                   <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                                   <div className="flex-1">
                                     <span className="font-bold block">
-                                      {language === 'he' ? 'שימת לב נדרשת:' : 'Action Required:'}
+                                      {isAr ? 'إجراء مطلوب:' : isHe ? 'שימת לב נדרשת:' : 'Action Required:'}
                                     </span>
                                     <p className="mt-0.5 leading-relaxed">{teacherRatingError}</p>
                                   </div>
@@ -2248,7 +2264,7 @@ export const StudentDashboard: React.FC = () => {
                               {/* Overall Teacher Star Rating */}
                               <div>
                                 <span className="font-bold text-slate-800 dark:text-slate-200 block mb-1.5">
-                                  {language === 'he' ? 'ציון כללי למורה (1–5 כוכבים):' : 'Overall Teacher Rating (1–5 Stars):'}
+                                  {isAr ? 'التقييم العام للمعلم (1-5 نجوم):' : isHe ? 'ציון כללי למורה (1–5 כוכבים):' : 'Overall Teacher Rating (1–5 Stars):'}
                                 </span>
                                 <div className="flex items-center gap-1.5">
                                   {[1, 2, 3, 4, 5].map((star) => {
@@ -2285,13 +2301,13 @@ export const StudentDashboard: React.FC = () => {
                               {/* Detailed Teacher Criteria */}
                               <div className="space-y-2 pt-1 border-t border-purple-200/50 dark:border-purple-800/50">
                                 <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 block">
-                                  {language === 'he' ? 'הערכת מאפייני הוראה:' : 'Teaching Evaluation Criteria:'}
+                                  {isAr ? 'معايير تقييم التدريس:' : isHe ? 'הערכת מאפייני הוראה:' : 'Teaching Evaluation Criteria:'}
                                 </span>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                   {/* Communication */}
                                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60">
                                     <span className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
-                                      {language === 'he' ? 'תקשורת וסבלנות' : 'Communication'}
+                                      {isAr ? 'التواصل والوضوح' : isHe ? 'תקשורת וסבלנות' : 'Communication'}
                                     </span>
                                     <div className="flex gap-1">
                                       {[1, 2, 3, 4, 5].map((s) => (
@@ -2316,7 +2332,7 @@ export const StudentDashboard: React.FC = () => {
                                   {/* Knowledge */}
                                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60">
                                     <span className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
-                                      {language === 'he' ? 'בקיאות והסבר' : 'Knowledge & Style'}
+                                      {isAr ? 'التمكن وأسلوب الشرح' : isHe ? 'בקיאות והסבר' : 'Knowledge & Style'}
                                     </span>
                                     <div className="flex gap-1">
                                       {[1, 2, 3, 4, 5].map((s) => (
@@ -2341,7 +2357,7 @@ export const StudentDashboard: React.FC = () => {
                                   {/* Punctuality */}
                                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/60">
                                     <span className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block mb-1">
-                                      {language === 'he' ? 'דיוק וזמנים' : 'Punctuality'}
+                                      {isAr ? 'الدقة والالتزام بالوقت' : isHe ? 'דיוק וזמנים' : 'Punctuality'}
                                     </span>
                                     <div className="flex gap-1">
                                       {[1, 2, 3, 4, 5].map((s) => (
@@ -2368,16 +2384,14 @@ export const StudentDashboard: React.FC = () => {
                               {/* Teacher Comment */}
                               <div>
                                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                  {language === 'he' ? 'מילה טובה או משוב למורה (אופציונלי):' : 'Feedback or Compliment for Teacher (optional):'}
+                                  {isAr ? 'كلمة طيبة أو ملاحظات للمعلم (اختياري):' : isHe ? 'מילה טובה או משוב למורה (אופציונלי):' : 'Feedback or Compliment for Teacher (optional):'}
                                 </label>
                                 <input
                                   type="text"
                                   value={teacherComment}
                                   onChange={(e) => setTeacherComment(e.target.value)}
                                   placeholder={
-                                    language === 'he'
-                                      ? 'שתף את המורה במה שהיה מצוין או הצעות לעתיד...'
-                                      : 'Write a compliment or feedback for your tutor...'
+                                    isAr ? 'اكتب كلمة شكر أو ملاحظات لمعلمك...' : isHe ? 'שתף את המורה במה שהיה מצוין או הצעות לעתיד...' : 'Write a compliment or feedback for your tutor...'
                                   }
                                   className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs outline-none focus:ring-2 focus:ring-purple-500"
                                 />
@@ -2390,7 +2404,7 @@ export const StudentDashboard: React.FC = () => {
                                   onClick={() => setRatingTeacherTarget(null)}
                                   className="px-3 py-1.5 text-slate-600 dark:text-slate-400 font-semibold hover:bg-slate-200/50 rounded-xl"
                                 >
-                                  {language === 'he' ? 'ביטול' : 'Cancel'}
+                                  {isAr ? 'إلغاء' : isHe ? 'ביטול' : 'Cancel'}
                                 </button>
                                 <button
                                   type="button"
@@ -2398,7 +2412,9 @@ export const StudentDashboard: React.FC = () => {
                                   onClick={() => {
                                     if (!teacherOverallRating || teacherOverallRating < 1) {
                                       setTeacherRatingError(
-                                        language === 'he'
+                                        isAr
+                                          ? 'يرجى اختيار التقييم الإجمالي للمعلم (1-5 نجوم) بالضغط على النجوم أعلاه قبل الإرسال.'
+                                          : isHe
                                           ? 'אנא בחר ציון כללי למורה (1–5 כוכבים) על ידי לחיצה על הכוכבים למעלה לפני השליחה.'
                                           : 'Please select an overall teacher rating (1–5 stars) above before submitting.'
                                       );
@@ -2418,8 +2434,8 @@ export const StudentDashboard: React.FC = () => {
                                   <CheckCircle2 className="w-4 h-4" />
                                   <span>
                                     {submitTeacherSurveyMutation.isPending
-                                      ? language === 'he' ? 'שולח...' : 'Submitting...'
-                                      : language === 'he' ? 'שלח דירוג מורה' : 'Submit Teacher Rating'}
+                                      ? isAr ? 'جاري الإرسال...' : isHe ? 'שולח...' : 'Submitting...'
+                                      : isAr ? 'إرسال تقييم المعلم' : isHe ? 'שלח דירוג מורה' : 'Submit Teacher Rating'}
                                   </span>
                                 </button>
                               </div>
@@ -2431,7 +2447,9 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                 ) : (
                   <p className="text-xs text-slate-400 py-6 text-center">
-                    {language === 'he'
+                    {isAr
+                      ? 'لم تكتمل أي حصص بعد. احجز أول حصة لك لتبدأ الآن!'
+                      : isHe
                       ? 'טרם הושלמו שיעורים. הזמן שיעור ראשון כדי להתחיל!'
                       : 'No completed lessons yet. Book your first lesson to begin!'}
                   </p>
@@ -2448,15 +2466,13 @@ export const StudentDashboard: React.FC = () => {
                 <div>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 text-xs font-bold text-brand-teal-800 dark:text-brand-teal-300 mb-2">
                     <PlayCircle className="w-3.5 h-3.5 text-brand-olive-500" />
-                    <span>{language === 'he' ? 'מאגר שיעורים מוקלטים' : 'Recorded Sessions Portal'}</span>
+                    <span>{isAr ? 'بوابة الدروس المسجلة' : isHe ? 'מאגר שיעורים מוקלטים' : 'Recorded Sessions Portal'}</span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                    {language === 'he' ? 'צפייה בשיעורי הווידאו שלך' : 'Watch Your Recorded Lessons'}
+                    {isAr ? 'مشاهدة دروسك المسجلة' : isHe ? 'צפייה בשיעורי הווידאו שלך' : 'Watch Your Recorded Lessons'}
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-                    {language === 'he'
-                      ? 'כל שיעורי הווידאו שהועלו על ידי המורים שלך מ-Google Drive, מסודרים לפי נושא או לפי מספר שיעור.'
-                      : 'Stream recorded lessons uploaded by your certified teachers directly inside Engrew.'}
+                    {isAr ? 'شاهد تسجيلات الدروس التي يرفعها المعلمون المعتمدون مباشرة داخل المنصة.' : isHe ? 'כל שיעורי הווידאו שהועלו על ידי המורים שלך מ-Google Drive, מסודרים לפי נושא או לפי מספר שיעור.' : 'Stream recorded lessons uploaded by your certified teachers directly inside Engrew.'}
                   </p>
                 </div>
 
@@ -2469,7 +2485,7 @@ export const StudentDashboard: React.FC = () => {
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    {language === 'he' ? 'לפי נושא' : 'By Topic'}
+                    {isAr ? 'حسب الموضوع' : isHe ? 'לפי נושא' : 'By Topic'}
                   </button>
                   <button
                     onClick={() => setRecordingGroupMode('number')}
@@ -2479,7 +2495,7 @@ export const StudentDashboard: React.FC = () => {
                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    {language === 'he' ? 'לפי מספר שיעור' : 'By Session #'}
+                    {isAr ? 'حسب رقم الحصة' : isHe ? 'לפי מספר שיעור' : 'By Session #'}
                   </button>
                 </div>
               </div>
@@ -2514,17 +2530,17 @@ export const StudentDashboard: React.FC = () => {
                                 );
                               }}
                               className="absolute bottom-2.5 end-2.5 px-2.5 py-1.5 rounded-xl bg-slate-950/85 hover:bg-slate-900 text-white text-[11px] font-bold backdrop-blur-md border border-white/20 shadow-md flex items-center gap-1.5 transition-all opacity-85 hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                              title={language === 'he' ? 'פתח במסך מלא' : 'Open in Full Screen'}
+                              title={isAr ? 'فتح في شاشة كاملة' : isHe ? 'פתח במסך מלא' : 'Open in Full Screen'}
                             >
                               <Maximize2 className="w-3.5 h-3.5 text-cyan-300" />
-                              <span>{language === 'he' ? 'מסך מלא' : 'Full Screen'}</span>
+                              <span>{isAr ? 'شاشة كاملة' : isHe ? 'מסך מלא' : 'Full Screen'}</span>
                             </button>
                           </>
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
                             <PlayCircle className="w-12 h-12 text-slate-600" />
                             <p className="text-xs font-semibold">
-                              {language === 'he' ? 'סרטון השיעור אינו זמין' : 'Video not available'}
+                              {isAr ? 'الفيديو غير متوفر' : isHe ? 'סרטון השיעור אינו זמין' : 'Video not available'}
                             </p>
                           </div>
                         )}
@@ -2535,7 +2551,7 @@ export const StudentDashboard: React.FC = () => {
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div className="flex flex-wrap items-center gap-2.5">
                             <span className="px-3 py-1 rounded-xl bg-brand-teal-800 text-white font-black text-xs shadow-xs tracking-wide">
-                              {language === 'he' ? `שיעור #${activeRecording.sessionNumber}` : `Session #${activeRecording.sessionNumber}`}
+                              {isAr ? `حصة #${activeRecording.sessionNumber}` : isHe ? `שיעור #${activeRecording.sessionNumber}` : `Session #${activeRecording.sessionNumber}`}
                             </span>
                             <span className="px-3 py-1 rounded-xl bg-brand-olive-100 dark:bg-brand-olive-950/90 text-brand-olive-950 dark:text-brand-olive-200 border border-brand-olive-300 dark:border-brand-olive-700 font-extrabold text-xs shadow-2xs">
                               {activeRecording.category || 'General'}
@@ -2543,7 +2559,7 @@ export const StudentDashboard: React.FC = () => {
                             {activeRecording.durationMinutes && (
                               <span className="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-200 font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                                 <Clock className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
-                                {activeRecording.durationMinutes} {language === 'he' ? 'דקות' : 'min'}
+                                {activeRecording.durationMinutes} {isAr ? 'دقيقة' : isHe ? 'דקות' : 'min'}
                               </span>
                             )}
                           </div>
@@ -2564,7 +2580,7 @@ export const StudentDashboard: React.FC = () => {
                                 className="inline-flex items-center gap-1.5 text-xs font-black text-brand-olive-950 dark:text-brand-olive-200 hover:text-brand-olive-950 dark:hover:text-white px-3 py-1.5 rounded-xl bg-brand-olive-100 dark:bg-brand-olive-950/70 border border-brand-olive-300 dark:border-brand-olive-700 transition-colors shadow-2xs"
                               >
                                 <Maximize2 className="w-3.5 h-3.5 text-brand-olive-600 dark:text-brand-olive-300" />
-                                <span>{language === 'he' ? 'מסך מלא' : 'Full Screen'}</span>
+                                <span>{isAr ? 'شاشة كاملة' : isHe ? 'מסך מלא' : 'Full Screen'}</span>
                               </button>
                               <a
                                 href={activeRecording.videoUrl}
@@ -2573,7 +2589,7 @@ export const StudentDashboard: React.FC = () => {
                                 className="inline-flex items-center gap-1.5 text-xs font-black text-brand-teal-800 dark:text-brand-teal-300 hover:text-brand-teal-950 dark:hover:text-white px-3 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200/80 dark:border-brand-teal-800 transition-colors shadow-2xs"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
-                                <span>{language === 'he' ? 'Google Drive' : 'Drive Link'}</span>
+                                <span>{isAr ? 'رابط Google Drive' : isHe ? 'Google Drive' : 'Drive Link'}</span>
                               </a>
                             </div>
                           )}
@@ -2593,13 +2609,13 @@ export const StudentDashboard: React.FC = () => {
                         {/* Teacher details & timestamp */}
                         <div className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 pt-3 border-t border-slate-200/80 dark:border-slate-800 font-medium">
                           <span>
-                            {language === 'he' ? 'מורה מוסמך:' : 'Certified Teacher:'}{' '}
+                            {isAr ? 'المعلم المعتمد:' : isHe ? 'מורה מוסמך:' : 'Certified Teacher:'}{' '}
                             <strong className="text-slate-900 dark:text-white font-extrabold">
                               {activeRecording.teacher?.user?.firstName} {activeRecording.teacher?.user?.lastName}
                             </strong>
                           </span>
                           <span className="font-semibold text-slate-600 dark:text-slate-300">
-                            {new Date(activeRecording.createdAt).toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US')}
+                            {new Date(activeRecording.createdAt).toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US')}
                           </span>
                         </div>
 
@@ -2607,7 +2623,7 @@ export const StudentDashboard: React.FC = () => {
                         {activeRecording.description && (
                           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 space-y-1.5">
                             <span className="text-xs font-black text-slate-900 dark:text-white block uppercase tracking-wider">
-                              {language === 'he' ? 'דגשים וסיכום השיעור:' : 'Session Highlights & Teacher Notes:'}
+                              {isAr ? 'أبرز محاور الحصة وملاحظات المعلم:' : isHe ? 'דגשים וסיכום השיעור:' : 'Session Highlights & Teacher Notes:'}
                             </span>
                             <p className="text-xs text-slate-800 dark:text-slate-200 font-normal leading-relaxed whitespace-pre-line">
                               {activeRecording.description}
@@ -2629,14 +2645,14 @@ export const StudentDashboard: React.FC = () => {
                                 className="px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
                               >
                                 <ChevronLeft className="w-4 h-4" />
-                                <span>{language === 'he' ? 'השיעור הקודם' : 'Previous Lesson'}</span>
+                                <span>{isAr ? 'الدرس السابق' : isHe ? 'השיעור הקודם' : 'Previous Lesson'}</span>
                               </button>
                               <button
                                 disabled={!nextSession}
                                 onClick={() => nextSession && setSelectedSessionId(nextSession.id)}
                                 className="px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-teal-800 text-white hover:bg-brand-teal-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 shadow-2xs"
                               >
-                                <span>{language === 'he' ? 'השיעור הבא' : 'Next Lesson'}</span>
+                                <span>{isAr ? 'الدرس القادم' : isHe ? 'השיעור הבא' : 'Next Lesson'}</span>
                                 <ChevronRight className="w-4 h-4" />
                               </button>
                             </div>
@@ -2650,12 +2666,10 @@ export const StudentDashboard: React.FC = () => {
                         <PlayCircle className="w-8 h-8" />
                       </div>
                       <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                        {language === 'he' ? 'אין שיעורים מוקלטים כרגע' : 'No Recorded Sessions Available'}
+                        {isAr ? 'لا توجد دروس مسجلة متاحة حالياً' : isHe ? 'אין שיעורים מוקלטים כרגע' : 'No Recorded Sessions Available'}
                       </h3>
                       <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                        {language === 'he'
-                          ? 'המורה שלך יעלה לכאן שיעורים מוקלטים מ-Google Drive.'
-                          : 'Your teacher will add Google Drive video recordings here for you to watch.'}
+                        {isAr ? 'سيقوم معلمك برفع تسجيلات الفيديو عبر Google Drive لتتمكن من مشاهدتها هنا.' : isHe ? 'המורה שלך יעלה לכאן שיעורים מוקלטים מ-Google Drive.' : 'Your teacher will add Google Drive video recordings here for you to watch.'}
                       </p>
                     </div>
                   )}
@@ -2666,10 +2680,10 @@ export const StudentDashboard: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                       <Layers className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
-                      <span>{language === 'he' ? 'תוכן השיעורים' : 'Lesson Curriculum'}</span>
+                      <span>{isAr ? 'منهاج ومحتوى الدروس' : isHe ? 'תוכן השיעורים' : 'Lesson Curriculum'}</span>
                     </h3>
                     <span className="text-[11px] font-bold text-brand-teal-800 dark:text-brand-teal-300 bg-brand-teal-50 dark:bg-brand-teal-950/60 px-2 py-0.5 rounded-full border border-brand-teal-200 dark:border-brand-teal-800">
-                      {recordedSessions.length} {language === 'he' ? 'שיעורים' : 'Lessons'}
+                      {recordedSessions.length} {isAr ? 'الحصص' : isHe ? 'שיעורים' : 'Lessons'}
                     </span>
                   </div>
 
@@ -2678,7 +2692,7 @@ export const StudentDashboard: React.FC = () => {
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                     <input
                       type="text"
-                      placeholder={language === 'he' ? 'חיפוש שיעור או נושא...' : 'Search lessons...'}
+                      placeholder={isAr ? 'البحث عن درس أو موضوع...' : isHe ? 'חיפוש שיעור או נושא...' : 'Search lessons...'}
                       value={recordingSearch}
                       onChange={(e) => setRecordingSearch(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-teal-600"
@@ -2700,7 +2714,7 @@ export const StudentDashboard: React.FC = () => {
                     if (filtered.length === 0) {
                       return (
                         <p className="text-xs text-slate-400 py-8 text-center">
-                          {language === 'he' ? 'לא נמצאו שיעורים תואמים.' : 'No matching recorded sessions found.'}
+                          {isAr ? 'لم يتم العثور على دروس مسجلة مطابقة.' : isHe ? 'לא נמצאו שיעורים תואמים.' : 'No matching recorded sessions found.'}
                         </p>
                       );
                     }
@@ -2753,7 +2767,7 @@ export const StudentDashboard: React.FC = () => {
                                         </span>
                                         <div className="flex-1 min-w-0">
                                           <p className={`text-xs font-black truncate ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                                            {language === 'he' && session.titleHe ? session.titleHe : session.title}
+                                            {isAr && session.titleAr ? session.titleAr : isHe && session.titleHe ? session.titleHe : session.title}
                                           </p>
                                           <div className={`flex items-center gap-2 mt-1 text-[11px] font-semibold ${isSelected ? 'text-brand-teal-100' : 'text-slate-600 dark:text-slate-300'}`}>
                                             <span>{session.durationMinutes}m</span>
@@ -2804,7 +2818,7 @@ export const StudentDashboard: React.FC = () => {
                                 </span>
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-xs font-black truncate ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                                    {language === 'he' && session.titleHe ? session.titleHe : session.title}
+                                    {isAr && session.titleAr ? session.titleAr : isHe && session.titleHe ? session.titleHe : session.title}
                                   </p>
                                   <div className={`flex items-center gap-2 mt-1 text-[11px] font-semibold ${isSelected ? 'text-brand-teal-100' : 'text-slate-600 dark:text-slate-300'}`}>
                                     <span>{session.category}</span>
@@ -2835,14 +2849,12 @@ export const StudentDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-6 h-6 text-brand-teal-800 dark:text-brand-teal-400" />
                   <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                    {language === 'he'
-                      ? 'שיעורי בית שהוקצו ומשוב המורה'
-                      : 'Assigned Homework & Teacher Feedback'}
+                    {isAr ? 'الواجبات المسندة وملاحظات المعلم' : isHe ? 'שיעורי בית שהוקצו ומשוב המורה' : 'Assigned Homework & Teacher Feedback'}
                   </h2>
                 </div>
                 <span className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-300 bg-brand-teal-50 dark:bg-brand-teal-950/70 px-2.5 py-1 rounded-full border border-brand-teal-200 dark:border-brand-teal-800">
                   {recentHomework.length}{' '}
-                  {language === 'he' ? 'משימות בסך הכל' : 'Total Assignments'}
+                  {isAr ? 'إجمالي الواجبات' : isHe ? 'משימות בסך הכל' : 'Total Assignments'}
                 </span>
               </div>
 
@@ -2866,7 +2878,13 @@ export const StudentDashboard: React.FC = () => {
                               : 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
                           }`}
                         >
-                          {language === 'he'
+                          {isAr
+                            ? hw.status === 'GRADED'
+                              ? 'تم التصحيح'
+                              : hw.status === 'SUBMITTED'
+                              ? 'تم التسليم'
+                              : 'مُعين'
+                            : isHe
                             ? hw.status === 'GRADED'
                               ? 'נבדק'
                               : hw.status === 'SUBMITTED'
@@ -2887,20 +2905,20 @@ export const StudentDashboard: React.FC = () => {
                             <FileText className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 shrink-0" />
                             <span className="text-xs font-bold text-brand-teal-950 dark:text-brand-teal-200 truncate">
                               {isGoogleDriveUrl(hw.attachmentUrl)
-                                ? (language === 'he' ? 'קובץ חומר PDF מ-Google Drive' : 'Google Drive PDF Material')
-                                : (language === 'he' ? 'חומר לימודי מצורף' : 'Attached Learning Material')}
+                                ? (isAr ? 'ملف PDF من Google Drive' : isHe ? 'קובץ חומר PDF מ-Google Drive' : 'Google Drive PDF Material')
+                                : (isAr ? 'المادة التعليمية المرفقة' : isHe ? 'חומר לימודי מצורף' : 'Attached Learning Material')}
                             </span>
                           </div>
                           <button
                             onClick={() => {
                               setViewerUrl(hw.attachmentUrl);
                               setViewerTitle(hw.title);
-                              setViewerSubtitle(language === 'he' ? 'חומרי עזר לשיעורי בית' : 'Homework Learning Resource');
+                              setViewerSubtitle(isAr ? 'المواد المساعدة لحل الواجب' : isHe ? 'חומרי עזר לשיעורי בית' : 'Homework Learning Resource');
                             }}
                             className="px-3 py-1.5 text-xs font-bold bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-xl shadow-xs transition-colors shrink-0 flex items-center gap-1.5"
                           >
                             <Eye className="w-3.5 h-3.5 text-brand-olive-300" />
-                            <span>{language === 'he' ? 'פתח במערכת' : 'View In-App'}</span>
+                            <span>{isAr ? 'مشاهدة في المنصة' : isHe ? 'פתח במערכת' : 'View In-App'}</span>
                           </button>
                         </div>
                       )}
@@ -2909,7 +2927,7 @@ export const StudentDashboard: React.FC = () => {
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                           <Clock className="w-3.5 h-3.5 text-brand-teal-600" />
                           <span>
-                            {language === 'he' ? 'מועד הגשה:' : 'Due date:'}{' '}
+                            {isAr ? 'تاريخ التسليم:' : isHe ? 'מועד הגשה:' : 'Due date:'}{' '}
                             {new Date(hw.dueDate).toLocaleDateString()}
                           </span>
                         </div>
@@ -2918,7 +2936,7 @@ export const StudentDashboard: React.FC = () => {
                       {hw.studentNote && (
                         <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 dark:border-slate-700 text-xs">
                           <span className="font-bold text-slate-800 dark:text-slate-200">
-                            {language === 'he' ? 'התשובה שהגשת:' : 'Your Submission:'}
+                            {isAr ? 'إجابتك المسلمة:' : isHe ? 'התשובה שהגשת:' : 'Your Submission:'}
                           </span>{' '}
                           <span className="text-slate-600 dark:text-slate-400">
                             {hw.studentNote}
@@ -2928,7 +2946,7 @@ export const StudentDashboard: React.FC = () => {
 
                       {hw.teacherFeedback && (
                         <div className="p-3 bg-brand-teal-50/60 dark:bg-brand-teal-950/60 rounded-xl border border-brand-teal-200/80 dark:border-brand-teal-800 text-xs text-brand-teal-950 dark:text-brand-teal-200">
-                          <strong>{language === 'he' ? 'משוב המורה:' : 'Teacher Feedback:'}</strong>{' '}
+                          <strong>{isAr ? 'ملاحظات المعلم:' : isHe ? 'משוב המורה:' : 'Teacher Feedback:'}</strong>{' '}
                           {hw.teacherFeedback}
                         </div>
                       )}
@@ -2942,7 +2960,9 @@ export const StudentDashboard: React.FC = () => {
                                 value={hwNote}
                                 onChange={(e) => setHwNote(e.target.value)}
                                 placeholder={
-                                  language === 'he'
+                                  isAr
+                                    ? 'اكتب إجابتك أو تلخيصك أو الصق رابط الحل هنا...'
+                                    : isHe
                                     ? 'הדבק את תשובתך, סיכומך או קישור למסמך...'
                                     : 'Paste your answers, summary, or link...'
                                 }
@@ -2953,7 +2973,7 @@ export const StudentDashboard: React.FC = () => {
                                   onClick={() => setSubmittingHwId(null)}
                                   className="px-3 py-1.5 text-xs text-slate-500 font-semibold"
                                 >
-                                  {language === 'he' ? 'ביטול' : 'Cancel'}
+                                  {isAr ? 'إلغاء' : isHe ? 'ביטול' : 'Cancel'}
                                 </button>
                                 <button
                                   onClick={() =>
@@ -2964,7 +2984,7 @@ export const StudentDashboard: React.FC = () => {
                                   }
                                   className="px-4 py-1.5 text-xs bg-brand-teal-800 dark:bg-brand-teal-700 text-white font-bold rounded-xl shadow-xs"
                                 >
-                                  {language === 'he' ? 'הגש שיעורי בית' : 'Turn In Homework'}
+                                  {isAr ? 'تسليم الواجب المنزلي' : isHe ? 'הגש שיעורי בית' : 'Turn In Homework'}
                                 </button>
                               </div>
                             </div>
@@ -2973,7 +2993,7 @@ export const StudentDashboard: React.FC = () => {
                               onClick={() => setSubmittingHwId(hw.id)}
                               className="px-4 py-2 bg-brand-teal-800 dark:bg-brand-teal-700 hover:bg-brand-teal-900 text-white font-bold text-xs rounded-xl shadow-2xs"
                             >
-                              {language === 'he' ? 'הגש שיעורי בית ←' : 'Submit Homework →'}
+                              {isAr ? 'تسليم الواجب ←' : isHe ? 'הגש שיעורי בית ←' : 'Submit Homework →'}
                             </button>
                           )}
                         </div>
@@ -2983,7 +3003,7 @@ export const StudentDashboard: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-xs text-slate-400 py-8 text-center">
-                  {language === 'he' ? 'אין שיעורי בית ממתינים כעת.' : 'No homework assignments currently.'}
+                  {isAr ? 'لا توجد واجبات معلقة حالياً.' : isHe ? 'אין שיעורי בית ממתינים כעת.' : 'No homework assignments currently.'}
                 </p>
               )}
             </div>
@@ -2994,13 +3014,13 @@ export const StudentDashboard: React.FC = () => {
             <div className="space-y-6">
               <PageHeaderBanner
                 badgeIcon={Gamepad2}
-                badgeText={language === 'he' ? 'משחקי לימוד וחידונים' : 'Interactive Hebrew Learning Games'}
+                badgeText={isAr ? 'ألعاب تعليمية واختبارات تفاعلية' : isHe ? 'משחקי לימוד וחידונים' : 'Interactive Hebrew Learning Games'}
                 statusText="Active"
                 title={t('games.title')}
                 description={t('games.subtitle')}
                 action={
                   <span className="text-xs font-bold px-3.5 py-1.5 bg-white/15 backdrop-blur-md text-white rounded-full border border-white/20">
-                    {language === 'he' ? 'מותאם לרמתך:' : 'Filtered for your level:'}{' '}
+                    {isAr ? 'مخصص لمستواك التعليمي:' : isHe ? 'מותאם לרמתך:' : 'Filtered for your level:'}{' '}
                     {t(`levels.${student?.level || 'BEGINNER'}`)}
                   </span>
                 }
@@ -3017,14 +3037,14 @@ export const StudentDashboard: React.FC = () => {
                       className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 flex items-center gap-1"
                     >
                       <X className="w-4 h-4" />
-                      <span>{language === 'he' ? 'סגור משחק' : 'Close Game'}</span>
+                      <span>{isAr ? 'إغلاق اللعبة' : isHe ? 'סגור משחק' : 'Close Game'}</span>
                     </button>
                   </div>
 
                   {activeGame.gameType === 'FLASHCARD' && (
                     <FlashcardGame
                       gameId={activeGame.id}
-                      title={language === 'he' ? activeGame.titleHe : activeGame.title}
+                      title={isAr && activeGame.titleAr ? activeGame.titleAr : isHe ? activeGame.titleHe : activeGame.title}
                       titleHe={activeGame.titleHe}
                       cards={activeGame.configJson?.cards || []}
                       pointsReward={activeGame.pointsReward}
@@ -3038,7 +3058,7 @@ export const StudentDashboard: React.FC = () => {
                   {activeGame.gameType === 'QUIZ' && (
                     <QuizGame
                       gameId={activeGame.id}
-                      title={language === 'he' ? activeGame.titleHe : activeGame.title}
+                      title={isAr && activeGame.titleAr ? activeGame.titleAr : isHe ? activeGame.titleHe : activeGame.title}
                       titleHe={activeGame.titleHe}
                       questions={activeGame.configJson?.questions || []}
                       pointsReward={activeGame.pointsReward}
@@ -3052,7 +3072,7 @@ export const StudentDashboard: React.FC = () => {
                   {activeGame.gameType === 'MATCHING' && (
                     <MatchingGame
                       gameId={activeGame.id}
-                      title={language === 'he' ? activeGame.titleHe : activeGame.title}
+                      title={isAr && activeGame.titleAr ? activeGame.titleAr : isHe ? activeGame.titleHe : activeGame.title}
                       titleHe={activeGame.titleHe}
                       pairs={activeGame.configJson?.pairs || []}
                       pointsReward={activeGame.pointsReward}
@@ -3068,7 +3088,7 @@ export const StudentDashboard: React.FC = () => {
                   {/* Level Filter Bar */}
                   <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/70 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      {language === 'he' ? 'סינון רמה:' : 'Level Filter:'}
+                      {isAr ? 'تصفية المستوى:' : isHe ? 'סינון רמה:' : 'Level Filter:'}
                     </span>
                     {(['ALL', 'BEGINNER', 'ELEMENTARY', 'INTERMEDIATE', 'ADVANCED'] as const).map((lvl) => (
                       <button
@@ -3081,9 +3101,7 @@ export const StudentDashboard: React.FC = () => {
                         }`}
                       >
                         {lvl === 'ALL'
-                          ? language === 'he'
-                            ? 'כל הרמות'
-                            : 'All Levels'
+                          ? isAr ? 'جميع المستويات' : isHe ? 'כל הרמות' : 'All Levels'
                           : t(`levels.${lvl}`)}
                       </button>
                     ))}
@@ -3121,7 +3139,7 @@ export const StudentDashboard: React.FC = () => {
                                   </span>
                                 </div>
                                 <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-300 bg-brand-olive-50 dark:bg-brand-olive-950/60 px-2 py-0.5 rounded-md border border-brand-olive-200 dark:border-brand-olive-800">
-                                  +{game.pointsReward} {language === 'he' ? 'נק׳' : 'pts'}
+                                  +{game.pointsReward} {isAr ? 'نقطة' : isHe ? 'נק׳' : 'pts'}
                                 </span>
                               </div>
 
@@ -3130,14 +3148,18 @@ export const StudentDashboard: React.FC = () => {
                                 <div className="px-3 py-1.5 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/50 border border-brand-teal-200/60 dark:border-brand-teal-800 text-[11px] text-brand-teal-900 dark:text-brand-teal-300 font-semibold flex items-center gap-1.5">
                                   <Video className="w-3.5 h-3.5 text-brand-teal-600 dark:text-brand-teal-400 shrink-0" />
                                   <span>
-                                    {language === 'he'
+                                    {isAr
+                                      ? `تدريب مباشر مرتبط بدرسك (${game.lesson.durationMinutes || 25} دقيقة)`
+                                      : isHe
                                       ? `תרגול ישיר לשיעור שלך (${game.lesson.durationMinutes || 25} דק׳)`
                                       : `Practice linked to your lesson (${game.lesson.durationMinutes || 25} min)`}
                                   </span>
                                 </div>
                               ) : game.createdBy ? (
                                 <div className="px-3 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300">
-                                  {language === 'he'
+                                  {isAr
+                                    ? `مخصص بواسطة المعلم: ${game.createdBy.firstName}`
+                                    : isHe
                                     ? `הותאם ע״י מורה: ${game.createdBy.firstName}`
                                     : `Customized by: Teacher ${game.createdBy.firstName}`}
                                 </div>
@@ -3145,7 +3167,7 @@ export const StudentDashboard: React.FC = () => {
 
                               <div>
                                 <h3 className="font-bold text-slate-900 dark:text-white text-base mb-1">
-                                  {language === 'he' ? game.titleHe : game.title}
+                                  {isAr && game.titleAr ? game.titleAr : isHe ? game.titleHe : game.title}
                                 </h3>
                                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                                   {game.description}
@@ -3158,7 +3180,7 @@ export const StudentDashboard: React.FC = () => {
                               className="mt-6 w-full py-3 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
                             >
                               <Gamepad2 className="w-4 h-4 text-brand-olive-300" />
-                              <span>{language === 'he' ? 'התחל לשחק' : 'Start Playing'}</span>
+                              <span>{isAr ? 'ابدأ اللعب' : isHe ? 'התחל לשחק' : 'Start Playing'}</span>
                             </button>
                           </div>
                         );
@@ -3186,15 +3208,13 @@ export const StudentDashboard: React.FC = () => {
                   <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/70 border border-amber-200 dark:border-amber-800 text-xs font-bold text-amber-800 dark:text-amber-300 mb-2">
                       <Award className="w-3.5 h-3.5 text-amber-500" />
-                      <span>{language === 'he' ? 'ליגות עברית עונתיות לפי רמות לימוד' : 'Level-Based Leagues & Seasonal Rankings'}</span>
+                      <span>{isAr ? 'دوريات اللغة العبرية الموسمية حسب المستويات' : isHe ? 'ליגות עברית עונתיות לפי רמות לימוד' : 'Level-Based Leagues & Seasonal Rankings'}</span>
                     </div>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                      {language === 'he' ? 'לוח מובילים ודירוג לפי רמה' : 'Level-Based Leaderboard & Rankings'}
+                      {isAr ? 'لوحة الصدارة والترتيب حسب المستوى' : isHe ? 'לוח מובילים ודירוג לפי רמה' : 'Level-Based Leaderboard & Rankings'}
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
-                      {language === 'he'
-                        ? 'כל רמה מתחרה בדירוג נפרד ועצמאי. התחרה עם עמיתיך לרמה, צבור נקודות משיעורים וממשחקים, וטפס לראש הליגה!'
-                        : 'Each proficiency level competes in its own dedicated league. Compete with peers in your level and earn XP to climb the ranks!'}
+                      {isAr ? 'يتنافس كل مستوى تعليمي في دوري مستقل خاص به. نافس زملاءك في نفس المستوى واكسب نقاط XP لتتصدر الترتيب!' : isHe ? 'כל רמה מתחרה בדירוג נפרד ועצמאי. התחרה עם עמיתיך לרמה, צבור נקודות משיעורים וממשחקים, וטפס לראש הליגה!' : 'Each proficiency level competes in its own dedicated league. Compete with peers in your level and earn XP to climb the ranks!'}
                     </p>
                   </div>
 
@@ -3209,7 +3229,7 @@ export const StudentDashboard: React.FC = () => {
                           : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      {language === 'he' ? 'ליגה שבועית' : 'This Week'}
+                      {isAr ? 'دوري هذا الأسبوع' : isHe ? 'ליגה שבועית' : 'This Week'}
                     </button>
 
                     <button
@@ -3221,7 +3241,7 @@ export const StudentDashboard: React.FC = () => {
                           : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      {language === 'he' ? 'ליגה חודשית' : 'This Month'}
+                      {isAr ? 'دوري هذا الشهر' : isHe ? 'ליגה חודשית' : 'This Month'}
                     </button>
 
                     <button
@@ -3233,7 +3253,7 @@ export const StudentDashboard: React.FC = () => {
                           : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      {language === 'he' ? 'היכל התהילה' : 'All-Time'}
+                      {isAr ? 'كل الأوقات' : isHe ? 'היכל התהילה' : 'All-Time'}
                     </button>
                   </div>
                 </div>
@@ -3242,10 +3262,12 @@ export const StudentDashboard: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {language === 'he' ? 'בחר רמת לימוד לתצוגת דירוג:' : 'Select Proficiency Level League:'}
+                      {isAr ? 'اختر المستوى لعرض لوحة الصدارة:' : isHe ? 'בחר רמת לימוד לתצוגת דירוג:' : 'Select Proficiency Level League:'}
                     </span>
                     <span className="text-xs font-bold text-brand-teal-600 dark:text-brand-teal-400">
-                      {language === 'he'
+                      {isAr
+                        ? `مستواك الحالي: ${t(`levels.${studentLevelFromDashboard}`)}`
+                        : isHe
                         ? `רמתך: ${t(`levels.${studentLevelFromDashboard}`)}`
                         : `Your Enrolled Level: ${t(`levels.${studentLevelFromDashboard}`)}`}
                     </span>
@@ -3255,7 +3277,7 @@ export const StudentDashboard: React.FC = () => {
                     {availableLevels.map((lvl: any) => {
                       const isSelected = activeLeaderboardLevel === lvl.code;
                       const isMyLevel = studentLevelFromDashboard === lvl.code;
-                      const label = language === 'he' && lvl.labelHe ? lvl.labelHe : (lvl.labelEn || t(`levels.${lvl.code}`));
+                      const label = isAr && lvl.labelAr ? lvl.labelAr : isHe && lvl.labelHe ? lvl.labelHe : (lvl.labelEn || t(`levels.${lvl.code}`));
 
                       return (
                         <button
@@ -3275,7 +3297,7 @@ export const StudentDashboard: React.FC = () => {
                                 ? 'bg-brand-olive-400 text-slate-950'
                                 : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
                             }`}>
-                              {language === 'he' ? 'הרמה שלך' : 'My Level'}
+                              {isAr ? 'مستواك الحالي' : isHe ? 'הרמה שלך' : 'My Level'}
                             </span>
                           )}
                         </button>
@@ -3300,7 +3322,14 @@ export const StudentDashboard: React.FC = () => {
                       <div className="min-w-0">
                         <p className="text-xs sm:text-sm font-extrabold truncate">
                           {isViewingMyLevel ? (
-                            language === 'he' ? (
+                            isAr ? (
+                              <>
+                                أنت تنافس في دوري <span className="underline decoration-brand-teal-500 underline-offset-4">{currentLevelObj?.labelAr || currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span>
+                                {myRankNumber
+                                  ? ` • ترتيبك: المركز #${myRankNumber} من بين ${leaderboardData.length} طلاب (${myRankEntry?.totalPoints || 0} نقطة XP)`
+                                  : ` • لا توجد نقاط مسجلة لهذه الفترة بعد (${student?.totalPoints || 0} إجمالي نقاط XP)`}
+                              </>
+                            ) : isHe ? (
                               <>
                                 אתה מתחרה בליגת <span className="underline decoration-brand-teal-500 underline-offset-4">{currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span>
                                 {myRankNumber
@@ -3316,7 +3345,11 @@ export const StudentDashboard: React.FC = () => {
                               </>
                             )
                           ) : (
-                            language === 'he' ? (
+                            isAr ? (
+                              <>
+                                عرض ترتيب <span className="font-black text-slate-900 dark:text-white">{currentLevelObj?.labelAr || currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span> ({leaderboardData.length} طلاب مصنفون)
+                              </>
+                            ) : isHe ? (
                               <>
                                 מוצג לוח המובילים של <span className="font-black text-slate-900 dark:text-white">{currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span> ({leaderboardData.length} תלמידים בדירוג)
                               </>
@@ -3328,9 +3361,7 @@ export const StudentDashboard: React.FC = () => {
                           )}
                         </p>
                         <p className="text-[11px] opacity-80 mt-0.5">
-                          {language === 'he'
-                            ? 'הדירוג מחושב אך ורק מול תלמידים מאותה הרמה ולא מול כלל התלמידים באקדמיה.'
-                            : 'Students are ranked exclusively against peers within the same level, not against the entire academy.'}
+                          {isAr ? 'يتم ترتيب الطلاب فقط مقابل أقرانهم في نفس المستوى التعليمي.' : isHe ? 'הדירוג מחושב אך ורק מול תלמידים מאותה הרמה ולא מול כלל התלמידים באקדמיה.' : 'Students are ranked exclusively against peers within the same level, not against the entire academy.'}
                         </p>
                       </div>
                     </div>
@@ -3342,7 +3373,7 @@ export const StudentDashboard: React.FC = () => {
                         className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white text-xs font-bold transition shrink-0 cursor-pointer shadow-xs active:scale-95"
                       >
                         <Award className="w-3.5 h-3.5 text-brand-olive-300" />
-                        <span>{language === 'he' ? 'חזור לרמה שלי' : 'View My Level'}</span>
+                        <span>{isAr ? 'العودة لمستواي' : isHe ? 'חזור לרמה שלי' : 'View My Level'}</span>
                       </button>
                     )}
                   </div>
@@ -3371,7 +3402,7 @@ export const StudentDashboard: React.FC = () => {
                           {leaderboardData[1].name}
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
-                          {language === 'he' && leaderboardData[1].levelLabelHe
+                          {isAr && leaderboardData[1].levelLabelAr ? leaderboardData[1].levelLabelAr : isHe && leaderboardData[1].levelLabelHe
                             ? leaderboardData[1].levelLabelHe
                             : (leaderboardData[1].levelLabelEn || t(`levels.${leaderboardData[1].level || 'BEGINNER'}`))}
                         </span>
@@ -3386,7 +3417,7 @@ export const StudentDashboard: React.FC = () => {
                       <div className="order-1 sm:order-2 p-6 rounded-3xl bg-gradient-to-b from-amber-500/10 to-transparent dark:from-amber-950/30 dark:to-slate-900 border border-amber-300 dark:border-amber-700/60 flex flex-col items-center text-center shadow-md sm:-mt-2 relative">
                         <div className="absolute -top-3 px-3 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-sm flex items-center gap-1">
                           <Trophy className="w-3 h-3" />
-                          <span>{language === 'he' ? 'מוביל הרמה' : 'Level Leader'}</span>
+                          <span>{isAr ? 'متصدر المستوى' : isHe ? 'מוביל הרמה' : 'Level Leader'}</span>
                         </div>
                         <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-extrabold text-[11px] mb-2 mt-1">
                           <Trophy className="w-3.5 h-3.5 text-amber-500" />
@@ -3399,7 +3430,7 @@ export const StudentDashboard: React.FC = () => {
                           {leaderboardData[0].name}
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300/60 mt-1">
-                          {language === 'he' && leaderboardData[0].levelLabelHe
+                          {isAr && leaderboardData[0].levelLabelAr ? leaderboardData[0].levelLabelAr : isHe && leaderboardData[0].levelLabelHe
                             ? leaderboardData[0].levelLabelHe
                             : (leaderboardData[0].levelLabelEn || t(`levels.${leaderboardData[0].level || 'BEGINNER'}`))}
                         </span>
@@ -3423,7 +3454,7 @@ export const StudentDashboard: React.FC = () => {
                           {leaderboardData[2].name}
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
-                          {language === 'he' && leaderboardData[2].levelLabelHe
+                          {isAr && leaderboardData[2].levelLabelAr ? leaderboardData[2].levelLabelAr : isHe && leaderboardData[2].levelLabelHe
                             ? leaderboardData[2].levelLabelHe
                             : (leaderboardData[2].levelLabelEn || t(`levels.${leaderboardData[2].level || 'BEGINNER'}`))}
                         </span>
@@ -3439,10 +3470,12 @@ export const StudentDashboard: React.FC = () => {
                       <Trophy className="w-6 h-6" />
                     </div>
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white">
-                      {language === 'he' ? 'אין עדיין תלמידים בדירוג לרמה זו בתקופה הנבחרת' : 'No students ranked in this level for this period yet'}
+                      {isAr ? 'لا يوجد طلاب مصنفون في هذا المستوى لهذه الفترة بعد' : isHe ? 'אין עדיין תלמידים בדירוג לרמה זו בתקופה הנבחרת' : 'No students ranked in this level for this period yet'}
                     </h4>
                     <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                      {language === 'he'
+                      {isAr
+                        ? 'العب ألعاب التدريب، وحل الاختبارات القصيرة، واحضر الحصص لكسب نقاط XP وتصدر الدوري!'
+                        : isHe
                         ? 'שחק במשחקי התרגול, פתור חידונים ובצע שיעורים כדי לצבור XP ולהיות הראשון בדירוג!'
                         : 'Play practice games, complete quizzes, and attend live sessions to earn XP and take the top spot!'}
                     </p>
@@ -3451,7 +3484,7 @@ export const StudentDashboard: React.FC = () => {
                       onClick={() => setLeaderboardPeriod('all_time')}
                       className="mt-4 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
                     >
-                      {language === 'he' ? 'צפה בכל הזמנים' : 'View All-Time Standings'}
+                      {isAr ? 'عرض الترتيب العام' : isHe ? 'צפה בכל הזמנים' : 'View All-Time Standings'}
                     </button>
                   </div>
                 )}
@@ -3462,31 +3495,33 @@ export const StudentDashboard: React.FC = () => {
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Award className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
                       <span>
-                        {language === 'he'
+                        {isAr
+                          ? `جدول تصنيف: ${currentLevelObj?.labelAr || currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}`
+                          : isHe
                           ? `טבלת דירוג: ${currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}`
                           : `${currentLevelObj?.labelEn || t(`levels.${activeLeaderboardLevel}`)} League Standings`}
                       </span>
                     </h3>
                     <span className="text-xs text-slate-400">
-                      {leaderboardData.length} {language === 'he' ? 'תלמידים בדירוג' : 'students ranked'}
+                      {leaderboardData.length} {isAr ? 'طلاب في التصنيف' : isHe ? 'תלמידים בדירוג' : 'students ranked'}
                     </span>
                   </div>
 
                   {leaderboardData.length === 0 ? (
                     <p className="text-xs text-slate-400 py-6 text-center">
-                      {language === 'he' ? 'אין נתוני דירוג להצגה.' : 'No leaderboard records found.'}
+                      {isAr ? 'لا توجد بيانات تصنيف للعرض حالياً.' : isHe ? 'אין נתוני דירוג להצגה.' : 'No leaderboard records found.'}
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-start text-xs border-collapse">
                         <thead>
                           <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 font-bold uppercase">
-                            <th className="pb-3 text-start w-20">{language === 'he' ? 'דירוג' : 'Rank'}</th>
-                            <th className="pb-3 text-start">{language === 'he' ? 'תלמיד' : 'Student'}</th>
-                            <th className="pb-3 text-start">{language === 'he' ? 'תגי הישג' : 'Badges'}</th>
-                            <th className="pb-3 text-start">{language === 'he' ? 'רמה' : 'Level'}</th>
-                            <th className="pb-3 text-start">{language === 'he' ? 'רצף' : 'Streak'}</th>
-                            <th className="pb-3 text-end">{language === 'he' ? 'נקודות' : 'Points'}</th>
+                            <th className="pb-3 text-start w-20">{isAr ? 'الترتيب' : isHe ? 'דירוג' : 'Rank'}</th>
+                            <th className="pb-3 text-start">{isAr ? 'طالب' : isHe ? 'תלמיד' : 'Student'}</th>
+                            <th className="pb-3 text-start">{isAr ? 'شارات الإنجاز' : isHe ? 'תגי הישג' : 'Badges'}</th>
+                            <th className="pb-3 text-start">{isAr ? 'المستوى' : isHe ? 'רמה' : 'Level'}</th>
+                            <th className="pb-3 text-start">{isAr ? 'سلسلة الالتزام' : isHe ? 'רצף' : 'Streak'}</th>
+                            <th className="pb-3 text-end">{isAr ? 'النقاط' : isHe ? 'נקודות' : 'Points'}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
@@ -3531,7 +3566,7 @@ export const StudentDashboard: React.FC = () => {
                                         {entry.name}
                                         {entry.studentId === student?.id && (
                                           <span className="ms-1.5 text-[9px] px-1.5 py-0.5 rounded-md bg-teal-500/20 text-teal-700 dark:text-teal-300">
-                                            {language === 'he' ? 'אתה' : 'You'}
+                                            {isAr ? 'أنت' : isHe ? 'אתה' : 'You'}
                                           </span>
                                         )}
                                       </p>
@@ -3545,9 +3580,9 @@ export const StudentDashboard: React.FC = () => {
                                         <span
                                           key={b.id}
                                           className="text-xs px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-bold"
-                                          title={language === 'he' ? b.titleHe || b.title : b.title}
+                                          title={isAr && b.titleAr ? b.titleAr : isHe ? b.titleHe || b.title : b.title}
                                         >
-                                          {language === 'he' ? b.titleHe || b.title : b.title}
+                                          {isAr && b.titleAr ? b.titleAr : isHe ? b.titleHe || b.title : b.title}
                                         </span>
                                       ))
                                     ) : (
@@ -3557,7 +3592,7 @@ export const StudentDashboard: React.FC = () => {
                                 </td>
                                 <td className="py-3">
                                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                    {language === 'he' && entry.levelLabelHe
+                                    {isAr && entry.levelLabelAr ? entry.levelLabelAr : isHe && entry.levelLabelHe
                                       ? entry.levelLabelHe
                                       : (entry.levelLabelEn || t(`levels.${entry.level || 'BEGINNER'}`))}
                                   </span>
@@ -3593,13 +3628,11 @@ export const StudentDashboard: React.FC = () => {
               {/* Header Banner */}
               <PageHeaderBanner
                 badgeIcon={Layers}
-                badgeText={language === 'he' ? 'חבילות ומכסת שיעורים' : 'Session Packages & Availability'}
+                badgeText={isAr ? 'باقات الحصص والتوافر' : isHe ? 'חבילות ומכסת שיעורים' : 'Session Packages & Availability'}
                 statusText="Active Packages"
-                title={language === 'he' ? 'חבילות שיעורים ומכסת מפגשים' : 'My Session Packages & Availability'}
+                title={isAr ? 'باقات الحصص والأرصدة المتاحة' : isHe ? 'חבילות שיעורים ומכסת מפגשים' : 'My Session Packages & Availability'}
                 description={
-                  language === 'he'
-                    ? 'כל חבילת לימוד כוללת מספר מוגדר של שיעורים (25, 40 או 55 דקות) בתוקף של עד 30 יום. בהזמנת שיעור מנוכה שיעור 1, ובביטול בזמן הוא מוחזר מידית לחבילה.'
-                    : 'Your lesson packages provide session quotas for 25m, 40m, and 55m sessions valid for up to 30 days. Timely cancellations instantly credit the session back.'
+                  isAr ? 'توفر باقات الدروس حصصاً لمدد 25 و40 و55 دقيقة صالحة حتى 30 يوماً. الإلغاء في الوقت المحدد يعيد الحصة تلقائياً لرصيدك.' : isHe ? 'כל חבילת לימוד כוללת מספר מוגדר של שיעורים (25, 40 או 55 דקות) בתוקף של עד 30 יום. בהזמנת שיעור מנוכה שיעור 1, ובביטול בזמן הוא מוחזר מידית לחבילה.' : 'Your lesson packages provide session quotas for 25m, 40m, and 55m sessions valid for up to 30 days. Timely cancellations instantly credit the session back.'
                 }
                 action={
                   <button
@@ -3611,7 +3644,7 @@ export const StudentDashboard: React.FC = () => {
                     className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2"
                   >
                     <Clock className="w-4 h-4" />
-                    <span>{language === 'he' ? 'הזמן שיעור מהחבילה' : 'Book a Session'}</span>
+                    <span>{isAr ? 'حجز حصة من الباقة' : isHe ? 'הזמן שיעור מהחבילה' : 'Book a Session'}</span>
                   </button>
                 }
               />
@@ -3622,7 +3655,7 @@ export const StudentDashboard: React.FC = () => {
                 <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-brand-teal-950/20 via-brand-teal-900/10 to-transparent border border-brand-teal-500/30 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                      {language === 'he' ? 'סך שיעורים זמינים' : 'Total Sessions Available'}
+                      {isAr ? 'إجمالي الحصص المتاحة' : isHe ? 'סך שיעורים זמינים' : 'Total Sessions Available'}
                     </span>
                     <div className="w-9 h-9 rounded-xl bg-brand-teal-500/20 text-brand-teal-700 dark:text-brand-teal-300 flex items-center justify-center">
                       <Layers className="w-5 h-5" />
@@ -3634,7 +3667,7 @@ export const StudentDashboard: React.FC = () => {
                     </div>
                     <div className="mt-2 flex items-center gap-2">
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
-                        {language === 'he' ? 'תוקף 30 יום' : '30-Day Quotas'}
+                        {isAr ? 'صلاحية 30 يوماً' : isHe ? 'תוקף 30 יום' : '30-Day Quotas'}
                       </span>
                     </div>
                   </div>
@@ -3644,7 +3677,7 @@ export const StudentDashboard: React.FC = () => {
                 <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {language === 'he' ? 'מפגשי 25 דקות' : '25-Min Sessions'}
+                      {isAr ? 'حصص 25 دقيقة' : isHe ? 'מפגשי 25 דקות' : '25-Min Sessions'}
                     </span>
                     <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                       <Clock className="w-5 h-5" />
@@ -3655,7 +3688,7 @@ export const StudentDashboard: React.FC = () => {
                       {sessionBalances.find((s: any) => s.sessionType?.durationMinutes === 25)?.balance || 0}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      {language === 'he' ? 'שיעורים קצרים וממוקדים' : 'High-retention sessions'}
+                      {isAr ? 'حصص مركزة ومكثفة' : isHe ? 'שיעורים קצרים וממוקדים' : 'High-retention sessions'}
                     </p>
                   </div>
                 </div>
@@ -3664,7 +3697,7 @@ export const StudentDashboard: React.FC = () => {
                 <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {language === 'he' ? 'מפגשי 40 דקות' : '40-Min Sessions'}
+                      {isAr ? 'حصص 40 دقيقة' : isHe ? 'מפגשי 40 דקות' : '40-Min Sessions'}
                     </span>
                     <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 flex items-center justify-center">
                       <Clock className="w-5 h-5" />
@@ -3675,7 +3708,7 @@ export const StudentDashboard: React.FC = () => {
                       {sessionBalances.find((s: any) => s.sessionType?.durationMinutes === 40)?.balance || 0}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      {language === 'he' ? 'שיעורי העמקה ותרגול' : 'In-depth practice sessions'}
+                      {isAr ? 'حصص تعمق وتدريب متقدم' : isHe ? 'שיעורי העמקה ותרגול' : 'In-depth practice sessions'}
                     </p>
                   </div>
                 </div>
@@ -3684,7 +3717,7 @@ export const StudentDashboard: React.FC = () => {
                 <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {language === 'he' ? 'מפגשי 55 דקות' : '55-Min Sessions'}
+                      {isAr ? 'حصص 55 دقيقة' : isHe ? 'מפגשי 55 דקות' : '55-Min Sessions'}
                     </span>
                     <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/70 text-purple-600 dark:text-purple-400 flex items-center justify-center">
                       <Clock className="w-5 h-5" />
@@ -3695,7 +3728,7 @@ export const StudentDashboard: React.FC = () => {
                       {sessionBalances.find((s: any) => s.sessionType?.durationMinutes === 55)?.balance || 0}
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                      {language === 'he' ? 'שיעור מלא ומקיף' : 'Comprehensive immersive'}
+                      {isAr ? 'شامل وتفاعلي' : isHe ? 'שיעור מלא ומקיף' : 'Comprehensive immersive'}
                     </p>
                   </div>
                 </div>
@@ -3709,10 +3742,10 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-black text-slate-900 dark:text-white">
-                      {language === 'he' ? 'חבילות שיעורים מוגדרות' : 'Package Quotas'}
+                      {isAr ? 'حصص الباقة المحددة' : isHe ? 'חבילות שיעורים מוגדרות' : 'Package Quotas'}
                     </h4>
                     <p className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                      {language === 'he' ? 'התשלום מומר מידית למכסת שיעורים מדויקת לפי משך המפגש.' : 'Purchases directly activate a quota of lesson sessions.'}
+                      {isAr ? 'تتحول عمليات الشراء مباشرة إلى رصيد حصص محدد حسب مدة الدرس.' : isHe ? 'התשלום מומר מידית למכסת שיעורים מדויקת לפי משך המפגש.' : 'Purchases directly activate a quota of lesson sessions.'}
                     </p>
                   </div>
                 </div>
@@ -3723,10 +3756,10 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-black text-slate-900 dark:text-white">
-                      {language === 'he' ? 'החזר שיעור אוטומטי' : '100% Session Return'}
+                      {isAr ? 'استرجاع الحصة تلقائياً 100%' : isHe ? 'החזר שיעור אוטומטי' : '100% Session Return'}
                     </h4>
                     <p className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                      {language === 'he' ? 'ביטול שיעור מראש מחזיר את המפגש למכסת החבילה מידית.' : 'Early cancellations restore your session unit to your package immediately.'}
+                      {isAr ? 'الإلغاء المبكر يعيد الحصة إلى رصيد باقتك فوراً.' : isHe ? 'ביטול שיעור מראש מחזיר את המפגש למכסת החבילה מידית.' : 'Early cancellations restore your session unit to your package immediately.'}
                     </p>
                   </div>
                 </div>
@@ -3737,10 +3770,10 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-black text-slate-900 dark:text-white">
-                      {language === 'he' ? 'תוקף 30 יום מובטח' : '30-Day Validity'}
+                      {isAr ? 'صلاحية 30 يوماً مضمونة' : isHe ? 'תוקף 30 יום מובטח' : '30-Day Validity'}
                     </h4>
                     <p className="text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                      {language === 'he' ? 'חבילות השיעורים תקפות ל-30 יום ומאפשרות תכנון למידה רציף.' : 'Packages are valid for 30 days from activation date.'}
+                      {isAr ? 'باقات الحصص صالحة لمدة 30 يوماً من تاريخ التفعيل.' : isHe ? 'חבילות השיעורים תקפות ל-30 יום ומאפשרות תכנון למידה רציף.' : 'Packages are valid for 30 days from activation date.'}
                     </p>
                   </div>
                 </div>
@@ -3756,15 +3789,13 @@ export const StudentDashboard: React.FC = () => {
                     <div>
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-[11px] font-extrabold text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 mb-1">
                         <Sparkles className="w-3 h-3" />
-                        <span>{language === 'he' ? 'הטבה מיוחדת' : 'Special Offer'}</span>
+                        <span>{isAr ? 'عرض خاص' : isHe ? 'הטבה מיוחדת' : 'Special Offer'}</span>
                       </div>
                       <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                        {language === 'he' ? 'מימוש קוד קופון או שובר הנחה' : 'Redeem Coupon Code or Voucher'}
+                        {isAr ? 'تطبيق كود خصم أو قسيمة' : isHe ? 'מימוש קוד קופון או שובר הנחה' : 'Redeem Coupon Code or Voucher'}
                       </h3>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5 max-w-xl">
-                        {language === 'he'
-                          ? 'הזן קוד קופון רשמי כדי לקבל הנחה מיידית על חבילות שיעורים ורכישות (למשל: HEBREW20 או SHALOM50).'
-                          : 'Enter a valid coupon code to unlock instant savings on lesson packages and bookings (e.g., HEBREW20 or SHALOM50).'}
+                        {isAr ? 'أدخل كود خصم سارٍ للحصول على توفير فوري على باقات الحصص والحجوزات.' : isHe ? 'הזן קוד קופון רשמי כדי לקבל הנחה מיידית על חבילות שיעורים ורכישות (למשל: HEBREW20 או SHALOM50).' : 'Enter a valid coupon code to unlock instant savings on lesson packages and bookings (e.g., HEBREW20 or SHALOM50).'}
                       </p>
                     </div>
                   </div>
@@ -3776,7 +3807,7 @@ export const StudentDashboard: React.FC = () => {
                         type="text"
                         value={couponInput}
                         onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                        placeholder={language === 'he' ? 'קוד קופון (למשל HEBREW20)' : 'Coupon code (e.g. HEBREW20)'}
+                        placeholder={isAr ? 'كود الخصم (مثال: HEBREW20)' : isHe ? 'קוד קופון (למשל HEBREW20)' : 'Coupon code (e.g. HEBREW20)'}
                         className="w-full sm:w-56 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-bold text-xs uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-brand-teal-500 shadow-2xs"
                       />
                     </div>
@@ -3790,7 +3821,7 @@ export const StudentDashboard: React.FC = () => {
                       ) : (
                         <CheckCircle2 className="w-4 h-4 text-brand-olive-300" />
                       )}
-                      <span>{language === 'he' ? 'הפעל קופון' : 'Apply Code'}</span>
+                      <span>{isAr ? 'تطبيق الكوبون' : isHe ? 'הפעל קופון' : 'Apply Code'}</span>
                     </button>
                   </form>
                 </div>
@@ -3807,12 +3838,14 @@ export const StudentDashboard: React.FC = () => {
                           </span>
                           <span>
                             {appliedCoupon.discountType === 'PERCENT'
-                              ? `${appliedCoupon.discountValue}% ${language === 'he' ? 'הנחה' : 'OFF'}`
-                              : `$${appliedCoupon.discountValue} ${language === 'he' ? 'הנחה' : 'OFF'}`}
+                              ? `${appliedCoupon.discountValue}% ${isAr ? 'خصم' : isHe ? 'הנחה' : 'OFF'}`
+                              : `$${appliedCoupon.discountValue} ${isAr ? 'خصم' : isHe ? 'הנחה' : 'OFF'}`}
                           </span>
                         </div>
                         <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
-                          {language === 'he'
+                          {isAr && appliedCoupon.descriptionAr
+                            ? appliedCoupon.descriptionAr
+                            : isHe
                             ? appliedCoupon.descriptionHe || appliedCoupon.description
                             : appliedCoupon.description || appliedCoupon.descriptionHe}
                         </p>
@@ -3827,7 +3860,7 @@ export const StudentDashboard: React.FC = () => {
                       }}
                       className="text-xs font-bold text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors px-2 py-1"
                     >
-                      {language === 'he' ? 'הסר' : 'Remove'}
+                      {isAr ? 'إزالة' : isHe ? 'הסר' : 'Remove'}
                     </button>
                   </div>
                 )}
@@ -3848,7 +3881,7 @@ export const StudentDashboard: React.FC = () => {
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      {language === 'he' ? `הכל (${studentTransactions.length})` : `All (${studentTransactions.length})`}
+                      {isAr ? `الكل (${studentTransactions.length})` : isHe ? `הכל (${studentTransactions.length})` : `All (${studentTransactions.length})`}
                     </button>
                     <button
                       type="button"
@@ -3859,7 +3892,7 @@ export const StudentDashboard: React.FC = () => {
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      {language === 'he' ? 'הזמנת שיעורים' : 'Bookings'}
+                      {isAr ? 'حجوزات الدروس' : isHe ? 'הזמנת שיעורים' : 'Bookings'}
                     </button>
                     <button
                       type="button"
@@ -3870,7 +3903,7 @@ export const StudentDashboard: React.FC = () => {
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      {language === 'he' ? 'הפקדות וטעינות' : 'Top-ups'}
+                      {isAr ? 'عمليات الشحن' : isHe ? 'הפקדות וטעינות' : 'Top-ups'}
                     </button>
                     <button
                       type="button"
@@ -3881,7 +3914,7 @@ export const StudentDashboard: React.FC = () => {
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                       }`}
                     >
-                      {language === 'he' ? 'זיכויים' : 'Refunds'}
+                      {isAr ? 'الاستردادات' : isHe ? 'זיכויים' : 'Refunds'}
                     </button>
                   </div>
 
@@ -3890,7 +3923,7 @@ export const StudentDashboard: React.FC = () => {
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute start-3 top-3" />
                     <input
                       type="text"
-                      placeholder={language === 'he' ? 'חיפוש עסקאות, שיעור או סכום...' : 'Search transactions...'}
+                      placeholder={isAr ? 'البحث في المعاملات أو الحصص أو المبالغ...' : isHe ? 'חיפוש עסקאות, שיעור או סכום...' : 'Search transactions...'}
                       value={transactionSearchQuery}
                       onChange={(e) => setTransactionSearchQuery(e.target.value)}
                       className="w-full ps-9 pe-3 py-2 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-brand-teal-600"
@@ -3921,12 +3954,10 @@ export const StudentDashboard: React.FC = () => {
                           <Receipt className="w-6 h-6" />
                         </div>
                         <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
-                          {language === 'he' ? 'אין עסקאות להצגה' : 'No transactions found'}
+                          {isAr ? 'لا توجد معاملات للعرض' : isHe ? 'אין עסקאות להצגה' : 'No transactions found'}
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                          {language === 'he'
-                            ? 'כל טעינה, חיוב על שיעור או החזר כספי יתועדו כאן בצורה מפורטת.'
-                            : 'Every top-up, lesson booking deduction, and refund will be tracked here.'}
+                          {isAr ? 'يتم تتبع وتوثيق كل عملية شحن أو خصم لحصة أو استرداد بالتفصيل هنا.' : isHe ? 'כל טעינה, חיוב על שיעור או החזר כספי יתועדו כאן בצורה מפורטת.' : 'Every top-up, lesson booking deduction, and refund will be tracked here.'}
                         </p>
                       </div>
                     );
@@ -3939,13 +3970,13 @@ export const StudentDashboard: React.FC = () => {
                         <table className="w-full text-start text-xs">
                           <thead className="bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
                             <tr>
-                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'סוג פעולה' : 'Type'}</th>
-                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'שינוי מכסה' : 'Quota Change'}</th>
-                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'יתרה לאחר פעולה' : 'Quota After'}</th>
-                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תיאור ופרטים' : 'Description / Note'}</th>
-                              <th className="py-3.5 px-4 text-start">{language === 'he' ? 'תאריך ושעה' : 'Date & Time'}</th>
-                              <th className="py-3.5 px-4 text-center">{language === 'he' ? 'סטטוס' : 'Status'}</th>
-                              <th className="py-3.5 px-4 text-center">{language === 'he' ? 'קבלה / הדפסה' : 'Receipt / PDF'}</th>
+                              <th className="py-3.5 px-4 text-start">{isAr ? 'النوع' : isHe ? 'סוג פעולה' : 'Type'}</th>
+                              <th className="py-3.5 px-4 text-start">{isAr ? 'تغيير الرصيد' : isHe ? 'שינוי מכסה' : 'Quota Change'}</th>
+                              <th className="py-3.5 px-4 text-start">{isAr ? 'الرصيد بعد الحركة' : isHe ? 'יתרה לאחר פעולה' : 'Quota After'}</th>
+                              <th className="py-3.5 px-4 text-start">{isAr ? 'الوصف والملاحظات' : isHe ? 'תיאור ופרטים' : 'Description / Note'}</th>
+                              <th className="py-3.5 px-4 text-start">{isAr ? 'التاريخ والوقت' : isHe ? 'תאריך ושעה' : 'Date & Time'}</th>
+                              <th className="py-3.5 px-4 text-center">{isAr ? 'الحالة' : isHe ? 'סטטוס' : 'Status'}</th>
+                              <th className="py-3.5 px-4 text-center">{isAr ? 'إيصال / PDF' : isHe ? 'קבלה / הדפסה' : 'Receipt / PDF'}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900/60 font-medium">
@@ -3977,10 +4008,10 @@ export const StudentDashboard: React.FC = () => {
                                       </div>
                                       <span className="font-extrabold text-slate-800 dark:text-slate-200">
                                         {isBooking
-                                          ? (language === 'he' ? 'הזמנת שיעור' : 'Lesson Booking')
+                                          ? (isAr ? 'حجز حصة' : isHe ? 'הזמנת שיעור' : 'Lesson Booking')
                                           : isRefund
-                                          ? (language === 'he' ? 'החזר שיעור לחבילה' : 'Session Restored')
-                                          : (amt > 0 ? (language === 'he' ? 'הפעלת חבילה' : 'Package Activation') : (language === 'he' ? 'עדכון מכסה' : 'Quota Update'))}
+                                          ? (isAr ? 'تم استرجاع الحصة' : isHe ? 'החזר שיעור לחבילה' : 'Session Restored')
+                                          : (amt > 0 ? (isAr ? 'تفعيل باقة' : isHe ? 'הפעלת חבילה' : 'Package Activation') : (isAr ? 'تحديث الرصيد' : isHe ? 'עדכון מכסה' : 'Quota Update'))}
                                       </span>
                                     </div>
                                   </td>
@@ -3992,19 +4023,19 @@ export const StudentDashboard: React.FC = () => {
                                         ? 'text-emerald-600 dark:text-emerald-400'
                                         : 'text-rose-600 dark:text-rose-400'
                                     }`}>
-                                      {isPositive ? `+${Math.abs(amt)}` : `-${Math.abs(amt)}`} {language === 'he' ? 'שיעורים' : 'units'}
+                                      {isPositive ? `+${Math.abs(amt)}` : `-${Math.abs(amt)}`} {isAr ? 'حصص' : isHe ? 'שיעורים' : 'units'}
                                     </span>
                                   </td>
 
                                   {/* Balance After */}
                                   <td className="py-3.5 px-4 whitespace-nowrap font-bold text-slate-900 dark:text-white">
-                                    {Number(tx.balanceAfter || 0)} {language === 'he' ? 'שיעורים' : 'units'}
+                                    {Number(tx.balanceAfter || 0)} {isAr ? 'حصص' : isHe ? 'שיעורים' : 'units'}
                                   </td>
 
                                   {/* Description */}
                                   <td className="py-3.5 px-4 max-w-xs text-slate-600 dark:text-slate-300">
                                     <div className="line-clamp-2 leading-relaxed">
-                                      {tx.description || (language === 'he' ? 'עדכון מכסת שיעורים' : 'Package session update')}
+                                      {tx.description || (isAr ? 'تحديث رصيد الباقة' : isHe ? 'עדכון מכסת שיעורים' : 'Package session update')}
                                     </div>
                                   </td>
 
@@ -4012,7 +4043,7 @@ export const StudentDashboard: React.FC = () => {
                                   <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 font-mono text-[11px]">
                                     {formatIsraelDateTime(tx.createdAt, {
                                       includeDate: true,
-                                      locale: language === 'he' ? 'he-IL' : 'en-US',
+                                      locale: isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US',
                                     })}
                                   </td>
 
@@ -4020,7 +4051,7 @@ export const StudentDashboard: React.FC = () => {
                                   <td className="py-3.5 px-4 text-center whitespace-nowrap">
                                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                                       <CheckCircle2 className="w-3 h-3" />
-                                      <span>{language === 'he' ? 'הושלם' : 'Completed'}</span>
+                                      <span>{isAr ? 'مكتمل' : isHe ? 'הושלם' : 'Completed'}</span>
                                     </span>
                                   </td>
 
@@ -4030,10 +4061,10 @@ export const StudentDashboard: React.FC = () => {
                                       type="button"
                                       onClick={() => handleOpenReceipt(tx)}
                                       className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-brand-teal-50 dark:bg-slate-800 dark:hover:bg-brand-teal-950/70 border border-slate-200 dark:border-slate-700 hover:border-brand-teal-300 dark:hover:border-brand-teal-700 text-slate-700 hover:text-brand-teal-800 dark:text-slate-300 dark:hover:text-brand-teal-300 font-extrabold text-xs transition-all inline-flex items-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
-                                      title={language === 'he' ? 'הדפס קבלה ואישור עסקה' : 'Print Official Receipt & Voucher'}
+                                      title={isAr ? 'طباعة الإيصال الرسمي وسند المعاملة' : isHe ? 'הדפס קבלה ואישור עסקה' : 'Print Official Receipt & Voucher'}
                                     >
                                       <Printer className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" />
-                                      <span>{language === 'he' ? 'קבלה' : 'Receipt'}</span>
+                                      <span>{isAr ? 'إيصال' : isHe ? 'קבלה' : 'Receipt'}</span>
                                     </button>
                                   </td>
                                 </tr>
@@ -4076,15 +4107,15 @@ export const StudentDashboard: React.FC = () => {
                                   <div>
                                     <div className="font-black text-xs text-slate-900 dark:text-white">
                                       {isBooking
-                                        ? (language === 'he' ? 'הזמנת שיעור' : 'Lesson Booking')
+                                        ? (isAr ? 'حجز حصة' : isHe ? 'הזמנת שיעור' : 'Lesson Booking')
                                         : isRefund
-                                        ? (language === 'he' ? 'החזר שיעור לחבילה' : 'Session Restored')
-                                        : (amt > 0 ? (language === 'he' ? 'הפעלת חבילה' : 'Package Activation') : (language === 'he' ? 'עדכון מכסה' : 'Quota Update'))}
+                                        ? (isAr ? 'تم استرجاع الحصة' : isHe ? 'החזר שיעור לחבילה' : 'Session Restored')
+                                        : (amt > 0 ? (isAr ? 'تفعيل باقة' : isHe ? 'הפעלת חבילה' : 'Package Activation') : (isAr ? 'تحديث الرصيد' : isHe ? 'עדכון מכסה' : 'Quota Update'))}
                                     </div>
                                     <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                                       {formatIsraelDateTime(tx.createdAt, {
                                         includeDate: true,
-                                        locale: language === 'he' ? 'he-IL' : 'en-US',
+                                        locale: isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US',
                                       })}
                                     </div>
                                   </div>
@@ -4095,7 +4126,7 @@ export const StudentDashboard: React.FC = () => {
                                     ? 'text-emerald-600 dark:text-emerald-400'
                                     : 'text-rose-600 dark:text-rose-400'
                                 }`}>
-                                  {isPositive ? `+${Math.abs(amt)}` : `-${Math.abs(amt)}`} {language === 'he' ? 'שיעורים' : 'units'}
+                                  {isPositive ? `+${Math.abs(amt)}` : `-${Math.abs(amt)}`} {isAr ? 'حصص' : isHe ? 'שיעורים' : 'units'}
                                 </div>
                               </div>
 
@@ -4108,10 +4139,10 @@ export const StudentDashboard: React.FC = () => {
                               <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200/60 dark:border-slate-800">
                                 <div>
                                   <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block">
-                                    {language === 'he' ? 'מכסה לאחר פעולה:' : 'Quota after:'}
+                                    {isAr ? 'الرصيد بعد الحركة:' : isHe ? 'מכסה לאחר פעולה:' : 'Quota after:'}
                                   </span>
                                   <span className="font-extrabold text-slate-900 dark:text-white">
-                                    {Number(tx.balanceAfter || 0)} {language === 'he' ? 'שיעורים' : 'units'}
+                                    {Number(tx.balanceAfter || 0)} {isAr ? 'حصص' : isHe ? 'שיעורים' : 'units'}
                                   </span>
                                 </div>
                                 <button
@@ -4120,7 +4151,7 @@ export const StudentDashboard: React.FC = () => {
                                   className="px-3 py-1.5 rounded-xl bg-brand-teal-50 hover:bg-brand-teal-100 dark:bg-brand-teal-950/70 dark:hover:bg-brand-teal-900 text-brand-teal-800 dark:text-brand-teal-300 font-extrabold text-xs flex items-center gap-1.5 border border-brand-teal-200 dark:border-brand-teal-800 shadow-2xs active:scale-95 cursor-pointer"
                                 >
                                   <Printer className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-300" />
-                                  <span>{language === 'he' ? 'הדפס קבלה' : 'Print Receipt'}</span>
+                                  <span>{isAr ? 'طباعة الإيصال' : isHe ? 'הדפס קבלה' : 'Print Receipt'}</span>
                                 </button>
                               </div>
                             </div>
@@ -4267,10 +4298,10 @@ export const StudentDashboard: React.FC = () => {
             <div className="flex items-center justify-between px-1">
               <div>
                 <h3 className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">
-                  {language === 'he' ? 'פעולות ותכנים נוספים' : 'More Learning Tools'}
+                  {isAr ? 'أدوات ومصادر تعليمية إضافية' : isHe ? 'פעולות ותכנים נוספים' : 'More Learning Tools'}
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {language === 'he' ? 'שיעורים מוקלטים, שיעורי בית, לוח דירוג וחבילות' : 'Recorded sessions, homework, rankings & packages'}
+                  {isAr ? 'الدروس المسجلة، الواجبات، لوحة الصدارة والباقات' : isHe ? 'שיעורים מוקלטים, שיעורי בית, לוח דירוג וחבילות' : 'Recorded sessions, homework, rankings & packages'}
                 </p>
               </div>
               <button
@@ -4309,10 +4340,10 @@ export const StudentDashboard: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-extrabold text-xs text-slate-900 dark:text-white">
-                    {language === 'he' ? 'שיעורים מוקלטים' : 'Recorded Sessions'}
+                    {isAr ? 'الدروس المسجلة' : isHe ? 'שיעורים מוקלטים' : 'Recorded Sessions'}
                   </p>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {language === 'he' ? 'צפייה חוזרת בשיעורים' : 'Google Drive replays'}
+                    {isAr ? 'إعادة مشاهدة الدروس عبر Drive' : isHe ? 'צפייה חוזרת בשיעורים' : 'Google Drive replays'}
                   </p>
                 </div>
               </button>
@@ -4337,16 +4368,16 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                   {pendingHomeworkCount > 0 && (
                     <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-300/70 dark:border-amber-700/50 animate-pulse">
-                      {pendingHomeworkCount} {language === 'he' ? 'לבדיקה' : 'pending'}
+                      {pendingHomeworkCount} {isAr ? 'قيد المراجعة' : isHe ? 'לבדיקה' : 'pending'}
                     </span>
                   )}
                 </div>
                 <div>
                   <p className="font-extrabold text-xs text-slate-900 dark:text-white">
-                    {language === 'he' ? 'שיעורי בית' : 'Homework & Tasks'}
+                    {isAr ? 'الواجبات والمهام' : isHe ? 'שיעורי בית' : 'Homework & Tasks'}
                   </p>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {language === 'he' ? 'הגשות ומשוב מורים' : 'Submissions & feedback'}
+                    {isAr ? 'التسليمات والملاحظات' : isHe ? 'הגשות ומשוב מורים' : 'Submissions & feedback'}
                   </p>
                 </div>
               </button>
@@ -4375,10 +4406,10 @@ export const StudentDashboard: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-extrabold text-xs text-slate-900 dark:text-white">
-                    {language === 'he' ? 'לוח דירוג' : 'Leaderboard'}
+                    {isAr ? 'لوحة المتصدرين' : isHe ? 'לוח דירוג' : 'Leaderboard'}
                   </p>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {language === 'he' ? 'ליגות ונקודות XP' : 'XP Points & Ranking'}
+                    {isAr ? 'نقاط XP والترتيب' : isHe ? 'ליגות ונקודות XP' : 'XP Points & Ranking'}
                   </p>
                 </div>
               </button>
@@ -4404,15 +4435,15 @@ export const StudentDashboard: React.FC = () => {
                     <Layers className="w-5 h-5" />
                   </div>
                   <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-900 dark:text-brand-teal-200 border border-brand-teal-300/70 dark:border-brand-teal-700/50">
-                    {totalAvailableSessions} {language === 'he' ? 'שיעורים' : 'units'}
+                    {totalAvailableSessions} {isAr ? 'حصص' : isHe ? 'שיעורים' : 'units'}
                   </span>
                 </div>
                 <div>
                   <p className="font-extrabold text-xs text-slate-900 dark:text-white">
-                    {language === 'he' ? 'חבילות ומכסת שיעורים' : 'Session Packages & Quotas'}
+                    {isAr ? 'باقات الحصص والرصيد' : isHe ? 'חבילות ומכסת שיעורים' : 'Session Packages & Quotas'}
                   </p>
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {language === 'he' ? 'מכסות מפגשים, חבילות ותוקף' : 'Session units, packages & validity'}
+                    {isAr ? 'رصيد الحصص، الباقات والصلاحية' : isHe ? 'מכסות מפגשים, חבילות ותוקף' : 'Session units, packages & validity'}
                   </p>
                 </div>
               </button>
@@ -4437,15 +4468,15 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-extrabold text-xs text-slate-900 dark:text-white">
-                      {language === 'he' ? 'ההתקדמות הלימודית שלי' : 'My Learning Progress'}
+                      {isAr ? 'مسار تقدمي التعليمي' : isHe ? 'ההתקדמות הלימודית שלי' : 'My Learning Progress'}
                     </p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      {language === 'he' ? 'גרפי נוכחות שבועית, דיוק במשחקים ומפת רמות' : 'Weekly attendance, game accuracy & level roadmap'}
+                      {isAr ? 'سجل الحضور الأسبوعي، دقة الألعاب ومسار المستويات' : isHe ? 'גרפי נוכחות שבועית, דיוק במשחקים ומפת רמות' : 'Weekly attendance, game accuracy & level roadmap'}
                     </p>
                   </div>
                 </div>
                 <span className="text-[10px] font-extrabold px-3 py-1.5 rounded-full bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-teal-500/20 text-white dark:text-teal-200 border border-brand-teal-800 dark:border-teal-400/40 shrink-0">
-                  {language === 'he' ? 'צפה במדדים' : 'View'}
+                  {isAr ? 'عرض' : isHe ? 'צפה במדדים' : 'View'}
                 </span>
               </button>
             </div>

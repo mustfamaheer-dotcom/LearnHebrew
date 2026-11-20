@@ -18,8 +18,10 @@ export interface CertificateData {
   studentName: string;
   packageName: string;
   packageNameHe?: string | null;
+  packageNameAr?: string | null;
   levelAchieved: string;
   levelAchievedHe?: string | null;
+  levelAchievedAr?: string | null;
   completionDate: string;
   certificateNumber: string;
   verificationCode?: string;

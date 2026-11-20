@@ -2932,11 +2932,25 @@ export const AdminDashboard: React.FC = () => {
                 <div className="space-y-6">
                   <PageHeaderBanner
                     badgeIcon={CalendarRange}
-                    badgeText={language === 'he' ? 'יומני מורים • תצוגת 4 שבועות ולוח מפורט' : 'Teachers Calendar • 4-Week Matrix & Timeline'}
-                    statusText="Active"
-                    title={language === 'he' ? 'יומני מורים וזמינות שיעורים' : 'Teachers Calendar & Availability Monitor'}
+                    badgeText={
+                      language === 'ar'
+                        ? 'تقويم المعلمين • مصفوفة 4 أسابيع والجدول التفصيلي'
+                        : language === 'he'
+                        ? 'יומני מורים • תצוגת 4 שבועות ולוח מפורט'
+                        : 'Teachers Calendar • 4-Week Matrix & Timeline'
+                    }
+                    statusText={language === 'ar' ? 'نشط' : language === 'he' ? 'פעיל' : 'Active'}
+                    title={
+                      language === 'ar'
+                        ? 'تقويم المعلمين ومتابعة الفترات المتاحة'
+                        : language === 'he'
+                        ? 'יומני מורים וזמינות שיעורים'
+                        : 'Teachers Calendar & Availability Monitor'
+                    }
                     description={
-                      language === 'he'
+                      language === 'ar'
+                        ? 'متابعة تقويم كل معلم، ومصفوفة التوفر لـ 4 أسابيع قادمة، والجدول الأسبوعي اليومي التفصيلي مع فرز الحصص المنتظمة (Regular) والحصص الفردية (One-Time).'
+                        : language === 'he'
                         ? 'צפייה מפורטת ביומני כל המורים, מעקב אחר זמינות במחזורים של 4 שבועות (Matrix) ולוח שבועי מפורט עם שמות תלמידים וסינון שיעורים קבועים (Regular) או בודדים (One-Time).'
                         : 'Monitor individual teacher calendars, 4-week availability matrices, and day-by-day weekly schedules with regular vs one-time class breakdown.'
                     }

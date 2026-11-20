@@ -47,6 +47,7 @@ interface StudentBookingFlowProps {
 
 const DAYS_LIST_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const DAYS_LIST_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+const DAYS_LIST_AR = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
 export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
   studentId,
@@ -61,6 +62,15 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
   initialDuration = 25,
 }) => {
   const queryClient = useQueryClient();
+  const isHe = language === 'he';
+  const isAr = language === 'ar';
+  const isRtl = isHe || isAr;
+
+  const loc = (ar: string, he: string, en: string) => {
+    if (isAr) return ar;
+    if (isHe) return he;
+    return en;
+  };
 
   // Step 1: Session Type & Duration
   const [bookingMode, setBookingMode] = useState<'onetime' | 'regular'>(initialMode);
@@ -152,7 +162,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
         return {
           hasConflict: true,
           conflictingWeek: w + 1,
-          conflictingDate: targetDate.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+          conflictingDate: targetDate.toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', {
             month: 'short',
             day: 'numeric',
           }),
@@ -242,14 +252,14 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
         if (bookingMode === 'onetime') {
           const conflict = isTeacherConflictOnDate(t, bookingDate, selectedSlotTime, selectedDuration);
           if (!conflict) isAvailable = true;
-          else conflictReason = language === 'he' ? 'תפוס במועד זה' : 'Booked at this time';
+          else conflictReason = loc('محجوز في هذا الموعد', 'תפוס במועד זה', 'Booked at this time');
         } else {
           const conflict = checkTeacherRegularConflict(t, regularActiveDay, selectedSlotTime, selectedDuration);
           if (!conflict.hasConflict) isAvailable = true;
-          else conflictReason = language === 'he' ? `תפוס בשבוע ${conflict.conflictingWeek}` : `Conflict Wk ${conflict.conflictingWeek}`;
+          else conflictReason = loc(`تعارض في الأسبوع ${conflict.conflictingWeek}`, `תפוס בשבוע ${conflict.conflictingWeek}`, `Conflict Wk ${conflict.conflictingWeek}`);
         }
       } else {
-        conflictReason = language === 'he' ? 'אין משבצת בשעה זו' : 'No slot at this hour';
+        conflictReason = loc('لا توجد فترة متاحة في هذه الساعة', 'אין משבצת בשעה זו', 'No slot at this hour');
       }
 
       // Calculate this teacher's other open slots on this day
@@ -339,9 +349,11 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
       setBookingError(null);
     } else {
       if (selectedRegularSlots.length >= maxWeeklyRegularSlots) {
-        const msg = language === 'he'
-          ? `הגעת למקסימום המותר בחבילה שלך: ${maxWeeklyRegularSlots} מועדים שבועיים קבועים.`
-          : `You have reached the limit for your package: ${maxWeeklyRegularSlots} weekly regular slot(s).`;
+        const msg = loc(
+          `لقد وصلت للحد الأقصى المسموح به في باقتك: ${maxWeeklyRegularSlots} مواعيد أسبوعية منتظمة.`,
+          `הגעת למקסימום המותר בחבילה שלך: ${maxWeeklyRegularSlots} מועדים שבועיים קבועים.`,
+          `You have reached the limit for your package: ${maxWeeklyRegularSlots} weekly regular slot(s).`
+        );
         setBookingError(msg);
         toast.warning(msg);
         return;
@@ -360,17 +372,19 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
       queryClient.invalidateQueries({ queryKey: ['studentTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['availableTeachers'] });
       toast.success(
-        language === 'he'
-          ? `שיעור (${selectedDuration} דקות) הוזמן בהצלחה! 1 שיעור נוכה מיתרתך.`
-          : `${selectedDuration}-Minute Lesson booked successfully! 1 session deducted.`,
-        language === 'he' ? 'ההזמנה אושרה' : 'Booking Confirmed'
+        loc(
+          `تم حجز الحصة (${selectedDuration} دقيقة) بنجاح! تم خصم حصة واحدة من رصيدك.`,
+          `שיעור (${selectedDuration} דקות) הוזמן בהצלחה! 1 שיעור נוכה מיתרתך.`,
+          `${selectedDuration}-Minute Lesson booked successfully! 1 session deducted.`
+        ),
+        loc('تم تأكيد الحجز', 'ההזמנה אושרה', 'Booking Confirmed')
       );
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message || err.response?.data?.error || (
-        language === 'he' ? 'שגיאה בהזמנת השיעור. אנא נסה שוב.' : 'Failed to book session. Please try again.'
+        loc('فشل حجز الحصة. يرجى المحاولة مرة أخرى.', 'שגיאה בהזמנת השיעור. אנא נסה שוב.', 'Failed to book session. Please try again.')
       );
       setBookingError(msg);
       toast.error(msg);
@@ -386,17 +400,19 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
       queryClient.invalidateQueries({ queryKey: ['availableTeachers'] });
       const totalBooked = res.data?.totalLessons || selectedRegularSlots.length * 4;
       toast.success(
-        language === 'he'
-          ? `נקבעו בהצלחה ${totalBooked} שיעורים שבועיים קבועים ל-4 השבועות הקרובים!`
-          : `Successfully booked ${totalBooked} regular weekly lessons across the next 4 weeks!`,
-        language === 'he' ? 'חוג שבועי קבוע אושר' : 'Regular Booking Confirmed'
+        loc(
+          `تم بنجاح حجز ${totalBooked} حصة أسبوعية منتظمة للأسابيع الـ 4 القادمة!`,
+          `נקבעו בהצלחה ${totalBooked} שיעורים שבועיים קבועים ל-4 השבועות הקרובים!`,
+          `Successfully booked ${totalBooked} regular weekly lessons across the next 4 weeks!`
+        ),
+        loc('تم تأكيد الحجز الأسبوعي', 'חוג שבועי קבוע אושר', 'Regular Booking Confirmed')
       );
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message || err.response?.data?.error || (
-        language === 'he' ? 'שגיאה בהזמנת השיעורים הקבועים.' : 'Failed to book regular schedule.'
+        loc('فشل حجز الحصص الأسبوعية المنتظمة.', 'שגיאה בהזמנת השיעורים הקבועים.', 'Failed to book regular schedule.')
       );
       setBookingError(msg);
       toast.error(msg);
@@ -406,12 +422,12 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
   // Submit Handler
   const handleConfirmBooking = () => {
     if (!hasEnoughBalance) {
-      toast.error(language === 'he' ? 'אין יתרה מספקת בחבילה.' : 'Insufficient package quota.');
+      toast.error(loc('لا يوجد رصيد كافٍ في الباقة.', 'אין יתרה מספקת בחבילה.', 'Insufficient package quota.'));
       return;
     }
 
     if (!selectedTeacherId) {
-      const err = language === 'he' ? 'אנא בחר מורה מוסמך.' : 'Please select a certified teacher.';
+      const err = loc('يرجى اختيار معلم معتمد.', 'אנא בחר מורה מוסמך.', 'Please select a certified teacher.');
       setBookingError(err);
       toast.warning(err);
       return;
@@ -419,15 +435,17 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
 
     if (bookingMode === 'onetime') {
       if (!bookingDate || !selectedSlotTime) {
-        const err = language === 'he' ? 'אנא בחר תאריך ושעה לשיעור.' : 'Please select a date and time slot.';
+        const err = loc('يرجى اختيار تاريخ ووقت الحصة.', 'אנא בחר תאריך ושעה לשיעור.', 'Please select a date and time slot.');
         setBookingError(err);
         toast.warning(err);
         return;
       }
       if (!isSelectedTeacherAvailableAtSlot) {
-        const err = language === 'he'
-          ? `המורה ${selectedTeacher?.user?.firstName} אינו זמין בשעה זו. בחר מורה זמין או שנה שעה.`
-          : `Teacher is not available at this hour. Please select an available teacher or pick another time.`;
+        const err = loc(
+          `المعلم ${selectedTeacher?.user?.firstName || ''} غير متاح في هذا الوقت. اختر معلماً متاحاً أو وقتاً آخر.`,
+          `המורה ${selectedTeacher?.user?.firstName} אינו זמין בשעה זו. בחר מורה זמין או שנה שעה.`,
+          `Teacher is not available at this hour. Please select an available teacher or pick another time.`
+        );
         setBookingError(err);
         toast.warning(err);
         return;
@@ -445,7 +463,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
     } else {
       // Regular schedule submit
       if (selectedRegularSlots.length === 0) {
-        const err = language === 'he' ? 'אנא בחר לפחות מועד שבועי אחד.' : 'Please select at least one weekly slot.';
+        const err = loc('يرجى اختيار فترة أسبوعية واحدة على الأقل.', 'אנא בחר לפחות מועד שבועי אחד.', 'Please select at least one weekly slot.');
         setBookingError(err);
         toast.warning(err);
         return;
@@ -473,14 +491,14 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
       const dayOfWeek = d.getDay();
       list.push({
         dateStr,
-        dayName: language === 'he' ? DAYS_LIST_HE[dayOfWeek] : DAYS_LIST_EN[dayOfWeek].slice(0, 3),
+        dayName: isAr ? DAYS_LIST_AR[dayOfWeek] : isHe ? DAYS_LIST_HE[dayOfWeek] : DAYS_LIST_EN[dayOfWeek].slice(0, 3),
         dayNumber: d.getDate(),
-        monthName: d.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', { month: 'short' }),
+        monthName: d.toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', { month: 'short' }),
         dayOfWeek,
       });
     }
     return list;
-  }, [language]);
+  }, [language, isHe, isAr]);
 
   return (
     <div className="space-y-6">
@@ -490,7 +508,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-brand-teal-800 dark:text-brand-teal-400" />
             <h2 className="font-bold text-base text-slate-900 dark:text-white">
-              {language === 'he' ? 'הזמנת שיעור עברית מהיר' : 'Book a Hebrew Session'}
+              {loc('حجز حصة لغة عبرية سريعة', 'הזמנת שיעור עברית מהיר', 'Book a Hebrew Session')}
             </h2>
           </div>
           <button
@@ -518,18 +536,18 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
               1
             </span>
             <label className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-              {language === 'he' ? 'בחר סוג שיעור ומשך' : 'Choose Session Type & Duration'}
+              {loc('اختر نوع الحصة ومدتها', 'בחר סוג שיעור ומשך', 'Choose Session Type & Duration')}
             </label>
           </div>
 
           <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300">
             <Layers className="w-4 h-4 text-emerald-500" />
             <span>
-              {language === 'he' ? 'יתרת חבילה זמינה:' : 'Package Quota:'}{' '}
+              {loc('رصيد الباقة المتاح:', 'יתרת חבילה זמינה:', 'Package Quota:')}{' '}
               <strong className="text-emerald-600 dark:text-emerald-400 font-extrabold">
                 {selectedSessionBalance?.balance || 0}
               </strong>{' '}
-              {language === 'he' ? `שיעורי ${selectedDuration} דק׳` : `${selectedDuration}m sessions`}
+              {loc(`حصص ${selectedDuration} دقيقة`, `שיעורי ${selectedDuration} דק׳`, `${selectedDuration}m sessions`)}
             </span>
           </div>
         </div>
@@ -551,7 +569,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
             }`}
           >
             <CalendarCheck className="w-4 h-4" />
-            <span>{language === 'he' ? 'שיעור בודד (גמיש)' : 'One-Time Lesson (Flexible)'}</span>
+            <span>{loc('حصة فردية (مرنة)', 'שיעור בודד (גמיש)', 'One-Time Lesson (Flexible)')}</span>
           </button>
 
           <button
@@ -569,7 +587,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
             }`}
           >
             <Repeat className="w-4 h-4" />
-            <span>{language === 'he' ? 'חוג שבועי קבוע (4 שבועות)' : 'Regular Booking (4 Weeks)'}</span>
+            <span>{loc('حجز أسبوعي منتظم (4 أسابيع)', 'חוג שבועי קבוע (4 שבועות)', 'Regular Booking (4 Weeks)')}</span>
           </button>
         </div>
 
@@ -596,14 +614,14 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
                 }`}
               >
                 <div className={`text-xs sm:text-sm font-extrabold ${isSelected ? 'text-brand-teal-900 dark:text-brand-teal-200' : 'text-slate-800 dark:text-slate-200'}`}>
-                  {dur} {language === 'he' ? 'דקות' : 'Minutes'}
+                  {dur} {loc('دقيقة', 'דקות', 'Minutes')}
                 </div>
                 <div className={`text-[10px] font-extrabold mt-1 inline-block px-2 py-0.5 rounded-md ${
                   count > 0
                     ? isSelected ? 'bg-brand-teal-800 text-white' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
                 }`}>
-                  {count} {language === 'he' ? 'זמינים' : 'left'}
+                  {count} {loc('متبقية', 'זמינים', 'left')}
                 </div>
               </button>
             );
@@ -620,13 +638,13 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
             </span>
             <label className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
               {bookingMode === 'onetime'
-                ? (language === 'he' ? 'בחר תאריך ושעה רצויה מהלוח' : 'Select Date & Desired Time Slot')
-                : (language === 'he' ? 'בחר יום ושעה שבועית קבועה' : 'Select Day & Recurring Weekly Slot')}
+                ? loc('اختر التاريخ والوقت المطلوب من التقويم', 'בחר תאריך ושעה רצויה מהלוח', 'Select Date & Desired Time Slot')
+                : loc('اختر اليوم والساعة الأسبوعية الثابتة', 'בחר יום ושעה שבועית קבועה', 'Select Day & Recurring Weekly Slot')}
             </label>
           </div>
 
           <div className="text-[11px] font-bold text-brand-teal-800 dark:text-brand-teal-300 bg-brand-teal-50 dark:bg-brand-teal-950/60 px-2.5 py-1 rounded-lg border border-brand-teal-200/60 dark:border-brand-teal-800/60 self-start sm:self-auto">
-            {language === 'he' ? 'שעון ישראל • 12 שעות AM/PM' : `${ISRAEL_TZ_LABEL} • 12h AM/PM`}
+            {loc('توقيت القدس • نظام 12 ساعة AM/PM', 'שעון ישראל • 12 שעות AM/PM', `${ISRAEL_TZ_LABEL} • 12h AM/PM`)}
           </div>
         </div>
 
@@ -670,7 +688,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
             {/* Custom Date Input Fallback */}
             <div className="flex items-center gap-3 pt-1">
               <span className="text-xs text-slate-500 font-semibold">
-                {language === 'he' ? 'או בחר תאריך אחר:' : 'Or pick custom date:'}
+                {loc('أو اختر تاريخاً مخصصاً:', 'או בחר תאריך אחר:', 'Or pick custom date:')}
               </span>
               <input
                 type="date"
@@ -689,22 +707,24 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
             <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {language === 'he'
-                    ? `שעות זמינות בתאריך ${bookingDate} (${availableSlotsOnDate.length} שעות פנויות):`
-                    : `Available Times on ${bookingDate} (${availableSlotsOnDate.length} available slots):`}
+                  {loc(
+                    `الأوقات المتاحة بتاريخ ${bookingDate} (${availableSlotsOnDate.length} موعد متاح):`,
+                    `שעות זמינות בתאריך ${bookingDate} (${availableSlotsOnDate.length} שעות פנויות):`,
+                    `Available Times on ${bookingDate} (${availableSlotsOnDate.length} available slots):`
+                  )}
                 </span>
                 {selectedSlotTime && (
                   <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                     <Check className="w-3.5 h-3.5" />
-                    <span>{language === 'he' ? 'נבחרה שעה:' : 'Selected:'} {formatTo12Hour(selectedSlotTime)}</span>
+                    <span>{loc('الوقت المختار:', 'נבחרה שעה:', 'Selected:')} {formatTo12Hour(selectedSlotTime)}</span>
                   </span>
                 )}
               </div>
 
               {availableSlotsOnDate.length === 0 ? (
                 <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center text-xs text-amber-800 dark:text-amber-200 font-semibold space-y-1">
-                  <p>{language === 'he' ? 'אין שעות פנויות בתאריך זה אצל אף מורה.' : 'No available slots on this date across all teachers.'}</p>
-                  <p className="text-[11px] opacity-80">{language === 'he' ? 'אנא בחר יום אחר מהלוח למעלה.' : 'Please select another date from the calendar above.'}</p>
+                  <p>{loc('لا توجد فترات متاحة في هذا التاريخ لدى أي معلم.', 'אין שעות פנויות בתאריך זה אצל אף מורה.', 'No available slots on this date across all teachers.')}</p>
+                  <p className="text-[11px] opacity-80">{loc('يرجى اختيار يوم آخر من التقويم بالأعلى.', 'אנא בחר יום אחר מהלוח למעלה.', 'Please select another date from the calendar above.')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 pt-1 max-h-56 overflow-y-auto p-1">
@@ -732,7 +752,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
                         }`}>
                           <User className="w-2.5 h-2.5" />
                           <span>
-                            {slot.teacherCount} {language === 'he' ? (slot.teacherCount === 1 ? 'מורה זמין' : 'מורים זמינים') : (slot.teacherCount === 1 ? 'teacher' : 'teachers')}
+                            {slot.teacherCount} {loc(slot.teacherCount === 1 ? 'معلم متاح' : 'معلمين متاحين', slot.teacherCount === 1 ? 'מורה זמין' : 'מורים זמינים', slot.teacherCount === 1 ? 'teacher' : 'teachers')}
                           </span>
                         </div>
                       </button>
@@ -769,7 +789,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
                     }`}
                   >
                     <span className="block text-[11px] font-bold">
-                      {language === 'he' ? DAYS_LIST_HE[idx] : dayName.slice(0, 3)}
+                      {isAr ? DAYS_LIST_AR[idx] : isHe ? DAYS_LIST_HE[idx] : dayName.slice(0, 3)}
                     </span>
                     {selectedInDay > 0 && (
                       <span className="text-[10px] block font-black text-amber-300">
@@ -785,20 +805,24 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {language === 'he'
-                    ? `שעות שבועיות קבועות ביום ${DAYS_LIST_HE[regularActiveDay]} (4 שבועות ברצף):`
-                    : `Fixed Weekly Slots on ${DAYS_LIST_EN[regularActiveDay]} (4 Weeks Recurring):`}
+                  {loc(
+                    `أوقات أسبوعية ثابتة يوم ${isAr ? DAYS_LIST_AR[regularActiveDay] : isHe ? DAYS_LIST_HE[regularActiveDay] : DAYS_LIST_EN[regularActiveDay]} (4 أسابيع متتالية):`,
+                    `שעות שבועיות קבועות ביום ${DAYS_LIST_HE[regularActiveDay]} (4 שבועות ברצף):`,
+                    `Fixed Weekly Slots on ${DAYS_LIST_EN[regularActiveDay]} (4 Weeks Recurring):`
+                  )}
                 </span>
                 <span className="text-xs font-extrabold text-brand-teal-800 dark:text-brand-teal-300">
-                  {language === 'he' ? 'נבחרו:' : 'Selected:'} {selectedRegularSlots.length} / {maxWeeklyRegularSlots}
+                  {loc('المختار:', 'נבחרו:', 'Selected:')} {selectedRegularSlots.length} / {maxWeeklyRegularSlots}
                 </span>
               </div>
 
               {availableRegularSlotsOnDay.length === 0 ? (
                 <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center text-xs text-amber-800 dark:text-amber-200 font-semibold">
-                  {language === 'he'
-                    ? `אין שעות שבועיות קבועות פנויות ביום ${DAYS_LIST_HE[regularActiveDay]}. אנא בחר יום אחר.`
-                    : `No available regular recurring slots on ${DAYS_LIST_EN[regularActiveDay]}. Please choose another day.`}
+                  {loc(
+                    `لا توجد فترات أسبوعية منتظمة متاحة يوم ${isAr ? DAYS_LIST_AR[regularActiveDay] : isHe ? DAYS_LIST_HE[regularActiveDay] : DAYS_LIST_EN[regularActiveDay]}. يرجى اختيار يوم آخر.`,
+                    `אין שעות שבועיות קבועות פנויות ביום ${DAYS_LIST_HE[regularActiveDay]}. אנא בחר יום אחר.`,
+                    `No available regular recurring slots on ${DAYS_LIST_EN[regularActiveDay]}. Please choose another day.`
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-1 max-h-56 overflow-y-auto p-1">
@@ -829,7 +853,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
                             ? 'bg-white/20 text-white'
                             : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
                         }`}>
-                          <span>{isSelected ? '✓ ' + (language === 'he' ? 'נבחר' : 'Selected') : `${slot.teacherCount} ${language === 'he' ? 'מורים' : 'teachers'}`}</span>
+                          <span>{isSelected ? '✓ ' + loc('مختار', 'נבחר', 'Selected') : `${slot.teacherCount} ${loc('معلمين', 'מורים', 'teachers')}`}</span>
                         </div>
                       </button>
                     );
@@ -849,7 +873,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
               3
             </span>
             <label className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
-              {language === 'he' ? 'בחר מורה מוסמך ובדוק זמינות לשעה הנבחרת' : 'Choose Teacher & Check Real-time Availability'}
+              {loc('اختر معلماً معتمداً وتحقق من توفره في الوقت المختار', 'בחר מורה מוסמך ובדוק זמינות לשעה הנבחרת', 'Choose Teacher & Check Real-time Availability')}
             </label>
           </div>
 
@@ -858,7 +882,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
             <Search className="w-3.5 h-3.5 text-slate-400 absolute start-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder={language === 'he' ? 'חפש מורה לפי שם...' : 'Search teacher...'}
+              placeholder={loc('بحث عن معلم بالاسم...', 'חפש מורה לפי שם...', 'Search teacher...')}
               value={teacherSearch}
               onChange={(e) => setTeacherSearch(e.target.value)}
               className="w-full ps-8 pe-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-teal-800"
@@ -890,17 +914,19 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
                       : 'bg-amber-200 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200'
                   }`}>
                     {isSelectedTeacherAvailableAtSlot
-                      ? (language === 'he' ? `✓ זמין בשעה ${formatTo12Hour(selectedSlotTime)}!` : `✓ Available at ${formatTo12Hour(selectedSlotTime)}!`)
-                      : (language === 'he' ? `לא זמין בשעה ${formatTo12Hour(selectedSlotTime)}` : `Not Available at ${formatTo12Hour(selectedSlotTime)}`)}
+                      ? loc(`✓ متاح في الساعة ${formatTo12Hour(selectedSlotTime)}!`, `✓ זמין בשעה ${formatTo12Hour(selectedSlotTime)}!`, `✓ Available at ${formatTo12Hour(selectedSlotTime)}!`)
+                      : loc(`غير متاح في الساعة ${formatTo12Hour(selectedSlotTime)}`, `לא זמין בשעה ${formatTo12Hour(selectedSlotTime)}`, `Not Available at ${formatTo12Hour(selectedSlotTime)}`)}
                   </span>
                 </div>
 
                 {!isSelectedTeacherAvailableAtSlot && (
                   <div className="space-y-2 pt-1">
                     <p className="text-xs text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
-                      {language === 'he'
-                        ? `המורה ${selectedTeacher.user?.firstName} תפוס בשעה ${formatTo12Hour(selectedSlotTime)}. באפשרותך לבחור שעה אחרת שבה המורה פנוי ביום זה:`
-                        : `Teacher ${selectedTeacher.user?.firstName} is not available at ${formatTo12Hour(selectedSlotTime)}. Available times for this teacher today:`}
+                      {loc(
+                        `المعلم ${selectedTeacher.user?.firstName} محجوز في الساعة ${formatTo12Hour(selectedSlotTime)}. يمكنك اختيار وقت آخر متاح للمعلم في هذا اليوم:`,
+                        `המורה ${selectedTeacher.user?.firstName} תפוס בשעה ${formatTo12Hour(selectedSlotTime)}. באפשרותך לבחור שעה אחרת שבה המורה פנוי ביום זה:`,
+                        `Teacher ${selectedTeacher.user?.firstName} is not available at ${formatTo12Hour(selectedSlotTime)}. Available times for this teacher today:`
+                      )}
                     </p>
 
                     {selectedTeacherAlternativeTimes.length > 0 ? (
@@ -918,7 +944,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
                       </div>
                     ) : (
                       <p className="text-[11px] text-amber-800 dark:text-amber-300 italic">
-                        {language === 'he' ? 'אין למורה זה שעות נוספות ביום זה. בחר מורה אחר מתוך הרשימה למטה.' : 'This teacher has no other open slots on this day. Please pick another teacher below.'}
+                        {loc('ليس لدى هذا المعلم أوقات أخرى في هذا اليوم. يرجى اختيار معلم آخر من القائمة أدناه.', 'אין למורה זה שעות נוספות ביום זה. בחר מורה אחר מתוך הרשימה למטה.', 'This teacher has no other open slots on this day. Please pick another teacher below.')}
                       </p>
                     )}
                   </div>
@@ -936,9 +962,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
-                  {language === 'he'
-                    ? `מורים זמינים בשעה ${formatTo12Hour(selectedSlotTime)}:`
-                    : `Teachers Available at ${formatTo12Hour(selectedSlotTime)}:`}
+                  {loc(`معلمون متاحون في الساعة ${formatTo12Hour(selectedSlotTime)}:`, `מורים זמינים בשעה ${formatTo12Hour(selectedSlotTime)}:`, `Teachers Available at ${formatTo12Hour(selectedSlotTime)}:`)}
                 </span>
               </div>
 
@@ -978,7 +1002,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
                               <Star className="w-3 h-3 fill-amber-500" />
                               <span>{t.ratingAvg || '4.95'}</span>
                               <span className="text-slate-400 font-normal">
-                                • {language === 'he' ? 'מורה מוסמך' : 'Certified'}
+                                • {loc('معلم معتمد', 'מורה מוסמך', 'Certified')}
                               </span>
                             </div>
                           </div>
@@ -991,7 +1015,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
                               : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                           }`}>
                             <Check className="w-3 h-3" />
-                            <span>{language === 'he' ? 'זמין' : 'Available'}</span>
+                            <span>{loc('متاح', 'זמין', 'Available')}</span>
                           </span>
                         </div>
                       </button>
@@ -1004,7 +1028,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
           {/* Section B: Other Teachers Directory & Switcher */}
           <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
             <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">
-              {language === 'he' ? 'כל המורים המוסמכים (לצפייה בלוח זמנים והחלפה):' : 'All Certified Instructors (Browse & Switch):'}
+              {loc('جميع المعلمين المعتمدين (للمعاينة والتبديل):', 'כל המורים המוסמכים (לצפייה בלוח זמנים והחלפה):', 'All Certified Instructors (Browse & Switch):')}
             </span>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto p-1">
@@ -1054,16 +1078,16 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
                         {selectedSlotTime ? (
                           isAvail ? (
                             <span className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded">
-                              ✓ {language === 'he' ? 'זמין לשעה זו' : 'Free at slot'}
+                              ✓ {loc('متاح لهذا الموعد', 'זמין לשעה זו', 'Free at slot')}
                             </span>
                           ) : (
                             <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded">
-                              {language === 'he' ? 'שעות אחרות' : 'Other times'}
+                              {loc('متاح بأوقات أخرى', 'שעות אחרות', 'Other times')}
                             </span>
                           )
                         ) : (
                           <span className="text-[10px] font-bold text-slate-400">
-                            {language === 'he' ? 'בחר מורה' : 'Select'}
+                            {loc('اختيار', 'בחר מורה', 'Select')}
                           </span>
                         )}
                       </div>
@@ -1080,32 +1104,32 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <span className="text-[10px] uppercase font-black tracking-wider text-brand-teal-800 dark:text-brand-teal-300 block">
-              {language === 'he' ? 'סיכום הזמנה סופי' : 'Booking Summary'}
+              {loc('ملخص الحجز النهائي', 'סיכום הזמנה סופי', 'Booking Summary')}
             </span>
             <div className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-0.5">
               {bookingMode === 'onetime'
-                ? `${selectedDuration}m ${language === 'he' ? 'שיעור פרטי בודד' : 'Private Lesson'}`
-                : `${maxWeeklyRegularSlots}x/wk ${language === 'he' ? 'חוג שבועי קבוע ל-4 שבועות' : 'Regular 4-Week Schedule'}`}
+                ? `${selectedDuration}m ${loc('حصة خاصة فردية', 'שיעור פרטי בודד', 'Private Lesson')}`
+                : `${maxWeeklyRegularSlots}x/wk ${loc('حجز أسبوعي منتظم لـ 4 أسابيع', 'חוג שבועי קבוע ל-4 שבועות', 'Regular 4-Week Schedule')}`}
               {selectedTeacher ? ` • ${selectedTeacher.user?.firstName} ${selectedTeacher.user?.lastName}` : ''}
             </div>
             <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
               {bookingMode === 'onetime' ? (
                 bookingDate && selectedSlotTime ? (
                   <span>
-                    {new Date(bookingDate + 'T00:00:00').toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+                    {new Date(bookingDate + 'T00:00:00').toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', {
                       weekday: 'long',
                       month: 'short',
                       day: 'numeric',
                     })}{' '}
-                    • <strong className="font-mono text-slate-900 dark:text-white">{formatTo12Hour(selectedSlotTime)} ({ISRAEL_TZ_LABEL})</strong>
+                    • <strong className="font-mono text-slate-900 dark:text-white">{formatTo12Hour(selectedSlotTime)} ({loc('توقيت القدس', ISRAEL_TZ_LABEL, ISRAEL_TZ_LABEL)})</strong>
                   </span>
                 ) : (
-                  <span>{language === 'he' ? 'אנא בחר שעה ותאריך מהלוח' : 'Select date and time slot above'}</span>
+                  <span>{loc('يرجى اختيار التاريخ والوقت من الأعلى', 'אנא בחר שעה ותאריך מהלוח', 'Select date and time slot above')}</span>
                 )
               ) : (
                 <span>
-                  {selectedRegularSlots.length} {language === 'he' ? 'מועדים קבועים (סה"כ' : 'slots chosen (total'}{' '}
-                  <strong>{selectedRegularSlots.length * 4}</strong> {language === 'he' ? 'שיעורים בחודש)' : 'lessons/month)'}
+                  {selectedRegularSlots.length} {loc('مواعيد منتظمة مختارة (إجمالي', 'מועדים קבועים (סה"כ', 'slots chosen (total')}{' '}
+                  <strong>{selectedRegularSlots.length * 4}</strong> {loc('حصص شهرياً)', 'שיעורים בחודש)', 'lessons/month)')}
                 </span>
               )}
             </div>
@@ -1113,10 +1137,10 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
 
           <div className="text-xs text-end shrink-0">
             <span className="text-slate-500 dark:text-slate-400 block text-[10px] uppercase font-bold">
-              {language === 'he' ? 'ניכוי מחבילה:' : 'Package Deduction:'}
+              {loc('الخصم من الباقة:', 'ניכוי מחבילה:', 'Package Deduction:')}
             </span>
             <span className="font-black text-sm text-slate-900 dark:text-white">
-              {bookingMode === 'onetime' ? '1' : selectedRegularSlots.length * 4} {language === 'he' ? 'שיעורים' : 'sessions'}
+              {bookingMode === 'onetime' ? '1' : selectedRegularSlots.length * 4} {loc('حصص', 'שיעורים', 'sessions')}
             </span>
           </div>
         </div>
@@ -1129,7 +1153,7 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-colors"
             >
-              {language === 'he' ? 'ביטול' : 'Cancel'}
+              {loc('إلغاء', 'ביטול', 'Cancel')}
             </button>
           )}
 
@@ -1149,12 +1173,14 @@ export const StudentBookingFlow: React.FC<StudentBookingFlowProps> = ({
             <CheckCircle className="w-4 h-4 text-brand-olive-300" />
             <span>
               {bookLessonMutation.isPending || bookRegularMutation.isPending
-                ? (language === 'he' ? 'מבצע הזמנה ומנכה מהחבילה...' : 'Confirming Booking...')
+                ? loc('جاري تأكيد الحجز والخصم من الباقة...', 'מבצע הזמנה ומנכה מהחבילה...', 'Confirming Booking...')
                 : bookingMode === 'onetime'
-                ? (language === 'he' ? `אישור הזמנה (${selectedDuration} דק׳)` : `Confirm ${selectedDuration}-Min Lesson`)
-                : (language === 'he'
-                    ? `אישור חוג ל-4 שבועות (${selectedRegularSlots.length * 4} שיעורים)`
-                    : `Confirm 4-Week Schedule (${selectedRegularSlots.length * 4} Sessions)`)}
+                ? loc(`تأكيد الحجز (${selectedDuration} دقيقة)`, `אישור הזמנה (${selectedDuration} דק׳)`, `Confirm ${selectedDuration}-Min Lesson`)
+                : loc(
+                    `تأكيد الحجز لـ 4 أسابيع (${selectedRegularSlots.length * 4} حصة)`,
+                    `אישור חוג ל-4 שבועות (${selectedRegularSlots.length * 4} שיעורים)`,
+                    `Confirm 4-Week Schedule (${selectedRegularSlots.length * 4} Sessions)`
+                  )}
             </span>
           </button>
         </div>

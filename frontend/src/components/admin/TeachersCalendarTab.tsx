@@ -220,7 +220,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
       const isBooked = !!bookedLesson || slotForDate?.isBooked === true || slotForDate?.isAvailable === false;
 
       const dateObj = new Date(dStr);
-      const formattedDate = dateObj.toLocaleDateString(isHe ? 'he-IL' : 'en-US', {
+      const formattedDate = dateObj.toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
@@ -277,25 +277,25 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
         date: d,
         dateStr: dStr,
         dayIndex: d.getDay(),
-        dayLabel: d.toLocaleDateString(isHe ? 'he-IL' : 'en-US', { weekday: 'short' }),
+        dayLabel: d.toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', { weekday: 'short' }),
         dayNumber: d.getDate(),
-        monthName: d.toLocaleDateString(isHe ? 'he-IL' : 'en-US', { month: 'short' }),
+        monthName: d.toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', { month: 'short' }),
         isToday,
       });
     }
 
     return weekDays;
-  }, [currentWeekOffset, isHe]);
+  }, [currentWeekOffset, isHe, isAr]);
 
   // Current month/year label for Detailed View header
   const weekMonthYearLabel = useMemo(() => {
     if (detailedWeekDates.length === 0) return '';
     const firstDay = detailedWeekDates[0].date;
     const lastDay = detailedWeekDates[6].date;
-    const month1 = firstDay.toLocaleDateString(isHe ? 'he-IL' : 'en-US', { month: 'long', year: 'numeric' });
-    const month2 = lastDay.toLocaleDateString(isHe ? 'he-IL' : 'en-US', { month: 'long', year: 'numeric' });
+    const month1 = firstDay.toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', { month: 'long', year: 'numeric' });
+    const month2 = lastDay.toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', { month: 'long', year: 'numeric' });
     return month1 === month2 ? month1 : `${month1} – ${month2}`;
-  }, [detailedWeekDates, isHe]);
+  }, [detailedWeekDates, isHe, isAr]);
 
   // Filtered teachers list for searchable dropdown
   const filteredTeachers = useMemo(() => {
@@ -330,11 +330,13 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
               <div>
                 <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight">
                   {viewMode === 'matrix'
-                    ? (isHe ? 'לוח זמינות ומועדים (4 שבועות)' : 'Teacher 4-Week Availability Matrix')
-                    : (isHe ? 'לוח שבועי מפורט (Weekly Calendar)' : 'Weekly Calendar')}
+                    ? (isAr ? 'مصفوفة توفر المعلم (4 أسابيع)' : isHe ? 'לוח זמינות ומועדים (4 שבועות)' : 'Teacher 4-Week Availability Matrix')
+                    : (isAr ? 'التقويم الأسبوعي المفصل' : isHe ? 'לוח שבועי מפורט (Weekly Calendar)' : 'Weekly Calendar')}
                 </h2>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                  {isHe
+                  {isAr
+                    ? 'متابعة فترات المعلم، والحصص الأسبوعية الثابتة (Regular)، والحصص الفردية (One-Time)'
+                    : isHe
                     ? 'מעקב מדויק אחר זמינות המורים, שיעורים קבועים (Regular) ושיעורים בודדים (One-Time)'
                     : 'Monitor teacher time slots, recurring regular classes, and one-time lessons'}
                 </p>
@@ -353,7 +355,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>{isHe ? 'תצוגת 4 שבועות (Matrix)' : '4-Week Matrix'}</span>
+                <span>{isAr ? 'مصفوفة 4 أسابيع' : isHe ? 'תצוגת 4 שבועות (Matrix)' : '4-Week Matrix'}</span>
               </button>
               <button
                 type="button"
@@ -365,7 +367,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                 }`}
               >
                 <CalendarDays className="w-3.5 h-3.5" />
-                <span>{isHe ? 'לוח שבועי מפורט' : 'Weekly Calendar'}</span>
+                <span>{isAr ? 'التقويم الأسبوعي' : isHe ? 'לוח שבועי מפורט' : 'Weekly Calendar'}</span>
               </button>
             </div>
           </div>
@@ -374,7 +376,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
           {!isTeacherSelfView && (
             <div className="relative min-w-[260px] sm:min-w-[300px]">
               <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
-                {isHe ? 'בחר מורה לצפייה בלוח:' : 'Select Teacher to Monitor:'}
+                {isAr ? 'اختر المعلم للمتابعة:' : isHe ? 'בחר מורה לצפייה בלוח:' : 'Select Teacher to Monitor:'}
               </label>
 
               <button
@@ -388,10 +390,10 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                   </div>
                   <div className="truncate">
                     <p className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
-                      {activeTeacher ? `${activeTeacher.user?.firstName} ${activeTeacher.user?.lastName}` : 'Select Teacher'}
+                      {activeTeacher ? `${activeTeacher.user?.firstName} ${activeTeacher.user?.lastName}` : (isAr ? 'اختر معلماً' : isHe ? 'בחר מורה' : 'Select Teacher')}
                     </p>
                     <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                      {activeTeacher?.specialties?.join(', ') || 'Certified Hebrew Instructor'}
+                      {activeTeacher?.specialties?.join(', ') || (isAr ? 'معلم لغة عبرية معتمد' : isHe ? 'מורה מוסמך לעברית' : 'Certified Hebrew Instructor')}
                     </p>
                   </div>
                 </div>
@@ -405,7 +407,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute start-2.5 top-2.5" />
                     <input
                       type="text"
-                      placeholder={isHe ? 'חיפוש מורה...' : 'Search teacher...'}
+                      placeholder={isAr ? 'بحث عن معلم...' : isHe ? 'חיפוש מורה...' : 'Search teacher...'}
                       value={teacherSearchQuery}
                       onChange={(e) => setTeacherSearchQuery(e.target.value)}
                       className="w-full ps-8 pe-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-xs font-semibold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-brand-teal-600"
@@ -461,7 +463,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {isHe ? 'כל השיעורים והמשבצות' : 'All Slots & Bookings'}
+              {isAr ? 'جميع الفترات والحجوزات' : isHe ? 'כל השיעורים והמשבצות' : 'All Slots & Bookings'}
             </button>
             <button
               type="button"
@@ -472,7 +474,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {isHe ? 'חוגים שבועיים קבועים (Regular)' : 'Regular Class Only'}
+              {isAr ? 'الحصص المنتظمة فقط (Regular)' : isHe ? 'חוגים שבועיים קבועים (Regular)' : 'Regular Class Only'}
             </button>
             <button
               type="button"
@@ -483,7 +485,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              {isHe ? 'שיעורים בודדים (One-Time)' : 'One-Time Lessons'}
+              {isAr ? 'الحصص الفردية فقط (One-Time)' : isHe ? 'שיעורים בודדים (One-Time)' : 'One-Time Lessons'}
             </button>
           </div>
 
@@ -497,7 +499,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                   onChange={(e) => setHideInactiveRows(e.target.checked)}
                   className="w-4 h-4 rounded text-brand-teal-700 focus:ring-brand-teal-600 border-slate-300 dark:border-slate-700"
                 />
-                <span>{isHe ? 'הסתר שעות ללא זמינות (קומפקטי)' : 'Hide empty time rows'}</span>
+                <span>{isAr ? 'إخفاء الأوقات غير المتاحة (موجز)' : isHe ? 'הסתר שעות ללא זמינות (קומפקטי)' : 'Hide empty time rows'}</span>
               </label>
             ) : (
               /* Week Navigation Controls for Detailed View */
@@ -510,7 +512,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                     type="button"
                     onClick={() => setCurrentWeekOffset((prev) => prev - 1)}
                     className="p-1 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors"
-                    title={isHe ? 'שבוע קודם' : 'Previous Week'}
+                    title={isAr ? 'الأسبوع السابق' : isHe ? 'שבוע קודם' : 'Previous Week'}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -519,13 +521,13 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                     onClick={() => setCurrentWeekOffset(0)}
                     className="px-2 py-0.5 rounded-lg text-[11px] font-bold text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-700 transition-colors"
                   >
-                    {isHe ? 'השבוע' : 'Today'}
+                    {isAr ? 'هذا الأسبوع' : isHe ? 'השבוע' : 'Today'}
                   </button>
                   <button
                     type="button"
                     onClick={() => setCurrentWeekOffset((prev) => prev + 1)}
                     className="p-1 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors"
-                    title={isHe ? 'שבוע הבא' : 'Next Week'}
+                    title={isAr ? 'الأسبوع القادم' : isHe ? 'שבוע הבא' : 'Next Week'}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -544,8 +546,10 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
           <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-3 text-xs text-emerald-900 dark:text-emerald-200">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <p className="font-semibold leading-relaxed">
-              <strong>{isHe ? 'סינון מורה פעיל:' : 'Teacher Filter Active:'}</strong>{' '}
-              {isHe
+              <strong>{isAr ? 'تصفية المعلم نشطة:' : isHe ? 'סינון מורה פעיל:' : 'Teacher Filter Active:'}</strong>{' '}
+              {isAr
+                ? `عرض فترات الوقت للمعلم ${activeTeacher ? `${activeTeacher.user?.firstName} ${activeTeacher.user?.lastName}` : 'المختار'}. كل خلية تعرض دورة شهرية من 4 أسابيع. انقر على أي فترة لعرض التفاصيل الكاملة.`
+                : isHe
                 ? `מציג את לוח הזמנים של ${activeTeacher ? `${activeTeacher.user?.firstName} ${activeTeacher.user?.lastName}` : 'המורה הנבחר'}. כל משבצת מייצגת מחזור חודשי של 4 שבועות. לחץ על משבצת לצפייה בפירוט התאריכים המלא.`
                 : `Showing time slots for ${activeTeacher ? `${activeTeacher.user?.firstName} ${activeTeacher.user?.lastName}` : 'the selected teacher'}. Each cell displays a 4-week monthly cycle. Click any slot to view date-by-date breakdown.`}
             </p>
@@ -556,7 +560,9 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
             <div className="flex items-center gap-2">
               <Info className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400" />
               <span>
-                {isHe
+                {isAr
+                  ? `عرض ${uniqueTimes.length} فترة متاحة (${uniqueTimes[0] || '08:00'} – ${uniqueTimes[uniqueTimes.length - 1] || '21:30'})`
+                  : isHe
                   ? `מציג ${uniqueTimes.length} שורות זמן פעילות (${uniqueTimes[0] || '08:00'} – ${uniqueTimes[uniqueTimes.length - 1] || '21:30'})`
                   : `Showing ${uniqueTimes.length} available time rows (${uniqueTimes[0] || '08:00'} – ${uniqueTimes[uniqueTimes.length - 1] || '21:30'})`}
               </span>
@@ -564,11 +570,11 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
             <div className="flex items-center gap-4 text-[11px]">
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-2 rounded-xs bg-emerald-500 inline-block" />
-                <span>{isHe ? 'פנוי (4 שבועות)' : 'Available'}</span>
+                <span>{isAr ? 'متاح (4 أسابيع)' : isHe ? 'פנוי (4 שבועות)' : 'Available'}</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-2 rounded-xs bg-rose-500 inline-block" />
-                <span>{isHe ? 'תפוס / מוזמן' : 'Booked'}</span>
+                <span>{isAr ? 'محجوز' : isHe ? 'תפוס / מוזמן' : 'Booked'}</span>
               </span>
             </div>
           </div>
@@ -580,16 +586,13 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                 <thead className="bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-300 font-extrabold uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
                   <tr>
                     <th className="py-4 px-4 text-center w-28 border-e border-slate-200/60 dark:border-slate-800 text-xs sm:text-sm font-black">
-                      {isHe ? 'שעה' : isAr ? 'الوقت' : 'Time'}
+                      {isAr ? 'الوقت' : isHe ? 'שעה' : 'Time'}
                     </th>
                     {DAYS_HEADER.map((d) => (
                       <th key={d.dayIndex} className="py-4 px-4 text-center border-e border-slate-200/60 dark:border-slate-800 last:border-e-0 min-w-[130px] sm:min-w-[145px]">
                         <div className="flex flex-col items-center">
                           <span className="font-black text-xs sm:text-sm text-slate-850 dark:text-slate-100">
                             {isAr ? d.labelAr : isHe ? d.labelHe : d.labelEn}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-semibold mt-0.5 capitalize">
-                            {isAr ? d.fullAr : isHe ? d.fullHe : d.fullEn}
                           </span>
                         </div>
                       </th>
@@ -677,10 +680,12 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
               <CalendarDays className="w-5 h-5 text-brand-teal-700 dark:text-brand-teal-400" />
               <div>
                 <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                  {isHe ? 'לוח שבועי מפורט לפי תאריכים' : 'Weekly Calendar • Day-by-Day Timeline'}
+                  {isAr ? 'التقويم الأسبوعي المفصل حسب الأيام' : isHe ? 'לוח שבועי מפורט לפי תאריכים' : 'Weekly Calendar • Day-by-Day Timeline'}
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {isHe
+                  {isAr
+                    ? `الأسبوع المعروض: ${weekMonthYearLabel} • توقيت القدس`
+                    : isHe
                     ? `מוצג שבוע: ${weekMonthYearLabel} • שעון ישראל`
                     : `Active Week: ${weekMonthYearLabel} • ${ISRAEL_TZ_LABEL}`}
                 </p>
@@ -691,17 +696,17 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
             <div className="flex items-center gap-3 text-xs font-bold">
               <span className="flex items-center gap-1.5">
                 <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-[10px]">
-                  {isHe ? 'פתוח (Open)' : 'Open'}
+                  {isAr ? 'متاح' : isHe ? 'פתוח (Open)' : 'Open'}
                 </span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-[10px]">
-                  {isHe ? 'סגור (Closed)' : 'Closed'}
+                  {isAr ? 'مغلق' : isHe ? 'סגור (Closed)' : 'Closed'}
                 </span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-[10px]">
-                  {isHe ? 'שם תלמיד (מוזמן)' : 'Student Name (Booked)'}
+                  {isAr ? 'اسم الطالب (محجوز)' : isHe ? 'שם תלמיד (מוזמן)' : 'Student Name (Booked)'}
                 </span>
               </span>
             </div>
@@ -715,7 +720,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                   <tr>
                     {/* Time Column Header */}
                     <th className="py-3.5 px-4 text-start w-28 border-e border-slate-200/60 dark:border-slate-800">
-                      {isHe ? 'שעה' : 'Time'}
+                      {isAr ? 'الوقت' : isHe ? 'שעה' : 'Time'}
                     </th>
 
                     {/* 7 Days of the Week with Date Numbers (Image 2 style) */}
@@ -791,12 +796,12 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                               ) : hasSlot ? (
                                 /* Open Slot Pill (Image 2) */
                                 <div className="w-full py-1.5 px-2 rounded-xl text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/80 shadow-2xs select-none">
-                                  {isHe ? 'פתוח (Open)' : 'Open'}
+                                  {isAr ? 'متاح' : isHe ? 'פתוח (Open)' : 'Open'}
                                 </div>
                               ) : (
                                 /* Closed Slot Pill (Image 2) */
                                 <div className="w-full py-1.5 px-2 rounded-xl text-[11px] font-medium text-rose-500/80 dark:text-rose-400/80 bg-rose-50/40 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 select-none">
-                                  {isHe ? 'סגור' : 'Closed'}
+                                  {isAr ? 'مغلق' : isHe ? 'סגור' : 'Closed'}
                                 </div>
                               )}
                             </td>
@@ -820,7 +825,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
               <div className="flex items-center gap-2">
                 <Video className="w-5 h-5 text-brand-teal-800 dark:text-brand-teal-400" />
                 <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                  {isHe ? 'פרטי שיעור שהוזמן' : 'Booked Lesson Details'}
+                  {isAr ? 'تفاصيل الحصة المحجوزة' : isHe ? 'פרטי שיעור שהוזמן' : 'Booked Lesson Details'}
                 </h3>
               </div>
               <button
@@ -835,38 +840,38 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
             <div className="space-y-3 text-xs">
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 dark:text-slate-400">{isHe ? 'שם התלמיד:' : 'Student:'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'اسم الطالب:' : isHe ? 'שם התלמיד:' : 'Student:'}</span>
                   <span className="font-black text-slate-900 dark:text-white">
                     {selectedLessonModal.student?.user
                       ? `${selectedLessonModal.student.user.firstName} ${selectedLessonModal.student.user.lastName}`
-                      : 'Student'}
+                      : (isAr ? 'طالب' : 'Student')}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 dark:text-slate-400">{isHe ? 'דוא״ל:' : 'Email:'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'البريد الإلكتروني:' : isHe ? 'דוא״ל:' : 'Email:'}</span>
                   <span className="font-semibold text-slate-700 dark:text-slate-300">
                     {selectedLessonModal.student?.user?.email || '—'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 dark:text-slate-400">{isHe ? 'סוג הזמנה:' : 'Booking Type:'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'نوع الحجز:' : isHe ? 'סוג הזמנה:' : 'Booking Type:'}</span>
                   <span className={`font-black px-2 py-0.5 rounded-full text-[10px] ${
                     selectedLessonModal.lessonType === 'REGULAR'
                       ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
                       : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                   }`}>
                     {selectedLessonModal.lessonType === 'REGULAR'
-                      ? (isHe ? 'חוג שבועי קבוע (Regular)' : 'Fixed Weekly Regular')
-                      : (isHe ? 'שיעור בודד (One-Time)' : 'One-Time Lesson')}
+                      ? (isAr ? 'حجز أسبوعي منتظم (Regular)' : isHe ? 'חוג שבועי קבוע (Regular)' : 'Fixed Weekly Regular')
+                      : (isAr ? 'حصة فردية (One-Time)' : isHe ? 'שיעור בודד (One-Time)' : 'One-Time Lesson')}
                   </span>
                 </div>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 dark:text-slate-400">{isHe ? 'תאריך שיעור:' : 'Scheduled Date:'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'تاريخ الحصة:' : isHe ? 'תאריך שיעור:' : 'Scheduled Date:'}</span>
                   <span className="font-bold text-slate-900 dark:text-white">
-                    {new Date(selectedLessonModal.scheduledAt).toLocaleDateString(isHe ? 'he-IL' : 'en-US', {
+                    {new Date(selectedLessonModal.scheduledAt).toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', {
                       weekday: 'long',
                       year: 'numeric',
                       month: 'short',
@@ -875,13 +880,13 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 dark:text-slate-400">{isHe ? 'משך השיעור:' : 'Duration:'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'مدة الحصة:' : isHe ? 'משך השיעור:' : 'Duration:'}</span>
                   <span className="font-bold text-slate-900 dark:text-white">
-                    {selectedLessonModal.durationMinutes || 25} {isHe ? 'דקות' : 'Minutes'}
+                    {selectedLessonModal.durationMinutes || 25} {isAr ? 'دقيقة' : isHe ? 'דקות' : 'Minutes'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500 dark:text-slate-400">{isHe ? 'סטטוס:' : 'Status:'}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{isAr ? 'الحالة:' : isHe ? 'סטטוס:' : 'Status:'}</span>
                   <span className="font-black text-emerald-600 dark:text-emerald-400">
                     {selectedLessonModal.status}
                   </span>
@@ -897,7 +902,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                     className="w-full py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors"
                   >
                     <Video className="w-4 h-4" />
-                    <span>{isHe ? 'הצטרף לשיעור ב-Zoom' : 'Launch Zoom Classroom'}</span>
+                    <span>{isAr ? 'الدخول إلى قاعة Zoom' : isHe ? 'הצטרף לשיעור ב-Zoom' : 'Launch Zoom Classroom'}</span>
                   </a>
                 </div>
               )}
@@ -909,7 +914,7 @@ export const TeachersCalendarTab: React.FC<TeachersCalendarTabProps> = ({
                 onClick={() => setSelectedLessonModal(null)}
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-colors"
               >
-                {isHe ? 'סגור' : isAr ? 'إغلاق' : 'Close'}
+                {isAr ? 'إغلاق' : isHe ? 'סגור' : 'Close'}
               </button>
             </div>
           </div>
