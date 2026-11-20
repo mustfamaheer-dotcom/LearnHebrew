@@ -6,8 +6,10 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { Trophy, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 interface Pair {
-  hebrew: string;
-  english: string;
+  hebrew?: string;
+  english?: string;
+  left?: string;
+  right?: string;
 }
 
 interface MatchingGameProps {
@@ -44,8 +46,8 @@ export const MatchingGame: React.FC<MatchingGameProps> = ({
   }, [pairs]);
 
   const initGame = () => {
-    const h = pairs.map((p, idx) => ({ id: `pair-${idx}`, text: p.hebrew }));
-    const e = pairs.map((p, idx) => ({ id: `pair-${idx}`, text: p.english }));
+    const h = (pairs || []).map((p: any, idx) => ({ id: `pair-${idx}`, text: p.left || p.hebrew || '' }));
+    const e = (pairs || []).map((p: any, idx) => ({ id: `pair-${idx}`, text: p.right || p.english || '' }));
 
     // Shuffle arrays
     setHebrewList([...h].sort(() => Math.random() - 0.5));

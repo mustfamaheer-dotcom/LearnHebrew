@@ -7,10 +7,13 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { Check, X, Trophy, Sparkles, AlertCircle } from 'lucide-react';
 
 interface Question {
-  question: string;
-  questionHe: string;
-  options: string[];
-  correctIndex: number;
+  question?: string;
+  questionHe?: string;
+  q?: string;
+  a?: string;
+  options?: string[];
+  correctIndex?: number;
+  explanation?: string;
 }
 
 interface QuizGameProps {
@@ -38,14 +41,22 @@ export const QuizGame: React.FC<QuizGameProps> = ({
   const [isCompleted, setIsCompleted] = useState(false);
   const [awardedPoints, setAwardedPoints] = useState(0);
 
-  const currentQ = questions[currentIndex];
+  const safeQuestions = Array.isArray(questions) ? questions : [];
+  const currentQ = safeQuestions[currentIndex] || {};
+  const qText = language === 'he' && currentQ.questionHe ? currentQ.questionHe : (currentQ.question || currentQ.q || '');
+  const qOptions = Array.isArray(currentQ.options) && currentQ.options.length > 0
+    ? currentQ.options
+    : currentQ.a
+    ? [currentQ.a, 'Option B', 'Option C', 'Option D']
+    : [];
+  const correctIdx = typeof currentQ.correctIndex === 'number' ? currentQ.correctIndex : 0;
 
   const handleSelectOption = (index: number) => {
     if (isAnswered) return;
     setSelectedOption(index);
     setIsAnswered(true);
 
-    const isCorrect = index === currentQ.correctIndex;
+    const isCorrect = index === correctIdx;
     if (isCorrect) {
       haptics.success();
       setCorrectAnswers((prev) => prev + 1);
@@ -59,7 +70,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({
     setSelectedOption(null);
     setIsAnswered(false);
 
-    if (currentIndex + 1 < questions.length) {
+    if (currentIndex + 1 < safeQuestions.length) {
       setCurrentIndex((prev) => prev + 1);
     } else {
       finishQuiz();
@@ -68,7 +79,8 @@ export const QuizGame: React.FC<QuizGameProps> = ({
 
   const finishQuiz = async () => {
     setIsCompleted(true);
-    const score = Math.round((correctAnswers / questions.length) * 100);
+    const total = Math.max(1, safeQuestions.length);
+    const score = Math.round((correctAnswers / total) * 100);
 
     try {
       const res = await api.post(`/games/${gameId}/play`, {
@@ -166,16 +178,16 @@ export const QuizGame: React.FC<QuizGameProps> = ({
 
       {/* Question */}
       <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">
-        {language === 'he' ? currentQ.questionHe : currentQ.question}
+        {qText}
       </h3>
 
       {/* Options List */}
       <div className="space-y-3 mb-6">
-        {currentQ.options.map((option, idx) => {
+        {qOptions.map((option, idx) => {
           let stateStyle = 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-brand-teal-400 dark:hover:border-brand-teal-500 hover:bg-brand-teal-50/30 dark:hover:bg-brand-teal-950/30 text-slate-900 dark:text-white';
 
           if (isAnswered) {
-            if (idx === currentQ.correctIndex) {
+            if (idx === correctIdx) {
               stateStyle = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-100 font-semibold';
             } else if (idx === selectedOption) {
               stateStyle = 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-100 line-through';
@@ -192,10 +204,10 @@ export const QuizGame: React.FC<QuizGameProps> = ({
               className={`w-full flex items-center justify-between p-4 rounded-xl border text-start transition-all text-sm font-medium ${stateStyle}`}
             >
               <span className="font-hebrew text-base">{option}</span>
-              {isAnswered && idx === currentQ.correctIndex && (
+              {isAnswered && idx === correctIdx && (
                 <Check className="w-5 h-5 text-emerald-600 shrink-0" />
               )}
-              {isAnswered && idx === selectedOption && idx !== currentQ.correctIndex && (
+              {isAnswered && idx === selectedOption && idx !== correctIdx && (
                 <X className="w-5 h-5 text-rose-600 shrink-0" />
               )}
             </button>
@@ -203,13 +215,21 @@ export const QuizGame: React.FC<QuizGameProps> = ({
         })}
       </div>
 
+      {/* Explanation Banner */}
+      {isAnswered && currentQ.explanation && (
+        <div className="p-3.5 mb-5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+          <span className="font-bold text-slate-800 dark:text-white block mb-0.5">Explanation:</span>
+          {currentQ.explanation}
+        </div>
+      )}
+
       {/* Next Button */}
       {isAnswered && (
         <button
           onClick={handleNextQuestion}
           className="w-full py-3 bg-brand-teal-800 hover:bg-brand-teal-900 dark:bg-brand-teal-700 dark:hover:bg-brand-teal-600 text-white font-semibold rounded-xl transition-colors shadow-xs"
         >
-          {currentIndex + 1 < questions.length ? 'Next Question' : 'Finish Quiz'}
+          {currentIndex + 1 < safeQuestions.length ? 'Next Question' : 'Finish Quiz'}
         </button>
       )}
     </div>

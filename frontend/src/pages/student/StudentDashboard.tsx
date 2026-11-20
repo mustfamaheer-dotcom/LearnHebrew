@@ -9,6 +9,9 @@ import { toast } from '../../store/toastStore';
 import { FlashcardGame } from '../../components/games/FlashcardGame';
 import { QuizGame } from '../../components/games/QuizGame';
 import { MatchingGame } from '../../components/games/MatchingGame';
+import { SentenceBuilderGame } from '../../components/games/SentenceBuilderGame';
+import { WordScrambleGame } from '../../components/games/WordScrambleGame';
+import { SpeedRoundGame } from '../../components/games/SpeedRoundGame';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
@@ -90,21 +93,29 @@ import { ReceiptModal } from '../../components/receipts/ReceiptModal';
 import { ReceiptData } from '../../utils/receiptGenerator';
 
 const LEVEL_AR_MAP: Record<string, string> = {
-  BEGINNER: 'مبتدئ (المستوى الأول - أليف)',
-  ELEMENTARY: 'أساسي (المستوى الثاني - بيت)',
-  INTERMEDIATE: 'متوسط (المستوى الثالث - جيميل)',
-  UPPER_INTERMEDIATE: 'فوق المتوسط (المستوى الرابع - داليت)',
-  ADVANCED: 'متقدم (المستوى الخامس - هي)',
-  FLUENT: 'طلاقة تامة (المستوى السادس - فاف)',
+  A1: 'A1 — مبتدئ (أليف)',
+  A2: 'A2 — أساسي (בית)',
+  B1: 'B1 — متوسط (גימל)',
+  B2: 'B2 — فوق المتوسط (דלת)',
+  C1: 'C1 — متقدم (הא)',
+  C2: 'C2 — إتقان تام (וו)',
+  NATIVE: 'שפת אם — متحدث أصلي',
+  BEGINNER: 'A1 — مبتدئ (أليف)',
+  ELEMENTARY: 'A2 — أساسي (בית)',
+  INTERMEDIATE: 'B1 — متوسط (גימל)',
+  UPPER_INTERMEDIATE: 'B2 — فوق المتوسط (דלת)',
+  ADVANCED: 'C1 — متقدم (הא)',
+  FLUENT: 'C2 — إتقان تام (וו)',
 };
 
 const DEFAULT_LEVEL_TABS = [
-  { code: 'BEGINNER', labelEn: 'Beginner (Alef)', labelHe: 'מתחיל (רמה א׳)', labelAr: 'مبتدئ (المستوى الأول - أليف)' },
-  { code: 'ELEMENTARY', labelEn: 'Elementary (Bet)', labelHe: 'יסודי (רמה ב׳)', labelAr: 'أساسي (المستوى الثاني - بيت)' },
-  { code: 'INTERMEDIATE', labelEn: 'Intermediate (Gimel)', labelHe: 'בינוני (רמה ג׳)', labelAr: 'متوسط (المستوى الثالث - جيميل)' },
-  { code: 'UPPER_INTERMEDIATE', labelEn: 'Upper Intermediate (Dalet)', labelHe: 'מעל בינוני (רמה ד׳)', labelAr: 'فوق المتوسط (المستوى الرابع - داليت)' },
-  { code: 'ADVANCED', labelEn: 'Advanced (He)', labelHe: 'מתקדם (רמה ה׳)', labelAr: 'متقدم (المستوى الخامس - هي)' },
-  { code: 'FLUENT', labelEn: 'Fluent (Vav)', labelHe: 'שליטה מלאה (רמה ו׳)', labelAr: 'طلاقة تامة (المستوى السادس - فاف)' },
+  { code: 'A1', labelEn: 'A1 — Beginner', labelHe: 'A1 — מתחיל (רמה א׳)', labelAr: 'A1 — مبتدئ (أليف)' },
+  { code: 'A2', labelEn: 'A2 — Elementary', labelHe: 'A2 — יסודי (רמה ב׳)', labelAr: 'A2 — أساسי (בית)' },
+  { code: 'B1', labelEn: 'B1 — Intermediate', labelHe: 'B1 — בינוני (רמה ג׳)', labelAr: 'B1 — متوسط (גימל)' },
+  { code: 'B2', labelEn: 'B2 — Upper Intermediate', labelHe: 'B2 — מעל בינוני (רמה ד׳)', labelAr: 'B2 — فوق المتوسط (דלת)' },
+  { code: 'C1', labelEn: 'C1 — Advanced', labelHe: 'C1 — מתקדם (רמה ה׳)', labelAr: 'C1 — متقدم (הא)' },
+  { code: 'C2', labelEn: 'C2 — Mastery', labelHe: 'C2 — שליטה מלאה (רמה ו׳)', labelAr: 'C2 — إتقان تام (וו)' },
+  { code: 'NATIVE', labelEn: 'Native — Bilingual', labelHe: 'שפת אם — דו-לשוני', labelAr: 'מתحدث أصلي — דו-לשוני' },
 ];
 
 const GAME_TYPE_LABELS: Record<string, { en: string; he: string; ar: string }> = {
@@ -3140,46 +3151,146 @@ export const StudentDashboard: React.FC = () => {
                       }}
                     />
                   )}
+
+                  {activeGame.gameType === 'SENTENCE_BUILDER' && (
+                    <SentenceBuilderGame
+                      gameId={activeGame.id}
+                      title={isAr && activeGame.titleAr ? activeGame.titleAr : isHe ? activeGame.titleHe : activeGame.title}
+                      titleHe={activeGame.titleHe}
+                      sentences={activeGame.configJson?.sentences || []}
+                      pointsReward={activeGame.pointsReward}
+                      onFinish={() => {
+                        queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+                        setActiveGame(null);
+                      }}
+                    />
+                  )}
+
+                  {activeGame.gameType === 'WORD_SCRAMBLE' && (
+                    <WordScrambleGame
+                      gameId={activeGame.id}
+                      title={isAr && activeGame.titleAr ? activeGame.titleAr : isHe ? activeGame.titleHe : activeGame.title}
+                      titleHe={activeGame.titleHe}
+                      words={activeGame.configJson?.words || []}
+                      pointsReward={activeGame.pointsReward}
+                      onFinish={() => {
+                        queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+                        setActiveGame(null);
+                      }}
+                    />
+                  )}
+
+                  {activeGame.gameType === 'SPEED_ROUND' && (
+                    <SpeedRoundGame
+                      gameId={activeGame.id}
+                      title={isAr && activeGame.titleAr ? activeGame.titleAr : isHe ? activeGame.titleHe : activeGame.title}
+                      titleHe={activeGame.titleHe}
+                      rounds={activeGame.configJson?.rounds || []}
+                      pointsReward={activeGame.pointsReward}
+                      onFinish={() => {
+                        queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+                        setActiveGame(null);
+                      }}
+                    />
+                  )}
+
+                  {activeGame.gameType === 'PRONUNCIATION' && (
+                    <FlashcardGame
+                      gameId={activeGame.id}
+                      title={isAr && activeGame.titleAr ? activeGame.titleAr : isHe ? activeGame.titleHe : activeGame.title}
+                      titleHe={activeGame.titleHe}
+                      cards={
+                        activeGame.configJson?.cards ||
+                        (activeGame.configJson?.drills || []).map((d: any) => ({
+                          front: d.word,
+                          back: d.phonetics || d.translation || '',
+                          example: d.phonetics,
+                        }))
+                      }
+                      pointsReward={activeGame.pointsReward}
+                      onFinish={() => {
+                        queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+                        setActiveGame(null);
+                      }}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">
                   {/* Level Filter Bar */}
                   <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/70 dark:border-slate-800">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      {isAr ? 'تصفية المستوى:' : isHe ? 'סינון רמה:' : 'Level Filter:'}
+                      {isAr ? 'تصفية المستوى (CEFR):' : isHe ? 'סינון רמה (CEFR):' : 'Level Filter (CEFR):'}
                     </span>
-                    {(['ALL', 'BEGINNER', 'ELEMENTARY', 'INTERMEDIATE', 'ADVANCED'] as const).map((lvl) => (
-                      <button
-                        key={lvl}
-                        onClick={() => setStudentGameLevelFilter(lvl)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
-                          studentGameLevelFilter === lvl
-                            ? 'bg-brand-teal-800 text-white'
-                            : 'bg-white dark:bg-slate-850 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        {lvl === 'ALL'
-                          ? isAr ? 'جميع المستويات' : isHe ? 'כל הרמות' : 'All Levels'
-                          : t(`levels.${lvl}`)}
-                      </button>
-                    ))}
+                    {(['ALL', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'NATIVE'] as const).map((lvl) => {
+                      let label = String(lvl);
+                      if (lvl === 'ALL') label = isAr ? 'جميع المستويات' : isHe ? 'כל הרמות' : 'All Levels';
+                      else if (lvl === 'A1') label = isAr ? 'A1 (أليف)' : isHe ? 'רמה A1 (א׳)' : 'A1 (Alef)';
+                      else if (lvl === 'A2') label = isAr ? 'A2 (בית)' : isHe ? 'רמה A2 (ב׳)' : 'A2 (Bet)';
+                      else if (lvl === 'B1') label = isAr ? 'B1 (גימל)' : isHe ? 'רמה B1 (ג׳)' : 'B1 (Gimel)';
+                      else if (lvl === 'B2') label = isAr ? 'B2 (דלת)' : isHe ? 'רמה B2 (ד׳)' : 'B2 (Dalet)';
+                      else if (lvl === 'C1') label = isAr ? 'C1 (הא)' : isHe ? 'רמה C1 (ה׳)' : 'C1 (Hei)';
+                      else if (lvl === 'C2') label = isAr ? 'C2 (וו)' : isHe ? 'רמה C2 (ו׳)' : 'C2 (Vav)';
+                      else if (lvl === 'NATIVE') label = isAr ? 'متحدث أصلي' : isHe ? 'שפת אם' : 'Native';
+
+                      return (
+                        <button
+                          key={lvl}
+                          onClick={() => setStudentGameLevelFilter(lvl as any)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                            studentGameLevelFilter === lvl
+                              ? 'bg-brand-teal-800 text-white shadow-xs'
+                              : 'bg-white dark:bg-slate-850 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                     {(gamesData || [])
                       .filter((game: any) => {
-                        if (studentGameLevelFilter !== 'ALL' && game.level !== studentGameLevelFilter) return false;
-                        return true;
+                        if (studentGameLevelFilter === 'ALL') return true;
+                        const gameCode = game.levelModel?.code || game.level;
+                        if (gameCode === studentGameLevelFilter) return true;
+                        if (studentGameLevelFilter === 'A1' && (gameCode === 'BEGINNER' || gameCode === 'A1')) return true;
+                        if (studentGameLevelFilter === 'A2' && (gameCode === 'ELEMENTARY' || gameCode === 'A2')) return true;
+                        if (studentGameLevelFilter === 'B1' && (gameCode === 'INTERMEDIATE' || gameCode === 'B1')) return true;
+                        if (studentGameLevelFilter === 'B2' && (gameCode === 'UPPER_INTERMEDIATE' || gameCode === 'B2')) return true;
+                        if (studentGameLevelFilter === 'C1' && (gameCode === 'ADVANCED' || gameCode === 'C1')) return true;
+                        if (studentGameLevelFilter === 'C2' && (gameCode === 'FLUENT' || gameCode === 'C2')) return true;
+                        return false;
                       })
                       .map((game: any) => {
+                        const cefrCode = game.levelModel?.code || (
+                          game.level === 'BEGINNER' ? 'A1' :
+                          game.level === 'ELEMENTARY' ? 'A2' :
+                          game.level === 'INTERMEDIATE' ? 'B1' :
+                          game.level === 'UPPER_INTERMEDIATE' ? 'B2' :
+                          game.level === 'ADVANCED' ? 'C1' :
+                          game.level === 'FLUENT' ? 'C2' : game.level || 'A1'
+                        );
+
                         const levelColor =
-                          game.level === 'ADVANCED'
-                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                            : game.level === 'INTERMEDIATE'
+                          cefrCode === 'C2' || cefrCode === 'NATIVE'
+                            ? 'bg-pink-100 text-pink-800 dark:bg-pink-950/70 dark:text-pink-300 border-pink-200 dark:border-pink-800'
+                            : cefrCode === 'C1'
+                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                            : cefrCode === 'B2'
                             ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
-                            : game.level === 'ELEMENTARY'
-                            ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300 border-sky-200 dark:border-sky-800'
-                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+                            : cefrCode === 'B1'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                            : cefrCode === 'A2'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                            : 'bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300 border-teal-200 dark:border-teal-800';
+
+                        const levelBadgeLabel = isAr
+                          ? (LEVEL_AR_MAP[cefrCode] || cefrCode)
+                          : isHe
+                          ? (game.levelModel?.labelHe || cefrCode)
+                          : (game.levelModel?.labelEn || cefrCode);
 
                       const gameTitle = isAr && GAME_AR_MAP[game.title]?.title ? GAME_AR_MAP[game.title].title : isAr && game.titleAr ? game.titleAr : isHe && game.titleHe ? game.titleHe : game.title;
                       const gameDesc = isAr && GAME_AR_MAP[game.title]?.desc ? GAME_AR_MAP[game.title].desc : isAr && game.descriptionAr ? game.descriptionAr : isHe && game.descriptionHe ? game.descriptionHe : game.description;
@@ -3197,7 +3308,7 @@ export const StudentDashboard: React.FC = () => {
                                   {gameTypeLabel}
                                 </span>
                                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${levelColor}`}>
-                                  {isAr ? (LEVEL_AR_MAP[game.level || 'BEGINNER'] || t(`levels.${game.level || 'BEGINNER'}`)) : t(`levels.${game.level || 'BEGINNER'}`)}
+                                  {levelBadgeLabel}
                                 </span>
                               </div>
                               <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-300 bg-brand-olive-50 dark:bg-brand-olive-950/60 px-2 py-0.5 rounded-md border border-brand-olive-200 dark:border-brand-olive-800">

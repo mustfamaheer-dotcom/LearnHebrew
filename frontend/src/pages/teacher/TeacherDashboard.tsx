@@ -2646,12 +2646,12 @@ export const TeacherDashboard: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     <Filter className="w-3.5 h-3.5" />
-                    {language === 'he' ? 'סינון לפי רמה:' : 'Level Filter:'}
+                    {language === 'he' ? 'סינון לפי רמה (CEFR):' : 'Level Filter (CEFR):'}
                   </span>
-                  {(['ALL', 'BEGINNER', 'ELEMENTARY', 'INTERMEDIATE', 'ADVANCED'] as const).map((lvl) => (
+                  {(['ALL', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'NATIVE'] as const).map((lvl) => (
                     <button
                       key={lvl}
-                      onClick={() => setGameFilterLevel(lvl)}
+                      onClick={() => setGameFilterLevel(lvl as any)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
                         gameFilterLevel === lvl
                           ? 'bg-brand-teal-800 text-white'
@@ -2662,7 +2662,7 @@ export const TeacherDashboard: React.FC = () => {
                         ? language === 'he'
                           ? 'כל הרמות'
                           : 'All Levels'
-                        : t(`levels.${lvl}`)}
+                        : lvl}
                     </button>
                   ))}
                 </div>
@@ -2671,7 +2671,7 @@ export const TeacherDashboard: React.FC = () => {
                   <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
                     {language === 'he' ? 'סוג משחק:' : 'Game Type:'}
                   </span>
-                  {(['ALL', 'FLASHCARD', 'MATCHING', 'QUIZ'] as const).map((type) => (
+                  {(['ALL', 'FLASHCARD', 'MATCHING', 'QUIZ', 'SENTENCE_BUILDER', 'WORD_SCRAMBLE', 'SPEED_ROUND'] as const).map((type) => (
                     <button
                       key={type}
                       onClick={() => setGameFilterType(type)}
@@ -2688,14 +2688,26 @@ export const TeacherDashboard: React.FC = () => {
                         : type === 'FLASHCARD'
                         ? language === 'he'
                           ? 'כרטיסיות'
-                          : 'Flashcard'
+                          : 'Flashcards'
                         : type === 'MATCHING'
                         ? language === 'he'
-                          ? 'התאמת מילים'
+                          ? 'התאמה'
                           : 'Matching'
+                        : type === 'QUIZ'
+                        ? language === 'he'
+                          ? 'חידון'
+                          : 'Quiz'
+                        : type === 'SENTENCE_BUILDER'
+                        ? language === 'he'
+                          ? 'בניית משפטים'
+                          : 'Sentences'
+                        : type === 'WORD_SCRAMBLE'
+                        ? language === 'he'
+                          ? 'סידור אותיות'
+                          : 'Scramble'
                         : language === 'he'
-                        ? 'חידון'
-                        : 'Quiz'}
+                        ? 'ספרינט מהיר'
+                        : 'Speed Sprint'}
                     </button>
                   ))}
                 </div>
@@ -2705,7 +2717,10 @@ export const TeacherDashboard: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 {(gamesData || [])
                   .filter((g: any) => {
-                    if (gameFilterLevel !== 'ALL' && g.level !== gameFilterLevel) return false;
+                    if (gameFilterLevel !== 'ALL') {
+                      const gCode = g.levelModel?.code || g.level;
+                      if (gCode !== gameFilterLevel && g.level !== gameFilterLevel) return false;
+                    }
                     if (gameFilterType !== 'ALL' && g.gameType !== gameFilterType) return false;
                     return true;
                   })
@@ -2716,16 +2731,35 @@ export const TeacherDashboard: React.FC = () => {
                         ? game.configJson?.cards?.length || 0
                         : game.gameType === 'MATCHING'
                         ? game.configJson?.pairs?.length || 0
+                        : game.gameType === 'SENTENCE_BUILDER'
+                        ? game.configJson?.sentences?.length || 0
+                        : game.gameType === 'WORD_SCRAMBLE'
+                        ? game.configJson?.words?.length || 0
+                        : game.gameType === 'SPEED_ROUND'
+                        ? game.configJson?.rounds?.length || 0
                         : game.configJson?.questions?.length || 0;
 
+                    const cefrCode = game.levelModel?.code || (
+                      game.level === 'BEGINNER' ? 'A1' :
+                      game.level === 'ELEMENTARY' ? 'A2' :
+                      game.level === 'INTERMEDIATE' ? 'B1' :
+                      game.level === 'UPPER_INTERMEDIATE' ? 'B2' :
+                      game.level === 'ADVANCED' ? 'C1' :
+                      game.level === 'FLUENT' ? 'C2' : game.level || 'A1'
+                    );
+
                     const levelBadgeColor =
-                      game.level === 'ADVANCED'
-                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                        : game.level === 'INTERMEDIATE'
+                      cefrCode === 'C2' || cefrCode === 'NATIVE'
+                        ? 'bg-pink-100 text-pink-800 dark:bg-pink-950/70 dark:text-pink-300 border-pink-200 dark:border-pink-800'
+                        : cefrCode === 'C1'
+                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border-purple-200 dark:border-purple-800'
+                        : cefrCode === 'B2'
                         ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
-                        : game.level === 'ELEMENTARY'
-                        ? 'bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300 border-sky-200 dark:border-sky-800'
-                        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+                        : cefrCode === 'B1'
+                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                        : cefrCode === 'A2'
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                        : 'bg-teal-100 text-teal-800 dark:bg-teal-950/70 dark:text-teal-300 border-teal-200 dark:border-teal-800';
 
                     return (
                       <div
@@ -2742,7 +2776,7 @@ export const TeacherDashboard: React.FC = () => {
                               <span
                                 className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${levelBadgeColor}`}
                               >
-                                {t(`levels.${game.level || 'BEGINNER'}`)}
+                                {game.levelModel?.labelEn || cefrCode}
                               </span>
                             </div>
                             <span className="text-xs font-bold text-brand-olive-700 dark:text-brand-olive-300 bg-brand-olive-50 dark:bg-brand-olive-950/60 px-2 py-0.5 rounded-md border border-brand-olive-200 dark:border-brand-olive-800">

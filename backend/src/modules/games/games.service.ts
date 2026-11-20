@@ -12,7 +12,13 @@ export async function listGames(filters: {
 
   return getCachedOrFetch(cacheKey, 60, async () => {
     const where: any = { isActive: true };
-    if (filters.level) where.level = filters.level;
+    if (filters.level) {
+      where.OR = [
+        { level: filters.level as any },
+        { levelModel: { code: String(filters.level) } },
+        { levelId: String(filters.level) },
+      ];
+    }
     if (filters.gameType) where.gameType = filters.gameType;
     if (filters.lessonId) where.lessonId = filters.lessonId;
     if (filters.createdById) where.createdById = filters.createdById;
@@ -21,6 +27,7 @@ export async function listGames(filters: {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
+        levelModel: true,
         lesson: {
           select: {
             id: true,
