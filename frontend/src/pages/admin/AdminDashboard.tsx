@@ -897,10 +897,6 @@ export const AdminDashboard: React.FC = () => {
     });
   };
 
-  if (analyticsLoading) {
-    return <DashboardSkeleton />;
-  }
-
   const studentsList = usersData?.filter((u: any) => u.role === 'STUDENT') || [];
   const teachersList = usersData?.filter((u: any) => u.role === 'TEACHER') || [];
 
@@ -1164,6 +1160,10 @@ export const AdminDashboard: React.FC = () => {
     }
     return true;
   }, [activeTab, navItems, can, isSuperAdmin]);
+
+  if (analyticsLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="min-h-screen w-full relative">
