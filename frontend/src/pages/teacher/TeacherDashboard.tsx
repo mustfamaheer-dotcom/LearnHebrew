@@ -20,6 +20,7 @@ import { StructuredNotesEditorModal } from '../../components/lessons/StructuredN
 import { GlassSidebar } from '../../components/common/GlassSidebar';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { TeacherShareModal } from '../../components/teacher/TeacherShareModal';
+import { TeachersCalendarTab } from '../../components/admin/TeachersCalendarTab';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { haptics } from '../../utils/haptics';
 import { getGoogleCalendarUrl, downloadIcsFile } from '../../utils/calendarSync';
@@ -27,6 +28,8 @@ import { isGoogleDriveUrl, detectAttachmentType } from '../../lib/driveUtils';
 import {
   Calendar,
   Calendar as CalendarIcon,
+  CalendarRange,
+  CalendarDays,
   Download,
   Clock,
   CheckCircle,
@@ -126,9 +129,9 @@ export const TeacherDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const { isCollapsed } = useSidebarStore();
 
-  const [activeTab, setActiveTab] = useState<'calendar' | 'lessons' | 'students' | 'homework' | 'recordings' | 'games'>(() => {
+  const [activeTab, setActiveTab] = useState<'calendar' | 'calendar_monitor' | 'lessons' | 'students' | 'homework' | 'recordings' | 'games'>(() => {
     const searchTab = new URLSearchParams(window.location.search).get('tab');
-    if (searchTab && ['calendar', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(searchTab)) {
+    if (searchTab && ['calendar', 'calendar_monitor', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(searchTab)) {
       return searchTab as any;
     }
     return 'calendar';
@@ -136,7 +139,7 @@ export const TeacherDashboard: React.FC = () => {
 
   useEffect(() => {
     const handleNavEvent = (e: any) => {
-      if (e.detail?.tab && ['calendar', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(e.detail.tab)) {
+      if (e.detail?.tab && ['calendar', 'calendar_monitor', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(e.detail.tab)) {
         setActiveTab(e.detail.tab);
       }
     };
@@ -146,13 +149,14 @@ export const TeacherDashboard: React.FC = () => {
 
   useEffect(() => {
     const searchTab = new URLSearchParams(location.search).get('tab');
-    if (searchTab && ['calendar', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(searchTab)) {
+    if (searchTab && ['calendar', 'calendar_monitor', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(searchTab)) {
       setActiveTab(searchTab as any);
     }
   }, [location.search]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [calendarSubMode, setCalendarSubMode] = useState<'manage' | 'monitor'>('manage');
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [selectedDay, setSelectedDay] = useState<number>(() => new Date().getDay());
 
@@ -911,10 +915,17 @@ export const TeacherDashboard: React.FC = () => {
   const navItems = [
     {
       id: 'calendar',
-      label: 'Session Availability',
-      labelHe: 'לוח זמינות ושיעורים',
+      label: 'Open Slots Engine',
+      labelHe: 'הגדרת שעות זמינות',
       icon: CalendarIcon,
       badge: slots.length,
+    },
+    {
+      id: 'calendar_monitor',
+      label: 'Calendar & Bookings',
+      labelHe: 'מעקב יומן ו-4 שבועות',
+      icon: CalendarRange,
+      badge: lessons.length > 0 ? `${lessons.length}` : 'Matrix',
     },
     {
       id: 'lessons',
@@ -1008,6 +1019,20 @@ export const TeacherDashboard: React.FC = () => {
                     <span>{language === 'he' ? 'העתק שבוע' : 'Copy Week'}</span>
                   </button>
                 </div>
+              }
+            />
+          )}
+
+          {activeTab === 'calendar_monitor' && (
+            <PageHeaderBanner
+              badgeIcon={CalendarRange}
+              badgeText={language === 'he' ? 'מעקב יומן מפורט • תצוגת 4 שבועות ולוח שבועי' : 'Teacher Schedule Monitor • 4-Week Matrix & Timeline'}
+              statusText={language === 'he' ? 'פעיל' : 'Active'}
+              title={language === 'he' ? `מעקב יומן ושיעורים • ${user?.firstName || 'מורה'}` : `Calendar Monitor & Bookings • ${user?.firstName || 'Teacher'}`}
+              description={
+                language === 'he'
+                  ? 'עקוב אחר המועדים שלך במחזור חודשי של 4 שבועות (Matrix) וצפה בלוח השבועי המפורט עם שמות תלמידים, שיעורים קבועים (Regular) ושיעורים בודדים (One-Time).'
+                  : 'Monitor your upcoming time slots, 4-week availability matrix, and day-by-day weekly schedule with student bookings.'
               }
             />
           )}
@@ -1139,19 +1164,55 @@ export const TeacherDashboard: React.FC = () => {
             />
           )}
 
-          {/* TAB 1: INTERACTIVE MULTI-DURATION AVAILABILITY CALENDAR */}
+          {/* TAB 1: INTERACTIVE MULTI-DURATION AVAILABILITY CALENDAR & MONITOR SWITCHER */}
           {activeTab === 'calendar' && (
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6 transition-colors">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5 text-brand-teal-700 dark:text-brand-teal-400" />
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                      {language === 'he'
-                        ? 'לוח זמינות שבועי'
-                        : 'Weekly Availability Calendar'}
-                    </h2>
-                  </div>
+            <div className="space-y-6">
+              {/* Mode Switcher pill */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2 sm:p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl">
+                  <button
+                    onClick={() => setCalendarSubMode('manage')}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+                      calendarSubMode === 'manage'
+                        ? 'bg-white dark:bg-slate-900 text-brand-teal-800 dark:text-brand-teal-300 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <CalendarIcon className="w-3.5 h-3.5" />
+                    <span>{language === 'he' ? 'הגדרת שעות זמינות (25 דק׳)' : 'Open Slots Engine (25m)'}</span>
+                  </button>
+                  <button
+                    onClick={() => setCalendarSubMode('monitor')}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+                      calendarSubMode === 'monitor'
+                        ? 'bg-white dark:bg-slate-900 text-brand-teal-800 dark:text-brand-teal-300 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <CalendarRange className="w-3.5 h-3.5" />
+                    <span>{language === 'he' ? 'מעקב יומן ו-4 שבועות' : '4-Week Matrix & Bookings'}</span>
+                  </button>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 pe-3">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span>{language === 'he' ? 'סנכרון מלא עם שיעורי תלמידים' : 'Live Sync with Student Lessons'}</span>
+                </div>
+              </div>
+
+              {calendarSubMode === 'monitor' ? (
+                <TeachersCalendarTab initialTeacherId={user?.id} isTeacherSelfView={true} />
+              ) : (
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-6 transition-colors">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-5 h-5 text-brand-teal-700 dark:text-brand-teal-400" />
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          {language === 'he'
+                            ? 'לוח זמינות שבועי'
+                            : 'Weekly Availability Calendar'}
+                        </h2>
+                      </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                     {language === 'he'
                       ? 'סמן את השעות שבהן אתה זמין ללמד. תלמידים יוכלו לקבוע שיעור בכל משך (25, 40 או 55 דקות) בשעות שפתחת.'
@@ -1780,6 +1841,15 @@ export const TeacherDashboard: React.FC = () => {
                   );
                 })()}
               </div>
+            </div>
+            )}
+            </div>
+          )}
+
+          {/* TAB 1.5: DEDICATED CALENDAR & BOOKINGS MONITOR */}
+          {activeTab === 'calendar_monitor' && (
+            <div className="space-y-6">
+              <TeachersCalendarTab initialTeacherId={user?.id} isTeacherSelfView={true} />
             </div>
           )}
 

@@ -12,6 +12,7 @@ import { SystemLogsTab } from '../../components/admin/SystemLogsTab';
 import { ReminderNotificationHubTab } from '../../components/admin/ReminderNotificationHubTab';
 import { ReviewsAndFeedbackTab } from '../../components/admin/ReviewsAndFeedbackTab';
 import { PackagesManagementTab } from '../../components/admin/PackagesManagementTab';
+import { TeachersCalendarTab } from '../../components/admin/TeachersCalendarTab';
 import { EnterpriseTabsContainer } from '../../components/admin/EnterpriseTabsContainer';
 import { LevelsTab } from '../../components/admin/LevelsTab';
 import { SessionTypesTab } from '../../components/admin/SessionTypesTab';
@@ -36,6 +37,8 @@ import {
   Users,
   Award,
   Calendar,
+  CalendarRange,
+  CalendarDays,
   Layers,
   BarChart2,
   Plus,
@@ -137,6 +140,7 @@ export const AdminDashboard: React.FC = () => {
     | 'reminders_hub'
     | 'users'
     | 'teachers'
+    | 'teachers_calendar'
     | 'packages'
     | 'bookings'
     | 'surveys'
@@ -160,6 +164,7 @@ export const AdminDashboard: React.FC = () => {
         'reminders_hub',
         'users',
         'teachers',
+        'teachers_calendar',
         'packages',
         'bookings',
         'surveys',
@@ -222,6 +227,7 @@ export const AdminDashboard: React.FC = () => {
         'reminders_hub',
         'users',
         'teachers',
+        'teachers_calendar',
         'packages',
         'bookings',
         'surveys',
@@ -982,6 +988,13 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'מורים ומשבצות 25 דק׳',
       icon: GraduationCap,
       badge: teachersData?.length || 0,
+    },
+    {
+      id: 'teachers_calendar',
+      label: 'Teachers Calendar',
+      labelHe: 'יומן מורים מפורט',
+      icon: CalendarRange,
+      badge: 'Matrix',
     },
     {
       id: 'packages',
@@ -2785,6 +2798,24 @@ export const AdminDashboard: React.FC = () => {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* TAB 4.5: TEACHERS CALENDAR & 4-WEEK AVAILABILITY MATRIX */}
+          {activeTab === 'teachers_calendar' && (
+            <div className="space-y-6">
+              <PageHeaderBanner
+                badgeIcon={CalendarRange}
+                badgeText={language === 'he' ? 'יומני מורים • תצוגת 4 שבועות ולוח מפורט' : 'Teachers Calendar • 4-Week Matrix & Timeline'}
+                statusText="Active"
+                title={language === 'he' ? 'יומני מורים וזמינות שיעורים' : 'Teachers Calendar & Availability Monitor'}
+                description={
+                  language === 'he'
+                    ? 'צפייה מפורטת ביומני כל המורים, מעקב אחר זמינות במחזורים של 4 שבועות (Matrix) ולוח שבועי מפורט עם שמות תלמידים וסינון שיעורים קבועים (Regular) או בודדים (One-Time).'
+                    : 'Monitor individual teacher calendars, 4-week availability matrices, and day-by-day weekly schedules with regular vs one-time class breakdown.'
+                }
+              />
+              <TeachersCalendarTab />
             </div>
           )}
 

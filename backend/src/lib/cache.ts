@@ -9,6 +9,7 @@ interface CacheEntry {
 const memCache = new Map<string, CacheEntry>();
 
 // Initialize Redis client with resilient configuration
+const hasRedisConfig = !!process.env.REDIS_URL;
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 let isRedisReady = false;
 
@@ -18,10 +19,10 @@ export const redis = new Redis(redisUrl, {
   connectTimeout: 2000,
   enableOfflineQueue: false,
   retryStrategy(times) {
-    if (times > 3) {
-      return null; // Stop retrying after 3 failed attempts
+    if (!hasRedisConfig || times > 1) {
+      return null; // Stop retrying if no explicit REDIS_URL or after 1 try
     }
-    return Math.min(times * 1000, 3000);
+    return 1000;
   },
 });
 
@@ -30,16 +31,16 @@ redis.on('connect', () => {
   console.log('[Cache] Redis connected successfully.');
 });
 
-redis.on('error', (err) => {
+redis.on('error', (_err) => {
   isRedisReady = false;
-  // Silently fail over to memory cache without throwing uncaught errors
-  // console.warn('[Cache] Redis unavailable, fallback to in-memory cache:', err.message);
 });
 
-// Attempt initial connection without blocking app startup
-redis.connect().catch(() => {
-  isRedisReady = false;
-});
+// Attempt initial connection only when explicit REDIS_URL is configured
+if (hasRedisConfig) {
+  redis.connect().catch(() => {
+    isRedisReady = false;
+  });
+}
 
 /**
  * Retrieve cached JSON value by key

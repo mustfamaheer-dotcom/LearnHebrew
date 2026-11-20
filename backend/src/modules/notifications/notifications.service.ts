@@ -32,10 +32,18 @@ export class NotificationService {
    * Initializes Redis Pub/Sub listener for multi-node SSE sync
    */
   private initDistributedPubSub() {
+    if (!process.env.REDIS_URL) {
+      return;
+    }
     try {
       this.subscriber = redis.duplicate({
         lazyConnect: true,
         maxRetriesPerRequest: 1,
+        retryStrategy: () => null,
+      });
+
+      this.subscriber.on('error', () => {
+        // Silently handle error event to avoid uncaught exception
       });
 
       this.subscriber.on('message', (channel, message) => {
