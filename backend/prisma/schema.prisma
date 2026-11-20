@@ -19,6 +19,7 @@ enum Role {
 enum LanguagePref {
   en
   he
+  ar
 }
 
 enum HebrewLevel {

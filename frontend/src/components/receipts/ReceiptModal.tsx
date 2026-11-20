@@ -19,7 +19,7 @@ interface ReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   data: ReceiptData | null;
-  language: 'en' | 'he';
+  language: 'en' | 'he' | 'ar';
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({
@@ -31,6 +31,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   if (!isOpen || !data) return null;
 
   const isHe = language === 'he';
+  const isAr = language === 'ar';
+  const isRtl = isHe || isAr;
   const isPackage = data.type === 'PACKAGE_ACTIVATION';
   const isBooking = data.type === 'SESSION_BOOKING';
   const isRefund = data.type === 'SESSION_REFUND';
@@ -51,9 +53,17 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     ? 'אישור החזרת שיעור לחבילה'
     : 'שובר עדכון יתרת שיעורים';
 
-  const docTitle = isHe ? titleHe : titleEn;
+  const titleAr = isPackage
+    ? 'إيصال وفاتورة دفع الحزمة'
+    : isBooking
+    ? 'تأكيد وقسيمة حجز الدرس'
+    : isRefund
+    ? 'إيصال استرجاع رصيد الحصة'
+    : 'إيصال تسوية رصيد الحساب';
 
-  const dateFormatted = new Date(data.createdAt).toLocaleDateString(isHe ? 'he-IL' : 'en-US', {
+  const docTitle = isAr ? titleAr : isHe ? titleHe : titleEn;
+
+  const dateFormatted = new Date(data.createdAt).toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

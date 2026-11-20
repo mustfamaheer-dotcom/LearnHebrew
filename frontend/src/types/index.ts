@@ -1,5 +1,5 @@
 export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'SALES' | 'CS' | 'TEACHER' | 'STUDENT';
-export type LanguagePref = 'en' | 'he';
+export type LanguagePref = 'en' | 'he' | 'ar';
 export type HebrewLevel =
   | 'BEGINNER'
   | 'ELEMENTARY'
@@ -15,6 +15,22 @@ export interface User {
   lastName: string;
   role: Role;
   languagePref: LanguagePref;
+  nativeLanguageId?: string | null;
+  nativeLanguage?: {
+    id: string;
+    code: string;
+    labelEn: string;
+    labelNative: string;
+    flagEmoji?: string | null;
+  } | null;
+  learningLanguageId?: string | null;
+  learningLanguage?: {
+    id: string;
+    code: string;
+    labelEn: string;
+    labelNative: string;
+    flagEmoji?: string | null;
+  } | null;
   avatarUrl?: string;
   isActive: boolean;
   mustChangePw: boolean;

@@ -38,6 +38,6 @@ export function useTranslation() {
     return typeof current === 'string' ? current : path;
   }
 
-  return { t, language, setLanguage, isRtl: language === 'he' };
+  return { t, language, setLanguage, isRtl: language === 'he' || language === 'ar' };
 }
 

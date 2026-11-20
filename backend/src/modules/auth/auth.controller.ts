@@ -19,7 +19,7 @@ const changePasswordSchema = z.object({
 const updateProfileSchema = z.object({
   firstName: z.string().min(1).optional(),
   lastName: z.string().min(1).optional(),
-  languagePref: z.enum(['en', 'he']).optional(),
+  languagePref: z.enum(['en', 'he', 'ar']).optional(),
   avatarUrl: z.string().nullable().optional(),
 });
 

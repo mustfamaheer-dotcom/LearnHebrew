@@ -38,8 +38,8 @@ export const ProfileSettingsModal: React.FC = () => {
   // Form states - Info
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
-  const [selectedLang, setSelectedLang] = useState<'en' | 'he'>(
-    user?.languagePref === 'he' ? 'he' : 'en'
+  const [selectedLang, setSelectedLang] = useState<'en' | 'he' | 'ar'>(
+    user?.languagePref || 'en'
   );
   const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatarUrl || null);
   const [isDragging, setIsDragging] = useState(false);
@@ -59,7 +59,7 @@ export const ProfileSettingsModal: React.FC = () => {
     if (user) {
       setFirstName(user.firstName || '');
       setLastName(user.lastName || '');
-      setSelectedLang(user.languagePref === 'he' ? 'he' : 'en');
+      setSelectedLang((['en', 'he', 'ar'].includes(user.languagePref) ? user.languagePref : 'en') as 'en' | 'he' | 'ar');
       setAvatarPreview(user.avatarUrl || null);
     }
   }, [user]);
@@ -90,7 +90,7 @@ export const ProfileSettingsModal: React.FC = () => {
     mutationFn: async (payload: {
       firstName: string;
       lastName: string;
-      languagePref: 'en' | 'he';
+      languagePref: 'en' | 'he' | 'ar';
       avatarUrl?: string | null;
     }) => {
       const res = await api.patch('/auth/profile', payload);
@@ -402,33 +402,46 @@ export const ProfileSettingsModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                  {isHe ? 'שפת ממשק מועדפת' : 'Preferred Language'}
+                  {isHe ? 'שפת ממשק מועדפת' : (language === 'ar' ? 'لغة الواجهة المفضلة' : 'Preferred Language')}
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setSelectedLang('en')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                    className={`py-2 px-2 sm:px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       selectedLang === 'en'
                         ? 'bg-teal-600 text-white border-teal-600 ring-2 ring-teal-400 shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
                     }`}
                   >
                     <span>English</span>
-                    {selectedLang === 'en' && <Check className="w-3.5 h-3.5" />}
+                    {selectedLang === 'en' && <Check className="w-3.5 h-3.5 shrink-0" />}
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setSelectedLang('he')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                    className={`py-2 px-2 sm:px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       selectedLang === 'he'
                         ? 'bg-teal-600 text-white border-teal-600 ring-2 ring-teal-400 shadow-xs'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
                     }`}
                   >
-                    <span>עברית (Hebrew)</span>
-                    {selectedLang === 'he' && <Check className="w-3.5 h-3.5" />}
+                    <span>עברית</span>
+                    {selectedLang === 'he' && <Check className="w-3.5 h-3.5 shrink-0" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLang('ar')}
+                    className={`py-2 px-2 sm:px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      selectedLang === 'ar'
+                        ? 'bg-teal-600 text-white border-teal-600 ring-2 ring-teal-400 shadow-xs'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
+                    }`}
+                  >
+                    <span>العربية</span>
+                    {selectedLang === 'ar' && <Check className="w-3.5 h-3.5 shrink-0" />}
                   </button>
                 </div>
               </div>

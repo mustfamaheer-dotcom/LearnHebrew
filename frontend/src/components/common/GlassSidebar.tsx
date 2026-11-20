@@ -16,6 +16,7 @@ export interface GlassNavItem {
   id: string;
   label: string;
   labelHe?: string;
+  labelAr?: string;
   icon: LucideIcon;
   badge?: string | number | null;
   badgeColor?: string;
@@ -86,6 +87,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
 
   const toggleParent = (parentId: string) => {
     setOpenParents((prev) => ({ ...prev, [parentId]: !prev[parentId] }));
+  };
+
+  const resolveItemLabel = (item: { label: string; labelHe?: string; labelAr?: string }) => {
+    if (language === 'ar') return item.labelAr || item.label;
+    if (language === 'he') return item.labelHe || item.label;
+    return item.label;
   };
 
   return (
@@ -185,7 +192,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
               const isChildActive = Boolean(hasChildren && item.children!.some((c) => c.id === activeTab));
               const isActive = activeTab === item.id || isChildActive;
               const isParentOpen = Boolean(openParents[item.id]);
-              const label = language === 'he' && item.labelHe ? item.labelHe : item.label;
+              const label = resolveItemLabel(item);
 
               // Collapsed (Icons Only) Mode
               if (isCollapsed) {
@@ -236,7 +243,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                         {item.children!.map((child) => {
                           const ChildIcon = child.icon;
                           const isChildCur = activeTab === child.id;
-                          const childLabel = language === 'he' && child.labelHe ? child.labelHe : child.label;
+                          const childLabel = resolveItemLabel(child);
                           return (
                             <button
                               key={child.id}
@@ -315,7 +322,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                         {item.children!.map((child) => {
                           const ChildIcon = child.icon;
                           const isChildCurrent = activeTab === child.id;
-                          const childLabel = language === 'he' && child.labelHe ? child.labelHe : child.label;
+                          const childLabel = resolveItemLabel(child);
 
                           if (isChildCurrent) {
                             return (

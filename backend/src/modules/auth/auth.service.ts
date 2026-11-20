@@ -29,6 +29,8 @@ export async function login(
     include: {
       studentProfile: true,
       teacherProfile: true,
+      nativeLanguage: true,
+      learningLanguage: true,
     },
   });
 
@@ -328,6 +330,8 @@ export async function getCurrentUser(userId: string) {
         },
       },
       teacherProfile: true,
+      nativeLanguage: true,
+      learningLanguage: true,
     },
   });
 
@@ -362,6 +366,8 @@ export async function updateProfile(
         },
       },
       teacherProfile: true,
+      nativeLanguage: true,
+      learningLanguage: true,
     },
   });
 

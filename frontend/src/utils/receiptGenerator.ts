@@ -54,13 +54,15 @@ export interface ReceiptData {
   };
 }
 
-export function generateReceiptHtml(data: ReceiptData, language: 'en' | 'he' = 'en'): string {
+export function generateReceiptHtml(data: ReceiptData, language: 'en' | 'he' | 'ar' = 'en'): string {
   const isHe = language === 'he';
+  const isAr = language === 'ar';
+  const isRtl = isHe || isAr;
   const isBooking = data.type === 'SESSION_BOOKING';
   const isRefund = data.type === 'SESSION_REFUND';
   const isPackage = data.type === 'PACKAGE_ACTIVATION';
 
-  const dateFormatted = new Date(data.createdAt).toLocaleDateString(isHe ? 'he-IL' : 'en-US', {
+  const dateFormatted = new Date(data.createdAt).toLocaleDateString(isAr ? 'ar-EG' : isHe ? 'he-IL' : 'en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -84,8 +86,16 @@ export function generateReceiptHtml(data: ReceiptData, language: 'en' | 'he' = '
     ? 'אישור החזרת שיעור למכסה'
     : 'שובר עדכון יתרת שיעורים';
 
-  const docTitle = isHe ? titleHe : titleEn;
-  const docSubtitle = isHe ? titleEn : titleHe;
+  const titleAr = isPackage
+    ? 'إيصال وفاتورة دفع الحزمة'
+    : isBooking
+    ? 'تأكيد وقسيمة حجز الدرس'
+    : isRefund
+    ? 'إيصال استرجاع رصيد الحصة'
+    : 'إيصال تسوية رصيد الحساب';
+
+  const docTitle = isAr ? titleAr : isHe ? titleHe : titleEn;
+  const docSubtitle = isAr ? titleEn : isHe ? titleEn : titleHe;
 
   const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/logo.png` : '/logo.png';
 
@@ -95,12 +105,12 @@ export function generateReceiptHtml(data: ReceiptData, language: 'en' | 'he' = '
   const priceDisplay = data.packageDetails?.price ? `$${Number(data.packageDetails.price).toFixed(2)} ${currency}` : null;
 
   return `<!DOCTYPE html>
-<html lang="${language}" dir="${isHe ? 'rtl' : 'ltr'}">
+<html lang="${language}" dir="${isRtl ? 'rtl' : 'ltr'}">
 <head>
   <meta charset="UTF-8">
   <title>${docTitle} - ${data.receiptNumber}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Heebo:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Heebo:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&display=swap');
 
     @page {
       size: A4 portrait;
@@ -114,7 +124,7 @@ export function generateReceiptHtml(data: ReceiptData, language: 'en' | 'he' = '
     }
 
     body {
-      font-family: ${isHe ? "'Heebo', 'Plus Jakarta Sans', sans-serif" : "'Plus Jakarta Sans', 'Heebo', sans-serif"};
+      font-family: ${isAr ? "'Cairo', 'Plus Jakarta Sans', sans-serif" : isHe ? "'Heebo', 'Plus Jakarta Sans', sans-serif" : "'Plus Jakarta Sans', 'Heebo', sans-serif"};
       background-color: #ffffff;
       color: #0f172a;
       line-height: 1.5;
@@ -650,7 +660,7 @@ export function generateReceiptHtml(data: ReceiptData, language: 'en' | 'he' = '
  * Allows instant printing or saving as PDF with 100% vector typography,
  * correct fonts, and zero canvas distortion.
  */
-export function printReceipt(data: ReceiptData, language: 'en' | 'he' = 'en'): void {
+export function printReceipt(data: ReceiptData, language: 'en' | 'he' | 'ar' = 'en'): void {
   const html = generateReceiptHtml(data, language);
 
   const iframe = document.createElement('iframe');
@@ -697,7 +707,7 @@ export function printReceipt(data: ReceiptData, language: 'en' | 'he' = 'en'): v
  * Downloads the receipt as a clean standalone HTML file
  * that can be opened in any browser and saved as PDF anytime.
  */
-export function downloadReceiptHtml(data: ReceiptData, language: 'en' | 'he' = 'en'): void {
+export function downloadReceiptHtml(data: ReceiptData, language: 'en' | 'he' | 'ar' = 'en'): void {
   const html = generateReceiptHtml(data, language);
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
