@@ -22,6 +22,10 @@
   html[dir="rtl"] {
     font-family: 'Heebo', 'Rubik', system-ui, sans-serif;
   }
+
+  html[lang="ar"], html[lang="ar"][dir="rtl"] {
+    font-family: 'Cairo', 'Tajawal', 'Almarai', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
 }
 
 /* Custom 3D Card flip for Flashcards */

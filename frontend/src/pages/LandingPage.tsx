@@ -392,7 +392,7 @@ export const LandingPage: React.FC = () => {
 
     setActivePkgIndex(closestIndex);
 
-    const isRtl = language === 'he';
+    const isRtl = language === 'he' || language === 'ar';
     if (isRtl) {
       setCanScrollLeft(closestIndex < cards.length - 1);
       setCanScrollRight(closestIndex > 0);
@@ -437,7 +437,7 @@ export const LandingPage: React.FC = () => {
       }
     });
 
-    const isRtl = language === 'he';
+    const isRtl = language === 'he' || language === 'ar';
     let targetIndex = closestIndex;
     if (direction === 'left') {
       targetIndex = isRtl ? closestIndex + 1 : closestIndex - 1;
@@ -527,7 +527,7 @@ export const LandingPage: React.FC = () => {
 
     setActiveFeedbackIndex(closestIndex);
 
-    const isRtl = language === 'he';
+    const isRtl = language === 'he' || language === 'ar';
     if (isRtl) {
       setCanScrollFeedbackLeft(closestIndex < cards.length - 1);
       setCanScrollFeedbackRight(closestIndex > 0);
@@ -556,7 +556,7 @@ export const LandingPage: React.FC = () => {
     const cards = container.querySelectorAll<HTMLElement>(':scope > div');
     if (!cards.length) return;
 
-    const isRtl = language === 'he';
+    const isRtl = language === 'he' || language === 'ar';
     let targetIndex = activeFeedbackIndex;
     if (direction === 'left') {
       targetIndex = isRtl ? activeFeedbackIndex + 1 : activeFeedbackIndex - 1;
