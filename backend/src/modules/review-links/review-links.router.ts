@@ -5,7 +5,8 @@ import { Role } from '@prisma/client';
 
 const router = Router();
 
-router.get('/redeem/:token', controller.redeemLink); // Public single-use redemption
+router.get('/redeem/:token', controller.redeemLink); // Public validation & access
+router.post('/submit/:token', controller.submitReview); // Public verified review submission
 router.get('/', authenticate, requireRoles(Role.SUPER_ADMIN, Role.ADMIN), controller.listLinks);
 router.post('/', authenticate, requireRoles(Role.SUPER_ADMIN, Role.ADMIN), controller.createLink);
 router.delete('/:id', authenticate, requireRoles(Role.SUPER_ADMIN, Role.ADMIN), controller.deleteLink);

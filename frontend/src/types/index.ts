@@ -299,6 +299,8 @@ export interface ReviewLinkModel {
   usedAt?: string;
   usedByIp?: string;
   isUsed: boolean;
+  usageCount?: number;
+  submissions?: any[];
   expiresAt?: string;
   createdAt: string;
 }

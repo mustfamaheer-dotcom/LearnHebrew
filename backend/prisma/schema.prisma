@@ -590,20 +590,42 @@ model TeacherSurvey {
 }
 
 model ReviewLink {
-  id          String    @id @default(uuid())
-  token       String    @unique @default(uuid())
+  id          String             @id @default(uuid())
+  token       String             @unique @default(uuid())
   createdById String
-  createdBy   User      @relation("CreatedReviewLinks", fields: [createdById], references: [id], onDelete: Cascade)
-  targetUrl   String    @default("https://engrew.com/reviews")
+  createdBy   User               @relation("CreatedReviewLinks", fields: [createdById], references: [id], onDelete: Cascade)
+  targetUrl   String             @default("https://engrew.com/reviews")
   label       String?
   usedAt      DateTime?
   usedByIp    String?
-  isUsed      Boolean   @default(false)
+  isUsed      Boolean            @default(false)
+  usageCount  Int                @default(0)
   expiresAt   DateTime?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime           @default(now())
+  submissions ReviewSubmission[]
 
   @@index([token])
   @@index([isUsed])
+}
+
+model ReviewSubmission {
+  id               String      @id @default(uuid())
+  reviewLinkId     String
+  reviewLink       ReviewLink  @relation(fields: [reviewLinkId], references: [id], onDelete: Cascade)
+  reviewerName     String?
+  reviewerEmail    String?
+  rating           Int         @default(5)
+  teachingRating   Int?        @default(5)
+  platformRating   Int?        @default(5)
+  title            String?
+  comment          String?
+  recommend        Boolean     @default(true)
+  allowPublicShare Boolean     @default(true)
+  ipAddress        String?
+  createdAt        DateTime    @default(now())
+
+  @@index([reviewLinkId])
+  @@index([rating])
 }
 
 // ----------------------------------------------------

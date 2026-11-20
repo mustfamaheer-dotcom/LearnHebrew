@@ -148,8 +148,25 @@ export const reviewLinksApi = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/review-links/${id}`);
   },
-  redeem: async (token: string): Promise<{ targetUrl: string }> => {
+  redeem: async (token: string): Promise<{ valid: boolean; targetUrl: string; label?: string; usageCount?: number; submissionsCount?: number }> => {
     const res = await api.get(`/review-links/redeem/${token}`);
+    return res.data;
+  },
+  submit: async (
+    token: string,
+    data: {
+      reviewerName?: string;
+      reviewerEmail?: string;
+      rating?: number;
+      teachingRating?: number;
+      platformRating?: number;
+      title?: string;
+      comment?: string;
+      recommend?: boolean;
+      allowPublicShare?: boolean;
+    }
+  ): Promise<{ success: boolean; message: string; targetUrl?: string }> => {
+    const res = await api.post(`/review-links/submit/${token}`, data);
     return res.data;
   },
 };

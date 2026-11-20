@@ -22,6 +22,12 @@ export async function redeemLink(req: Request, res: Response) {
   res.json(result);
 }
 
+export async function submitReview(req: Request, res: Response) {
+  const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress;
+  const result = await service.submitReviewLink(req.params.token, req.body, ip);
+  res.json(result);
+}
+
 export async function deleteLink(req: AuthRequest, res: Response) {
   await service.deleteReviewLink(req.params.id);
   res.json({ message: 'Review link removed successfully' });
