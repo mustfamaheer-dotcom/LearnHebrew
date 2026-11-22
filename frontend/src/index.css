@@ -13,6 +13,17 @@
     max-width: 100% !important;
     margin: 0;
     padding: 0;
+    -webkit-touch-callout: none;
+  }
+
+  /* Prevent drag and unauthorized selection of UI chrome */
+  img {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+    pointer-events: auto;
   }
 
   html {
