@@ -433,16 +433,16 @@ const htmlContent = `
 
     /* TOC */
     .toc-container {
-      margin: 30px 0;
+      margin: 20px 0;
     }
 
     .toc-item {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      padding: 6px 0;
+      padding: 4px 0;
       border-bottom: 1px dotted #cbd5e1;
-      font-size: 9.5pt;
+      font-size: 8.5pt;
     }
 
     .toc-title {
@@ -477,7 +477,7 @@ const htmlContent = `
       <div class="cover-meta-grid">
         <div class="cover-meta-item">
           <span class="cover-meta-label">Platform Edition</span>
-          <span class="cover-meta-value">Version 2.4 Enterprise</span>
+          <span class="cover-meta-value">Version 2.5 Enterprise</span>
         </div>
         <div class="cover-meta-item">
           <span class="cover-meta-label">Primary Authority</span>
@@ -485,7 +485,7 @@ const htmlContent = `
         </div>
         <div class="cover-meta-item">
           <span class="cover-meta-label">Publication Date</span>
-          <span class="cover-meta-value">November 2026</span>
+          <span class="cover-meta-value">November 2026 (Updated)</span>
         </div>
       </div>
     </div>
@@ -508,9 +508,9 @@ const htmlContent = `
     <div class="toc-item"><span class="toc-title">1. Platform Architecture & Ecosystem Overview</span><span class="toc-page">Ch. 1</span></div>
     <div class="toc-item"><span class="toc-title">2. Authentication, Security Gateway & Session Policies</span><span class="toc-page">Ch. 2</span></div>
     <div class="toc-item"><span class="toc-title">3. Executive Analytics, Revenue & KPI Scorecard</span><span class="toc-page">Ch. 3</span></div>
-    <div class="toc-item"><span class="toc-title">4. User Management & Staff Onboarding Directory</span><span class="toc-page">Ch. 4</span></div>
+    <div class="toc-item"><span class="toc-title">4. User Management, Staff Onboarding & Family Accounts</span><span class="toc-page">Ch. 4</span></div>
     <div class="toc-item"><span class="toc-title">5. Roles & Permissions Action Matrix (Enterprise RBAC)</span><span class="toc-page">Ch. 5</span></div>
-    <div class="toc-item"><span class="toc-title">6. Curriculum Framework & Hebrew Proficiency Levels</span><span class="toc-page">Ch. 6</span></div>
+    <div class="toc-item"><span class="toc-title">6. Curriculum Framework & Hebrew CEFR Proficiency Levels</span><span class="toc-page">Ch. 6</span></div>
     <div class="toc-item"><span class="toc-title">7. Multi-Duration Session Engine (25, 40, 55 Minutes)</span><span class="toc-page">Ch. 7</span></div>
     <div class="toc-item"><span class="toc-title">8. Teacher Operations, Calendars & 1-Click Zoom Classrooms</span><span class="toc-page">Ch. 8</span></div>
     <div class="toc-item"><span class="toc-title">9. Central Booking Management & Slot Conflict Resolution</span><span class="toc-page">Ch. 9</span></div>
@@ -518,13 +518,15 @@ const htmlContent = `
     <div class="toc-item"><span class="toc-title">11. Lesson Packages, Student Allocations & Checkout Engine</span><span class="toc-page">Ch. 11</span></div>
     <div class="toc-item"><span class="toc-title">12. Financial Transactions, Revenue Ledger & Refunds</span><span class="toc-page">Ch. 12</span></div>
     <div class="toc-item"><span class="toc-title">13. Exams, Assessments & Level Certification</span><span class="toc-page">Ch. 13</span></div>
-    <div class="toc-item"><span class="toc-title">14. Gamification Engine: XP, Streaks & Level-Ranked Leaderboards</span><span class="toc-page">Ch. 14</span></div>
+    <div class="toc-item"><span class="toc-title">14. Gamification Engine: XP, Streaks & CEFR Interactive Games</span><span class="toc-page">Ch. 14</span></div>
     <div class="toc-item"><span class="toc-title">15. 24/7 Automated Reminders Hub & Notification Center</span><span class="toc-page">Ch. 15</span></div>
     <div class="toc-item"><span class="toc-title">16. Sales CRM Pipeline & Deal Conversion Tracking</span><span class="toc-page">Ch. 16</span></div>
     <div class="toc-item"><span class="toc-title">17. Customer Support Helpdesk & SLA Resolution Engine</span><span class="toc-page">Ch. 17</span></div>
-    <div class="toc-item"><span class="toc-title">18. Feedback Analytics & Live Student Testimonials Scorecards</span><span class="toc-page">Ch. 18</span></div>
+    <div class="toc-item"><span class="toc-title">18. Feedback Analytics & Multi-Use Review Links</span><span class="toc-page">Ch. 18</span></div>
     <div class="toc-item"><span class="toc-title">19. Landing Page CMS & Brand Management</span><span class="toc-page">Ch. 19</span></div>
     <div class="toc-item"><span class="toc-title">20. System Audit Logs, Health Monitoring & Owner Routine Checklist</span><span class="toc-page">Ch. 20</span></div>
+    <div class="toc-item"><span class="toc-title">21. Full Right-to-Left (RTL) & Bilingual Platform Experience</span><span class="toc-page">Ch. 21</span></div>
+    <div class="toc-item"><span class="toc-title">22. Production Deployment, Security Hardening & DevOps Operations</span><span class="toc-page">Ch. 22</span></div>
   </div>
 
   <div class="callout callout-info no-break">
@@ -775,6 +777,32 @@ const htmlContent = `
     </div>
   </div>
 
+  <h3>Family Accounts & Household Management (Parent-Child Ecosystem)</h3>
+  <p>
+    Engrew supports multi-member household accounts, enabling parents to oversee, fund, and manage lessons for multiple children under one primary contact profile:
+  </p>
+  <ul>
+    <li><strong>Parent Account Authority:</strong> The parent profile serves as the billing contact, receives automated WhatsApp & SMS notifications, and can book sessions for any dependent.</li>
+    <li><strong>Child Profile Isolation:</strong> Each child maintains their own learning progress, level placement, attendance history, teacher notes, and gamified XP points.</li>
+    <li><strong>Contact & Phone Inheritance:</strong> When creating a child student, the system automatically inherits the parent's verified phone number with a distinctive child suffix (e.g. <code>+972543402227+Amir</code>) preventing communication breakdown.</li>
+    <li><strong>Shared Package Hours:</strong> Lessons purchased by the parent can either be placed into a flexible shared household pool or assigned to a specific child's balance.</li>
+  </ul>
+
+  <div class="screenshot-container no-break">
+    <div class="screenshot-header">
+      <div class="screenshot-dots">
+        <div class="screenshot-dot"></div><div class="screenshot-dot"></div><div class="screenshot-dot"></div>
+      </div>
+      <span>Admin Dashboard • Family Management & Household Modal (?tab=users)</span>
+    </div>
+    <div class="screenshot-img-wrapper">
+      <img src="${img('25_family_management_modal.png')}" alt="Family Management Modal" />
+    </div>
+    <div class="screenshot-caption">
+      <strong>Figure 4.2:</strong> Family & Household Modal in Admin CRM enabling staff to link dependent children, track shared package hours, and manage family relationships.
+    </div>
+  </div>
+
   <!-- ==================== CHAPTER 5: ROLES & PERMISSIONS MATRIX ==================== -->
   <div class="page-break"></div>
   <div class="chapter-header">
@@ -816,57 +844,67 @@ const htmlContent = `
   </div>
 
   <p>
-    Engrew structures Hebrew acquisition into 6 standardized proficiency tiers aligned with international CEFR language benchmarks:
+    Engrew structures Hebrew and English language acquisition into standardized proficiency tiers rigorously aligned with the international <strong>CEFR (Common European Framework of Reference for Languages)</strong> benchmarks:
   </p>
 
   <table class="no-break">
     <thead>
       <tr>
-        <th>Level Code</th>
-        <th>Title</th>
-        <th>Hebrew Term</th>
+        <th>CEFR Code</th>
+        <th>Proficiency Level</th>
+        <th>Hebrew Equivalence</th>
         <th>Target Pedagogical Competency</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td><code>BEGINNER</code></td>
+        <td><code>A1</code></td>
         <td>Level 1: Absolute Beginner</td>
         <td>מתחילים (Alef)</td>
-        <td>Alef-Bet recognition, vowel signs (Nikkud), basic greetings, phonetic reading.</td>
+        <td>Alef-Bet recognition, vowel signs (Nikkud), foundational greetings, and phonetic decoding.</td>
       </tr>
       <tr>
-        <td><code>ELEMENTARY</code></td>
+        <td><code>A2</code></td>
         <td>Level 2: Elementary</td>
         <td>יסודי (Bet)</td>
-        <td>Basic vocabulary, present tense verb conjugations, simple daily dialogues.</td>
+        <td>Essential vocabulary, present tense verb conjugations (Pa'al), and simple daily situational dialogues.</td>
       </tr>
       <tr>
-        <td><code>INTERMEDIATE</code></td>
+        <td><code>B1</code></td>
         <td>Level 3: Intermediate</td>
         <td>בינוני (Gimel)</td>
-        <td>Past tense conjugations, prepositions, reading simple Israeli news articles.</td>
+        <td>Past tense verb forms, directional prepositions, and reading simplified Israeli media articles.</td>
       </tr>
       <tr>
-        <td><code>UPPER_INTERMEDIATE</code></td>
+        <td><code>B2</code></td>
         <td>Level 4: Upper-Intermediate</td>
         <td>מתקדמים א (Dalet)</td>
-        <td>Future tense, complex verb binyanim (Piel, Hifil, Hitpael), fluid conversational skills.</td>
+        <td>Future tense, complex verb binyanim (Pi'el, Hif'il, Hitpa'el), and fluent conversational flow.</td>
       </tr>
       <tr>
-        <td><code>ADVANCED</code></td>
+        <td><code>C1</code></td>
         <td>Level 5: Advanced</td>
         <td>מתקדמים ב (Heh)</td>
-        <td>Nuanced literature, Israeli media comprehension, formal and informal registers.</td>
+        <td>Nuanced literature, Israeli podcasts and news broadcasts, formal vs colloquial slang registers.</td>
       </tr>
       <tr>
-        <td><code>FLUENT</code></td>
+        <td><code>C2</code></td>
         <td>Level 6: Fluent / Mastery</td>
         <td>שליטה מלאה (Vav)</td>
-        <td>Native-speed professional and cultural fluency, idiomatic mastery, debate.</td>
+        <td>Native-speed professional and cultural fluency, idiomatic debate, and Ulpan graduation standards.</td>
+      </tr>
+      <tr>
+        <td><code>NATIVE</code></td>
+        <td>Level 7: Native Speaker</td>
+        <td>שפת אם (Native)</td>
+        <td>Mother-tongue fluency, cultural nuance, dialectal idioms, and advanced stylistic expression.</td>
       </tr>
     </tbody>
   </table>
+
+  <p>
+    <strong>CEFR Integration Across Systems:</strong> A student's assigned CEFR level dynamically controls their syllabus topics, automatically categorizes them into fair leaderboard cohorts, unlocks level-appropriate practice games, and sets the prerequisite threshold for transition placement exams.
+  </p>
 
   <div class="screenshot-container no-break">
     <div class="screenshot-header">
@@ -1164,6 +1202,75 @@ const htmlContent = `
     </div>
   </div>
 
+  <h3>Comprehensive Suite of 6 Interactive CEFR Practice Games</h3>
+  <p>
+    Engrew provides a multi-modal practice suite with 23 authentic educational games seeded directly into the platform database, dynamically filtered to match each student's exact CEFR proficiency level (A1 through Native):
+  </p>
+
+  <table class="no-break">
+    <thead>
+      <tr>
+        <th>Game Engine</th>
+        <th>Learning Mechanic</th>
+        <th>CEFR Suitability</th>
+        <th>Pedagogical Focus</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Sentence Builder</strong></td>
+        <td>Syntactic tile assembly</td>
+        <td>A2 – C1</td>
+        <td>Word order, prepositions, verb positioning, and complex Hebrew sentence structure.</td>
+      </tr>
+      <tr>
+        <td><strong>Word Scramble</strong></td>
+        <td>Letter rearrangement tiles</td>
+        <td>A1 – B2</td>
+        <td>Root letter (Shoresh) recognition, vowel pattern recall, and rapid orthography drilling.</td>
+      </tr>
+      <tr>
+        <td><strong>Speed Round</strong></td>
+        <td>High-pressure timed sprint</td>
+        <td>A1 – C2</td>
+        <td>Cognitive fluency, split-second recall under a countdown timer, and exam prep.</td>
+      </tr>
+      <tr>
+        <td><strong>Interactive Flashcards</strong></td>
+        <td>3D flipping cards with native audio</td>
+        <td>A1 – B1</td>
+        <td>Phonetic Alef-Bet mastery, vocalized Nikkud, transliteration, and audio pronunciation.</td>
+      </tr>
+      <tr>
+        <td><strong>Vocabulary Matcher</strong></td>
+        <td>Interactive pair connecting</td>
+        <td>A1 – C1</td>
+        <td>Associative vocabulary recall, idioms, situational nouns, and synonym recognition.</td>
+      </tr>
+      <tr>
+        <td><strong>Multiple Choice Quiz</strong></td>
+        <td>Cognitive retrieval & feedback</td>
+        <td>All Levels</td>
+        <td>Grammar rules, cultural context, reading comprehension, and post-lesson retention.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="screenshot-container no-break">
+    <div class="screenshot-header">
+      <div class="screenshot-dots">
+        <div class="screenshot-dot"></div><div class="screenshot-dot"></div><div class="screenshot-dot"></div>
+      </div>
+      <span>Student Portal • CEFR Level-Filtered Practice Games (/student?tab=games)</span>
+    </div>
+    <div class="screenshot-img-wrapper">
+      <img src="${img('26_cefr_games_practice.png')}" alt="Student Practice Games" />
+    </div>
+    <div class="screenshot-caption">
+      <strong>Figure 14.3:</strong> Student Gamification Center displaying CEFR level selector pills, game unlock status, completion scores, and earned XP.
+    </div>
+  </div>
+
   <!-- ==================== CHAPTER 15: AUTOMATED REMINDERS HUB ==================== -->
   <div class="page-break"></div>
   <div class="chapter-header">
@@ -1277,6 +1384,16 @@ const htmlContent = `
     </div>
   </div>
 
+  <h3>Permanent & Multi-Use Review Links Architecture</h3>
+  <p>
+    In addition to automated post-lesson feedback prompts, Engrew supports <strong>Permanent & Multi-Use Review Links</strong> generated via <code>/review/:token</code>:
+  </p>
+  <ul>
+    <li><strong>Reusable Campaign Links:</strong> Review URLs can be generated with multi-use tokens, allowing administrators and marketing teams to distribute them across student WhatsApp groups, community channels, and graduation emails without the link expiring after a single submission.</li>
+    <li><strong>Anti-Abuse Safeguards:</strong> Client IP throttling and submission fingerprinting prevent duplicate review spam while allowing legitimate students to share authentic feedback effortlessly.</li>
+    <li><strong>Live Homepage Syndication:</strong> Approved 5-star testimonials can be published to the public landing page with one click, showing verified student tags and ratings.</li>
+  </ul>
+
   <!-- ==================== CHAPTER 19: LANDING CMS ==================== -->
   <div class="page-break"></div>
   <div class="chapter-header">
@@ -1368,6 +1485,131 @@ const htmlContent = `
     <div class="callout-title">Emergency Contact & Escalation Protocol</div>
     If a teacher experiences an urgent connectivity issue during a lesson, use the <strong>Quick-Action Override</strong> in the Bookings tab to assign an available substitute teacher or issue an automatic 1-lesson credit refund to the student's package balance.
   </div>
+
+  <!-- ==================== CHAPTER 21: RTL & BILINGUAL EXPERIENCE ==================== -->
+  <div class="page-break"></div>
+  <div class="chapter-header">
+    <span class="chapter-tag">Chapter 21</span>
+    <h2 class="chapter-title">Full Right-to-Left (RTL) & Bilingual Platform Experience</h2>
+    <p class="chapter-desc">Delivering an authentic native Arabic, Hebrew, and English experience with complete layout mirroring.</p>
+  </div>
+
+  <p>
+    Engrew is architected from the foundation up as a true <strong>Bi-Directional, Multi-Language Platform</strong>. Rather than superficial translations, the platform dynamically mirrors its entire interface layout when users select Arabic (<code>ar</code>) or Hebrew (<code>he</code>):
+  </p>
+
+  <div class="kv-grid no-break">
+    <div class="kv-card">
+      <div class="kv-key">Complete Bidirectional Mirroring</div>
+      <div class="kv-val">Navigation bars, sidebar drawers, CRM tables, and calendar matrices automatically invert axis to standard Right-to-Left (<code>dir="rtl"</code>) flow without breaking responsiveness.</div>
+    </div>
+    <div class="kv-card">
+      <div class="kv-key">Hebrew Vocalization (Nikkud) Engine</div>
+      <div class="kv-val">Phonetic vowel marks (Nikkud) render cleanly on modern browsers and mobile screens, supporting beginner literacy in flashcards, games, and teacher notes.</div>
+    </div>
+    <div class="kv-card">
+      <div class="kv-key">Cultural Arabic Localization</div>
+      <div class="kv-val">Every user-facing label, button, status badge, and financial summary is localized into natural Arabic for students and parents across the Middle East.</div>
+    </div>
+    <div class="kv-card">
+      <div class="kv-key">1-Click Persistent Switcher</div>
+      <div class="kv-val">The top navigation bar features a quick language switcher (Arabic, English, Hebrew) that immediately updates the interface and saves user preference to database storage.</div>
+    </div>
+  </div>
+
+  <div class="screenshot-container no-break">
+    <div class="screenshot-header">
+      <div class="screenshot-dots">
+        <div class="screenshot-dot"></div><div class="screenshot-dot"></div><div class="screenshot-dot"></div>
+      </div>
+      <span>Student Portal • Arabic RTL Full-Page Experience (/student?lang=ar)</span>
+    </div>
+    <div class="screenshot-img-wrapper">
+      <img src="${img('27_rtl_bilingual_view.png')}" alt="Arabic RTL Dashboard" />
+    </div>
+    <div class="screenshot-caption">
+      <strong>Figure 21.1:</strong> Student Portal dynamically mirrored to full Right-to-Left (RTL) Arabic layout with native typography, mirrored progress bars, and localized navigation.
+    </div>
+  </div>
+
+  <!-- ==================== CHAPTER 22: DEVOPS & PRODUCTION DEPLOYMENT ==================== -->
+  <div class="page-break"></div>
+  <div class="chapter-header">
+    <span class="chapter-tag">Chapter 22</span>
+    <h2 class="chapter-title">Production Deployment, Security Hardening & DevOps Operations</h2>
+    <p class="chapter-desc">Operational guide for containerization, clustering, reverse-proxy setup, and OWASP security compliance.</p>
+  </div>
+
+  <p>
+    Engrew is built for enterprise uptime, horizontal scalability, and bank-grade data security. This chapter outlines the deployment architecture and production infrastructure runbook:
+  </p>
+
+  <h3>1. Production Architecture Overview</h3>
+  <table class="no-break">
+    <thead>
+      <tr>
+        <th>Layer</th>
+        <th>Technology</th>
+        <th>Production Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Web & Proxy</strong></td>
+        <td>Nginx (Reverse Proxy)</td>
+        <td>SSL termination, Gzip asset compression, 1-year immutable caching for Vite bundles, and DDoS rate dampening.</td>
+      </tr>
+      <tr>
+        <td><strong>Application Core</strong></td>
+        <td>Node.js 20 LTS + Express</td>
+        <td>Clustered across all CPU cores with PM2 (<code>ecosystem.config.js</code>) or containerized with multi-stage Docker.</td>
+      </tr>
+      <tr>
+        <td><strong>Database</strong></td>
+        <td>PostgreSQL 16 (Prisma ORM)</td>
+        <td>Relational ledger with connection pooling, automated indexes on hot queries, and transactional integrity.</td>
+      </tr>
+      <tr>
+        <td><strong>In-Memory Cache</strong></td>
+        <td>Redis 7 / Memory TTL Cache</td>
+        <td>High-speed caching for user permissions, session validation, and real-time active user tracking.</td>
+      </tr>
+      <tr>
+        <td><strong>Static Storage</strong></td>
+        <td>Uploads Directory / Cloud CDN</td>
+        <td>MIME-validated storage for teacher avatars, payment receipt screenshots, and structured lesson notes.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>2. Security & OWASP Hardening Runbook</h3>
+  <ul>
+    <li><strong>Zero Demo Backdoor in Production:</strong> Demo emails and bypass passwords are strictly removed in production builds. Only authentic bcrypt hash comparisons (cost factor 12) are accepted.</li>
+    <li><strong>Account Lockout Policy:</strong> Users are automatically locked out for 15 minutes after 5 consecutive failed login attempts, logged with IP address and user-agent forensics to prevent brute-forcing.</li>
+    <li><strong>Content Security Policy (CSP):</strong> Configured via Helmet to eliminate cross-site scripting (XSS), disallowing inline untrusted scripts and enforcing strict origin trust.</li>
+    <li><strong>MIME-Type Upload Validation:</strong> Multer file upload filters strictly validate file headers, accepting only legitimate images (JPEG, PNG, WebP, GIF) and PDFs under 10MB.</li>
+    <li><strong>Graceful Shutdown:</strong> The backend catches <code>SIGTERM</code> and <code>SIGINT</code> signals to complete pending transactions and cleanly close database pools before restart.</li>
+  </ul>
+
+  <h3>3. Step-by-Step Production Launch Sequence</h3>
+  <ol class="steps-list">
+    <li class="step-item">
+      <div class="step-title">Configure Production Environment Variables</div>
+      <div class="step-body">Copy <code>backend/.env.example</code> to <code>backend/.env</code>. Supply strong 64-character cryptographic keys for <code>JWT_SECRET</code> and <code>JWT_REFRESH_SECRET</code>. Set <code>NODE_ENV=production</code>.</div>
+    </li>
+    <li class="step-item">
+      <div class="step-title">Synchronize Database Schema</div>
+      <div class="step-body">Run <code>npx prisma db push</code> and <code>npx prisma generate</code> inside <code>backend/</code> to apply all foreign keys, enums, and hot query indexes to PostgreSQL.</div>
+    </li>
+    <li class="step-item">
+      <div class="step-title">Build Frontend & Backend Bundles</div>
+      <div class="step-body">Execute <code>npm run build</code> in both directories. The frontend outputs minified assets with code splitting into <code>frontend/dist/</code>.</div>
+    </li>
+    <li class="step-item">
+      <div class="step-title">Deploy with Docker Compose or PM2</div>
+      <div class="step-body">For containerized hosting, run <code>docker compose up -d --build</code>. For VPS bare-metal hosting, start the API via <code>pm2 start ecosystem.config.js</code> and configure Nginx using the supplied <code>nginx.conf</code> template.</div>
+    </li>
+  </ol>
 
   <div style="margin-top: 40px; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 25px; color: #94a3b8; font-size: 8.5pt;">
     <strong>Engrew Hebrew & English Academy</strong> • Official Platform Owner Operational Manual<br>
