@@ -1523,9 +1523,9 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                       <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                         <span className="text-slate-500 dark:text-slate-400">
-                          {analytics?.kpis?.totalTimeSlots
+                          {analytics?.kpis?.totalTimeSlots !== undefined
                             ? (language === 'he' ? `${analytics.kpis.totalTimeSlots} משבצות זמינות` : `${analytics.kpis.totalTimeSlots} Active Slots`)
-                            : (language === 'he' ? 'משבצות יומן' : 'Schedule Slots')}
+                            : (language === 'he' ? '0 משבצות זמינות' : '0 Active Slots')}
                         </span>
                         <span className={`font-bold ${(analytics?.kpis?.lessonUtilization ?? 0) >= 70
                           ? 'text-emerald-600 dark:text-emerald-400'
@@ -1554,14 +1554,14 @@ export const AdminDashboard: React.FC = () => {
                           <Users className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                         </div>
                         <div className="text-2xl font-black text-slate-900 dark:text-white">
-                          {analytics?.kpis?.activeStudents ?? studentsList.length}
+                          {analytics?.kpis?.activeStudents ?? studentsList.length ?? 0}
                         </div>
                       </div>
                       <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                         <span className="font-bold text-emerald-600 dark:text-emerald-400">
                           {(() => {
                             const total = analytics?.kpis?.totalStudents ?? studentsList.length ?? 0;
-                            const active = analytics?.kpis?.activeStudents ?? (total > 0 ? 1 : 0);
+                            const active = analytics?.kpis?.activeStudents ?? 0;
                             const rate = total > 0 ? Math.round((active / total) * 100) : 0;
                             return language === 'he' ? `${rate}% שימור` : `${rate}% Active`;
                           })()}
@@ -1586,14 +1586,14 @@ export const AdminDashboard: React.FC = () => {
                           <Star className="w-4 h-4 text-amber-500" />
                         </div>
                         <div className="text-2xl font-black text-slate-900 dark:text-white">
-                          {analytics?.kpis?.avgSatisfaction ?? '4.92'} <span className="text-xs text-slate-400 font-normal">/ 5.0</span>
+                          {analytics?.kpis?.avgSatisfaction !== undefined ? analytics.kpis.avgSatisfaction : '0.0'} <span className="text-xs text-slate-400 font-normal">/ 5.0</span>
                         </div>
                       </div>
                       <div className="mt-3 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
                         <span className="font-bold text-amber-600 dark:text-amber-400">
-                          {analytics?.kpis?.totalVerifiedReviews
+                          {analytics?.kpis?.totalVerifiedReviews !== undefined
                             ? (language === 'he' ? `${analytics.kpis.totalVerifiedReviews} משובים מאומתים` : `${analytics.kpis.totalVerifiedReviews} Verified Reviews`)
-                            : (language === 'he' ? 'סקרים מאומתים' : 'Verified Reviews')}
+                            : (language === 'he' ? '0 משובים מאומתים' : '0 Verified Reviews')}
                         </span>
                         <span className="text-slate-400">
                           {language === 'he'

@@ -209,7 +209,7 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
         ? Number((teacherRatingWeightedSum / teacherReviewTotal).toFixed(2))
         : (allTeachersRaw.length > 0
             ? Number((allTeachersRaw.reduce((sum, t) => sum + t.ratingAvg, 0) / allTeachersRaw.length).toFixed(2))
-            : 5.0);
+            : 0);
 
     const avgSatisfaction =
       allRatings.length > 0
