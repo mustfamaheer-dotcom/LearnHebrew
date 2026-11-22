@@ -185,3 +185,5 @@ app.use('/api/v1/point-rules', pointRulesRouter);
 app.use('/api/v1/placement-test', placementTestRouter);
 
 app.use(errorHandler);
+
+export default app;

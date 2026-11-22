@@ -2,12 +2,11 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/authStore';
 
 export const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname.includes('engrew.com')) {
+    return 'https://backend-red-xi-76.vercel.app/api/v1';
+  }
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   if (typeof window !== 'undefined' && window.location.hostname) {
-    // Production Engrew domain routing to live Vercel backend
-    if (window.location.hostname.includes('engrew.com')) {
-      return 'https://backend-red-xi-76.vercel.app/api/v1';
-    }
     const protocol = window.location.protocol || 'http:';
     return `${protocol}//${window.location.hostname}:5001/api/v1`;
   }
