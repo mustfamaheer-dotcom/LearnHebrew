@@ -131,6 +131,16 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.use(requestLogger);
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'Engrew Academy Backend API',
+    database: 'Supabase PostgreSQL',
+    version: '2.5.0',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'LearnHebrew API', timestamp: new Date().toISOString() });
 });
