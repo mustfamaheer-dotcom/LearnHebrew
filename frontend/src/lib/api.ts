@@ -78,17 +78,23 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const storedRefreshToken = localStorage.getItem('learnhebrew_refresh_token');
         const refreshResponse = await axios.post(
           `${api.defaults.baseURL}/auth/refresh`,
-          {},
+          { refreshToken: storedRefreshToken },
           { withCredentials: true }
         );
 
         const newAccessToken = refreshResponse.data.accessToken;
+        const newRefreshToken = refreshResponse.data.refreshToken;
         const currentUser = useAuthStore.getState().user;
 
         if (currentUser && newAccessToken) {
-          useAuthStore.getState().setAuth(currentUser, newAccessToken);
+          useAuthStore.getState().setAuth(
+            currentUser,
+            newAccessToken,
+            newRefreshToken || storedRefreshToken || undefined
+          );
         }
 
         api.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;

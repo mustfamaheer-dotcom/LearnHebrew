@@ -34,13 +34,14 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
     res.json({
       user: result.user,
       accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     });
   } catch (error) {
     next(error);
@@ -49,7 +50,7 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
 
 export async function refreshHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    const refreshToken = req.body?.refreshToken || req.cookies?.refreshToken;
     if (!refreshToken) {
       return res.status(401).json({ error: 'Refresh token required' });
     }
@@ -62,11 +63,14 @@ export async function refreshHandler(req: Request, res: Response, next: NextFunc
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({ accessToken: result.accessToken });
+    res.json({
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
   } catch (error) {
     next(error);
   }

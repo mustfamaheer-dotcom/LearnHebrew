@@ -407,14 +407,48 @@ export const AdminDashboard: React.FC = () => {
   const [editFirstName, setEditFirstName] = useState('');
   const [editLastName, setEditLastName] = useState('');
   const [editEmail, setEditEmail] = useState('');
-  const [editRole, setEditRole] = useState<'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN'>('STUDENT');
+  const [editRole, setEditRole] = useState<'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN' | 'SALES' | 'CS'>('STUDENT');
   const [editIsActive, setEditIsActive] = useState(true);
-  const [editLanguagePref, setEditLanguagePref] = useState<'en' | 'he'>('en');
+  const [editLanguagePref, setEditLanguagePref] = useState<'en' | 'he' | 'ar'>('en');
   const [editLevelId, setEditLevelId] = useState<string>('');
   const [editNotes, setEditNotes] = useState('');
   const [editTotalPoints, setEditTotalPoints] = useState(0);
   const [editBio, setEditBio] = useState('');
   const [editSpecialties, setEditSpecialties] = useState('');
+
+  // Dedicated Quick Role & Access Modal State
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [selectedUserForRole, setSelectedUserForRole] = useState<any>(null);
+  const [selectedRoleValue, setSelectedRoleValue] = useState<string>('STUDENT');
+
+  const handleOpenRoleModal = (u: any) => {
+    setSelectedUserForRole(u);
+    setSelectedRoleValue(u.role || 'STUDENT');
+    setIsRoleModalOpen(true);
+  };
+
+  const handleSaveRole = async () => {
+    if (!selectedUserForRole) return;
+    try {
+      await updateUserMutation.mutateAsync({
+        id: selectedUserForRole.id,
+        data: { role: selectedRoleValue },
+      });
+      setIsRoleModalOpen(false);
+      setSelectedUserForRole(null);
+      toast.success(
+        language === 'he'
+          ? `התפקיד וההרשאות של ${selectedUserForRole.firstName} עודכנו ל-${selectedRoleValue} בהצלחה!`
+          : language === 'ar'
+          ? `تم تحديث صلاحيات ودور ${selectedUserForRole.firstName} إلى ${selectedRoleValue} بنجاح!`
+          : `Role & access for ${selectedUserForRole.firstName} updated to ${selectedRoleValue} successfully!`
+      );
+    } catch (err: any) {
+      toast.error(
+        err.response?.data?.error || err.response?.data?.message || (language === 'he' ? 'שגיאה בעדכון התפקיד' : 'Failed to update role')
+      );
+    }
+  };
 
   // Scheduled Lessons Filters
   const [lessonSearchTerm, setLessonSearchTerm] = useState('');
@@ -2785,19 +2819,25 @@ export const AdminDashboard: React.FC = () => {
 
                                   {/* Role */}
                                   <td className="py-3.5 px-4">
-                                    <span
-                                      className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase inline-flex items-center gap-1 ${isOwner
-                                        ? 'bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenRoleModal(u)}
+                                      title={language === 'he' ? 'לחץ לשינוי תפקיד והרשאות' : language === 'ar' ? 'انقر لتعديل الصلاحيات والدور' : 'Click to change role & access'}
+                                      className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase inline-flex items-center gap-1 transition-transform hover:scale-105 cursor-pointer shadow-xs ${isOwner
+                                        ? 'bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-200'
                                         : isTeacher
-                                          ? 'bg-brand-olive-100 dark:bg-brand-olive-950/70 text-brand-olive-900 dark:text-brand-olive-300 border border-brand-olive-200 dark:border-brand-olive-800'
+                                          ? 'bg-brand-olive-100 dark:bg-brand-olive-950/70 text-brand-olive-900 dark:text-brand-olive-300 border border-brand-olive-200 dark:border-brand-olive-800 hover:bg-brand-olive-200'
                                           : u.role === 'ADMIN'
-                                            ? 'bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                                            : 'bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-900 dark:text-brand-teal-300 border border-brand-teal-200 dark:border-brand-teal-800'
+                                            ? 'bg-blue-100 dark:bg-blue-950/70 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-200'
+                                            : u.role === 'SALES' || u.role === 'CS'
+                                              ? 'bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-200'
+                                              : 'bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-900 dark:text-brand-teal-300 border border-brand-teal-200 dark:border-brand-teal-800 hover:bg-brand-teal-200'
                                         }`}
                                     >
                                       {isOwner && <Award className="w-3 h-3 text-purple-600 dark:text-purple-400" />}
-                                      {isOwner ? (language === 'he' ? 'בעל פלטפורמה' : 'Platform Owner') : u.role}
-                                    </span>
+                                      <span>{isOwner ? (language === 'he' ? 'בעל פלטפורמה' : 'Platform Owner') : u.role}</span>
+                                      <Shield className="w-2.5 h-2.5 opacity-60 ml-0.5" />
+                                    </button>
                                   </td>
 
                                   {/* Level / Specialty */}
@@ -2943,23 +2983,24 @@ export const AdminDashboard: React.FC = () => {
                                         <span className="hidden sm:inline">{language === 'he' ? 'ניהול' : 'Manage'}</span>
                                       </button>
 
+                                      {/* Quick Role & Access Button */}
+                                      <button
+                                        onClick={() => handleOpenRoleModal(u)}
+                                        title={language === 'he' ? 'שינוי תפקיד והרשאות מערכת' : language === 'ar' ? 'تعديل الدور والصلاحيات' : 'Role & Access Control'}
+                                        className="px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/50 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 font-bold text-xs flex items-center gap-1.5 transition-colors border border-purple-200/70 dark:border-purple-800 cursor-pointer shadow-xs"
+                                      >
+                                        <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                                        <span className="hidden md:inline">{language === 'he' ? 'הרשאות' : language === 'ar' ? 'الصلاحيات' : 'Access'}</span>
+                                      </button>
+
                                       {/* Quick Reset Password */}
                                       <button
                                         onClick={() => resetPasswordMutation.mutate(u.id)}
                                         title={language === 'he' ? 'איפוס סיסמה' : 'Reset Password'}
-                                        className="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
+                                        className="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800 cursor-pointer"
                                       >
                                         <KeyRound className="w-3.5 h-3.5" />
                                       </button>
-                                      {can('users:reset_password') && (
-                                        <button
-                                          onClick={() => resetPasswordMutation.mutate(u.id)}
-                                          title={language === 'he' ? 'איפוס סיסמה' : 'Reset Password'}
-                                          className="p-1.5 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
-                                        >
-                                          <KeyRound className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
 
                                       {/* Deactivate / Delete */}
                                       <button
@@ -2978,32 +3019,10 @@ export const AdminDashboard: React.FC = () => {
                                           }
                                         }}
                                         title={language === 'he' ? 'מחיקת משתמש' : 'Delete User'}
-                                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
+                                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800 cursor-pointer"
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </button>
-                                      {can('users:delete') && (
-                                        <button
-                                          onClick={async () => {
-                                            const confirmed = await confirmDialog({
-                                              title: 'Delete User Account',
-                                              titleHe: 'מחיקת חשבון משתמש',
-                                              message: `Are you sure you want to permanently delete ${u.firstName} ${u.lastName} (${u.email})?`,
-                                              messageHe: `האם למחוק לצמיתות את המשתמש ${u.firstName} ${u.lastName} (${u.email})?`,
-                                              confirmText: 'Delete Account',
-                                              confirmTextHe: 'מחק משתמש',
-                                              variant: 'danger',
-                                            });
-                                            if (confirmed) {
-                                              deleteUserMutation.mutate(u.id);
-                                            }
-                                          }}
-                                          title={language === 'he' ? 'מחיקת משתמש' : 'Delete User'}
-                                          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors border border-slate-200/50 dark:border-slate-800"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
                                     </div>
                                   </td>
                                 </tr>
@@ -4641,6 +4660,7 @@ export const AdminDashboard: React.FC = () => {
                 >
                   <option value="en">English (en)</option>
                   <option value="he">Hebrew / עברית (he)</option>
+                  <option value="ar">Arabic / العربية (ar)</option>
                 </select>
               </div>
             </div>
@@ -4648,17 +4668,19 @@ export const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
                 <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  {language === 'he' ? 'תפקיד במערכת' : 'System Role'}
+                  {language === 'he' ? 'תפקיד במערכת' : language === 'ar' ? 'الدور في النظام' : 'System Role'}
                 </label>
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value as any)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs"
                 >
-                  <option value="STUDENT">{language === 'he' ? 'תלמיד (לומד עברית)' : 'Student (Hebrew Learner)'}</option>
-                  <option value="TEACHER">{language === 'he' ? 'מורה (מורה מוסמך)' : 'Teacher (Certified Native Instructor)'}</option>
-                  <option value="ADMIN">{language === 'he' ? 'מנהל (מנהל צוות)' : 'Admin (Staff Administrator)'}</option>
-                  <option value="SUPER_ADMIN">{language === 'he' ? 'בעלים ומנהל ראשי (שליטה מלאה)' : 'Platform Owner (Full Superadmin Governance)'}</option>
+                  <option value="STUDENT">{language === 'he' ? 'תלמיד (לומד עברית)' : language === 'ar' ? 'طالب (متعلم)' : 'Student (Hebrew Learner)'}</option>
+                  <option value="TEACHER">{language === 'he' ? 'מורה (מורה מוסמך)' : language === 'ar' ? 'معلم معتمد' : 'Teacher (Certified Native Instructor)'}</option>
+                  <option value="ADMIN">{language === 'he' ? 'מנהל (מנהל צוות)' : language === 'ar' ? 'مشرف ومسؤول النظام' : 'Admin (Staff Administrator)'}</option>
+                  <option value="SUPER_ADMIN">{language === 'he' ? 'בעלים ומנהל ראשי (שליטה מלאה)' : language === 'ar' ? 'مالك المنصة (صلاحيات رئيسية)' : 'Platform Owner (Full Superadmin Governance)'}</option>
+                  <option value="SALES">{language === 'he' ? 'נציג מכירות ו-CRM' : language === 'ar' ? 'مبيعات واشتراكات' : 'Sales Representative (CRM)'}</option>
+                  <option value="CS">{language === 'he' ? 'שירות לקוחות ותמיכה' : language === 'ar' ? 'خدمة ودعم العملاء' : 'Customer Support (CS)'}</option>
                 </select>
               </div>
 
@@ -5598,6 +5620,173 @@ export const AdminDashboard: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }}
 />
+
+      {/* QUICK ROLE & SYSTEM ACCESS MODAL */}
+      {isRoleModalOpen && selectedUserForRole && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 my-8">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white font-black text-base flex items-center justify-center shadow-xs">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>{language === 'he' ? 'שינוי תפקיד והרשאות מערכת' : language === 'ar' ? 'منح الصلاحيات وتعديل الدور' : 'Grant Role & System Access'}</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {selectedUserForRole.firstName} {selectedUserForRole.lastName} ({selectedUserForRole.email})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsRoleModalOpen(false);
+                  setSelectedUserForRole(null);
+                }}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Current Role Banner */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">
+                  {language === 'he' ? 'תפקיד נוכחי' : language === 'ar' ? 'الدور الحالي' : 'Current Role'}
+                </span>
+                <span className="text-sm font-black text-slate-800 dark:text-slate-100">
+                  {selectedUserForRole.role}
+                </span>
+              </div>
+              <span className="text-xs font-mono text-slate-400">ID: {selectedUserForRole.id?.slice(0, 8)}...</span>
+            </div>
+
+            {/* Role Options */}
+            <div className="space-y-2.5 max-h-[50vh] overflow-y-auto pr-1">
+              {[
+                {
+                  id: 'ADMIN',
+                  title: language === 'he' ? 'מנהל מערכת (Administrator)' : language === 'ar' ? 'مشرف ومسؤول النظام (Admin)' : 'Administrator (Admin)',
+                  badge: 'ADMIN',
+                  desc: language === 'he' ? 'גישה מלאה לניהול תלמידים, מורים, חבילות לימוד ודוחות.' : language === 'ar' ? 'صلاحيات إدارية كاملة لإدارة الطلاب والمعلمين والحزم والعمليات.' : 'Full administrative operations: manage students, teachers, classes, packages, and system reports.',
+                  color: 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100',
+                  badgeColor: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+                },
+                {
+                  id: 'SUPER_ADMIN',
+                  title: language === 'he' ? 'בעלים ומנהל ראשי (Platform Owner)' : language === 'ar' ? 'مالك المنصة والمدير الرئيسي (Super Admin)' : 'Platform Owner (Super Admin)',
+                  badge: 'SUPER_ADMIN',
+                  desc: language === 'he' ? 'שליטה מלאה ומוחלטת בכל הגדרות המערכת, תפקידים ופיננסים.' : language === 'ar' ? 'صلاحيات رئيسية مطلقة لكافة إعدادات المنصة وطاقم العمل.' : 'Unrestricted root control over all platform systems, permissions, roles, and financials.',
+                  color: 'border-purple-500 bg-purple-50/50 dark:bg-purple-950/20 text-purple-900 dark:text-purple-100',
+                  badgeColor: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+                },
+                {
+                  id: 'TEACHER',
+                  title: language === 'he' ? 'מורה מוסמך (Native Instructor)' : language === 'ar' ? 'معلّم معتمد (Teacher)' : 'Native Instructor (Teacher)',
+                  badge: 'TEACHER',
+                  desc: language === 'he' ? 'גישה ליומן 25 דק׳, ניהול שיעורים והערכות תלמידים.' : language === 'ar' ? 'جدول الدروس 25 دقيقة، ومتابعة الطلاب والملاحظات الأكاديمية.' : 'Teaching dashboard, 25-minute slots schedule, lesson notes, and student assessments.',
+                  color: 'border-brand-olive-500 bg-brand-olive-50/50 dark:bg-brand-olive-950/20 text-brand-olive-950 dark:text-brand-olive-100',
+                  badgeColor: 'bg-brand-olive-100 text-brand-olive-900 dark:bg-brand-olive-900 dark:text-brand-olive-200',
+                },
+                {
+                  id: 'SALES',
+                  title: language === 'he' ? 'נציג מכירות ו-CRM (Sales Rep)' : language === 'ar' ? 'فريق المبيعات وخدمة الاشتراكات (Sales)' : 'Sales Representative (Sales)',
+                  badge: 'SALES',
+                  desc: language === 'he' ? 'מעקב לידים, הקצאת חבילות לימוד וחיוב לקוחות.' : language === 'ar' ? 'متابعة المهتمين، تخصيص الباقات والاشتراكات ومبيعات الدروس.' : 'Leads tracking, package sales, student subscriptions, and client communications.',
+                  color: 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-100',
+                  badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+                },
+                {
+                  id: 'CS',
+                  title: language === 'he' ? 'שירות לקוחות ותמיכה (Customer Support)' : language === 'ar' ? 'خدمة ودعم العملاء (Customer Support)' : 'Customer Support (CS)',
+                  badge: 'CS',
+                  desc: language === 'he' ? 'סיוע לתלמידים, תמיכה טכנית ותיאום שיעורים.' : language === 'ar' ? 'دعم الطلاب، حل الاستفسارات والمساعدة في الجداول.' : 'Customer care, student onboarding, scheduling assistance, and support tickets.',
+                  color: 'border-sky-500 bg-sky-50/50 dark:bg-sky-950/20 text-sky-900 dark:text-sky-100',
+                  badgeColor: 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200',
+                },
+                {
+                  id: 'STUDENT',
+                  title: language === 'he' ? 'תלמיד עברית (Student / Learner)' : language === 'ar' ? 'طالب ومتعلم (Student)' : 'Student / Learner',
+                  badge: 'STUDENT',
+                  desc: language === 'he' ? 'חשבון לומד סטנדרטי להזמנת שיעורים, משחקים ומבחני רמה.' : language === 'ar' ? 'حساب طالب لحجز الدروس، الألعاب التعليمية ومسارات التعلم.' : 'Standard learner account: 25-minute lesson booking, flashcard games, and placement tests.',
+                  color: 'border-brand-teal-500 bg-brand-teal-50/50 dark:bg-brand-teal-950/20 text-brand-teal-900 dark:text-brand-teal-100',
+                  badgeColor: 'bg-brand-teal-100 text-brand-teal-900 dark:bg-brand-teal-900 dark:text-brand-teal-200',
+                },
+              ].map((roleOpt) => {
+                const isSelected = selectedRoleValue === roleOpt.id;
+                return (
+                  <div
+                    key={roleOpt.id}
+                    onClick={() => setSelectedRoleValue(roleOpt.id)}
+                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3 ${
+                      isSelected
+                        ? `${roleOpt.color} ring-2 ring-purple-400/40 shadow-xs`
+                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="roleSelection"
+                      checked={isSelected}
+                      onChange={() => setSelectedRoleValue(roleOpt.id)}
+                      className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          {roleOpt.title}
+                        </span>
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${roleOpt.badgeColor}`}>
+                          {roleOpt.badge}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                        {roleOpt.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRoleModalOpen(false);
+                  setSelectedUserForRole(null);
+                }}
+                className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                {language === 'he' ? 'ביטול' : language === 'ar' ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveRole}
+                disabled={updateUserMutation.isPending}
+                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs shadow-md shadow-purple-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              >
+                {updateUserMutation.isPending ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-4 h-4" />
+                )}
+                <span>
+                  {language === 'he'
+                    ? 'שמור והחל הרשאות'
+                    : language === 'ar'
+                    ? 'حفظ وتطبيق الصلاحيات'
+                    : 'Grant & Apply Access'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Family Governance & Tree Modal */}
       <FamilyManagementModal

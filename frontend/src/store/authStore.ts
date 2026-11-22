@@ -6,7 +6,7 @@ interface AuthState {
   accessToken: string | null;
   language: LanguagePref;
   isProfileModalOpen: boolean;
-  setAuth: (user: User, token: string) => void;
+  setAuth: (user: User, token: string, refreshToken?: string) => void;
   setUser: (user: User) => void;
   setLanguage: (lang: LanguagePref) => void;
   openProfileModal: () => void;
@@ -74,9 +74,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   openProfileModal: () => set({ isProfileModalOpen: true }),
   closeProfileModal: () => set({ isProfileModalOpen: false }),
 
-  setAuth: (user, token) => {
+  setAuth: (user, token, refreshToken) => {
     localStorage.setItem('learnhebrew_token', token);
     localStorage.setItem('learnhebrew_user', JSON.stringify(user));
+    if (refreshToken) {
+      localStorage.setItem('learnhebrew_refresh_token', refreshToken);
+    }
     const lang = resolveUserLanguage(user);
     localStorage.setItem('learnhebrew_lang', lang);
     document.documentElement.dir = (lang === 'he' || lang === 'ar') ? 'rtl' : 'ltr';
@@ -100,6 +103,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('learnhebrew_token');
     localStorage.removeItem('learnhebrew_user');
+    localStorage.removeItem('learnhebrew_refresh_token');
     localStorage.removeItem('learnhebrew_lang_manual');
     set({ user: null, accessToken: null });
   },

@@ -32,7 +32,7 @@ export const FamilyProfileSwitcher: React.FC = () => {
     },
     onSuccess: (data) => {
       if (data?.token && data?.user) {
-        setAuth(data.user, data.token);
+        setAuth(data.user, data.token, data.refreshToken);
         toast.success(
           isAr
             ? `تم التبديل بنجاح إلى ملف: ${data.user.firstName} ${data.user.lastName}`

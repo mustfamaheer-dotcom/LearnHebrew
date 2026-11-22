@@ -3,6 +3,7 @@ import { hashPassword } from '../../utils/password';
 import { Role, HebrewLevel, LanguagePref } from '@prisma/client';
 import { logAuditEvent } from '../../utils/audit';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
+import { invalidateRolePermissionCache } from '../../middleware/permission';
 import crypto from 'crypto';
 
 export async function listUsers(filters: {
@@ -417,18 +418,26 @@ export async function updateUser(id: string, data: any) {
     }
   }
 
-  if (userData.roleDefinitionId) {
+  if (userData.role && !userData.roleDefinitionId) {
+    const roleDef = await prisma.roleDefinition.findFirst({ where: { name: userData.role } });
+    if (roleDef) {
+      userData.roleDefinitionId = roleDef.id;
+    }
+  } else if (userData.roleDefinitionId) {
     const roleDef = await prisma.roleDefinition.findUnique({ where: { id: userData.roleDefinitionId } });
     if (roleDef && Object.values(Role).includes(roleDef.name as any)) {
       userData.role = roleDef.name as Role;
     }
   }
 
+  const isTargetTeacher = userData.role === Role.TEACHER || (!userData.role && existing.role === Role.TEACHER);
+  const isTargetStudent = userData.role === Role.STUDENT || (!userData.role && existing.role === Role.STUDENT);
+
   const user = await prisma.user.update({
     where: { id },
     data: {
       ...userData,
-      ...(existing.studentProfile && {
+      ...(existing.studentProfile ? {
         studentProfile: {
           update: {
             ...(resolvedLevelId !== undefined && { levelId: resolvedLevelId }),
@@ -438,15 +447,32 @@ export async function updateUser(id: string, data: any) {
             ...(streakDays !== undefined && { streakDays }),
           },
         },
-      }),
-      ...(existing.teacherProfile && {
+      } : isTargetStudent ? {
+        studentProfile: {
+          create: {
+            ...(resolvedLevelId && { levelId: resolvedLevelId }),
+            level: resolvedLevelEnum || HebrewLevel.BEGINNER,
+            notes: notes || '',
+            totalPoints: totalPoints || 0,
+            streakDays: streakDays || 0,
+          },
+        },
+      } : {}),
+      ...(existing.teacherProfile ? {
         teacherProfile: {
           update: {
             ...(bio !== undefined && { bio }),
             ...(specialties !== undefined && { specialties }),
           },
         },
-      }),
+      } : isTargetTeacher ? {
+        teacherProfile: {
+          create: {
+            bio: bio || '',
+            specialties: specialties || [],
+          },
+        },
+      } : {}),
     },
     include: {
       studentProfile: {
@@ -460,6 +486,11 @@ export async function updateUser(id: string, data: any) {
       roleDefinition: true,
     },
   });
+
+  if (userData.role && userData.role !== existing.role) {
+    await invalidateRolePermissionCache(existing.role);
+    await invalidateRolePermissionCache(userData.role);
+  }
 
   const { passwordHash: _, ...safeUser } = user;
   return safeUser;

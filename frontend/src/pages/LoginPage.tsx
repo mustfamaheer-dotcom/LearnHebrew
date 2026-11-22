@@ -69,7 +69,7 @@ export const LoginPage: React.FC = () => {
         password: loginPass,
       });
 
-      setAuth(res.data.user, res.data.accessToken);
+      setAuth(res.data.user, res.data.accessToken, res.data.refreshToken);
       setLockoutSeconds(0);
       setRemainingAttempts(null);
 
