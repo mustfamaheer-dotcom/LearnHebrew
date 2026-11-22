@@ -1663,9 +1663,8 @@ async function generatePDF() {
   console.log(`File Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
   console.log(`Location: ${OUTPUT_PDF}`);
 
-  if (fs.existsSync(DOCS_PDF)) {
-    fs.unlinkSync(DOCS_PDF);
-  }
+  fs.copyFileSync(OUTPUT_PDF, DOCS_PDF);
+  console.log(`Also saved to docs: ${DOCS_PDF}`);
 
   await browser.close();
 }
