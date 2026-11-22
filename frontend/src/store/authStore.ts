@@ -43,10 +43,20 @@ function resolveUserLanguage(user: User | null): LanguagePref {
   return 'en';
 }
 
-const savedToken = localStorage.getItem('learnhebrew_token') || null;
-const savedUser: User | null = localStorage.getItem('learnhebrew_user')
-  ? JSON.parse(localStorage.getItem('learnhebrew_user')!)
-  : null;
+function getSafeStoredUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('learnhebrew_user');
+    if (!raw || raw === 'undefined' || raw === 'null') return null;
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem('learnhebrew_user');
+    return null;
+  }
+}
+
+const savedToken = typeof window !== 'undefined' ? (localStorage.getItem('learnhebrew_token') || null) : null;
+const savedUser: User | null = getSafeStoredUser();
 const initialLang = resolveUserLanguage(savedUser);
 
 // Apply initial document direction and language code
