@@ -400,21 +400,7 @@ export const PlacementTestPage: React.FC = () => {
   return (
     <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans ${isRTL ? 'rtl' : 'ltr'}`}>
       {/* Top Header Navigation */}
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white shadow-md font-extrabold text-lg">
-            E
-          </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
-              Engrew Academy
-            </h1>
-            <p className="text-[11px] text-teal-600 dark:text-teal-400 font-medium">
-              {t.navTitle}
-            </p>
-          </div>
-        </div>
-
+      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3 flex items-center justify-center shadow-xs">
         {/* Native Language Selector Switcher */}
         <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
           <button
