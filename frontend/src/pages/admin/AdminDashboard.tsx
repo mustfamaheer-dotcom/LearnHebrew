@@ -3150,20 +3150,6 @@ export const AdminDashboard: React.FC = () => {
                           <ExternalLink className="w-4 h-4 text-brand-teal-300" />
                           <span>{language === 'he' ? 'צפה בדף הנחיתה' : 'View on Landing Page'}</span>
                         </a>
-                        <button
-                          onClick={() => setIsAssigningPkg(true)}
-                          className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white border border-white/20 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
-                        >
-                          <UserCheck className="w-4 h-4 text-brand-olive-300" />
-                          <span>{language === 'he' ? 'הקצה חבילה לתלמיד' : 'Assign to Student'}</span>
-                        </button>
-                        <button
-                          onClick={handleOpenCreatePackage}
-                          className="px-5 py-2.5 bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
-                        >
-                          <Plus className="w-4 h-4 text-slate-950" />
-                          <span>{language === 'he' ? 'צור חבילה חדשה' : 'Create Package'}</span>
-                        </button>
                         {can('packages:assign') && (
                           <button
                             onClick={() => setIsAssigningPkg(true)}
