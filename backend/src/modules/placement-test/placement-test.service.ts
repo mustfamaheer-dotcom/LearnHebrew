@@ -40,11 +40,24 @@ export async function getPublicPlacementQuestions() {
       id: true,
       orderNumber: true,
       questionText: true,
+      questionTextHe: true,
+      questionTextAr: true,
       optionA: true,
+      optionAHe: true,
+      optionAAr: true,
       optionB: true,
+      optionBHe: true,
+      optionBAr: true,
       optionC: true,
+      optionCHe: true,
+      optionCAr: true,
       optionD: true,
+      optionDHe: true,
+      optionDAr: true,
       level: true,
+      explanation: true,
+      explanationHe: true,
+      explanationAr: true,
     },
   });
 
@@ -388,46 +401,61 @@ export async function savePlacementQuestion(data: {
   id?: string;
   orderNumber: number;
   questionText: string;
+  questionTextHe?: string;
+  questionTextAr?: string;
   optionA: string;
+  optionAHe?: string;
+  optionAAr?: string;
   optionB: string;
+  optionBHe?: string;
+  optionBAr?: string;
   optionC: string;
+  optionCHe?: string;
+  optionCAr?: string;
   optionD: string;
+  optionDHe?: string;
+  optionDAr?: string;
   correctOption: string;
   level: string;
   explanation?: string;
+  explanationHe?: string;
+  explanationAr?: string;
   isActive?: boolean;
 }) {
+  const payload = {
+    orderNumber: data.orderNumber,
+    questionText: data.questionText,
+    questionTextHe: data.questionTextHe ?? null,
+    questionTextAr: data.questionTextAr ?? null,
+    optionA: data.optionA,
+    optionAHe: data.optionAHe ?? null,
+    optionAAr: data.optionAAr ?? null,
+    optionB: data.optionB,
+    optionBHe: data.optionBHe ?? null,
+    optionBAr: data.optionBAr ?? null,
+    optionC: data.optionC,
+    optionCHe: data.optionCHe ?? null,
+    optionCAr: data.optionCAr ?? null,
+    optionD: data.optionD,
+    optionDHe: data.optionDHe ?? null,
+    optionDAr: data.optionDAr ?? null,
+    correctOption: data.correctOption.toUpperCase(),
+    level: data.level,
+    explanation: data.explanation ?? null,
+    explanationHe: data.explanationHe ?? null,
+    explanationAr: data.explanationAr ?? null,
+    isActive: data.isActive ?? true,
+  };
+
   if (data.id) {
     return prisma.placementTestQuestion.update({
       where: { id: data.id },
-      data: {
-        orderNumber: data.orderNumber,
-        questionText: data.questionText,
-        optionA: data.optionA,
-        optionB: data.optionB,
-        optionC: data.optionC,
-        optionD: data.optionD,
-        correctOption: data.correctOption.toUpperCase(),
-        level: data.level,
-        explanation: data.explanation,
-        isActive: data.isActive ?? true,
-      },
+      data: payload,
     });
   }
 
   return prisma.placementTestQuestion.create({
-    data: {
-      orderNumber: data.orderNumber,
-      questionText: data.questionText,
-      optionA: data.optionA,
-      optionB: data.optionB,
-      optionC: data.optionC,
-      optionD: data.optionD,
-      correctOption: data.correctOption.toUpperCase(),
-      level: data.level,
-      explanation: data.explanation,
-      isActive: data.isActive ?? true,
-    },
+    data: payload,
   });
 }
 

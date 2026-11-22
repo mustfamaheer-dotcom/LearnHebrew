@@ -25,11 +25,24 @@ interface Question {
   id: string;
   orderNumber: number;
   questionText: string;
+  questionTextHe?: string;
+  questionTextAr?: string;
   optionA: string;
+  optionAHe?: string;
+  optionAAr?: string;
   optionB: string;
+  optionBHe?: string;
+  optionBAr?: string;
   optionC: string;
+  optionCHe?: string;
+  optionCAr?: string;
   optionD: string;
+  optionDHe?: string;
+  optionDAr?: string;
   level: string;
+  explanation?: string;
+  explanationHe?: string;
+  explanationAr?: string;
 }
 
 type Lang = 'he' | 'en' | 'ar';
@@ -736,17 +749,53 @@ export const PlacementTestPage: React.FC = () => {
                   #{questions[currentIndex]?.orderNumber}
                 </span>
                 <h3 className="text-xl lg:text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
-                  {questions[currentIndex]?.questionText}
+                  {lang === 'he' && questions[currentIndex]?.questionTextHe
+                    ? questions[currentIndex]?.questionTextHe
+                    : lang === 'ar' && questions[currentIndex]?.questionTextAr
+                    ? questions[currentIndex]?.questionTextAr
+                    : questions[currentIndex]?.questionText}
                 </h3>
               </div>
 
               {/* 4 Standard Options */}
               <div className="grid grid-cols-1 gap-3 pt-2">
                 {[
-                  { key: 'A', text: questions[currentIndex]?.optionA },
-                  { key: 'B', text: questions[currentIndex]?.optionB },
-                  { key: 'C', text: questions[currentIndex]?.optionC },
-                  { key: 'D', text: questions[currentIndex]?.optionD },
+                  {
+                    key: 'A' as const,
+                    text:
+                      lang === 'he' && questions[currentIndex]?.optionAHe
+                        ? questions[currentIndex]?.optionAHe
+                        : lang === 'ar' && questions[currentIndex]?.optionAAr
+                        ? questions[currentIndex]?.optionAAr
+                        : questions[currentIndex]?.optionA,
+                  },
+                  {
+                    key: 'B' as const,
+                    text:
+                      lang === 'he' && questions[currentIndex]?.optionBHe
+                        ? questions[currentIndex]?.optionBHe
+                        : lang === 'ar' && questions[currentIndex]?.optionBAr
+                        ? questions[currentIndex]?.optionBAr
+                        : questions[currentIndex]?.optionB,
+                  },
+                  {
+                    key: 'C' as const,
+                    text:
+                      lang === 'he' && questions[currentIndex]?.optionCHe
+                        ? questions[currentIndex]?.optionCHe
+                        : lang === 'ar' && questions[currentIndex]?.optionCAr
+                        ? questions[currentIndex]?.optionCAr
+                        : questions[currentIndex]?.optionC,
+                  },
+                  {
+                    key: 'D' as const,
+                    text:
+                      lang === 'he' && questions[currentIndex]?.optionDHe
+                        ? questions[currentIndex]?.optionDHe
+                        : lang === 'ar' && questions[currentIndex]?.optionDAr
+                        ? questions[currentIndex]?.optionDAr
+                        : questions[currentIndex]?.optionD,
+                  },
                 ].map(({ key, text }) => (
                   <button
                     key={key}

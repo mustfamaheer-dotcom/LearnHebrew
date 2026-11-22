@@ -48,13 +48,25 @@ interface Question {
   id: string;
   orderNumber: number;
   questionText: string;
+  questionTextHe?: string | null;
+  questionTextAr?: string | null;
   optionA: string;
+  optionAHe?: string | null;
+  optionAAr?: string | null;
   optionB: string;
+  optionBHe?: string | null;
+  optionBAr?: string | null;
   optionC: string;
+  optionCHe?: string | null;
+  optionCAr?: string | null;
   optionD: string;
+  optionDHe?: string | null;
+  optionDAr?: string | null;
   correctOption: string;
   level: string;
   explanation: string | null;
+  explanationHe?: string | null;
+  explanationAr?: string | null;
   isActive: boolean;
 }
 
@@ -77,16 +89,29 @@ export const PlacementTestAdminTab: React.FC = () => {
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [questionModalOpen, setQuestionModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [modalLang, setModalLang] = useState<'en' | 'he' | 'ar'>('en');
   const [questionForm, setQuestionForm] = useState({
     orderNumber: 1,
     questionText: '',
+    questionTextHe: '',
+    questionTextAr: '',
     optionA: '',
+    optionAHe: '',
+    optionAAr: '',
     optionB: '',
+    optionBHe: '',
+    optionBAr: '',
     optionC: '',
+    optionCHe: '',
+    optionCAr: '',
     optionD: '',
+    optionDHe: '',
+    optionDAr: '',
     correctOption: 'A',
     level: 'A1',
     explanation: '',
+    explanationHe: '',
+    explanationAr: '',
     isActive: true,
   });
 
@@ -482,16 +507,29 @@ export const PlacementTestAdminTab: React.FC = () => {
             <button
               onClick={() => {
                 setEditingQuestion(null);
+                setModalLang('en');
                 setQuestionForm({
                   orderNumber: questions.length + 1,
                   questionText: '',
+                  questionTextHe: '',
+                  questionTextAr: '',
                   optionA: '',
+                  optionAHe: '',
+                  optionAAr: '',
                   optionB: '',
+                  optionBHe: '',
+                  optionBAr: '',
                   optionC: '',
+                  optionCHe: '',
+                  optionCAr: '',
                   optionD: '',
+                  optionDHe: '',
+                  optionDAr: '',
                   correctOption: 'A',
                   level: 'A1',
                   explanation: '',
+                  explanationHe: '',
+                  explanationAr: '',
                   isActive: true,
                 });
                 setQuestionModalOpen(true);
@@ -517,22 +555,40 @@ export const PlacementTestAdminTab: React.FC = () => {
                     <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getLevelBadge(q.level)}`}>
                       {q.level}
                     </span>
+                    <div className="flex items-center gap-1 text-[9px] font-bold ms-1">
+                      <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-950/50">EN</span>
+                      <span className={`px-1.5 py-0.5 rounded ${q.questionTextHe ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50' : 'bg-slate-100 text-slate-400'}`}>HE</span>
+                      <span className={`px-1.5 py-0.5 rounded ${q.questionTextAr ? 'bg-teal-100 text-teal-700 dark:bg-teal-950/50' : 'bg-slate-100 text-slate-400'}`}>AR</span>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => {
                         setEditingQuestion(q);
+                        setModalLang('en');
                         setQuestionForm({
                           orderNumber: q.orderNumber,
                           questionText: q.questionText,
+                          questionTextHe: q.questionTextHe || '',
+                          questionTextAr: q.questionTextAr || '',
                           optionA: q.optionA,
+                          optionAHe: q.optionAHe || '',
+                          optionAAr: q.optionAAr || '',
                           optionB: q.optionB,
+                          optionBHe: q.optionBHe || '',
+                          optionBAr: q.optionBAr || '',
                           optionC: q.optionC,
+                          optionCHe: q.optionCHe || '',
+                          optionCAr: q.optionCAr || '',
                           optionD: q.optionD,
+                          optionDHe: q.optionDHe || '',
+                          optionDAr: q.optionDAr || '',
                           correctOption: q.correctOption,
                           level: q.level,
                           explanation: q.explanation || '',
+                          explanationHe: q.explanationHe || '',
+                          explanationAr: q.explanationAr || '',
                           isActive: q.isActive,
                         });
                         setQuestionModalOpen(true);
@@ -709,62 +765,7 @@ export const PlacementTestAdminTab: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-bold mb-1">Question Text</label>
-                <input
-                  type="text"
-                  required
-                  value={questionForm.questionText}
-                  onChange={(e) => setQuestionForm({ ...questionForm, questionText: e.target.value })}
-                  placeholder="e.g. I ______ bus on Mondays."
-                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold mb-1">Option A</label>
-                  <input
-                    type="text"
-                    required
-                    value={questionForm.optionA}
-                    onChange={(e) => setQuestionForm({ ...questionForm, optionA: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold mb-1">Option B</label>
-                  <input
-                    type="text"
-                    required
-                    value={questionForm.optionB}
-                    onChange={(e) => setQuestionForm({ ...questionForm, optionB: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold mb-1">Option C</label>
-                  <input
-                    type="text"
-                    required
-                    value={questionForm.optionC}
-                    onChange={(e) => setQuestionForm({ ...questionForm, optionC: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold mb-1">Option D</label>
-                  <input
-                    type="text"
-                    required
-                    value={questionForm.optionD}
-                    onChange={(e) => setQuestionForm({ ...questionForm, optionD: e.target.value })}
-                    className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold mb-1">Correct Option</label>
+                <label className="block font-bold mb-1">Correct Answer</label>
                 <select
                   value={questionForm.correctOption}
                   onChange={(e) => setQuestionForm({ ...questionForm, correctOption: e.target.value })}
@@ -777,14 +778,198 @@ export const PlacementTestAdminTab: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block font-bold mb-1">Grammar Explanation (Optional)</label>
-                <textarea
-                  value={questionForm.explanation}
-                  onChange={(e) => setQuestionForm({ ...questionForm, explanation: e.target.value })}
-                  rows={2}
-                  className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs"
-                />
+              {/* Language Switcher for Question Content */}
+              <div className="pt-1">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setModalLang('en')}
+                    className={`flex-1 py-1.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                      modalLang === 'en'
+                        ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>🇺🇸</span>
+                    <span>English</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalLang('he')}
+                    className={`flex-1 py-1.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                      modalLang === 'he'
+                        ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>🇮🇱</span>
+                    <span>עברית</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalLang('ar')}
+                    className={`flex-1 py-1.5 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                      modalLang === 'ar'
+                        ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span>🇸🇦</span>
+                    <span>العربية</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Dynamic Content based on modalLang */}
+              <div className="space-y-3 p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+                <div>
+                  <label className="block font-bold mb-1">
+                    {modalLang === 'en' ? 'Question Text (English)' : modalLang === 'he' ? 'נוסח השאלה (עברית)' : 'نص السؤال (العربية)'}
+                  </label>
+                  <input
+                    type="text"
+                    required={modalLang === 'en'}
+                    dir={modalLang === 'en' ? 'ltr' : 'rtl'}
+                    value={
+                      modalLang === 'en'
+                        ? questionForm.questionText
+                        : modalLang === 'he'
+                        ? questionForm.questionTextHe
+                        : questionForm.questionTextAr
+                    }
+                    onChange={(e) => {
+                      if (modalLang === 'en') setQuestionForm({ ...questionForm, questionText: e.target.value });
+                      else if (modalLang === 'he') setQuestionForm({ ...questionForm, questionTextHe: e.target.value });
+                      else setQuestionForm({ ...questionForm, questionTextAr: e.target.value });
+                    }}
+                    placeholder={
+                      modalLang === 'en'
+                        ? 'e.g. I ______ bus on Mondays.'
+                        : modalLang === 'he'
+                        ? 'לדוגמה: I ______ bus on Mondays. (אני ______ באוטובוס)'
+                        : 'مثال: I ______ bus on Mondays. (أنا ______ بالحافلة)'
+                    }
+                    className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold mb-1">
+                      {modalLang === 'en' ? 'Option A' : modalLang === 'he' ? 'אפשרות A (עברית)' : 'الخيار A (العربية)'}
+                    </label>
+                    <input
+                      type="text"
+                      required={modalLang === 'en'}
+                      dir={modalLang === 'en' ? 'ltr' : 'rtl'}
+                      value={
+                        modalLang === 'en'
+                          ? questionForm.optionA
+                          : modalLang === 'he'
+                          ? questionForm.optionAHe
+                          : questionForm.optionAAr
+                      }
+                      onChange={(e) => {
+                        if (modalLang === 'en') setQuestionForm({ ...questionForm, optionA: e.target.value });
+                        else if (modalLang === 'he') setQuestionForm({ ...questionForm, optionAHe: e.target.value });
+                        else setQuestionForm({ ...questionForm, optionAAr: e.target.value });
+                      }}
+                      className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold mb-1">
+                      {modalLang === 'en' ? 'Option B' : modalLang === 'he' ? 'אפשרות B (עברית)' : 'الخيار B (العربية)'}
+                    </label>
+                    <input
+                      type="text"
+                      required={modalLang === 'en'}
+                      dir={modalLang === 'en' ? 'ltr' : 'rtl'}
+                      value={
+                        modalLang === 'en'
+                          ? questionForm.optionB
+                          : modalLang === 'he'
+                          ? questionForm.optionBHe
+                          : questionForm.optionBAr
+                      }
+                      onChange={(e) => {
+                        if (modalLang === 'en') setQuestionForm({ ...questionForm, optionB: e.target.value });
+                        else if (modalLang === 'he') setQuestionForm({ ...questionForm, optionBHe: e.target.value });
+                        else setQuestionForm({ ...questionForm, optionBAr: e.target.value });
+                      }}
+                      className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold mb-1">
+                      {modalLang === 'en' ? 'Option C' : modalLang === 'he' ? 'אפשרות C (עברית)' : 'الخيار C (العربية)'}
+                    </label>
+                    <input
+                      type="text"
+                      required={modalLang === 'en'}
+                      dir={modalLang === 'en' ? 'ltr' : 'rtl'}
+                      value={
+                        modalLang === 'en'
+                          ? questionForm.optionC
+                          : modalLang === 'he'
+                          ? questionForm.optionCHe
+                          : questionForm.optionCAr
+                      }
+                      onChange={(e) => {
+                        if (modalLang === 'en') setQuestionForm({ ...questionForm, optionC: e.target.value });
+                        else if (modalLang === 'he') setQuestionForm({ ...questionForm, optionCHe: e.target.value });
+                        else setQuestionForm({ ...questionForm, optionCAr: e.target.value });
+                      }}
+                      className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold mb-1">
+                      {modalLang === 'en' ? 'Option D' : modalLang === 'he' ? 'אפשרות D (עברית)' : 'الخيار D (العربية)'}
+                    </label>
+                    <input
+                      type="text"
+                      required={modalLang === 'en'}
+                      dir={modalLang === 'en' ? 'ltr' : 'rtl'}
+                      value={
+                        modalLang === 'en'
+                          ? questionForm.optionD
+                          : modalLang === 'he'
+                          ? questionForm.optionDHe
+                          : questionForm.optionDAr
+                      }
+                      onChange={(e) => {
+                        if (modalLang === 'en') setQuestionForm({ ...questionForm, optionD: e.target.value });
+                        else if (modalLang === 'he') setQuestionForm({ ...questionForm, optionDHe: e.target.value });
+                        else setQuestionForm({ ...questionForm, optionDAr: e.target.value });
+                      }}
+                      className="w-full p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold mb-1">
+                    {modalLang === 'en' ? 'Grammar Explanation (English)' : modalLang === 'he' ? 'הסבר דקדוקי (עברית)' : 'الشرح النحوي (العربية)'}
+                  </label>
+                  <textarea
+                    rows={2}
+                    dir={modalLang === 'en' ? 'ltr' : 'rtl'}
+                    value={
+                      modalLang === 'en'
+                        ? questionForm.explanation
+                        : modalLang === 'he'
+                        ? questionForm.explanationHe
+                        : questionForm.explanationAr
+                    }
+                    onChange={(e) => {
+                      if (modalLang === 'en') setQuestionForm({ ...questionForm, explanation: e.target.value });
+                      else if (modalLang === 'he') setQuestionForm({ ...questionForm, explanationHe: e.target.value });
+                      else setQuestionForm({ ...questionForm, explanationAr: e.target.value });
+                    }}
+                    className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">

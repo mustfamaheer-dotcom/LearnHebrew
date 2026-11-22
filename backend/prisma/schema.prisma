@@ -1007,13 +1007,25 @@ model PlacementTestQuestion {
   id            String   @id @default(uuid())
   orderNumber   Int      // 1 to 36
   questionText  String
+  questionTextHe String?
+  questionTextAr String?
   optionA       String
+  optionAHe     String?
+  optionAAr     String?
   optionB       String
+  optionBHe     String?
+  optionBAr     String?
   optionC       String
+  optionCHe     String?
+  optionCAr     String?
   optionD       String
+  optionDHe     String?
+  optionDAr     String?
   correctOption String   // "A", "B", "C", "D"
   level         String   // "A1", "A2", "B1", "B2", "C1", "C2"
   explanation   String?
+  explanationHe String?
+  explanationAr String?
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
