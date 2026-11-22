@@ -13,6 +13,7 @@ import {
   Search,
   ChevronDown,
   Check,
+  Award,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { getAvatarUrl } from '../../utils/avatar';
@@ -86,6 +87,16 @@ export const Navbar: React.FC = () => {
 
           {/* Right Controls: Dark Mode Toggle, Language switch & User profile */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* Direct Link to English Placement Test */}
+            <Link
+              to="/placement-test"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950/40 dark:to-emerald-950/30 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 font-extrabold text-xs shadow-2xs hover:shadow-xs transition-all hover:scale-105"
+            >
+              <Award className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              <span>
+                {language === 'he' ? 'מבחן רמה באנגלית' : language === 'ar' ? 'اختبار تحديد المستوى' : 'English Level Test'}
+              </span>
+            </Link>
             {/* Spotlight / Command Palette Button (⌘K) - hidden on Landing Page and Mobile */}
             {!isLandingPage && user && (
               <button

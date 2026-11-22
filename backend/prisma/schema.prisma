@@ -998,3 +998,57 @@ model Coupon {
   @@index([code])
   @@index([isActive])
 }
+
+// ----------------------------------------------------
+// Public Placement Test (English Level Assessment)
+// ----------------------------------------------------
+model PlacementTestQuestion {
+  id            String   @id @default(uuid())
+  orderNumber   Int      // 1 to 36
+  questionText  String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctOption String   // "A", "B", "C", "D"
+  level         String   // "A1", "A2", "B1", "B2", "C1", "C2"
+  explanation   String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([orderNumber])
+  @@index([level])
+  @@index([isActive])
+}
+
+model PlacementTestSubmission {
+  id                 String    @id @default(uuid())
+  firstName          String
+  lastName           String
+  email              String
+  phone              String
+  nativeLanguage     String    // "he", "ar", "en"
+  score              Int       // Number of correct answers
+  totalQuestions     Int       @default(36)
+  wrongCount         Int       @default(0)
+  stoppedEarly       Boolean   @default(false)
+  evaluatedLevel     String    // "A1", "A2", "B1", "B2", "C1", "C2"
+  timeSpentSeconds   Int?
+  answers            Json      // Array of detailed answers
+  status             String    @default("COMPLETED") // "COMPLETED", "RETAKE_ALLOWED"
+  convertedToStudent Boolean   @default(false)
+  convertedStudentId String?
+  notes              String?
+  ipAddress          String?
+  userAgent          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([email])
+  @@index([phone])
+  @@index([evaluatedLevel])
+  @@index([status])
+  @@index([createdAt])
+}
+

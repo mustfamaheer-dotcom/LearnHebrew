@@ -45,6 +45,9 @@ const CSDashboard = React.lazy(() =>
 const ReviewRedirectPage = React.lazy(() =>
   import('./pages/shared/ReviewRedirectPage').then((m) => resolveRoute(m, 'ReviewRedirectPage'))
 );
+const PlacementTestPage = React.lazy(() =>
+  import('./pages/placement-test/PlacementTestPage').then((m) => resolveRoute(m, 'PlacementTestPage'))
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +63,11 @@ const queryClient = new QueryClient({
 export const App: React.FC = () => {
   const language = useAuthStore((state) => state.language);
   const theme = useThemeStore((state) => state.theme);
+
+  const isPlacementSubdomain =
+    typeof window !== 'undefined' &&
+    (window.location.hostname.startsWith('placementtest') ||
+     window.location.hostname.includes('placementtest.engrew.com'));
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -108,7 +116,8 @@ export const App: React.FC = () => {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
+                <Route path="/" element={isPlacementSubdomain ? <PlacementTestPage /> : <LandingPage />} />
+                <Route path="/placement-test" element={<PlacementTestPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/review/:token" element={<ReviewRedirectPage />} />
 

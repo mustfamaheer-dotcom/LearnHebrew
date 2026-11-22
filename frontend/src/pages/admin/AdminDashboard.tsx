@@ -27,6 +27,7 @@ import { PlatformSettingsNavModal } from '../../components/admin/PlatformSetting
 import { FamilyManagementModal } from '../../components/admin/FamilyManagementModal';
 import { AddChildModal } from '../../components/admin/AddChildModal';
 import { StudentCrmTable } from '../../components/admin/StudentCrmTable';
+import { PlacementTestAdminTab } from '../../components/admin/PlacementTestAdminTab';
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { sessionTypesApi, levelsApi, languagesApi, rolesApi } from '../../lib/enterpriseApi';
@@ -144,6 +145,7 @@ export const AdminDashboard: React.FC = () => {
     | 'point_rules'
     | 'languages'
     | 'reminders_hub'
+    | 'placement_test'
     | 'users'
     | 'teachers'
     | 'teachers_calendar'
@@ -168,6 +170,7 @@ export const AdminDashboard: React.FC = () => {
         'point_rules',
         'languages',
         'reminders_hub',
+        'placement_test',
         'users',
         'teachers',
         'teachers_calendar',
@@ -1055,6 +1058,16 @@ export const AdminDashboard: React.FC = () => {
       icon: Calendar,
       badge: lessonsData?.length || 0,
       permission: 'lessons:view_all',
+    },
+    {
+      id: 'placement_test',
+      label: 'Placement Test (36Q)',
+      labelHe: 'מבחן רמה (36 שאלות)',
+      labelAr: 'اختبار تحديد المستوى (36)',
+      icon: Award,
+      badge: 'Active',
+      badgeColor: 'bg-teal-500 text-white',
+      permission: undefined,
     },
     {
       id: 'surveys',
@@ -3686,6 +3699,11 @@ export const AdminDashboard: React.FC = () => {
       {/* TAB 7: SURVEYS & REVIEWS */}
       {activeTab === 'surveys' && (
         <ReviewsAndFeedbackTab />
+      )}
+
+      {/* TAB: ENGLISH PLACEMENT TEST MANAGEMENT (36 QUESTIONS & LEADS) */}
+      {activeTab === 'placement_test' && (
+        <PlacementTestAdminTab />
       )}
 
       {/* TAB 8: SYSTEM OBSERVABILITY & ERROR TRACKING (PLATFORM OWNER ONLY) */}

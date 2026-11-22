@@ -29,6 +29,7 @@ import paymentsRouter from './modules/payments/payments.router';
 import levelExamsRouter from './modules/level-exams/level-exams.router';
 import reviewLinksRouter from './modules/review-links/review-links.router';
 import pointRulesRouter from './modules/point-rules/point-rules.router';
+import placementTestRouter from './modules/placement-test/placement-test.router';
 
 import { errorHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
@@ -146,5 +147,6 @@ app.use('/api/v1/payments', paymentsRouter);
 app.use('/api/v1/level-exams', levelExamsRouter);
 app.use('/api/v1/review-links', reviewLinksRouter);
 app.use('/api/v1/point-rules', pointRulesRouter);
+app.use('/api/v1/placement-test', placementTestRouter);
 
 app.use(errorHandler);
