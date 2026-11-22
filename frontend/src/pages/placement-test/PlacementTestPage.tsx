@@ -567,7 +567,7 @@ export const PlacementTestPage: React.FC = () => {
                         required
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="John / دافيد / عمر"
+                        placeholder={lang === 'he' ? 'דוד / יונתן / John' : 'John / David'}
                         className={`w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-hidden focus:ring-2 focus:ring-teal-500 ${
                           isRTL ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
                         }`}
@@ -586,7 +586,7 @@ export const PlacementTestPage: React.FC = () => {
                         required
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Cohen / كوهين / فاروق"
+                        placeholder={lang === 'he' ? 'כהן / לוי / Cohen' : 'Smith / Cohen'}
                         className={`w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-hidden focus:ring-2 focus:ring-teal-500 ${
                           isRTL ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
                         }`}
@@ -626,7 +626,7 @@ export const PlacementTestPage: React.FC = () => {
                         required
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+972 / +966 / +20 ..."
+                        placeholder="+972 / +1 / +44 ..."
                         className={`w-full py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-sm focus:outline-hidden focus:ring-2 focus:ring-teal-500 ${
                           isRTL ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
                         }`}
