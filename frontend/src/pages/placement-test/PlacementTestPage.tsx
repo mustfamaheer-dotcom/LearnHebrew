@@ -19,7 +19,10 @@ import {
   ShieldAlert,
   RotateCcw,
   BookOpen,
+  Printer,
+  Download,
 } from 'lucide-react';
+import { printPlacementCertificate, downloadCertificateHtml } from '../../utils/placementCertificateGenerator';
 
 interface Question {
   id: string;
@@ -294,10 +297,10 @@ export const PlacementTestPage: React.FC = () => {
         evaluatedLevel: 'רמת האנגלית המשוערת שלך:',
         scoreLabel: 'ציון:',
         correctAnswers: 'תשובות נכונות מתוך 36',
-        ctaTitle: 'רוצה להתקדם לרמה הבאה עם מורה פרטי שפת אם?',
-        ctaDesc: 'האקדמיה של Engrew מציעה שיעורים פרטיים מותאמים אישית של 25 דקות בשיטת ה-Micro-learning לתוצאות מהירות.',
-        bookBtn: 'בדיקת חבילות ומבצעים',
-        whatsappBtn: 'ייעוץ אישי בוואטסאפ',
+        printTitle: 'תעודת רמה רשמית CEFR',
+        printDesc: 'הדפס או שמור כ-PDF את תעודת ההערכה הרשמית שלך המעוצבת לפי תקן CEFR האירופי.',
+        printBtn: 'הדפסת תעודת הרמה (PDF)',
+        downloadBtn: 'הורדת תעודה (HTML/PDF)',
       },
     },
     en: {
@@ -348,10 +351,10 @@ export const PlacementTestPage: React.FC = () => {
         evaluatedLevel: 'Your Evaluated English Level:',
         scoreLabel: 'Score:',
         correctAnswers: 'correct answers out of 36',
-        ctaTitle: 'Ready to master English with certified native teachers?',
-        ctaDesc: 'Engrew Academy provides high-intensity 25-minute 1-on-1 private lessons designed for busy professionals.',
-        bookBtn: 'Explore Learning Packages',
-        whatsappBtn: 'Chat with Academic Advisor on WhatsApp',
+        printTitle: 'Official CEFR English Certificate',
+        printDesc: 'Print or save as PDF your verified certificate formatted according to the CEFR standard.',
+        printBtn: 'Print Your Level (PDF Certificate)',
+        downloadBtn: 'Download Certificate (HTML/PDF)',
       },
     },
     ar: {
@@ -402,10 +405,10 @@ export const PlacementTestPage: React.FC = () => {
         evaluatedLevel: 'مستواك المقدر في اللغة الإنجليزية:',
         scoreLabel: 'النتيجة:',
         correctAnswers: 'إجابة صحيحة من أصل 36',
-        ctaTitle: 'هل ترغب في الانتقال للمستوى التالي مع معلمين ناطقين أصليين؟',
-        ctaDesc: 'تقدم أكاديمية إنجرو دروساً خاصة 1-على-1 لمدة 25 دقيقة مصممة لتحقيق الطلاقة السريعة.',
-        bookBtn: 'استكشاف باقات الدروس',
-        whatsappBtn: 'تواصل مع المستشار الأكاديمي عبر واتساب',
+        printTitle: 'شهادة المستوى الرسمية معيار CEFR',
+        printDesc: 'اطبع أو احفظ بصيغة PDF شهادتك المعتمدة المصممة وفق المعايير الأوروبية للغات.',
+        printBtn: 'طباعة شهادة مستواك (PDF)',
+        downloadBtn: 'تحميل الشهادة (HTML/PDF)',
       },
     },
   }[lang];
@@ -962,34 +965,71 @@ export const PlacementTestPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Next Steps CTA */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 lg:p-8 shadow-sm space-y-4 text-center">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                {t.result.ctaTitle}
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-300 max-w-lg mx-auto">
-                {t.result.ctaDesc}
-              </p>
+            {/* Print Official Certificate Card */}
+            <div className="bg-white dark:bg-slate-900 border-2 border-teal-500/30 rounded-3xl p-6 lg:p-8 shadow-md space-y-4 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-teal-500 via-emerald-400 to-teal-600" />
+
+              <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto shadow-xs">
+                <Printer className="w-7 h-7" />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
+                  {t.result.printTitle}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                  {t.result.printDesc}
+                </p>
+              </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                <a
-                  href="/#packages"
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                <button
+                  type="button"
+                  onClick={() =>
+                    printPlacementCertificate(
+                      {
+                        candidateName: `${firstName.trim()} ${lastName.trim()}`,
+                        email: email.trim(),
+                        phone: phone.trim(),
+                        evaluatedLevel: examResult.evaluatedLevel,
+                        score: examResult.score,
+                        totalQuestions: examResult.totalQuestions || 36,
+                        timeSpentSeconds: examResult.timeSpentSeconds || 20 * 60 - timeLeft,
+                        submissionId: examResult.submissionId,
+                        issuedAt: examResult.createdAt || new Date(),
+                      },
+                      lang
+                    )
+                  }
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 active:scale-98 text-white font-extrabold text-sm shadow-md hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
                 >
-                  <BookOpen className="w-4 h-4" />
-                  <span>{t.result.bookBtn}</span>
-                </a>
-                <a
-                  href={`https://wa.me/972543402227?text=${encodeURIComponent(
-                    `Hello Engrew! I just completed the English Placement Test. My evaluated level is ${examResult.evaluatedLevel} (${examResult.score}/36). I would like to consult about 1-on-1 private lessons.`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                  <Printer className="w-5 h-5" />
+                  <span>{t.result.printBtn}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadCertificateHtml(
+                      {
+                        candidateName: `${firstName.trim()} ${lastName.trim()}`,
+                        email: email.trim(),
+                        phone: phone.trim(),
+                        evaluatedLevel: examResult.evaluatedLevel,
+                        score: examResult.score,
+                        totalQuestions: examResult.totalQuestions || 36,
+                        timeSpentSeconds: examResult.timeSpentSeconds || 20 * 60 - timeLeft,
+                        submissionId: examResult.submissionId,
+                        issuedAt: examResult.createdAt || new Date(),
+                      },
+                      lang
+                    )
+                  }
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border border-slate-200 dark:border-slate-700"
                 >
-                  <Phone className="w-4 h-4" />
-                  <span>{t.result.whatsappBtn}</span>
-                </a>
+                  <Download className="w-4 h-4" />
+                  <span>{t.result.downloadBtn}</span>
+                </button>
               </div>
             </div>
           </div>
