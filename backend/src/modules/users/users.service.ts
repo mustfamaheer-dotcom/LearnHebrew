@@ -223,7 +223,11 @@ export async function createUser(data: {
     throw { status: 400, message: `User with email "${resolvedEmail}" already exists` };
   }
 
-  const resolvedPassword = data.password || 'Password123!';
+  const resolvedPassword =
+    data.password ||
+    (process.env.NODE_ENV === 'production'
+      ? crypto.randomBytes(16).toString('hex') + 'A1!'
+      : 'Password123!');
   const passwordHash = await hashPassword(resolvedPassword);
 
   // Phone: if missing and parent exists, inherit parent phone with child tag or raw phone

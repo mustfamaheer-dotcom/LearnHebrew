@@ -748,6 +748,8 @@ model StudentGameSession {
 
   @@index([studentId])
   @@index([gameId])
+  @@index([studentId, completed])
+  @@index([playedAt])
 }
 
 // ----------------------------------------------------

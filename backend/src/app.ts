@@ -36,22 +36,42 @@ import { requestLogger } from './middleware/requestLogger';
 
 export const app = express();
 
+const isProd = process.env.NODE_ENV === 'production';
+
 // Security Headers (OWASP Hardening)
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: isProd
+      ? {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+            imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
+            connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:3000', 'https:'],
+            mediaSrc: ["'self'", 'data:', 'blob:', 'https:'],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'self'"],
+          },
+        }
+      : false,
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
     frameguard: { action: 'sameorigin' },
     noSniff: true,
     xssFilter: true,
-    hsts:
-      process.env.NODE_ENV === 'production'
-        ? { maxAge: 31536000, includeSubDomains: true, preload: true }
-        : false,
+    hsts: isProd
+      ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+      : false,
   })
 );
 
-app.use(compression());
+app.use(compression({
+  threshold: 1024,
+}));
 
 const allowedOrigins = [
   'http://localhost:3000',
@@ -63,11 +83,14 @@ const allowedOrigins = [
 const isAllowedOrigin = (origin: string): boolean => {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
-  // Allow local LAN IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x) on any port
-  if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+  if (!isProd) {
+    // Allow local LAN IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x) on any port in development
+    if (/^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(origin)) {
+      return true;
+    }
     return true;
   }
-  return process.env.NODE_ENV !== 'production';
+  return false;
 };
 
 app.use(

@@ -7,7 +7,22 @@ import { Role } from '@prisma/client';
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB maximum
+  fileFilter: (_req, file, cb) => {
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'application/pdf',
+    ];
+    if (allowedMimeTypes.includes(file.mimetype.toLowerCase())) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG, WebP, GIF, and PDF files are allowed.'));
+    }
+  },
 });
 
 const router = Router();
