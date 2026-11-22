@@ -94,7 +94,7 @@ export const Navbar: React.FC = () => {
             >
               <Award className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
               <span>
-                {language === 'he' ? 'מבחן רמה באנגלית' : language === 'ar' ? 'اختبار تحديد المستوى' : 'English Level Test'}
+                {language === 'he' ? 'מבחן רמה' : language === 'ar' ? 'اختبار تحديد المستوى' : 'Placement Test'}
               </span>
             </Link>
             {/* Spotlight / Command Palette Button (⌘K) - hidden on Landing Page and Mobile */}
