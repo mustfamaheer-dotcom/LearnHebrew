@@ -126,6 +126,18 @@ app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(cookieParser());
 
+// Normalize Vercel Serverless Rewrites
+app.use((req, res, next) => {
+  if (req.headers && req.headers['x-matched-path']) {
+    req.url = req.headers['x-matched-path'] as string;
+  } else if (req.url.startsWith('/backend/api/index')) {
+    req.url = req.url.replace('/backend/api/index', '') || '/';
+  } else if (req.url.startsWith('/api/index')) {
+    req.url = req.url.replace('/api/index', '') || '/';
+  }
+  next();
+});
+
 // Static Uploads Serving (Avatars, Screenshots, WebP)
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
