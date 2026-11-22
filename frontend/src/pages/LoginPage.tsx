@@ -4,7 +4,6 @@ import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import { toast } from '../store/toastStore';
-import { WhatsAppIcon } from '../components/common/SocialIcons';
 import {
   Lock,
   Mail,
@@ -21,8 +20,6 @@ import {
   Globe2,
   Eye,
   EyeOff,
-  HelpCircle,
-  Headphones,
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -36,7 +33,7 @@ export const LoginPage: React.FC = () => {
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
 
   const setAuth = useAuthStore((state) => state.setAuth);
-  const { t, language, setLanguage, isRtl } = useTranslation();
+  const { t, language, isRtl } = useTranslation();
   const navigate = useNavigate();
 
   // Active countdown timer for account lockout
@@ -140,10 +137,6 @@ export const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const whatsappSupportUrl =
-    'https://wa.me/972500000000?text=' +
-    encodeURIComponent('Hello Engrew Academy Advisor, I need assistance with logging in to my student/teacher account.');
 
   return (
     <div
@@ -292,11 +285,11 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* ========================================================================= */}
-        {/* RIGHT PANEL: Sleek Modern Form, Language Switcher & Discovery Hub         */}
+        {/* RIGHT PANEL: Sleek Modern Form & Discovery Hub                          */}
         {/* ========================================================================= */}
         <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-white dark:bg-slate-900 transition-colors">
           <div>
-            {/* Top Toolbar: Language Switcher & Mobile Brand */}
+            {/* Top Toolbar: Mobile Brand & Desktop Greeting */}
             <div className="flex items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-100 dark:border-slate-800/80">
               {/* Mobile-only logo indicator */}
               <div className="lg:hidden flex items-center gap-2.5">
@@ -316,41 +309,8 @@ export const LoginPage: React.FC = () => {
                 </h2>
               </div>
 
-              {/* Language Selector Segmented Control */}
-              <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 ms-auto">
-                <button
-                  type="button"
-                  onClick={() => setLanguage('en')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all ${
-                    language === 'en'
-                      ? 'bg-white dark:bg-slate-700 text-teal-800 dark:text-teal-200 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  EN
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLanguage('he')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all ${
-                    language === 'he'
-                      ? 'bg-white dark:bg-slate-700 text-teal-800 dark:text-teal-200 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  עברית
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLanguage('ar')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-xl transition-all ${
-                    language === 'ar'
-                      ? 'bg-white dark:bg-slate-700 text-teal-800 dark:text-teal-200 shadow-xs'
-                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                  }`}
-                >
-                  العربية
-                </button>
+              <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/70 border border-teal-100 dark:border-teal-900 flex items-center justify-center text-teal-800 dark:text-teal-300 shadow-2xs">
+                <Lock className="w-5 h-5" />
               </div>
             </div>
 
@@ -434,20 +394,9 @@ export const LoginPage: React.FC = () => {
 
               {/* Password with Eye Show/Hide Toggle */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    {language === 'he' ? 'סיסמה' : language === 'ar' ? 'كلمة المرور' : 'Password'}
-                  </label>
-                  <a
-                    href={whatsappSupportUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] font-bold text-teal-700 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 hover:underline flex items-center gap-1"
-                  >
-                    <HelpCircle className="w-3 h-3" />
-                    <span>{language === 'he' ? 'שכחת סיסמה?' : language === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot?'}</span>
-                  </a>
-                </div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  {language === 'he' ? 'סיסמה' : language === 'ar' ? 'كلمة المرور' : 'Password'}
+                </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute start-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
@@ -563,29 +512,6 @@ export const LoginPage: React.FC = () => {
                   {isRtl ? '←' : '→'}
                 </div>
               </Link>
-
-              {/* Support & Advisor Assistance Pill */}
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800 text-xs">
-                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                  <Headphones className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
-                  <span className="text-[11px] font-medium">
-                    {language === 'he'
-                      ? 'צריך עזרה בכניסה לחשבון?'
-                      : language === 'ar'
-                      ? 'تواجه صعوبة في الدخول لحسابك؟'
-                      : 'Need enrollment or login assistance?'}
-                  </span>
-                </div>
-                <a
-                  href={whatsappSupportUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-all shadow-2xs hover:shadow-xs shrink-0"
-                >
-                  <WhatsAppIcon className="w-3.5 h-3.5" />
-                  <span>{language === 'he' ? 'יועץ וואטסאפ' : language === 'ar' ? 'تواصل معنا' : 'Advisor Support'}</span>
-                </a>
-              </div>
             </div>
           </div>
 
