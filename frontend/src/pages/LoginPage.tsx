@@ -110,8 +110,8 @@ export const LoginPage: React.FC = () => {
         const msg =
           resData?.error ||
           (language === 'he'
-            ? 'פרטי ההתחברות שגויים. אנא נסה שוב או השתמש במשתמש הדגמה.'
-            : 'Invalid login credentials. Please verify your details or use a 1-click demo account.');
+            ? 'פרטי ההתחברות שגויים. אנא ודא את הפרטים ונסה שוב.'
+            : 'Invalid login credentials. Please verify your details and try again.');
         setError(msg);
         toast.error(msg, language === 'he' ? 'שגיאת התחברות' : 'Login Error');
       }
@@ -285,8 +285,8 @@ export const LoginPage: React.FC = () => {
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {language === 'he'
-                  ? 'הזן פרטי משתמש או השתמש במשתמש הדגמה'
-                  : 'Enter credentials or choose a 1-click demo'}
+                  ? 'הזן את פרטי ההתחברות שלך כדי להמשיך'
+                  : 'Enter your credentials to continue'}
               </p>
             </div>
 
