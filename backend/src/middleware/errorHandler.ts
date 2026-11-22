@@ -56,11 +56,17 @@ export function errorHandler(
     res.setHeader('X-RateLimit-Remaining', String(err.remainingAttempts));
   }
 
+  const is5xx = statusCode >= 500;
+  const isProd = process.env.NODE_ENV === 'production';
+  const publicMessage = is5xx && isProd
+    ? 'An unexpected internal error occurred. Please contact system support.'
+    : message;
+
   res.status(statusCode).json({
-    error: message,
+    error: publicMessage,
     ...(err.retryAfterSeconds && { retryAfterSeconds: err.retryAfterSeconds }),
     ...(err.lockedUntil && { lockedUntil: err.lockedUntil }),
     ...(err.remainingAttempts !== undefined && { remainingAttempts: err.remainingAttempts }),
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    ...(!isProd && { stack: err.stack }),
   });
 }

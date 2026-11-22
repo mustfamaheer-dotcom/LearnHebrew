@@ -3,19 +3,19 @@ import * as service from './placement-test.service';
 import { z } from 'zod';
 
 const submitSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Valid email address is required'),
-  phone: z.string().min(6, 'Valid phone number is required'),
+  firstName: z.string().trim().min(1, 'First name is required').max(100, 'First name too long'),
+  lastName: z.string().trim().min(1, 'Last name is required').max(100, 'Last name too long'),
+  email: z.string().trim().email('Valid email address is required').max(150, 'Email too long'),
+  phone: z.string().trim().min(6, 'Valid phone number is required').max(30, 'Phone number too long'),
   nativeLanguage: z.enum(['he', 'ar', 'en']).default('he'),
-  timeSpentSeconds: z.number().optional(),
+  timeSpentSeconds: z.number().min(0).max(86400).optional(),
   answers: z.array(
     z.object({
-      questionId: z.string(),
-      orderNumber: z.number(),
-      selectedOption: z.string(),
+      questionId: z.string().max(100),
+      orderNumber: z.number().int().min(1).max(200),
+      selectedOption: z.string().max(50),
     })
-  ),
+  ).max(100),
 });
 
 export async function getPublicQuestions(req: Request, res: Response, next: NextFunction) {

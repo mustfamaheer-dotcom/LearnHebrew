@@ -1,16 +1,17 @@
 import { Router } from 'express';
 import * as controller from './placement-test.controller';
 import { authenticate, requireRoles } from '../../middleware/auth';
+import { placementTestLimiter } from '../../middleware/rateLimiter';
 import { Role } from '@prisma/client';
 
 const router = Router();
 
 // ==========================================
-// Public Endpoints (Accessible for candidates)
+// Public Endpoints (Accessible for candidates with rate limiting)
 // ==========================================
 router.get('/config', controller.getPublicQuestions);
-router.post('/check-eligibility', controller.checkEligibility);
-router.post('/submit', controller.submitTest);
+router.post('/check-eligibility', placementTestLimiter, controller.checkEligibility);
+router.post('/submit', placementTestLimiter, controller.submitTest);
 
 // ==========================================
 // Administrative Endpoints (Admin & Super Admin)

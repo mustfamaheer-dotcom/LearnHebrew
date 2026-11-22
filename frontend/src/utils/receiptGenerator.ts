@@ -54,6 +54,16 @@ export interface ReceiptData {
   };
 }
 
+function escapeHtml(str: string): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function generateReceiptHtml(data: ReceiptData, language: 'en' | 'he' | 'ar' = 'en'): string {
   const isHe = language === 'he';
   const isAr = language === 'ar';
@@ -498,19 +508,19 @@ export function generateReceiptHtml(data: ReceiptData, language: 'en' | 'he' | '
         </div>
         <div class="info-row">
           <span class="info-label">${isHe ? 'שם מלא:' : 'Full Name:'}</span>
-          <span class="info-value">${data.studentDetails.name}</span>
+          <span class="info-value">${escapeHtml(data.studentDetails.name)}</span>
         </div>
         <div class="info-row">
           <span class="info-label">${isHe ? 'דואר אלקטרוני:' : 'Email Address:'}</span>
-          <span class="info-value">${data.studentDetails.email}</span>
+          <span class="info-value">${escapeHtml(data.studentDetails.email)}</span>
         </div>
         <div class="info-row">
           <span class="info-label">${isHe ? 'רמת לימוד:' : 'Proficiency Track:'}</span>
-          <span class="info-value">${data.studentDetails.level || 'Intermediate Hebrew'}</span>
+          <span class="info-value">${escapeHtml(data.studentDetails.level || 'Intermediate Hebrew')}</span>
         </div>
         <div class="info-row">
           <span class="info-label">${isHe ? 'מזהה תלמיד:' : 'Student ID:'}</span>
-          <span class="info-value" style="font-family: monospace; font-size: 11px;">STU-${(data.studentDetails.id || data.id).slice(0, 8).toUpperCase()}</span>
+          <span class="info-value" style="font-family: monospace; font-size: 11px;">STU-${escapeHtml((data.studentDetails.id || data.id).slice(0, 8).toUpperCase())}</span>
         </div>
       </div>
 

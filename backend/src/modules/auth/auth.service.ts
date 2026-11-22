@@ -86,39 +86,8 @@ export async function login(
     }
   }
 
-  // 2. Validate Password
-  let isMatch = await comparePassword(pass, user.passwordHash);
-
-  // Development convenience: only allow standard demo passwords when explicitly in local development
-  if (
-    process.env.NODE_ENV === 'development' &&
-    process.env.ENABLE_DEV_LOGIN_BYPASS === 'true'
-  ) {
-    const DEMO_EMAILS = [
-      'admin@learnhebrew.com',
-      'operations@learnhebrew.com',
-      'sales@learnhebrew.com',
-      'david.sales@learnhebrew.com',
-      'cs@learnhebrew.com',
-      'sara.cs@learnhebrew.com',
-      'mona.khalil@learnhebrew.com',
-      'omar.farouk@gmail.com',
-      'mustfa.maheer@gmail.com',
-    ];
-    if (!isMatch && DEMO_EMAILS.includes(normalizedEmail)) {
-      const validDemoPasswords = ['Admin@2026!', 'Teacher@2026!', 'Student@2026!', 'Password123!'];
-      if (validDemoPasswords.includes(pass)) {
-        isMatch = true;
-      }
-    }
-  }
-
-  // Strict check: Only permit dev password bypass when explicitly enabled in local development
-  const isDevBypass =
-    process.env.NODE_ENV === 'development' &&
-    process.env.ENABLE_DEV_LOGIN_BYPASS === 'true' &&
-    (pass === 'password123' || pass === 'password');
-  const isValid = isMatch || isDevBypass;
+  // 2. Validate Password strictly via bcrypt
+  const isValid = await comparePassword(pass, user.passwordHash);
 
   // 3. Handle Login Failure (Strict 5-Attempt Lockout Policy)
   if (!isValid) {

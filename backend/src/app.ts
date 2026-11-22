@@ -37,6 +37,9 @@ import { requestLogger } from './middleware/requestLogger';
 
 export const app = express();
 
+// Disable X-Powered-By header to obscure underlying technology stack
+app.disable('x-powered-by');
+
 const isProd = process.env.NODE_ENV === 'production';
 
 // Security Headers (OWASP Hardening)
@@ -122,9 +125,31 @@ app.use(
 
 app.use('/api/', apiLimiter);
 
-app.use(express.json({ limit: '15mb' }));
-app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+// Payload size limiting to prevent JSON buffer exhaustion DoS
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(cookieParser());
+
+// Prototype Pollution Defense: Strips forbidden object keys (__proto__, constructor, prototype)
+function sanitizePrototypePollution(obj: any): void {
+  if (!obj || typeof obj !== 'object') return;
+  for (const key of Object.keys(obj)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+      delete obj[key];
+      continue;
+    }
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      sanitizePrototypePollution(obj[key]);
+    }
+  }
+}
+
+app.use((req, res, next) => {
+  if (req.body) sanitizePrototypePollution(req.body);
+  if (req.query) sanitizePrototypePollution(req.query);
+  if (req.params) sanitizePrototypePollution(req.params);
+  next();
+});
 
 // Normalize Vercel Serverless Rewrites
 app.use((req, res, next) => {

@@ -33,3 +33,17 @@ export const apiLimiter = rateLimit({
   },
 });
 
+/**
+ * Strict rate limiter for public placement test submissions and checks
+ * Prevents automated spam submissions, DB resource exhaustion, and scraping (max 20 requests per 15 minutes)
+ */
+export const placementTestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Too many test requests from this network. Please wait a few minutes before trying again.',
+  },
+});
+

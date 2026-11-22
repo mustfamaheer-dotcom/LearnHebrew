@@ -10,9 +10,24 @@ export interface CertificateData {
   issuedAt?: string | Date;
 }
 
+function escapeHtml(str: string): string {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function generateCertificateHtml(data: CertificateData, lang: 'he' | 'en' | 'ar' = 'en'): string {
   const isRtl = lang === 'he' || lang === 'ar';
   const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/logo.png` : 'https://engrew.com/logo.png';
+
+  const safeCandidateName = escapeHtml(data.candidateName);
+  const safeEmail = escapeHtml(data.email);
+  const safePhone = escapeHtml(data.phone);
+  const safeEvaluatedLevel = escapeHtml(data.evaluatedLevel);
 
   const dateStr = data.issuedAt
     ? new Date(data.issuedAt).toLocaleDateString(lang === 'he' ? 'he-IL' : lang === 'ar' ? 'ar-EG' : 'en-US', {
@@ -642,14 +657,14 @@ export function generateCertificateHtml(data: CertificateData, lang: 'he' | 'en'
       <!-- Candidate Name Block -->
       <div class="candidate-block">
         <div class="awarded-to-label">${labels.awardedTo}</div>
-        <div class="candidate-name">${data.candidateName}</div>
-        <div class="candidate-contact">${data.email} &bull; ${data.phone}</div>
+        <div class="candidate-name">${safeCandidateName}</div>
+        <div class="candidate-contact">${safeEmail} &bull; ${safePhone}</div>
       </div>
 
       <!-- Hero Level Badge Card -->
       <div class="hero-level-card">
         <div class="level-circle">
-          <div class="level-code">${data.evaluatedLevel}</div>
+          <div class="level-code">${safeEvaluatedLevel}</div>
           <div class="level-tag">CEFR</div>
         </div>
         <div class="level-details">
