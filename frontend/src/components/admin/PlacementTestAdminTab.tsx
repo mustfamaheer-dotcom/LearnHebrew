@@ -646,77 +646,224 @@ export const PlacementTestAdminTab: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 1: CANDIDATE DETAILED ANSWERS MODAL                                 */}
+      {/* MODAL 1: CANDIDATE DETAILED ANSWERS MODAL (FULLY SCROLLABLE)               */}
       {/* ========================================================================= */}
       {selectedSubmission && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95">
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-3xl w-full h-[90vh] max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 my-auto overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  {selectedSubmission.firstName} {selectedSubmission.lastName}'s Exam Breakdown
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>{selectedSubmission.firstName} {selectedSubmission.lastName}'s Exam Breakdown</span>
+                  {selectedSubmission.stoppedEarly && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300">
+                      Stopped Early (4 Mistakes)
+                    </span>
+                  )}
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Evaluated CEFR: <span className="font-bold text-teal-600">{selectedSubmission.evaluatedLevel}</span> • Score: {selectedSubmission.score}/{selectedSubmission.totalQuestions}
-                </p>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500 mt-1">
+                  <span>
+                    Evaluated CEFR: <strong className="text-teal-600 font-extrabold">{selectedSubmission.evaluatedLevel}</strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Score: <strong>{selectedSubmission.score} / {selectedSubmission.totalQuestions}</strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Attempted: <strong>{selectedSubmission.answers?.length || 0} / {selectedSubmission.totalQuestions}</strong>
+                  </span>
+                  {selectedSubmission.timeSpentSeconds && (
+                    <>
+                      <span>•</span>
+                      <span>
+                        Time: <strong>{Math.floor(selectedSubmission.timeSpentSeconds / 60)}m {selectedSubmission.timeSpentSeconds % 60}s</strong>
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setSelectedSubmission(null)}
-                className="p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
+                className="w-8 h-8 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer text-lg font-bold"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-5 overflow-y-auto space-y-3">
-              {Array.isArray(selectedSubmission.answers) && selectedSubmission.answers.map((ans: any, idx: number) => (
-                <div
-                  key={idx}
-                  className={`p-3.5 rounded-2xl border text-xs space-y-1.5 ${
-                    ans.isCorrect
-                      ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200'
-                      : ans.isDontKnow
-                      ? 'bg-purple-50/60 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-950 dark:text-purple-200'
-                      : 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-950 dark:text-rose-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold">
-                      #{ans.orderNumber}. {ans.questionText}
-                    </span>
-                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-white dark:bg-slate-800">
-                      Level: {ans.level}
-                    </span>
-                  </div>
+            {/* Scrollable Questions Body */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 overscroll-contain [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-slate-100 dark:[&::-webkit-scrollbar-track]:bg-slate-800/40 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-600 hover:[&::-webkit-scrollbar-thumb]:bg-teal-500">
+              {Array.isArray(selectedSubmission.answers) && selectedSubmission.answers.map((ans: any, idx: number) => {
+                const q = questions.find((x) => x.id === ans.questionId || x.orderNumber === ans.orderNumber);
 
-                  <div className="flex items-center gap-4 text-[11px]">
-                    <div>
-                      Candidate Answer:{' '}
-                      <span className="font-bold">
-                        {ans.isDontKnow ? "I don't know" : ans.selectedOption}
-                      </span>
+                return (
+                  <div
+                    key={idx}
+                    className={`p-4 sm:p-5 rounded-2xl border text-xs space-y-3 transition-all ${
+                      ans.isCorrect
+                        ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/80 text-emerald-950 dark:text-emerald-100'
+                        : ans.isDontKnow
+                        ? 'bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/80 text-purple-950 dark:text-purple-100'
+                        : 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/80 text-rose-950 dark:text-rose-100'
+                    }`}
+                  >
+                    {/* Question Title & Level */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <span className="font-extrabold text-sm block leading-snug">
+                          #{ans.orderNumber}. {ans.questionText || q?.questionText}
+                        </span>
+                        {(q?.questionTextHe || q?.questionTextAr) && (
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 space-y-0.5">
+                            {q?.questionTextHe && <div dir="rtl">🇮🇱 {q.questionTextHe}</div>}
+                            {q?.questionTextAr && <div dir="rtl">🇸🇦 {q.questionTextAr}</div>}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs">
+                          {ans.level || q?.level}
+                        </span>
+                        <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full shadow-2xs ${
+                          ans.isCorrect
+                            ? 'bg-emerald-600 text-white'
+                            : ans.isDontKnow
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-rose-600 text-white'
+                        }`}>
+                          {ans.isCorrect ? '✓ Correct' : ans.isDontKnow ? '🤷 I don\'t know' : '✗ Mistake'}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      Correct Answer:{' '}
-                      <span className="font-bold text-emerald-700 dark:text-emerald-400">
-                        {ans.correctOption}
-                      </span>
-                    </div>
-                  </div>
 
-                  {ans.explanation && (
-                    <p className="text-[10px] text-slate-500 italic">
-                      Why: {ans.explanation}
-                    </p>
-                  )}
+                    {/* Option Choices Details (A, B, C, D) */}
+                    {q && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {[
+                          { key: 'A', text: q.optionA, he: q.optionAHe, ar: q.optionAAr },
+                          { key: 'B', text: q.optionB, he: q.optionBHe, ar: q.optionBAr },
+                          { key: 'C', text: q.optionC, he: q.optionCHe, ar: q.optionCAr },
+                          { key: 'D', text: q.optionD, he: q.optionDHe, ar: q.optionDAr },
+                        ].map((opt) => {
+                          const isPicked = ans.selectedOption === opt.key;
+                          const isCorrect = q.correctOption?.toUpperCase() === opt.key;
+
+                          return (
+                            <div
+                              key={opt.key}
+                              className={`p-2.5 rounded-xl border text-[11px] flex items-center justify-between gap-2 transition-all ${
+                                isCorrect
+                                  ? 'bg-emerald-100/70 dark:bg-emerald-900/40 border-emerald-400 text-emerald-900 dark:text-emerald-100 font-bold ring-1 ring-emerald-400'
+                                  : isPicked
+                                  ? 'bg-rose-100/70 dark:bg-rose-900/40 border-rose-400 text-rose-900 dark:text-rose-100 font-bold'
+                                  : 'bg-white/60 dark:bg-slate-800/50 border-slate-200/80 dark:border-slate-700/80 text-slate-600 dark:text-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <span className={`w-5 h-5 rounded-md flex items-center justify-center font-bold text-[10px] shrink-0 ${
+                                  isCorrect
+                                    ? 'bg-emerald-600 text-white'
+                                    : isPicked
+                                    ? 'bg-rose-600 text-white'
+                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                                }`}>
+                                  {opt.key}
+                                </span>
+                                <span className="truncate">{opt.text}</span>
+                              </div>
+
+                              <div className="shrink-0 flex items-center gap-1 text-[10px]">
+                                {isCorrect && (
+                                  <span className="text-emerald-700 dark:text-emerald-300 font-extrabold uppercase">
+                                    [Correct]
+                                  </span>
+                                )}
+                                {isPicked && !isCorrect && (
+                                  <span className="text-rose-700 dark:text-rose-300 font-extrabold uppercase">
+                                    [Candidate Pick]
+                                  </span>
+                                )}
+                                {isPicked && isCorrect && (
+                                  <span className="text-emerald-700 dark:text-emerald-300 font-extrabold uppercase">
+                                    [Candidate Pick ✓]
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Candidate Answer Summary */}
+                    <div className="flex flex-wrap items-center gap-4 text-[11px] pt-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-500 font-medium">Candidate Answer:</span>
+                        <span className={`font-bold px-2 py-0.5 rounded-md ${
+                          ans.isCorrect
+                            ? 'bg-emerald-200 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-100'
+                            : ans.isDontKnow
+                            ? 'bg-purple-200 dark:bg-purple-900 text-purple-900 dark:text-purple-100'
+                            : 'bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-100'
+                        }`}>
+                          {ans.isDontKnow ? "I don't know" : ans.selectedOption}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-slate-500 font-medium">Correct Answer:</span>
+                        <span className="font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
+                          {ans.correctOption || q?.correctOption}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Grammar Rule / Explanation */}
+                    {(ans.explanation || q?.explanation) && (
+                      <div className="p-2.5 rounded-xl bg-white/70 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-300 space-y-1">
+                        <div>
+                          <strong className="text-slate-800 dark:text-slate-100">Why:</strong> {ans.explanation || q?.explanation}
+                        </div>
+                        {q?.explanationHe && (
+                          <div dir="rtl" className="text-slate-500 dark:text-slate-400">
+                            <strong>הסבר:</strong> {q.explanationHe}
+                          </div>
+                        )}
+                        {q?.explanationAr && (
+                          <div dir="rtl" className="text-slate-500 dark:text-slate-400">
+                            <strong>التوضيح:</strong> {q.explanationAr}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Notice if test stopped early */}
+              {selectedSubmission.stoppedEarly && (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span>Remaining Questions (#{(selectedSubmission.answers?.length || 0) + 1} to #36) Not Attempted</span>
+                  </div>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
+                    The candidate reached the maximum limit of 4 incorrect answers at question #{selectedSubmission.answers?.length || 0}. The exam was automatically concluded in accordance with CEFR adaptive stopping criteria.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
 
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end">
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-xs">
+              <span className="text-xs text-slate-500 font-medium">
+                Showing {selectedSubmission.answers?.length || 0} evaluated questions
+              </span>
               <button
+                type="button"
                 onClick={() => setSelectedSubmission(null)}
-                className="px-5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300"
+                className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
                 Close
               </button>
