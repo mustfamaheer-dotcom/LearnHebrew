@@ -21,6 +21,7 @@ const submitSchema = z.object({
 export async function getPublicQuestions(req: Request, res: Response, next: NextFunction) {
   try {
     const questions = await service.getPublicPlacementQuestions();
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200');
     res.json({ questions, total: questions.length });
   } catch (err) {
     next(err);

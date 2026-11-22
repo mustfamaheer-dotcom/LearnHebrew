@@ -1,4 +1,5 @@
 import { prisma } from '../../config/database';
+import { getCachedOrFetch, cacheInvalidatePrefix } from '../../lib/cache';
 import { hashPassword } from '../../utils/password';
 import { Role } from '@prisma/client';
 import crypto from 'crypto';
@@ -30,38 +31,40 @@ export function calculateCEFRLevel(score: number): 'A1' | 'A2' | 'B1' | 'B2' | '
 }
 
 /**
- * Public: Get active questions for the test (without exposing correctOption)
+ * Public: Get active questions for the test (cached with single-flight stampede defense)
  */
 export async function getPublicPlacementQuestions() {
-  const questions = await prisma.placementTestQuestion.findMany({
-    where: { isActive: true },
-    orderBy: { orderNumber: 'asc' },
-    select: {
-      id: true,
-      orderNumber: true,
-      questionText: true,
-      questionTextHe: true,
-      questionTextAr: true,
-      optionA: true,
-      optionAHe: true,
-      optionAAr: true,
-      optionB: true,
-      optionBHe: true,
-      optionBAr: true,
-      optionC: true,
-      optionCHe: true,
-      optionCAr: true,
-      optionD: true,
-      optionDHe: true,
-      optionDAr: true,
-      level: true,
-      explanation: true,
-      explanationHe: true,
-      explanationAr: true,
-    },
-  });
+  return getCachedOrFetch('placement-test:questions:public', 600, async () => {
+    const questions = await prisma.placementTestQuestion.findMany({
+      where: { isActive: true },
+      orderBy: { orderNumber: 'asc' },
+      select: {
+        id: true,
+        orderNumber: true,
+        questionText: true,
+        questionTextHe: true,
+        questionTextAr: true,
+        optionA: true,
+        optionAHe: true,
+        optionAAr: true,
+        optionB: true,
+        optionBHe: true,
+        optionBAr: true,
+        optionC: true,
+        optionCHe: true,
+        optionCAr: true,
+        optionD: true,
+        optionDHe: true,
+        optionDAr: true,
+        level: true,
+        explanation: true,
+        explanationHe: true,
+        explanationAr: true,
+      },
+    });
 
-  return questions;
+    return questions;
+  });
 }
 
 /**
@@ -189,6 +192,8 @@ export async function submitPlacementTest(
       userAgent: meta?.userAgent,
     },
   });
+
+  await cacheInvalidatePrefix('analytics:');
 
   return {
     submissionId: submission.id,
@@ -372,6 +377,8 @@ export async function convertSubmissionToStudent(id: string) {
     },
   });
 
+  await cacheInvalidatePrefix('analytics:');
+
   return {
     success: true,
     user: {
@@ -386,11 +393,13 @@ export async function convertSubmissionToStudent(id: string) {
 }
 
 /**
- * Admin: Get question bank for placement test
+ * Admin: Get question bank for placement test (cached with 5-minute TTL)
  */
 export async function getAdminPlacementQuestions() {
-  return prisma.placementTestQuestion.findMany({
-    orderBy: { orderNumber: 'asc' },
+  return getCachedOrFetch('placement-test:questions:admin', 300, async () => {
+    return prisma.placementTestQuestion.findMany({
+      orderBy: { orderNumber: 'asc' },
+    });
   });
 }
 
@@ -447,23 +456,26 @@ export async function savePlacementQuestion(data: {
     isActive: data.isActive ?? true,
   };
 
-  if (data.id) {
-    return prisma.placementTestQuestion.update({
-      where: { id: data.id },
-      data: payload,
-    });
-  }
+  const result = data.id
+    ? await prisma.placementTestQuestion.update({
+        where: { id: data.id },
+        data: payload,
+      })
+    : await prisma.placementTestQuestion.create({
+        data: payload,
+      });
 
-  return prisma.placementTestQuestion.create({
-    data: payload,
-  });
+  await cacheInvalidatePrefix('placement-test:questions');
+  return result;
 }
 
 /**
  * Admin: Delete question
  */
 export async function deletePlacementQuestion(id: string) {
-  return prisma.placementTestQuestion.delete({
+  const result = await prisma.placementTestQuestion.delete({
     where: { id },
   });
+  await cacheInvalidatePrefix('placement-test:questions');
+  return result;
 }

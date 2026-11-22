@@ -2,13 +2,19 @@ import { Router, Response, NextFunction } from 'express';
 import { prisma } from '../../config/database';
 import { authenticate, requireRoles, AuthRequest } from '../../middleware/auth';
 import { Role } from '@prisma/client';
+import { getCachedOrFetch, cacheInvalidatePrefix } from '../../lib/cache';
 
 const router = Router();
 router.use(authenticate, requireRoles(Role.ADMIN, Role.SUPER_ADMIN));
 
 router.get('/overview', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const now = new Date();
+    if (req.query.force === 'true') {
+      await cacheInvalidatePrefix('analytics:overview');
+    }
+
+    const data = await getCachedOrFetch('analytics:overview', 45, async () => {
+      const now = new Date();
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
@@ -330,56 +336,59 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       });
     }
 
-    res.json({
-      kpis: {
-        totalRevenue,
-        revenueMTD,
-        revenueGrowth,
-        totalLessons,
-        completedLessons,
-        scheduledLessons,
-        cancelledLessons,
-        activeStudents: activePackagesCount,
-        totalStudents,
-        totalTeachers,
-        totalPackages,
-        avgSatisfaction,
-        totalVerifiedReviews,
-        lessonUtilization,
-        totalTimeSlots: timeSlotsCount,
-        totalHomework,
-        submittedOrReviewedHw,
-        homeworkCompletionRate,
-        totalStudentSessions: Number(studentBalanceAgg._sum?.balance || 0),
-        totalStudentBalance: Number(studentBalanceAgg._sum?.balance || 0),
-        avgStudentBalance: Number(studentBalanceAgg._sum?.balance || 0),
-      },
-      durationBreakdown,
-      lowBalanceStudents: lowBalanceStudents.map((s) => ({
-        studentId: s.studentId,
-        userId: s.student.userId,
-        name: `${s.student.user.firstName} ${s.student.user.lastName}`,
-        email: s.student.user.email,
-        avatarUrl: s.student.user.avatarUrl,
-        sessionType: s.sessionType?.name || 'Lesson',
-        balance: Number(s.balance || 0),
-      })),
-      recentBalanceTransactions: recentBalanceTransactions.map((tx) => ({
-        id: tx.id,
-        studentName: `${tx.student.user.firstName} ${tx.student.user.lastName}`,
-        studentEmail: tx.student.user.email,
-        amount: Number(tx.amount),
-        balanceAfter: Number(tx.balanceAfter),
-        type: tx.type,
-        description: tx.description,
-        createdAt: tx.createdAt,
-      })),
-      monthlyTrends,
-      topStudents,
-      topTeachers,
-      alerts,
-      recentActivity,
+      return {
+        kpis: {
+          totalRevenue,
+          revenueMTD,
+          revenueGrowth,
+          totalLessons,
+          completedLessons,
+          scheduledLessons,
+          cancelledLessons,
+          activeStudents: activePackagesCount,
+          totalStudents,
+          totalTeachers,
+          totalPackages,
+          avgSatisfaction,
+          totalVerifiedReviews,
+          lessonUtilization,
+          totalTimeSlots: timeSlotsCount,
+          totalHomework,
+          submittedOrReviewedHw,
+          homeworkCompletionRate,
+          totalStudentSessions: Number(studentBalanceAgg._sum?.balance || 0),
+          totalStudentBalance: Number(studentBalanceAgg._sum?.balance || 0),
+          avgStudentBalance: Number(studentBalanceAgg._sum?.balance || 0),
+        },
+        durationBreakdown,
+        lowBalanceStudents: lowBalanceStudents.map((s) => ({
+          studentId: s.studentId,
+          userId: s.student.userId,
+          name: `${s.student.user.firstName} ${s.student.user.lastName}`,
+          email: s.student.user.email,
+          avatarUrl: s.student.user.avatarUrl,
+          sessionType: s.sessionType?.name || 'Lesson',
+          balance: Number(s.balance || 0),
+        })),
+        recentBalanceTransactions: recentBalanceTransactions.map((tx) => ({
+          id: tx.id,
+          studentName: `${tx.student.user.firstName} ${tx.student.user.lastName}`,
+          studentEmail: tx.student.user.email,
+          amount: Number(tx.amount),
+          balanceAfter: Number(tx.balanceAfter),
+          type: tx.type,
+          description: tx.description,
+          createdAt: tx.createdAt,
+        })),
+        monthlyTrends,
+        topStudents,
+        topTeachers,
+        alerts,
+        recentActivity,
+      };
     });
+
+    res.json(data);
   } catch (error) {
     next(error);
   }

@@ -1,14 +1,17 @@
 import { prisma } from '../../config/database';
+import { getCachedOrFetch, cacheInvalidatePrefix } from '../../lib/cache';
 
 export async function listPackages() {
-  return prisma.package.findMany({
-    where: { isActive: true },
-    orderBy: { createdAt: 'desc' },
-    include: {
-      sessionItems: {
-        include: { sessionType: true },
+  return getCachedOrFetch('packages:list:all', 300, async () => {
+    return prisma.package.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        sessionItems: {
+          include: { sessionType: true },
+        },
       },
-    },
+    });
   });
 }
 
@@ -20,7 +23,7 @@ export async function createPackage(data: any) {
 
   const validityDays = Math.min(Number(data.validityDays) || 30, 30);
 
-  return prisma.package.create({
+  const created = await prisma.package.create({
     data: {
       name: data.name,
       nameHe: data.nameHe,
@@ -47,12 +50,15 @@ export async function createPackage(data: any) {
       sessionItems: { include: { sessionType: true } },
     },
   });
+  await cacheInvalidatePrefix('packages:');
+  await cacheInvalidatePrefix('analytics:');
+  return created;
 }
 
 export async function updatePackage(id: string, data: any) {
   const validityDays = data.validityDays ? Math.min(Number(data.validityDays), 30) : undefined;
 
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     if (data.sessionItems) {
       await tx.packageSessionItem.deleteMany({ where: { packageId: id } });
       await tx.packageSessionItem.createMany({
@@ -93,6 +99,10 @@ export async function updatePackage(id: string, data: any) {
       },
     });
   });
+
+  await cacheInvalidatePrefix('packages:');
+  await cacheInvalidatePrefix('analytics:');
+  return updated;
 }
 
 export async function deletePackage(id: string) {
@@ -110,9 +120,13 @@ export async function deletePackage(id: string) {
   });
 
   // 3. Delete the package permanently
-  return prisma.package.delete({
+  const deleted = await prisma.package.delete({
     where: { id },
   });
+
+  await cacheInvalidatePrefix('packages:');
+  await cacheInvalidatePrefix('analytics:');
+  return deleted;
 }
 
 export async function assignPackageToStudent(params: {
