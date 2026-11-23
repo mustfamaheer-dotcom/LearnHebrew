@@ -19,7 +19,6 @@ import {
   Sparkles,
   CheckCircle2,
   Check,
-  Plus,
   Clock,
   Gamepad2,
   ArrowRight,
@@ -1321,14 +1320,6 @@ export const LandingPage: React.FC = () => {
             );
           })}
         </div>
-
-        {/* Plus Divider between Cards and Consultation Bar */}
-        <div className="flex justify-center -my-3 sm:-my-4 relative z-10">
-          <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md flex items-center justify-center text-brand-teal-600 dark:text-teal-400 font-bold">
-            <Plus className="w-4 h-4" />
-          </div>
-        </div>
-
 
         {/* Advisor Consultation & WhatsApp Bar */}
         <div className="mt-12 rounded-3xl bg-[#0b242e] text-white p-5 sm:p-7 flex flex-col md:flex-row items-center justify-between gap-5 shadow-2xl border border-teal-900/40">
