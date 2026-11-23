@@ -1343,15 +1343,15 @@ export const LandingPage: React.FC = () => {
             return (
               <div
                 key={pkg.id || idx}
-                className={`rounded-[28px] p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 relative text-center bg-white dark:bg-slate-900 ${
+                className={`rounded-[28px] p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 relative text-center ${
                   isFeatured
-                    ? 'border-2 border-emerald-400 dark:border-emerald-400 shadow-xl shadow-emerald-500/10 text-slate-900 dark:text-white -translate-y-1'
-                    : 'border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-white shadow-sm hover:shadow-lg hover:-translate-y-1'
+                    ? 'bg-gradient-to-b from-brand-teal-900 via-brand-teal-950 to-brand-teal-950 text-white ring-2 ring-brand-olive-400 shadow-2xl shadow-brand-teal-950/40 -translate-y-1'
+                    : 'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 text-slate-900 dark:text-white shadow-sm hover:shadow-lg hover:-translate-y-1'
                 }`}
               >
                 {/* Most Popular Choice Badge for Featured Card */}
                 {isFeatured && (
-                  <div className="absolute -top-3.5 start-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-[#7da83b] text-slate-950 font-black text-[10px] sm:text-[11px] uppercase tracking-wider shadow-md flex items-center gap-1.5 whitespace-nowrap z-10">
+                  <div className="absolute -top-3.5 start-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-brand-olive-500 text-slate-950 font-black text-[10px] sm:text-[11px] uppercase tracking-wider shadow-md flex items-center gap-1.5 whitespace-nowrap z-10">
                     <Sparkles className="w-3.5 h-3.5 text-slate-950 shrink-0" />
                     <span>{loc('الخيار الأكثر طلباً', 'הבחירה הפופולרית ביותר', 'Most Popular Choice')}</span>
                   </div>
@@ -1362,10 +1362,22 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center justify-center gap-1.5 mb-2 min-h-[22px]">
                     {hasDiscount && (
                       <>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                            isFeatured
+                              ? 'bg-rose-500/20 border-rose-400/40 text-rose-300'
+                              : 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400'
+                          }`}
+                        >
                           {loc('عرض خاص', 'מבצע מיוחד', 'Sale Offer')}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black border bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                            isFeatured
+                              ? 'bg-brand-olive-400/20 border-brand-olive-400/40 text-brand-olive-300'
+                              : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300'
+                          }`}
+                        >
                           {loc(`وفر ${discountPct}%`, `חיסכון ${discountPct}%`, `Save ${discountPct}%`)}
                         </span>
                       </>
@@ -1373,28 +1385,54 @@ export const LandingPage: React.FC = () => {
                   </div>
 
                   {/* Big Number of Classes */}
-                  <div className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+                  <div
+                    className={`text-4xl sm:text-5xl font-black tracking-tight ${
+                      isFeatured ? 'text-white' : 'text-slate-900 dark:text-white'
+                    }`}
+                  >
                     {lessonsCount}
                   </div>
-                  <div className="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 mt-1">
+                  <div
+                    className={`text-xs sm:text-sm font-bold mt-1 ${
+                      isFeatured ? 'text-brand-teal-200' : 'text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
                     {loc('حصص شهرياً', 'שיעורים בחודש', 'classes a month')}
                   </div>
 
                   {/* Frequency Badge */}
                   <div className="mt-3">
-                    <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300">
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold ${
+                        isFeatured
+                          ? 'bg-white/10 text-white border border-white/15'
+                          : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
                       {language === 'he' && pkg.nameHe ? pkg.nameHe : isAr && pkg.nameAr ? pkg.nameAr : frequency}
                     </span>
                   </div>
 
                   {/* Pricing Box */}
-                  <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <div
+                    className={`mt-5 pt-4 border-t ${
+                      isFeatured ? 'border-brand-teal-800/60' : 'border-slate-100 dark:border-slate-800'
+                    }`}
+                  >
                     {hasDiscount ? (
                       <div className="flex items-center justify-center gap-2 mb-1">
-                        <span className="line-through text-sm sm:text-base font-semibold text-slate-400 dark:text-slate-500">
+                        <span
+                          className={`line-through text-sm sm:text-base font-semibold ${
+                            isFeatured ? 'text-brand-teal-300/80' : 'text-slate-400 dark:text-slate-500'
+                          }`}
+                        >
                           ₪{origPrice}
                         </span>
-                        <span className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400">
+                        <span
+                          className={`text-[11px] font-extrabold ${
+                            isFeatured ? 'text-brand-olive-300' : 'text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        >
                           {loc(`وفر ${discountPct}%`, `חיסכון ${discountPct}%`, `Save ${discountPct}%`)}
                         </span>
                       </div>
@@ -1402,24 +1440,52 @@ export const LandingPage: React.FC = () => {
                       <div className="h-5" />
                     )}
                     <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                      <span
+                        className={`text-3xl sm:text-4xl font-black tracking-tight ${
+                          isFeatured ? 'text-white' : 'text-brand-teal-950 dark:text-teal-300'
+                        }`}
+                      >
                         ₪{pkg.price}
                       </span>
-                      <span className="text-[11px] font-bold uppercase text-slate-400 dark:text-slate-500">
+                      <span
+                        className={`text-[11px] font-bold uppercase ${
+                          isFeatured ? 'text-brand-teal-300' : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                      >
                         {pkg.currency || 'ILS'}
                       </span>
                     </div>
-                    <div className="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+                    <div
+                      className={`text-[11px] sm:text-xs font-semibold mt-0.5 ${
+                        isFeatured ? 'text-brand-teal-200' : 'text-slate-400 dark:text-slate-500'
+                      }`}
+                    >
                       {loc('شهرياً', 'לחודש', 'per month')}
                     </div>
-                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-1.5">
+                    <div
+                      className={`text-xs font-bold mt-1.5 ${
+                        isFeatured ? 'text-brand-olive-300' : 'text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
                       ₪{perLesson} {loc('للحصة', 'לשיעור', 'a lesson')}
                     </div>
                   </div>
 
                   {/* Duration & Validity specs */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                    <span className="px-2.5 py-0.5 rounded-md border bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200/60 dark:border-slate-700/60">
+                  <div
+                    className={`mt-4 pt-3 border-t flex items-center justify-center gap-2 text-[11px] font-bold ${
+                      isFeatured
+                        ? 'border-brand-teal-800/60 text-brand-teal-200'
+                        : 'border-slate-100 dark:border-slate-800/80 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    <span
+                      className={`px-2.5 py-0.5 rounded-md border ${
+                        isFeatured
+                          ? 'bg-white/10 text-brand-teal-100 border-white/15'
+                          : 'bg-brand-teal-50 dark:bg-brand-teal-950/40 text-brand-teal-900 dark:text-brand-teal-200 border-brand-teal-200/50 dark:border-brand-teal-800/50'
+                      }`}
+                    >
                       {lessonsCount} × {selectedDuration} {loc('دقيقة', 'דק׳', 'min')}
                     </span>
                     <span>•</span>
@@ -1427,21 +1493,41 @@ export const LandingPage: React.FC = () => {
                   </div>
 
                   {/* Features Bullet List */}
-                  <ul className="mt-5 mb-7 space-y-2.5 text-xs text-start text-slate-600 dark:text-slate-300">
+                  <ul
+                    className={`mt-5 mb-7 space-y-2.5 text-xs text-start ${
+                      isFeatured ? 'text-brand-teal-100' : 'text-slate-600 dark:text-slate-300'
+                    }`}
+                  >
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 stroke-[2] text-brand-olive-600 dark:text-brand-olive-400" />
+                      <CheckCircle2
+                        className={`w-4 h-4 shrink-0 stroke-[2] ${
+                          isFeatured ? 'text-brand-olive-400' : 'text-brand-olive-600 dark:text-brand-olive-400'
+                        }`}
+                      />
                       <span>{loc('حصص فردية 1-على-1 مباشرة', 'שיעורים פרטיים 1 על 1', '1-on-1 live English/Hebrew lessons')}</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 stroke-[2] text-brand-olive-600 dark:text-brand-olive-400" />
+                      <CheckCircle2
+                        className={`w-4 h-4 shrink-0 stroke-[2] ${
+                          isFeatured ? 'text-brand-olive-400' : 'text-brand-olive-600 dark:text-brand-olive-400'
+                        }`}
+                      />
                       <span>{loc('برنامج تعليمي مخصص', 'תוכנית לימוד אישית', 'Personalized learning')}</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 stroke-[2] text-brand-olive-600 dark:text-brand-olive-400" />
+                      <CheckCircle2
+                        className={`w-4 h-4 shrink-0 stroke-[2] ${
+                          isFeatured ? 'text-brand-olive-400' : 'text-brand-olive-600 dark:text-brand-olive-400'
+                        }`}
+                      />
                       <span>{loc('تمارين ذكية بالذكاء الاصطناعي', 'תרגול חכם מבוסס AI ומשחקים', 'AI-powered practice')}</span>
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 stroke-[2] text-brand-olive-600 dark:text-brand-olive-400" />
+                      <CheckCircle2
+                        className={`w-4 h-4 shrink-0 stroke-[2] ${
+                          isFeatured ? 'text-brand-olive-400' : 'text-brand-olive-600 dark:text-brand-olive-400'
+                        }`}
+                      />
                       <span>{loc('متابعة مستمرة وتسجيلات للحصص', 'מעקב התקדמות והקלטות שיעורים', 'Progress tracking')}</span>
                     </li>
                   </ul>
@@ -1453,8 +1539,8 @@ export const LandingPage: React.FC = () => {
                   onClick={() => haptics.tap()}
                   className={`w-full py-3.5 rounded-2xl font-black text-xs sm:text-sm text-center transition-all block cursor-pointer ${
                     isFeatured
-                      ? 'bg-[#8ea73e] hover:bg-[#7e9636] text-slate-950 shadow-lg shadow-[#8ea73e]/25 hover:scale-[1.02]'
-                      : 'border-2 border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 text-slate-900 dark:text-white bg-white dark:bg-slate-900 shadow-2xs hover:shadow-xs'
+                      ? 'bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 shadow-lg shadow-brand-olive-500/25 hover:scale-[1.02]'
+                      : 'border-2 border-brand-teal-800/20 dark:border-slate-700 hover:border-brand-teal-600 dark:hover:border-teal-400 text-slate-900 dark:text-white hover:text-brand-teal-700 dark:hover:text-teal-300 bg-white dark:bg-slate-900 shadow-2xs hover:shadow-xs'
                   }`}
                 >
                   {loc('اختر الباقة', 'בחר מסלול', 'Choose plan')}
