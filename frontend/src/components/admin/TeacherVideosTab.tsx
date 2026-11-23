@@ -24,6 +24,7 @@ import { api } from '../../lib/api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 import { toast } from '../../store/toastStore';
+import { confirmDialog } from '../../store/confirmDialogStore';
 
 export interface TeacherVideo {
   id: string;
@@ -539,8 +540,23 @@ export const TeacherVideosTab: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      if (window.confirm(language === 'he' ? 'האם למחוק סרטון זה?' : 'Delete this teacher video?')) {
+                    onClick={async () => {
+                      const teacherDisplayName =
+                        language === 'he' && vid.teacherNameHe
+                          ? vid.teacherNameHe
+                          : isAr && vid.teacherNameAr
+                          ? vid.teacherNameAr
+                          : vid.teacherName;
+                      const confirmed = await confirmDialog({
+                        title: 'Delete Teacher Video',
+                        titleHe: 'מחיקת סרטון מורה',
+                        message: `Are you sure you want to permanently remove the video for "${teacherDisplayName}"? It will no longer appear on the landing page showcase.`,
+                        messageHe: `האם אתה בטוח שברצונך למחוק לצמיתות את סרטון ההיכרות של "${teacherDisplayName}"? הוא יוסר מדף הבית.`,
+                        confirmText: 'Delete Video',
+                        confirmTextHe: 'מחק סרטון',
+                        variant: 'danger',
+                      });
+                      if (confirmed) {
                         deleteMutation.mutate(vid.id);
                       }
                     }}
