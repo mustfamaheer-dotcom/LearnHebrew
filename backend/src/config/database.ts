@@ -34,19 +34,24 @@ export function getOptimizedDatabaseUrl(): string | undefined {
       url.searchParams.set('pgbouncer', 'true');
     }
 
-    // 2. In serverless, limit max connections per container (1 if PgBouncer, max 3 otherwise)
-    if (isServerless && !url.searchParams.has('connection_limit')) {
-      url.searchParams.set('connection_limit', isPooler ? '1' : '3');
+    // 2. In serverless, allow up to 5 connections for PgBouncer pooler (or 3 for direct) to support concurrent queries
+    if (isServerless) {
+      const currentLimit = url.searchParams.get('connection_limit');
+      if (!currentLimit || (isPooler && Number(currentLimit) < 5)) {
+        url.searchParams.set('connection_limit', isPooler ? '5' : '3');
+      }
     }
 
-    // 3. Set pool timeout to 10s if not set
-    if (!url.searchParams.has('pool_timeout')) {
-      url.searchParams.set('pool_timeout', '10');
+    // 3. Set pool timeout to at least 20s to accommodate batched multi-query reporting dashboards
+    const currentPoolTimeout = url.searchParams.get('pool_timeout');
+    if (!currentPoolTimeout || Number(currentPoolTimeout) < 20) {
+      url.searchParams.set('pool_timeout', '20');
     }
 
-    // 4. Set connect timeout to 10s if not set
-    if (!url.searchParams.has('connect_timeout')) {
-      url.searchParams.set('connect_timeout', '10');
+    // 4. Set connect timeout to at least 20s
+    const currentConnectTimeout = url.searchParams.get('connect_timeout');
+    if (!currentConnectTimeout || Number(currentConnectTimeout) < 20) {
+      url.searchParams.set('connect_timeout', '20');
     }
 
     return url.toString();

@@ -81,7 +81,11 @@ export const NotificationBell: React.FC = () => {
       });
 
       es.onerror = () => {
-        // EventSource automatically reconnects on error
+        // Prevent browser infinite 401 loop: close immediately if disconnected/rejected
+        if (es.readyState === EventSource.CLOSED) {
+          es.close();
+          eventSourceRef.current = null;
+        }
       };
     } catch {
       // Fallback relies on pollInterval

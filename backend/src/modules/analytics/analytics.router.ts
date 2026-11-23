@@ -19,15 +19,42 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
+    // Group 1: Core Platform Counts (5 queries)
     const [
       totalUsers,
       totalStudents,
       totalTeachers,
       totalPackages,
       activePackagesCount,
+    ] = await Promise.all([
+      prisma.user.count().catch(() => 0),
+      prisma.student.count().catch(() => 0),
+      prisma.teacher.count().catch(() => 0),
+      prisma.package.count().catch(() => 0),
+      prisma.studentPackage.count({ where: { status: 'ACTIVE' } }).catch(() => 0),
+    ]);
+
+    // Group 2: Packages & Revenue Tracking (3 queries)
+    const [
       allStudentPackages,
       currentMonthPackages,
       prevMonthPackages,
+    ] = await Promise.all([
+      prisma.studentPackage.findMany({
+        include: { package: { select: { price: true } } },
+      }).catch(() => []),
+      prisma.studentPackage.findMany({
+        where: { createdAt: { gte: startOfCurrentMonth } },
+        include: { package: { select: { price: true } } },
+      }).catch(() => []),
+      prisma.studentPackage.findMany({
+        where: { createdAt: { gte: startOfPrevMonth, lte: endOfPrevMonth } },
+        include: { package: { select: { price: true } } },
+      }).catch(() => []),
+    ]);
+
+    // Group 3: Lessons & Homework Activity (7 queries)
+    const [
       totalLessons,
       completedLessons,
       scheduledLessons,
@@ -35,11 +62,52 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       totalHomework,
       submittedOrReviewedHw,
       pendingHwReviews,
+    ] = await Promise.all([
+      prisma.lesson.count().catch(() => 0),
+      prisma.lesson.count({ where: { status: 'COMPLETED' } }).catch(() => 0),
+      prisma.lesson.count({ where: { status: 'SCHEDULED' } }).catch(() => 0),
+      prisma.lesson.count({ where: { status: 'CANCELLED' } }).catch(() => 0),
+      prisma.homework.count().catch(() => 0),
+      prisma.homework.count({ where: { status: { in: ['SUBMITTED', 'REVIEWED'] } } }).catch(() => 0),
+      prisma.homework.findMany({
+        where: { status: 'SUBMITTED' },
+        take: 5,
+        include: {
+          student: { include: { user: { select: { firstName: true, lastName: true } } } },
+          teacher: { include: { user: { select: { firstName: true, lastName: true } } } },
+        },
+      }).catch(() => []),
+    ]);
+
+    // Group 4: Feedback, Surveys, Teachers & TimeSlots (5 queries)
+    const [
       allFeedback,
       allSurveys,
       topStudentsRaw,
       allTeachersRaw,
       timeSlotsCount,
+    ] = await Promise.all([
+      prisma.lessonFeedback.findMany({ select: { qualityRating: true } }).catch(() => []),
+      prisma.teacherSurvey.findMany({ select: { overallRating: true } }).catch(() => []),
+      prisma.student.findMany({
+        take: 5,
+        orderBy: { totalPoints: 'desc' },
+        include: {
+          user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
+          _count: { select: { lessons: true } },
+        },
+      }).catch(() => []),
+      prisma.teacher.findMany({
+        include: {
+          user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
+          _count: { select: { lessons: true } },
+        },
+      }).catch(() => []),
+      prisma.timeSlot.count().catch(() => 0),
+    ]);
+
+    // Group 5: Balances, Durations & Recent Feed Items (8 queries)
+    const [
       expiringPackages,
       lowCreditPackages,
       recentLessons,
@@ -49,59 +117,6 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       recentBalanceTransactions,
       lowBalanceStudents,
     ] = await Promise.all([
-      prisma.user.count(),
-      prisma.student.count(),
-      prisma.teacher.count(),
-      prisma.package.count(),
-      prisma.studentPackage.count({ where: { status: 'ACTIVE' } }),
-      // All student packages with package price
-      prisma.studentPackage.findMany({
-        include: { package: { select: { price: true } } },
-      }),
-      // Packages assigned this month
-      prisma.studentPackage.findMany({
-        where: { createdAt: { gte: startOfCurrentMonth } },
-        include: { package: { select: { price: true } } },
-      }),
-      // Packages assigned last month
-      prisma.studentPackage.findMany({
-        where: { createdAt: { gte: startOfPrevMonth, lte: endOfPrevMonth } },
-        include: { package: { select: { price: true } } },
-      }),
-      prisma.lesson.count(),
-      prisma.lesson.count({ where: { status: 'COMPLETED' } }),
-      prisma.lesson.count({ where: { status: 'SCHEDULED' } }),
-      prisma.lesson.count({ where: { status: 'CANCELLED' } }),
-      prisma.homework.count(),
-      prisma.homework.count({ where: { status: { in: ['SUBMITTED', 'REVIEWED'] } } }),
-      prisma.homework.findMany({
-        where: { status: 'SUBMITTED' },
-        take: 5,
-        include: {
-          student: { include: { user: { select: { firstName: true, lastName: true } } } },
-          teacher: { include: { user: { select: { firstName: true, lastName: true } } } },
-        },
-      }),
-      prisma.lessonFeedback.findMany({ select: { qualityRating: true } }),
-      prisma.teacherSurvey.findMany({ select: { overallRating: true } }),
-      // Top students by points
-      prisma.student.findMany({
-        take: 5,
-        orderBy: { totalPoints: 'desc' },
-        include: {
-          user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
-          _count: { select: { lessons: true } },
-        },
-      }),
-      // Teachers with ratings
-      prisma.teacher.findMany({
-        include: {
-          user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
-          _count: { select: { lessons: true } },
-        },
-      }),
-      prisma.timeSlot.count(),
-      // Packages expiring within 7 days
       prisma.studentPackage.findMany({
         where: {
           status: 'ACTIVE',
@@ -112,8 +127,7 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
           package: { select: { name: true } },
         },
         take: 5,
-      }),
-      // Students with 0 or 1 lesson remaining
+      }).catch(() => []),
       prisma.studentPackage.findMany({
         where: {
           status: 'ACTIVE',
@@ -122,8 +136,7 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
           student: { include: { user: { select: { firstName: true, lastName: true, email: true } } } },
           package: { select: { name: true } },
         },
-      }),
-      // Recent lessons
+      }).catch(() => []),
       prisma.lesson.findMany({
         take: 6,
         orderBy: { scheduledAt: 'desc' },
@@ -131,8 +144,7 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
           student: { include: { user: { select: { firstName: true, lastName: true } } } },
           teacher: { include: { user: { select: { firstName: true, lastName: true } } } },
         },
-      }),
-      // Recent assigned packages
+      }).catch(() => []),
       prisma.studentPackage.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -140,17 +152,14 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
           student: { include: { user: { select: { firstName: true, lastName: true } } } },
           package: { select: { name: true, price: true } },
         },
-      }),
-      // Total active package session units across all students
+      }).catch(() => []),
       prisma.studentSessionBalance.aggregate({
         _sum: { balance: true },
-      }),
-      // Duration breakdown (25m / 40m / 55m)
+      }).catch(() => ({ _sum: { balance: 0 } })),
       prisma.lesson.groupBy({
         by: ['durationMinutes'],
         _count: { id: true },
-      }),
-      // Recent balance transactions
+      }).catch(() => []),
       prisma.balanceTransaction.findMany({
         take: 6,
         orderBy: { createdAt: 'desc' },
@@ -161,8 +170,7 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
             },
           },
         },
-      }),
-      // Students with low session balances
+      }).catch(() => []),
       prisma.studentSessionBalance.findMany({
         where: { balance: { lte: 1 } },
         take: 8,
@@ -174,7 +182,7 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
           },
           sessionType: true,
         },
-      }),
+      }).catch(() => []),
     ]);
 
     // Calculate revenue

@@ -12,14 +12,14 @@ const JWT_ALGORITHM = 'HS256' as const;
 export function generateAccessToken(payload: TokenPayload): string {
   return jwt.sign(payload, env.JWT_SECRET, {
     algorithm: JWT_ALGORITHM,
-    expiresIn: '7d',
+    expiresIn: (env.JWT_EXPIRES_IN as any) || '7d',
   });
 }
 
 export function generateRefreshToken(payload: TokenPayload): string {
   return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
     algorithm: JWT_ALGORITHM,
-    expiresIn: '30d',
+    expiresIn: (env.JWT_REFRESH_EXPIRES_IN as any) || '30d',
   });
 }
 
