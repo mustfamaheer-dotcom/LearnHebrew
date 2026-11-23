@@ -5463,11 +5463,15 @@ export const AdminDashboard: React.FC = () => {
         (item.id === 'enterprise' && isEnterpriseActive) ||
         (item.id !== 'more' && item.id !== 'enterprise' && activeTab === item.id);
 
+      const isActionItem = item.id === 'more' || item.id === 'enterprise';
+      const Comp = isActionItem ? 'button' : 'a';
+      const itemHref = isActionItem ? undefined : `?tab=${item.id}`;
+
       return (
-        <button
+        <Comp
           key={item.id}
-          type="button"
-          onClick={() => {
+          {...(isActionItem ? { type: 'button' as const } : { href: itemHref })}
+          onClick={(e: React.MouseEvent) => {
             haptics.tap();
             if (item.id === 'more') {
               setIsMobileMoreOpen(true);
@@ -5475,9 +5479,12 @@ export const AdminDashboard: React.FC = () => {
               setIsPlatformSettingsModalOpen(true);
               setIsMobileMoreOpen(false);
             } else {
-              setActiveTab(item.id as any);
-              setIsMobileMoreOpen(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                setActiveTab(item.id as any);
+                setIsMobileMoreOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
             }
           }}
           className={`relative py-1.5 px-1 sm:px-2 rounded-full flex flex-col items-center justify-center transition-all duration-300 group ${isActive
@@ -5507,7 +5514,7 @@ export const AdminDashboard: React.FC = () => {
           >
             {item.label}
           </span>
-        </button>
+        </Comp>
       );
     })}
   </div>

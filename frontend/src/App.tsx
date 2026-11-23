@@ -99,10 +99,25 @@ export const App: React.FC = () => {
       setIsCommandPaletteOpen(true);
     };
 
+    const handleAuxClick = (e: MouseEvent) => {
+      if (e.button === 1) {
+        // Mouse wheel middle-click: support opening in new tab smoothly
+        const target = (e.target as HTMLElement)?.closest('a, [data-href]') as HTMLElement | null;
+        if (target) {
+          const href = target.getAttribute('href') || target.getAttribute('data-href');
+          if (href && !href.startsWith('javascript:')) {
+            window.open(href, '_blank', 'noopener,noreferrer');
+          }
+        }
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('auxclick', handleAuxClick);
     window.addEventListener('engrew:open-command-palette', handleCustomOpen);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('auxclick', handleAuxClick);
       window.removeEventListener('engrew:open-command-palette', handleCustomOpen);
     };
   }, []);

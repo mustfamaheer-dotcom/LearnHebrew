@@ -196,16 +196,22 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
 
               // Collapsed (Icons Only) Mode
               if (isCollapsed) {
+                const itemHref = hasChildren ? undefined : `?tab=${item.id}`;
+                const Comp = hasChildren ? 'button' : 'a';
+
                 return (
                   <div key={item.id} className="relative group flex justify-center">
-                    <button
-                      type="button"
-                      onClick={() => {
+                    <Comp
+                      {...(hasChildren ? { type: 'button' as const } : { href: itemHref })}
+                      onClick={(e: React.MouseEvent) => {
                         if (hasChildren) {
                           toggleParent(item.id);
                         } else {
-                          onTabChange(item.id);
-                          if (onCloseMobile) onCloseMobile();
+                          if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                            e.preventDefault();
+                            onTabChange(item.id);
+                            if (onCloseMobile) onCloseMobile();
+                          }
                         }
                       }}
                       className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all relative ${
@@ -227,12 +233,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                       }`} />
 
                       {/* Mini Badge Dot if badge present */}
-                      {(item.badge !== null && item.badge !== undefined || hasChildren) && (
+                      {((item.badge !== null && item.badge !== undefined) || hasChildren) && (
                         <span className={`absolute top-1.5 end-1.5 w-2 h-2 rounded-full ${
                           hasChildren ? 'bg-brand-olive-400' : 'bg-emerald-400'
                         } shadow-[0_0_6px_rgba(52,211,153,0.9)]`} />
                       )}
-                    </button>
+                    </Comp>
 
                     {/* Floating Flyout Menu on Hover (for Mother with Children or Tooltip) */}
                     {hasChildren ? (
@@ -245,12 +251,15 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                           const isChildCur = activeTab === child.id;
                           const childLabel = resolveItemLabel(child);
                           return (
-                            <button
+                            <a
                               key={child.id}
-                              type="button"
-                              onClick={() => {
-                                onTabChange(child.id);
-                                if (onCloseMobile) onCloseMobile();
+                              href={`?tab=${child.id}`}
+                              onClick={(e) => {
+                                if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                                  e.preventDefault();
+                                  onTabChange(child.id);
+                                  if (onCloseMobile) onCloseMobile();
+                                }
                               }}
                               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all text-start ${
                                 isChildCur
@@ -262,7 +271,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                                 <ChildIcon className="w-3.5 h-3.5 shrink-0" />
                                 <span className="truncate">{childLabel}</span>
                               </div>
-                            </button>
+                            </a>
                           );
                         })}
                       </div>
@@ -326,12 +335,15 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
 
                           if (isChildCurrent) {
                             return (
-                              <button
+                              <a
                                 key={child.id}
-                                type="button"
-                                onClick={() => {
-                                  onTabChange(child.id);
-                                  if (onCloseMobile) onCloseMobile();
+                                href={`?tab=${child.id}`}
+                                onClick={(e) => {
+                                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                                    e.preventDefault();
+                                    onTabChange(child.id);
+                                    if (onCloseMobile) onCloseMobile();
+                                  }
                                 }}
                                 className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all group relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-slate-900 to-brand-teal-900 text-white shadow-xs border border-white/15"
                               >
@@ -345,17 +357,20 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                                     {child.badge}
                                   </span>
                                 )}
-                              </button>
+                              </a>
                             );
                           }
 
                           return (
-                            <button
+                            <a
                               key={child.id}
-                              type="button"
-                              onClick={() => {
-                                onTabChange(child.id);
-                                if (onCloseMobile) onCloseMobile();
+                              href={`?tab=${child.id}`}
+                              onClick={(e) => {
+                                if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                                  e.preventDefault();
+                                  onTabChange(child.id);
+                                  if (onCloseMobile) onCloseMobile();
+                                }
                               }}
                               className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-all text-start"
                             >
@@ -368,7 +383,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                                   {child.badge}
                                 </span>
                               )}
-                            </button>
+                            </a>
                           );
                         })}
                       </div>
@@ -380,11 +395,15 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
               // Expanded Full Sidebar Mode: REGULAR FLAT ITEM (Active)
               if (isActive) {
                 return (
-                  <button
+                  <a
                     key={item.id}
-                    onClick={() => {
-                      onTabChange(item.id);
-                      if (onCloseMobile) onCloseMobile();
+                    href={`?tab=${item.id}`}
+                    onClick={(e) => {
+                      if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                        e.preventDefault();
+                        onTabChange(item.id);
+                        if (onCloseMobile) onCloseMobile();
+                      }
                     }}
                     className="w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all group relative overflow-hidden bg-gradient-to-r from-brand-teal-950/90 via-slate-900/85 to-brand-teal-900/90 text-white shadow-[0_10px_25px_-5px_rgba(10,40,48,0.4),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-white/20 dark:border-white/15 backdrop-blur-2xl"
                   >
@@ -409,17 +428,21 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                         {item.badge}
                       </span>
                     )}
-                  </button>
+                  </a>
                 );
               }
 
               // Expanded Full Sidebar Mode: REGULAR FLAT ITEM (Inactive)
               return (
-                <button
+                <a
                   key={item.id}
-                  onClick={() => {
-                    onTabChange(item.id);
-                    if (onCloseMobile) onCloseMobile();
+                  href={`?tab=${item.id}`}
+                  onClick={(e) => {
+                    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                      e.preventDefault();
+                      onTabChange(item.id);
+                      if (onCloseMobile) onCloseMobile();
+                    }
                   }}
                   className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:backdrop-blur-xl hover:border-slate-200/80 dark:hover:border-slate-700/80 border border-transparent transition-all group relative"
                 >
@@ -433,7 +456,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                       {item.badge}
                     </span>
                   )}
-                </button>
+                </a>
               );
             })}
           </nav>
