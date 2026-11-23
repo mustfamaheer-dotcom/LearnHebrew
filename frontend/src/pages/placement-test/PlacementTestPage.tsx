@@ -329,7 +329,7 @@ export const PlacementTestPage: React.FC = () => {
         checking: 'Verifying eligibility...',
       },
       welcome: {
-        quote: 'Welcome to the English level test!',
+        quote: 'Welcome to the Placement Test!',
         subtitle: 'This test evaluates your knowledge on English grammar.',
         levelNote: 'The questions start at Elementary (A1) level and become gradually more difficult.',
         b1: 'Answer all the questions.',
