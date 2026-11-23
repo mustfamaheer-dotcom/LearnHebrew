@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../lib/api';
+import { useAuthStore } from '../../store/authStore';
 import confetti from 'canvas-confetti';
 import {
   Clock,
@@ -51,7 +52,23 @@ interface Question {
 type Lang = 'he' | 'en' | 'ar';
 
 export const PlacementTestPage: React.FC = () => {
-  const [lang, setLang] = useState<Lang>('he');
+  const globalLang = useAuthStore((state) => state.language);
+  const setGlobalLang = useAuthStore((state) => state.setLanguage);
+  const [lang, setLang] = useState<Lang>(() =>
+    ['he', 'en', 'ar'].includes(globalLang) ? (globalLang as Lang) : 'he'
+  );
+
+  // Sync state if global language is toggled in Navbar
+  useEffect(() => {
+    if (globalLang && ['he', 'en', 'ar'].includes(globalLang) && globalLang !== lang) {
+      setLang(globalLang as Lang);
+    }
+  }, [globalLang]);
+
+  const handleLangChange = (newLang: Lang) => {
+    setLang(newLang);
+    setGlobalLang(newLang);
+  };
   const [step, setStep] = useState<'instructions' | 'welcome' | 'exam' | 'result'>('instructions');
 
   // Candidate Registration Data
@@ -420,7 +437,7 @@ export const PlacementTestPage: React.FC = () => {
         {/* Native Language Selector Switcher */}
         <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
           <button
-            onClick={() => setLang('he')}
+            onClick={() => handleLangChange('he')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               lang === 'he'
                 ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
@@ -431,7 +448,7 @@ export const PlacementTestPage: React.FC = () => {
             <span>עברית</span>
           </button>
           <button
-            onClick={() => setLang('ar')}
+            onClick={() => handleLangChange('ar')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               lang === 'ar'
                 ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
@@ -442,7 +459,7 @@ export const PlacementTestPage: React.FC = () => {
             <span>العربية</span>
           </button>
           <button
-            onClick={() => setLang('en')}
+            onClick={() => handleLangChange('en')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               lang === 'en'
                 ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'

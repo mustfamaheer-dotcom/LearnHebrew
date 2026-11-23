@@ -27,6 +27,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const lang = useAuthStore.getState().language;
+  if (lang) {
+    config.headers['Accept-Language'] = lang;
+  }
   return config;
 });
 
