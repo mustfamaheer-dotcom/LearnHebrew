@@ -28,6 +28,9 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Play,
+  X,
+  Film,
   Star,
   Globe2,
   Users,
@@ -72,6 +75,19 @@ export const LandingPage: React.FC = () => {
     },
     staleTime: 1000 * 60 * 5,
   });
+
+  // State & query for Teacher Introductory Videos
+  const [activeTeacherVideo, setActiveTeacherVideo] = useState<any | null>(null);
+  const { data: teacherVideosData } = useQuery({
+    queryKey: ['landingTeacherVideos'],
+    queryFn: async () => {
+      const res = await api.get('/settings/teacher-videos');
+      return res.data?.videos || [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const teacherVideos = (teacherVideosData || []).filter((v: any) => v.isActive !== false);
 
   const config = settingsData || {};
 
@@ -1053,6 +1069,218 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* TEACHER INTRODUCTORY VIDEOS SHOWCASE (CMS Managed) */}
+      {teacherVideos.length > 0 && (
+        <section id="teachers" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
+          <div className="text-center mb-10 sm:mb-14">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-olive-500/15 text-brand-olive-800 dark:text-brand-olive-300 text-xs font-black uppercase tracking-wider mb-2 border border-brand-olive-500/20">
+              <Video className="w-3.5 h-3.5 text-brand-olive-600 dark:text-brand-olive-400 shrink-0" />
+              <span>{loc('فيديوهات تعريفية بنخبة المعلمين', 'הכירו את המורים בסרטוני וידאו', 'Meet Our Certified Mentors on Video')}</span>
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              {loc('شاهد، استمع واختر معلمك المثالي', 'לשמוע, להתרשם ולבחור את המורה האידיאלי עבורך', 'Watch, Listen & Choose Your Perfect Mentor')}
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs sm:text-base max-w-2xl mx-auto">
+              {loc(
+                'استمع إلى أسلوب ونطق معلّمينا المعتمدين في تل أبيب والقدس، وتعرّف على تخصصاتهم قبل بدء رحلتك التعليمية.',
+                'צפו בסרטוני היכרות קצרים של המורים המוסמכים שלנו, הכירו את סגנון ההוראה וההגייה, ובחרו את המורה המתאים בדיוק למטרות שלכם.',
+                'Watch short introduction videos from our certified native teachers, experience their accents and teaching styles, and start learning with confidence.'
+              )}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+            {teacherVideos.map((tv: any, idx: number) => {
+              const name = isAr && tv.teacherNameAr ? tv.teacherNameAr : isHe && tv.teacherNameHe ? tv.teacherNameHe : tv.teacherName;
+              const specialty = isAr && tv.specialtyAr ? tv.specialtyAr : isHe && tv.specialtyHe ? tv.specialtyHe : tv.specialtyEn;
+              const title = isAr && tv.titleAr ? tv.titleAr : isHe && tv.titleHe ? tv.titleHe : tv.title;
+              const bio = isAr && tv.bioAr ? tv.bioAr : isHe && tv.bioHe ? tv.bioHe : tv.bioEn;
+
+              return (
+                <div
+                  key={tv.id || idx}
+                  className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group hover:-translate-y-1.5"
+                >
+                  <div>
+                    {/* Video Thumbnail with Hover Play Button */}
+                    <div
+                      onClick={() => setActiveTeacherVideo(tv)}
+                      className="relative aspect-video bg-slate-950 overflow-hidden cursor-pointer group/video"
+                    >
+                      {tv.thumbnailUrl ? (
+                        <img
+                          src={tv.thumbnailUrl}
+                          alt={name}
+                          className="w-full h-full object-cover group-hover/video:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-teal-950 to-slate-900">
+                          <Film className="w-12 h-12 text-teal-700/60" />
+                        </div>
+                      )}
+
+                      {/* Dark Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20" />
+
+                      {/* Play Button */}
+                      <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-brand-olive-500 text-slate-950 flex items-center justify-center shadow-2xl group-hover/video:scale-110 group-hover/video:bg-brand-olive-400 transition-all duration-300 ring-4 ring-white/20">
+                        <Play className="w-6 h-6 fill-slate-950 ms-0.5" />
+                      </div>
+
+                      {/* Video Duration Badge */}
+                      {tv.duration && (
+                        <span className="absolute bottom-3 end-3 px-2 py-0.5 rounded-md bg-black/80 backdrop-blur-md text-white text-[11px] font-mono font-bold">
+                          {tv.duration}
+                        </span>
+                      )}
+
+                      {/* Specialty Tag Top Left */}
+                      {specialty && (
+                        <span className="absolute top-3 start-3 px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-md text-brand-teal-200 text-[10px] font-black uppercase tracking-wider border border-white/10">
+                          {specialty}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Teacher Details */}
+                    <div className="p-5 sm:p-6 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={tv.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                          alt={name}
+                          className="w-12 h-12 rounded-2xl object-cover ring-2 ring-brand-teal-500/30"
+                          loading="lazy"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-base font-black text-slate-900 dark:text-white truncate">
+                            {name}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {tv.rating && (
+                              <div className="flex items-center gap-1 text-xs font-black text-amber-600 dark:text-amber-400">
+                                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                                <span>{tv.rating}</span>
+                              </div>
+                            )}
+                            {tv.lessonsCount && (
+                              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">
+                                • {tv.lessonsCount} {loc('حصة مكتملة', 'שיעורים', 'sessions')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Video Title */}
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 line-clamp-2">
+                        {title}
+                      </h4>
+
+                      {/* Teacher Bio / Intro */}
+                      {bio && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                          {bio}
+                        </p>
+                      )}
+
+                      {/* Badges */}
+                      {tv.badges && tv.badges.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {tv.badges.map((b: string, bIdx: number) => (
+                            <span
+                              key={bIdx}
+                              className="px-2 py-0.5 rounded-md bg-brand-teal-50 dark:bg-brand-teal-950/50 text-brand-teal-800 dark:text-brand-teal-300 border border-brand-teal-200/50 dark:border-brand-teal-800/40 text-[10px] font-bold"
+                            >
+                              {b}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Bottom Action */}
+                  <div className="p-5 pt-0">
+                    <Link
+                      to={`/login?teacherId=${tv.teacherId || tv.id}&teacherName=${encodeURIComponent(name)}`}
+                      onClick={() => haptics.tap()}
+                      className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-brand-olive-500 dark:bg-slate-800 dark:hover:bg-brand-olive-500 text-slate-800 dark:text-slate-200 hover:text-slate-950 dark:hover:text-slate-950 text-xs font-black text-center transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span>{loc(`احجز حصة مع ${name}`, `קבע שיעור עם ${name}`, `Book with ${name}`)}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Interactive Teacher Video Modal Overlay */}
+          {activeTeacherVideo && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-md"
+              onClick={() => setActiveTeacherVideo(null)}
+            >
+              <div
+                className="relative w-full max-w-4xl bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-white/10"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Close Button */}
+                <button
+                  onClick={() => setActiveTeacherVideo(null)}
+                  className="absolute top-4 end-4 z-20 w-10 h-10 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                {/* Video Player */}
+                <div className="aspect-video w-full bg-black flex items-center justify-center">
+                  <video
+                    src={activeTeacherVideo.videoUrl}
+                    controls
+                    autoPlay
+                    playsInline
+                    preload="metadata"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+
+                {/* Video Footer Info & Booking Link */}
+                <div className="p-5 sm:p-6 bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <img
+                      src={activeTeacherVideo.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                      alt={activeTeacherVideo.teacherName}
+                      className="w-12 h-12 rounded-2xl object-cover ring-2 ring-brand-teal-500/40"
+                    />
+                    <div>
+                      <h4 className="text-sm sm:text-base font-black text-white">
+                        {isAr && activeTeacherVideo.teacherNameAr ? activeTeacherVideo.teacherNameAr : isHe && activeTeacherVideo.teacherNameHe ? activeTeacherVideo.teacherNameHe : activeTeacherVideo.teacherName}
+                      </h4>
+                      <p className="text-xs text-brand-teal-300 font-bold">
+                        {isAr && activeTeacherVideo.specialtyAr ? activeTeacherVideo.specialtyAr : isHe && activeTeacherVideo.specialtyHe ? activeTeacherVideo.specialtyHe : activeTeacherVideo.specialtyEn}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    to={`/login?teacherId=${activeTeacherVideo.teacherId || activeTeacherVideo.id}`}
+                    onClick={() => {
+                      haptics.tap();
+                      setActiveTeacherVideo(null);
+                    }}
+                    className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs sm:text-sm shadow-lg text-center transition-all cursor-pointer"
+                  >
+                    {loc('קבע שיעור היכרות עכשיו', 'קבע שיעור היכרות עכשיו', 'Book a Lesson with Mentor')}
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* PRICING PACKAGES (Compare plans at a glance with 25m / 40m / 55m switcher) */}
       <section id="packages" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">

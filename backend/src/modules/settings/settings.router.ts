@@ -178,9 +178,6 @@ router.put(
   }
 );
 
-export default router;
-
-
 // GET / PUT Platform Currency Configuration (USD or ILS)
 router.get('/currency', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -221,3 +218,260 @@ router.put(
     }
   }
 );
+
+export interface TeacherVideo {
+  id: string;
+  teacherId?: string;
+  teacherName: string;
+  teacherNameHe?: string;
+  teacherNameAr?: string;
+  avatarUrl?: string;
+  title: string;
+  titleHe?: string;
+  titleAr?: string;
+  videoUrl: string;
+  thumbnailUrl?: string;
+  duration?: string;
+  specialtyEn?: string;
+  specialtyHe?: string;
+  specialtyAr?: string;
+  rating?: string;
+  lessonsCount?: number;
+  bioEn?: string;
+  bioHe?: string;
+  bioAr?: string;
+  badges?: string[];
+  isActive: boolean;
+  order: number;
+  createdAt: string;
+}
+
+const DEFAULT_TEACHER_VIDEOS: TeacherVideo[] = [
+  {
+    id: 'vid-1',
+    teacherName: 'Noa Ben-David',
+    teacherNameHe: 'נועה בן-דוד',
+    teacherNameAr: 'نوعا بن دافيد',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
+    title: 'Modern Conversational Hebrew with Native Fluency',
+    titleHe: 'עברית מדוברת יומיומית בביטחון מלא',
+    titleAr: 'العبرية اليومية المعاصرة بطلاقة وثقة',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80',
+    duration: '0:45',
+    specialtyEn: 'Conversational Hebrew & Accent',
+    specialtyHe: 'עברית מדוברת והגייה נכונה',
+    specialtyAr: 'العبرية المحادثية والنطق السليم',
+    rating: '5.0',
+    lessonsCount: 420,
+    bioEn: 'Certified Tel Aviv native teacher with 6+ years of experience helping students transition from hesitation to fluent speaking.',
+    bioHe: 'מורה מוסמכת מתל אביב עם למעלה מ-6 שנות ניסיון בהוראת עברית מדוברת לתלמידים מכל העולם.',
+    bioAr: 'معلمة معتمدة من تل أبيب بخبرة تزيد عن 6 سنوات في مساعدة الطلاب على التحدث بطلاقة وسلاسة.',
+    badges: ['Native Speaker', 'Top Rated', '400+ Sessions'],
+    isActive: true,
+    order: 1,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'vid-2',
+    teacherName: 'Daniel Cohen',
+    teacherNameHe: 'דניאל כהן',
+    teacherNameAr: 'دانيال كوهين',
+    avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300&auto=format&fit=crop&q=80',
+    title: 'Alef-Bet Mastery, Grammar & Reading Comprehension',
+    titleHe: 'יסודות הקריאה, דקדוק והבנת הנקרא',
+    titleAr: 'إتقان الأبجدية، القواعد والقراءة السليمة',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&auto=format&fit=crop&q=80',
+    duration: '0:52',
+    specialtyEn: 'Grammar & Reading Fundamentals',
+    specialtyHe: 'יסודות הקריאה והדקדוק העברי',
+    specialtyAr: 'أسس القراءة والقواعد العبرية',
+    rating: '4.98',
+    lessonsCount: 310,
+    bioEn: 'Linguistics specialist passionate about making Hebrew grammar easy and engaging through structured interactive lessons.',
+    bioHe: 'מומחה בבלשנות והוראת דקדוק בצורה קלילה ומובנית לכל הגילאים והרמות.',
+    bioAr: 'متخصص في اللغويات وتدريس القواعد بطريقة تفاعلية سهلة ومبسطة للمبتدئين.',
+    badges: ['Grammar Expert', 'Beginner Friendly', '300+ Sessions'],
+    isActive: true,
+    order: 2,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'vid-3',
+    teacherName: 'Maya Levi',
+    teacherNameHe: 'מאיה לוי',
+    teacherNameAr: 'مايا ليفي',
+    avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&auto=format&fit=crop&q=80',
+    title: 'Business Hebrew & Professional Workplace Communication',
+    titleHe: 'עברית עסקית ותקשורת מקצועית',
+    titleAr: 'العبرية للأعمال والتواصل المهني',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=800&auto=format&fit=crop&q=80',
+    duration: '0:38',
+    specialtyEn: 'Business & Career Hebrew',
+    specialtyHe: 'עברית לקריירה ולעסקים',
+    specialtyAr: 'العبرية المهنية وسوق العمل',
+    rating: '5.0',
+    lessonsCount: 280,
+    bioEn: 'High-tech and corporate communication specialist preparing professionals for Israeli job interviews and business meetings.',
+    bioHe: 'הכנה ממוקדת לראיונות עבודה בהייטק, פגישות עסקיות ותכתובת מקצועית בעברית.',
+    bioAr: 'إعداد احترافي للمقابلات الوظيفية والاجتماعات وبيئة العمل في مجالات الأعمال والتكنولوجيا.',
+    badges: ['Business Specialist', 'Interview Prep', '5.0 Star'],
+    isActive: true,
+    order: 3,
+    createdAt: new Date().toISOString(),
+  },
+];
+
+// GET Teacher Videos (Public with Redis cache)
+router.get('/teacher-videos', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const videos = await getCachedOrFetch('settings:teacher-videos', 60, async () => {
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: 'teacher_videos' },
+      });
+      if (setting && Array.isArray((setting.valueJson as any)?.videos)) {
+        return (setting.valueJson as any).videos;
+      }
+      return DEFAULT_TEACHER_VIDEOS;
+    });
+
+    res.json({ videos });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// UPDATE / SAVE All Teacher Videos List (Admin only)
+router.put(
+  '/teacher-videos',
+  authenticate,
+  requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const videos = Array.isArray(req.body.videos) ? req.body.videos : req.body;
+      const setting = await prisma.systemSetting.upsert({
+        where: { key: 'teacher_videos' },
+        update: { valueJson: { videos } },
+        create: {
+          key: 'teacher_videos',
+          valueJson: { videos },
+        },
+      });
+
+      await cacheDel('settings:teacher-videos');
+      res.json({
+        message: 'Teacher videos updated successfully!',
+        videos: (setting.valueJson as any)?.videos || [],
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ADD Single Teacher Video (Admin only)
+router.post(
+  '/teacher-videos',
+  authenticate,
+  requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: 'teacher_videos' },
+      });
+      const currentVideos: TeacherVideo[] =
+        setting && Array.isArray((setting.valueJson as any)?.videos)
+          ? (setting.valueJson as any).videos
+          : DEFAULT_TEACHER_VIDEOS;
+
+      const newVideo: TeacherVideo = {
+        id: `vid-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        teacherId: req.body.teacherId || '',
+        teacherName: req.body.teacherName || 'Teacher',
+        teacherNameHe: req.body.teacherNameHe || req.body.teacherName,
+        teacherNameAr: req.body.teacherNameAr || req.body.teacherName,
+        avatarUrl: req.body.avatarUrl || '',
+        title: req.body.title || 'Teacher Introduction',
+        titleHe: req.body.titleHe || req.body.title,
+        titleAr: req.body.titleAr || req.body.title,
+        videoUrl: req.body.videoUrl || '',
+        thumbnailUrl: req.body.thumbnailUrl || '',
+        duration: req.body.duration || '0:30',
+        specialtyEn: req.body.specialtyEn || 'Hebrew Mentor',
+        specialtyHe: req.body.specialtyHe || 'מורה לעברית',
+        specialtyAr: req.body.specialtyAr || 'معلم عبرية',
+        rating: req.body.rating || '5.0',
+        lessonsCount: Number(req.body.lessonsCount) || 50,
+        bioEn: req.body.bioEn || '',
+        bioHe: req.body.bioHe || '',
+        bioAr: req.body.bioAr || '',
+        badges: Array.isArray(req.body.badges) ? req.body.badges : ['Native Speaker'],
+        isActive: req.body.isActive !== false,
+        order: currentVideos.length + 1,
+        createdAt: new Date().toISOString(),
+      };
+
+      const updatedVideos = [newVideo, ...currentVideos];
+
+      await prisma.systemSetting.upsert({
+        where: { key: 'teacher_videos' },
+        update: { valueJson: { videos: updatedVideos } as any },
+        create: {
+          key: 'teacher_videos',
+          valueJson: { videos: updatedVideos } as any,
+        },
+      });
+
+      await cacheDel('settings:teacher-videos');
+      res.status(201).json({
+        message: 'Teacher video added successfully!',
+        video: newVideo,
+        videos: updatedVideos,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// DELETE Teacher Video (Admin only)
+router.delete(
+  '/teacher-videos/:id',
+  authenticate,
+  requireRoles(Role.ADMIN, Role.SUPER_ADMIN),
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: 'teacher_videos' },
+      });
+      const currentVideos: TeacherVideo[] =
+        setting && Array.isArray((setting.valueJson as any)?.videos)
+          ? (setting.valueJson as any).videos
+          : DEFAULT_TEACHER_VIDEOS;
+
+      const filteredVideos = currentVideos.filter((v) => v.id !== id);
+
+      await prisma.systemSetting.upsert({
+        where: { key: 'teacher_videos' },
+        update: { valueJson: { videos: filteredVideos } as any },
+        create: {
+          key: 'teacher_videos',
+          valueJson: { videos: filteredVideos } as any,
+        },
+      });
+
+      await cacheDel('settings:teacher-videos');
+      res.json({
+        message: 'Teacher video removed successfully!',
+        videos: filteredVideos,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+export default router;

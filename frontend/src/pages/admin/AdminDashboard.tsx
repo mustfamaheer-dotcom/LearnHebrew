@@ -30,6 +30,7 @@ import { FamilyManagementModal } from '../../components/admin/FamilyManagementMo
 import { AddChildModal } from '../../components/admin/AddChildModal';
 import { StudentCrmTable } from '../../components/admin/StudentCrmTable';
 import { PlacementTestAdminTab } from '../../components/admin/PlacementTestAdminTab';
+import { TeacherVideosTab } from '../../components/admin/TeacherVideosTab';
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { sessionTypesApi, levelsApi, languagesApi, rolesApi } from '../../lib/enterpriseApi';
@@ -151,6 +152,7 @@ export const AdminDashboard: React.FC = () => {
     | 'users'
     | 'teachers'
     | 'teachers_calendar'
+    | 'teacher_videos'
     | 'packages'
     | 'bookings'
     | 'surveys'
@@ -176,6 +178,7 @@ export const AdminDashboard: React.FC = () => {
         'users',
         'teachers',
         'teachers_calendar',
+        'teacher_videos',
         'packages',
         'bookings',
         'surveys',
@@ -239,6 +242,7 @@ export const AdminDashboard: React.FC = () => {
         'users',
         'teachers',
         'teachers_calendar',
+        'teacher_videos',
         'packages',
         'bookings',
         'surveys',
@@ -1140,6 +1144,16 @@ export const AdminDashboard: React.FC = () => {
       labelAr: 'المعلمون وجدول الفترات',
       icon: GraduationCap,
       badge: teachersData?.length || 0,
+      permission: 'teachers:view_all',
+    },
+    {
+      id: 'teacher_videos',
+      label: 'Post Teacher Video',
+      labelHe: 'סרטוני מורים (בדף הבית)',
+      labelAr: 'فيديوهات المعلمين',
+      icon: Video,
+      badge: 'New',
+      badgeColor: 'bg-emerald-500 text-white',
       permission: 'teachers:view_all',
     },
     {
@@ -3425,6 +3439,11 @@ export const AdminDashboard: React.FC = () => {
                   />
                   <TeachersCalendarTab />
                 </div>
+              )}
+
+              {/* TAB: TEACHER VIDEOS */}
+              {activeTab === 'teacher_videos' && (
+                <TeacherVideosTab />
               )}
 
               {/* TAB 5: PACKAGES & PRICING */}
