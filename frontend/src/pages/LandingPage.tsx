@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
@@ -17,6 +17,7 @@ import {
   Award,
   Sparkles,
   CheckCircle2,
+  Check,
   Clock,
   Gamepad2,
   ArrowRight,
@@ -403,141 +404,56 @@ export const LandingPage: React.FC = () => {
           },
         ];
 
-  // Horizontal Packages Carousel State & Handlers
-  const packagesScrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-  const [activePkgIndex, setActivePkgIndex] = useState(0);
+  // Duration Switcher State: 25 min | 40 min | 55 min
+  const [selectedDuration, setSelectedDuration] = useState<number>(25);
 
-  const isMouseDownRef = useRef(false);
-  const startXRef = useRef(0);
-  const scrollLeftRef = useRef(0);
-  const hasDraggedRef = useRef(false);
-
-  const activePackages = (packagesData || []).filter((p: any) => p.isActive !== false);
-
-  const updateScrollButtons = () => {
-    if (!packagesScrollRef.current) return;
-    const container = packagesScrollRef.current;
-    const cards = container.querySelectorAll<HTMLElement>(':scope > div');
-    if (!cards.length) return;
-
-    const containerRect = container.getBoundingClientRect();
-    const containerCenter = containerRect.left + containerRect.width / 2;
-
-    let closestIndex = 0;
-    let minDistance = Infinity;
-
-    cards.forEach((card, idx) => {
-      const cardRect = card.getBoundingClientRect();
-      const cardCenter = cardRect.left + cardRect.width / 2;
-      const dist = Math.abs(cardCenter - containerCenter);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestIndex = idx;
-      }
-    });
-
-    setActivePkgIndex(closestIndex);
-
-    const isRtl = language === 'he' || language === 'ar';
-    if (isRtl) {
-      setCanScrollLeft(closestIndex < cards.length - 1);
-      setCanScrollRight(closestIndex > 0);
-    } else {
-      setCanScrollLeft(closestIndex > 0);
-      setCanScrollRight(closestIndex < cards.length - 1);
-    }
+  const fallbackPackagesByDuration: Record<number, any[]> = {
+    25: [
+      { id: '1db0c871-1ba9-4a88-8633-7fceac117649', name: '1 lesson a week', nameHe: 'פעם בשבוע', totalLessons: 4, price: 99, originalPrice: 119, isPopular: false },
+      { id: 'd820bbaa-d1b6-4bb0-b23e-27f0b2d56b35', name: '2 lessons a week', nameHe: 'שני שיעורים בשבוע', totalLessons: 8, price: 190, originalPrice: 219, isPopular: false },
+      { id: 'd8999585-a113-485e-bd62-87fe9a9cceaf', name: '3 lessons a week', nameHe: 'שלושה שיעורים בשבוע', totalLessons: 12, price: 270, originalPrice: 294, isPopular: true },
+      { id: '31a4f5f9-b334-40e0-a737-5dcb3086ae44', name: '4 lessons a week', nameHe: '4 שיעורים בשבוע', totalLessons: 16, price: 340, originalPrice: 360, isPopular: false },
+    ],
+    40: [
+      { id: 'd1fb2d17-1513-47db-add5-047ec7536d98', name: '1 lesson a week', nameHe: 'שיעור בשבוע', totalLessons: 4, price: 150, originalPrice: 164, isPopular: false },
+      { id: '74d4e967-b17e-46af-bd9b-8bed9d8d5b7d', name: '2 lessons a week', nameHe: 'שני שיעורים בשבוע', totalLessons: 8, price: 295, originalPrice: 319, isPopular: false },
+      { id: 'e8bbdd12-7570-425b-b874-1f309bcedb78', name: '3 lessons a week', nameHe: 'שלושה שיעורים בשבוע', totalLessons: 12, price: 420, originalPrice: 440, isPopular: true },
+      { id: 'd3b5375f-e492-4ef4-a8ff-8b0b150069ca', name: '4 lessons a week', nameHe: '4 שיעורים בשבוע', totalLessons: 16, price: 535, originalPrice: 555, isPopular: false },
+    ],
+    55: [
+      { id: 'ab3c3f62-7b1d-4118-ac87-0d50ccb703a7', name: '1 lesson a week', nameHe: 'שיעור בשבוע', totalLessons: 4, price: 190, originalPrice: 209, isPopular: false },
+      { id: 'd20299a4-f0e6-4ba4-900c-92fe60562f95', name: '2 lessons a week', nameHe: 'שני שיעורים בשבוע', totalLessons: 8, price: 359, originalPrice: 379, isPopular: false },
+      { id: 'bc72a182-bc59-436f-8f76-6e8e354f147e', name: '3 lessons a week', nameHe: '3 שיעורים בשבוע', totalLessons: 12, price: 469, originalPrice: 486, isPopular: true },
+      { id: 'bd5ec5f6-574f-478e-9d18-c73d1df08878', name: '4 lessons a week', nameHe: '4 שיעורים בשבוע', totalLessons: 16, price: 590, originalPrice: 612, isPopular: false },
+    ],
   };
 
-  useEffect(() => {
-    const container = packagesScrollRef.current;
-    if (!container) return;
-    updateScrollButtons();
-    container.addEventListener('scroll', updateScrollButtons, { passive: true });
-    window.addEventListener('resize', updateScrollButtons);
-    return () => {
-      container.removeEventListener('scroll', updateScrollButtons);
-      window.removeEventListener('resize', updateScrollButtons);
-    };
-  }, [packagesData, language]);
-
-  const scrollPackages = (direction: 'left' | 'right') => {
-    if (!packagesScrollRef.current) return;
-    haptics.tap();
-    const container = packagesScrollRef.current;
-    const cards = container.querySelectorAll<HTMLElement>(':scope > div');
-    if (!cards.length) return;
-
-    const containerRect = container.getBoundingClientRect();
-    const containerCenter = containerRect.left + containerRect.width / 2;
-
-    let closestIndex = 0;
-    let minDistance = Infinity;
-
-    cards.forEach((card, idx) => {
-      const cardRect = card.getBoundingClientRect();
-      const cardCenter = cardRect.left + cardRect.width / 2;
-      const dist = Math.abs(cardCenter - containerCenter);
-      if (dist < minDistance) {
-        minDistance = dist;
-        closestIndex = idx;
-      }
-    });
-
-    const isRtl = language === 'he' || language === 'ar';
-    let targetIndex = closestIndex;
-    if (direction === 'left') {
-      targetIndex = isRtl ? closestIndex + 1 : closestIndex - 1;
-    } else {
-      targetIndex = isRtl ? closestIndex - 1 : closestIndex + 1;
+  const getPackageDuration = (pkg: any): number => {
+    const firstSi = pkg.sessionItems?.[0];
+    if (firstSi?.sessionType?.durationMinutes) {
+      return Number(firstSi.sessionType.durationMinutes);
     }
-
-    targetIndex = Math.max(0, Math.min(targetIndex, cards.length - 1));
-
-    const targetCard = cards[targetIndex];
-    if (targetCard && packagesScrollRef.current) {
-      const containerRect = packagesScrollRef.current.getBoundingClientRect();
-      const cardRect = targetCard.getBoundingClientRect();
-      const offset = cardRect.left - containerRect.left - (containerRect.width / 2 - cardRect.width / 2);
-      packagesScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
-    }
+    const txt = `${pkg.name || ''} ${pkg.nameHe || ''} ${pkg.description || ''} ${pkg.descriptionHe || ''}`.toLowerCase();
+    if (txt.includes('55') || txt.includes('deep dive')) return 55;
+    if (txt.includes('40') || txt.includes('standard')) return 40;
+    return 25;
   };
 
-  const scrollToIndex = (index: number) => {
-    if (!packagesScrollRef.current) return;
-    haptics.tap();
-    const container = packagesScrollRef.current;
-    const cards = container.querySelectorAll<HTMLElement>(':scope > div');
-    const targetCard = cards[index];
-    if (targetCard) {
-      const containerRect = container.getBoundingClientRect();
-      const cardRect = targetCard.getBoundingClientRect();
-      const offset = cardRect.left - containerRect.left - (containerRect.width / 2 - cardRect.width / 2);
-      container.scrollBy({ left: offset, behavior: 'smooth' });
+  const displayPackages = useMemo(() => {
+    const active = (packagesData || []).filter((p: any) => p.isActive !== false);
+    const matched = active.filter((p: any) => getPackageDuration(p) === selectedDuration);
+    if (matched.length > 0) {
+      return [...matched].sort((a: any, b: any) => (Number(a.totalLessons) || 0) - (Number(b.totalLessons) || 0));
     }
-  };
+    return fallbackPackagesByDuration[selectedDuration] || fallbackPackagesByDuration[25];
+  }, [packagesData, selectedDuration]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!packagesScrollRef.current) return;
-    isMouseDownRef.current = true;
-    hasDraggedRef.current = false;
-    startXRef.current = e.pageX - packagesScrollRef.current.offsetLeft;
-    scrollLeftRef.current = packagesScrollRef.current.scrollLeft;
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isMouseDownRef.current || !packagesScrollRef.current) return;
-    const x = e.pageX - packagesScrollRef.current.offsetLeft;
-    const walk = x - startXRef.current;
-    if (Math.abs(walk) > 5) {
-      hasDraggedRef.current = true;
-    }
-    packagesScrollRef.current.scrollLeft = scrollLeftRef.current - walk;
-  };
-
-  const handleMouseUpOrLeave = () => {
-    isMouseDownRef.current = false;
+  const getWeeklyFrequency = (pkg: any) => {
+    const lessons = Number(pkg.totalLessons) || 4;
+    if (lessons <= 4) return loc('درس واحد أسبوعياً', 'שיעור אחד בשבוע', '1 lesson a week');
+    if (lessons <= 8) return loc('درسان أسبوعياً', '2 שיעורים בשבוע', '2 lessons a week');
+    if (lessons <= 12) return loc('3 دروس أسبوعياً', '3 שיעורים בשבוע', '3 lessons a week');
+    return loc('4 دروس أسبوعياً', '4 שיעורים בשבוע', '4 lessons a week');
   };
 
   // Feedback Carousel State (Manual Only - Never Auto-Scrolls the page)
@@ -1137,229 +1053,173 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* PRICING PACKAGES (Driven dynamically from DB or default) */}
+      {/* PRICING PACKAGES (Compare plans at a glance with 25m / 40m / 55m switcher) */}
       <section id="packages" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 w-full min-w-0">
-        <div className="text-center mb-12 sm:mb-16">
-          <span className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 uppercase tracking-wider block mb-2">
+        <div className="text-center mb-8 sm:mb-10">
+          <span className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider block mb-2">
             {loc('استثمار شفاف وباقات مرنة', 'מסלולי השקעה שקופים', 'Transparent Investment')}
           </span>
-          <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            {t('landing.packagesTitle')}
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {loc('قارن بين الباقات في نظرة واحدة.', 'השווה בין המסלולים במבט אחד.', 'Compare plans at a glance.')}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs sm:text-base">
-            {t('landing.packagesSubtitle')}
+            {loc('اختر مدة الجلسة المناسبة لك واستكشف الباقات المتاحة مع أسعار الحصص الشفافة', 'בחר את משך השיעור הרצוי והשווה בין החבילות והמחירים השקופים לכל שיעור', 'Select your preferred session duration and compare plan options.')}
           </p>
         </div>
 
-        {/* Horizontal Scrollable Packages Carousel with Left & Right Arrows */}
-        <div className="relative group/carousel">
-          {/* Left Navigation Arrow (Physical Left of Screen) */}
-          <button
-            type="button"
-            onClick={() => scrollPackages('left')}
-            aria-label={loc('مرر لليسار', 'גלול שמאלה', 'Scroll left')}
-            disabled={!canScrollLeft}
-            className="flex absolute left-0 sm:-left-3 lg:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
-          >
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-          </button>
-
-          {/* Right Navigation Arrow (Physical Right of Screen) */}
-          <button
-            type="button"
-            onClick={() => scrollPackages('right')}
-            aria-label={loc('مرر لليمين', 'גלול ימינה', 'Scroll right')}
-            disabled={!canScrollRight}
-            className="flex absolute right-0 sm:-right-3 lg:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700 shadow-xl items-center justify-center text-slate-800 dark:text-white hover:bg-brand-olive-500 hover:text-slate-950 dark:hover:bg-brand-olive-500 dark:hover:text-slate-950 transition-all hover:scale-110 active:scale-95 disabled:opacity-20 disabled:pointer-events-none cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500 backdrop-blur-md"
-          >
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-          </button>
-
-          {/* Edge Fade Masks for Smooth Scroll Look */}
-          <div className="pointer-events-none absolute left-0 top-0 bottom-6 w-8 sm:w-14 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-10 opacity-70 hidden sm:block" />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-6 w-8 sm:w-14 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-10 opacity-70 hidden sm:block" />
-
-          {/* Horizontal Touch & Drag Scrollable Container */}
-          <div
-            ref={packagesScrollRef}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUpOrLeave}
-            onMouseLeave={handleMouseUpOrLeave}
-            className="flex items-stretch gap-5 sm:gap-7 overflow-x-auto snap-x snap-mandatory scroll-smooth py-6 px-4 sm:px-8 touch-pan-x cursor-grab active:cursor-grabbing select-none"
-            style={{
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch',
-            }}
-          >
-            {activePackages.map((pkg: any, idx: number) => {
-              const isFeatured = pkg.isPopular || idx === 1;
-              const name = isAr && pkg.nameAr ? pkg.nameAr : language === 'he' && pkg.nameHe ? pkg.nameHe : pkg.name;
-              const desc = isAr && pkg.descriptionAr ? pkg.descriptionAr : language === 'he' && pkg.descriptionHe ? pkg.descriptionHe : pkg.description;
-              const items = pkg.sessionItems || [];
-              const sessionSummary =
-                items.length > 0
-                  ? items
-                      .map(
-                        (si: any) =>
-                          `${si.quantity}x ${
-                            isAr
-                              ? si.sessionType?.labelAr || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25} دقيقة`
-                              : language === 'he'
-                              ? si.sessionType?.labelHe || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25} דק׳`
-                              : si.sessionType?.labelEn || si.sessionType?.name || `${si.sessionType?.durationMinutes || 25}m`
-                          }`
-                      )
-                      .join(' + ')
-                  : loc(`${pkg.totalLessons} حصص فردية 1-على-1`, `${pkg.totalLessons} שיעורים פרטיים 1-על-1`, `${pkg.totalLessons} Private 1-on-1 Lessons`);
-
-              if (isFeatured) {
-                return (
-                  <div
-                    key={pkg.id || idx}
-                    className="w-[85vw] sm:w-[360px] md:w-[380px] shrink-0 snap-center bg-gradient-to-b from-brand-teal-900 via-brand-teal-950 to-brand-teal-950 text-white p-7 sm:p-8 rounded-3xl shadow-xl relative flex flex-col justify-between ring-2 ring-brand-olive-400 select-auto transition-transform duration-200 hover:-translate-y-1"
-                  >
-                    <span className="absolute -top-3 start-1/2 -translate-x-1/2 bg-brand-olive-500 text-slate-950 text-[10px] sm:text-[11px] font-black uppercase px-3 py-1 rounded-full shadow-xs tracking-wider">
-                      {loc('الخيار الأكثر طلباً', 'הבחירה הפופולרית ביותר', 'Most Popular Choice')}
-                    </span>
-                    <div>
-                      <span className="text-xs font-bold text-brand-olive-300 uppercase tracking-wider">
-                        {loc('طلاقة سريعة ومكثفة', 'התקדמות מואצת', 'Accelerated Fluency')}
-                      </span>
-                      <h3 className="text-xl sm:text-2xl font-bold text-white mt-1 mb-2">{name}</h3>
-                      <p className="text-xs sm:text-sm text-brand-teal-100 mb-6">{desc}</p>
-                      <div className="mb-6">
-                        <PriceDisplay
-                          price={pkg.price}
-                          originalPrice={pkg.originalPrice}
-                          onSale={pkg.onSale}
-                          currency={pkg.currency || 'USD'}
-                          size="xl"
-                          isLightOnDark={true}
-                        />
-                        <span className="text-xs font-normal text-brand-teal-200 block mt-1">
-                          {loc(`/ صلاحية لـ ${pkg.validityDays} يوماً`, `/ תוקף ל-${pkg.validityDays} יום`, `/ ${pkg.validityDays} days validity`)}
-                        </span>
-                      </div>
-                      <ul className="space-y-3 text-xs sm:text-sm text-brand-teal-100 mb-8">
-                        <li className="flex items-center gap-2 font-semibold">
-                          <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
-                          <span>{sessionSummary}</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
-                          {loc('تسجيلات فيديو كاملة على Google Drive', 'הקלטות וידאו מלאות ב-Google Drive', 'Full Google Drive video recordings')}
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
-                          {loc('واجبات منزلية مخصصة مع قارئ PDF مدمج', 'שיעורי בית ותרגול אינטראקטיבי', 'Custom homework with PDF viewer')}
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-brand-olive-400 shrink-0" />
-                          {loc('ملاحظات وتقييم مستمر من المعلم', 'משוב אישי וצבירת נקודות', 'Dedicated teacher feedback')}
-                        </li>
-                      </ul>
-                    </div>
-                    <Link
-                      to={`/login?packageId=${pkg.id}&pkgName=${encodeURIComponent(name)}`}
-                      onClick={(e) => {
-                        if (hasDraggedRef.current) {
-                          e.preventDefault();
-                          return;
-                        }
-                        haptics.tap();
-                      }}
-                      className="w-full py-3.5 text-center bg-brand-olive-500 hover:bg-brand-olive-600 text-slate-950 font-black text-xs sm:text-sm rounded-2xl transition-all shadow-md hover:scale-[1.02] block"
-                    >
-                      {t('landing.getStarted')}
-                    </Link>
-                  </div>
-                );
-              }
-
-              return (
-                <div
-                  key={pkg.id || idx}
-                  className="w-[85vw] sm:w-[360px] md:w-[380px] shrink-0 snap-center bg-white dark:bg-slate-900 p-7 sm:p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between hover:shadow-md transition-all select-auto duration-200 hover:-translate-y-1"
-                >
-                  <div>
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {loc('باقة تعليمية', 'חבילת לימוד', 'Learning Package')}
-                    </span>
-                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1 mb-2">
-                      {name}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-6">{desc}</p>
-                    <div className="mb-6">
-                      <PriceDisplay
-                        price={pkg.price}
-                        originalPrice={pkg.originalPrice}
-                        onSale={pkg.onSale}
-                        currency={pkg.currency || 'USD'}
-                        size="xl"
-                      />
-                      <span className="text-xs font-normal text-slate-500 dark:text-slate-400 block mt-1">
-                        {loc(`/ صلاحية لـ ${pkg.validityDays} يوماً`, `/ תוקף ל-${pkg.validityDays} יום`, `/ ${pkg.validityDays} days validity`)}
-                      </span>
-                    </div>
-                    <ul className="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300 mb-8">
-                      <li className="flex items-center gap-2 font-semibold">
-                        <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
-                        <span>{sessionSummary}</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
-                        {loc('معلمون معتمدون بتوقيت إسرائيل (IST)', 'מורים מוסמכים מישראל (שעון IST)', 'Certified native teachers (IST)')}
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-brand-olive-600 shrink-0" />
-                        {loc('ألعاب تفاعلية ونطق صوتي للمفردات', 'משחקי שפה ותרגול הגייה קולי', 'Interactive games & audio voice')}
-                      </li>
-                    </ul>
-                  </div>
-                  <Link
-                    to={`/login?packageId=${pkg.id}&pkgName=${encodeURIComponent(name)}`}
-                    onClick={(e) => {
-                      if (hasDraggedRef.current) {
-                        e.preventDefault();
-                        return;
-                      }
-                      haptics.tap();
-                    }}
-                    className="w-full py-3.5 text-center bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs sm:text-sm rounded-2xl transition-colors shadow-xs block"
-                  >
-                    {t('landing.getStarted')}
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
+        {/* Duration Switcher Tabs: 25 min | 40 min | 55 min */}
+        <div className="flex items-center justify-center gap-8 sm:gap-12 border-b border-slate-200/80 dark:border-slate-800 pb-2.5 max-w-sm mx-auto mb-10 sm:mb-12">
+          {[25, 40, 55].map((dur) => {
+            const isSel = selectedDuration === dur;
+            return (
+              <button
+                key={dur}
+                type="button"
+                onClick={() => {
+                  haptics.tap();
+                  setSelectedDuration(dur);
+                }}
+                className={`relative pb-2.5 text-sm sm:text-base font-extrabold transition-all cursor-pointer ${
+                  isSel
+                    ? 'text-teal-600 dark:text-teal-400'
+                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                <span>
+                  {dur} {loc('دقيقة', 'דק׳', 'min')}
+                </span>
+                {isSel && (
+                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-teal-500 dark:bg-teal-400 rounded-full" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Carousel Progress Indicators & Swipe Hint */}
-        {activePackages.length > 1 && (
-          <div className="flex flex-col items-center gap-2.5 mt-4">
-            <div className="flex items-center gap-2">
-              {activePackages.map((_: any, dotIdx: number) => (
-                <button
-                  key={dotIdx}
-                  type="button"
-                  onClick={() => scrollToIndex(dotIdx)}
-                  aria-label={`Go to package ${dotIdx + 1}`}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    activePkgIndex === dotIdx
-                      ? 'w-7 bg-brand-olive-500 shadow-xs'
-                      : 'w-2 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400 dark:hover:bg-slate-600'
+        {/* 4 Plans Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-stretch">
+          {displayPackages.map((pkg: any, idx: number) => {
+            const isFeatured = pkg.isPopular || (displayPackages.length === 4 ? idx === 2 : idx === 1);
+            const name = isAr && pkg.nameAr ? pkg.nameAr : language === 'he' && pkg.nameHe ? pkg.nameHe : pkg.name;
+            const desc = isAr && pkg.descriptionAr ? pkg.descriptionAr : language === 'he' && pkg.descriptionHe ? pkg.descriptionHe : pkg.description;
+            const lessonsCount = Number(pkg.totalLessons) || (idx === 0 ? 4 : idx === 1 ? 8 : idx === 2 ? 12 : 16);
+            const perLesson = (Number(pkg.price) / lessonsCount).toFixed(2);
+            const frequency = getWeeklyFrequency(pkg);
+
+            return (
+              <div
+                key={pkg.id || idx}
+                className={`rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 relative bg-white dark:bg-slate-900 text-center ${
+                  isFeatured
+                    ? 'border-2 border-teal-500 dark:border-teal-400 shadow-xl shadow-teal-500/10 ring-1 ring-teal-500/20'
+                    : 'border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-lg hover:-translate-y-1'
+                }`}
+              >
+                {/* Recommended Badge for Featured Card */}
+                {isFeatured && (
+                  <div className="absolute -top-3.5 start-1/2 -translate-x-1/2 px-4 py-0.5 rounded-full bg-teal-500 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-wider shadow-sm">
+                    {loc('موصى به', 'מומלץ', 'RECOMMENDED')}
+                  </div>
+                )}
+
+                <div>
+                  {/* Big Number of Classes */}
+                  <div className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
+                    {lessonsCount}
+                  </div>
+                  <div className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">
+                    {loc('حصص شهرياً', 'שיעורים בחודש', 'classes a month')}
+                  </div>
+
+                  {/* Frequency Badge */}
+                  <div className="mt-3">
+                    <span className="inline-block px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                      {frequency}
+                    </span>
+                  </div>
+
+                  {/* Pricing Box */}
+                  <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-2xl sm:text-3xl font-black text-teal-800 dark:text-teal-300 tracking-tight">
+                        ₪{pkg.price}
+                      </span>
+                    </div>
+                    <div className="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+                      {loc('شهرياً', 'לחודש', 'per month')}
+                    </div>
+                    <div className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-1.5">
+                      ₪{perLesson} {loc('للحصة', 'לשיעור', 'a lesson')}
+                    </div>
+                  </div>
+
+                  {/* Features Bullet List */}
+                  <ul className="mt-6 mb-8 space-y-2.5 text-xs text-start text-slate-600 dark:text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 stroke-[2.5]" />
+                      <span>{loc('دروس عبرية خاصة 1-على-1', 'שיעורים פרטיים 1 על 1', '1-on-1 live English/Hebrew lessons')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 stroke-[2.5]" />
+                      <span>{loc('برنامج تعليمي مخصص', 'תוכנית לימוד אישית', 'Personalized learning')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 stroke-[2.5]" />
+                      <span>{loc('تدريبات وألعاب ذكية تفاعلية', 'תרגול חכם מבוסס AI ומשחקים', 'AI-powered practice')}</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 stroke-[2.5]" />
+                      <span>{loc('متابعة تقدم وتسجيلات فيديو', 'מעקב התקדמות והקלטות שיעורים', 'Progress tracking')}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Choose Plan CTA */}
+                <Link
+                  to={`/login?packageId=${pkg.id}&pkgName=${encodeURIComponent(name)}`}
+                  onClick={() => haptics.tap()}
+                  className={`w-full py-3 rounded-2xl font-black text-xs sm:text-sm text-center transition-all block ${
+                    isFeatured
+                      ? 'bg-teal-500 hover:bg-teal-600 text-white shadow-md hover:scale-[1.02]'
+                      : 'border-2 border-slate-200 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 text-slate-800 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 bg-white dark:bg-slate-900 shadow-2xs hover:shadow-xs'
                   }`}
-                />
-              ))}
-            </div>
-            <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-              {loc('مرر أفقياً أو استخدم الأسهم لمقارنة كافة الباقات', 'החלק אופקית או השתמש בחצים לצפייה בכל החבילות', 'Swipe horizontally or use arrows to compare all packages')}
+                >
+                  {loc('اختر المسار', 'בחר מסלול', 'Choose plan')}
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Advisor Consultation & WhatsApp Bar */}
+        <div className="mt-12 rounded-3xl bg-[#0b242e] text-white p-5 sm:p-7 flex flex-col md:flex-row items-center justify-between gap-5 shadow-2xl border border-teal-900/40">
+          <div className="text-center md:text-start space-y-1">
+            <span className="font-extrabold text-base sm:text-lg text-white block sm:inline">
+              {loc('غير متأكد أي باقة تناسبك؟', 'מתלבט איזה מסלול הכי מתאים לך?', 'Not sure which plan is right for you?')}
+            </span>
+            <span className="text-slate-300 text-xs sm:text-sm ms-0 sm:ms-2 block sm:inline">
+              {loc('تحدث مع مستشارينا التعليميين – نحن هنا للمساعدة.', 'דבר עם יועצי הלימוד שלנו – אנחנו כאן לעזור.', "Talk to our learning advisors — we're here to help.")}
             </span>
           </div>
-        )}
+
+          <div className="flex flex-wrap items-center justify-center gap-3 shrink-0">
+            <Link
+              to="/placement-test"
+              className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-white font-bold text-xs sm:text-sm transition-all shadow-md hover:scale-105"
+            >
+              {loc('احجز استشارة', 'קבע שיחת ייעוץ', 'Book a consultation')}
+            </Link>
+            <a
+              href={socials.whatsapp || 'https://wa.me/972506821213'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm transition-all shadow-md hover:scale-105"
+            >
+              <WhatsAppIcon className="w-4 h-4" />
+              <span>{loc('تواصل عبر واتساب', 'שוחח בוואטסאפ', 'Chat with us')}</span>
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* STUDENT TESTIMONIALS & FEEDBACK (Auto-Scrollable Carousel) */}
