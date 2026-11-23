@@ -23,6 +23,8 @@ import { LevelExamsTab } from '../../components/admin/LevelExamsTab';
 import { ReviewLinksTab } from '../../components/admin/ReviewLinksTab';
 import { PointRulesTab } from '../../components/admin/PointRulesTab';
 import { LanguagesTab } from '../../components/admin/LanguagesTab';
+import { WhatsAppIcon } from '../../components/common/SocialIcons';
+import { formatWhatsAppUrl } from '../../utils/whatsapp';
 import { PlatformSettingsNavModal } from '../../components/admin/PlatformSettingsNavModal';
 import { FamilyManagementModal } from '../../components/admin/FamilyManagementModal';
 import { AddChildModal } from '../../components/admin/AddChildModal';
@@ -2500,6 +2502,184 @@ export const AdminDashboard: React.FC = () => {
                             </div>
                           ))}
                         </div>
+
+                        {/* WhatsApp Advisor & Social Channels Control */}
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border-2 border-emerald-500/30 dark:border-emerald-500/40 shadow-xs space-y-4 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                              <WhatsAppIcon className="w-5 h-5 text-emerald-500" />
+                              <span>{language === 'he' ? 'מוקד ייעוץ וואטסאפ ורשתות חברתיות' : 'WhatsApp Advisor & Social Links'}</span>
+                            </h2>
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-black uppercase tracking-wider">
+                              {language === 'he' ? 'פעיל בדף הבית' : 'Active on Landing'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {language === 'he'
+                              ? 'שליטה ישירה על כפתור הוואטסאפ בסרגל הייעוץ התחתון של החבילות, מספר הטלפון וההודעות המותאמות אישית.'
+                              : 'Control the WhatsApp number for the package advisor bar and all social channels.'}
+                          </p>
+
+                          {/* WhatsApp Phone Number */}
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                              <span>{language === 'he' ? 'מספר וואטסאפ לשיחות ייעוץ' : 'WhatsApp Advisor Number / Link'}</span>
+                              <span className="text-rose-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="e.g. 050-682-1213 or +972506821213"
+                              value={cmsForm.socials?.whatsapp || ''}
+                              onChange={(e) =>
+                                setCmsForm({
+                                  ...cmsForm,
+                                  socials: { ...(cmsForm.socials || {}), whatsapp: e.target.value },
+                                })
+                              }
+                              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                            />
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                              {language === 'he'
+                                ? 'מקבל כל פורמט: 0506821213, +972 50-682-1213 או קישור מלא. המערכת מייצרת קישור wa.me תקני אוטומטית.'
+                                : 'Accepts any format: 0506821213, +972 50-682-1213, or direct URL. Auto-formatted into a functional wa.me link.'}
+                            </p>
+                          </div>
+
+                          {/* Pre-filled Consultation Messages */}
+                          <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                                {language === 'he' ? 'הודעת פתיחה אוטומטית (עברית)' : 'Pre-filled Consultation Message (Hebrew)'}
+                              </label>
+                              <input
+                                type="text"
+                                dir="rtl"
+                                placeholder="שלום Engrew, אשמח לקבל ייעוץ ופרטים לגבי מסלולי הלימוד."
+                                value={cmsForm.whatsappMessageHe || ''}
+                                onChange={(e) => setCmsForm({ ...cmsForm, whatsappMessageHe: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-hebrew"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                                {language === 'he' ? 'הודעת פתיחה אוטומטית (אנגלית)' : 'Pre-filled Consultation Message (English)'}
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Hi Engrew, I would like to get consultation regarding your lesson packages."
+                                value={cmsForm.whatsappMessageEn || ''}
+                                onChange={(e) => setCmsForm({ ...cmsForm, whatsappMessageEn: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                                {language === 'he' ? 'הודעת פתיחה אוטומטית (ערבית)' : 'Pre-filled Consultation Message (Arabic)'}
+                              </label>
+                              <input
+                                type="text"
+                                dir="rtl"
+                                placeholder="مرحباً Engrew، أود الاستفسار والحصول على استشارة بخصوص باقات ومسارات الدروس."
+                                value={cmsForm.whatsappMessageAr || ''}
+                                onChange={(e) => setCmsForm({ ...cmsForm, whatsappMessageAr: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Live Interactive WhatsApp Link Tester */}
+                          <div className="p-3.5 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 block">
+                                {language === 'he' ? 'קישור וואטסאפ שנוצר בפועל:' : 'Generated WhatsApp Action URL:'}
+                              </span>
+                              <span className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 truncate block mt-0.5">
+                                {formatWhatsAppUrl(
+                                  cmsForm.socials?.whatsapp,
+                                  language === 'he'
+                                    ? (cmsForm.whatsappMessageHe || 'שלום Engrew, אשמח לקבל ייעוץ ופרטים לגבי מסלולי הלימוד.')
+                                    : (cmsForm.whatsappMessageEn || 'Hi Engrew, I would like to get consultation regarding your lesson packages.')
+                                )}
+                              </span>
+                            </div>
+                            <a
+                              href={formatWhatsAppUrl(
+                                cmsForm.socials?.whatsapp,
+                                language === 'he'
+                                  ? (cmsForm.whatsappMessageHe || 'שלום Engrew, אשמח לקבל ייעוץ ופרטים לגבי מסלולי הלימוד.')
+                                  : (cmsForm.whatsappMessageEn || 'Hi Engrew, I would like to get consultation regarding your lesson packages.')
+                              )}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-xs transition-transform active:scale-95 shrink-0 flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>{language === 'he' ? 'בדיקת פתיחה בוואטסאפ' : 'Test WhatsApp'}</span>
+                            </a>
+                          </div>
+
+                          {/* Other Social Media Links */}
+                          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                              {language === 'he' ? 'רשתות חברתיות נוספות (קישורים)' : 'Additional Social Channels'}
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                  Instagram URL
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="https://instagram.com/engrew"
+                                  value={cmsForm.socials?.instagram || ''}
+                                  onChange={(e) =>
+                                    setCmsForm({
+                                      ...cmsForm,
+                                      socials: { ...(cmsForm.socials || {}), instagram: e.target.value },
+                                    })
+                                  }
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                  YouTube URL
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="https://youtube.com/@engrew"
+                                  value={cmsForm.socials?.youtube || ''}
+                                  onChange={(e) =>
+                                    setCmsForm({
+                                      ...cmsForm,
+                                      socials: { ...(cmsForm.socials || {}), youtube: e.target.value },
+                                    })
+                                  }
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                                  Telegram URL
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="https://t.me/engrew"
+                                  value={cmsForm.socials?.telegram || ''}
+                                  onChange={(e) =>
+                                    setCmsForm({
+                                      ...cmsForm,
+                                      socials: { ...(cmsForm.socials || {}), telegram: e.target.value },
+                                    })
+                                  }
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Right Column: Live Apple-Style Preview */}
@@ -2519,10 +2699,10 @@ export const AdminDashboard: React.FC = () => {
                           </a>
                         </div>
 
-                        <div className="bg-slate-100 dark:bg-slate-800/80 rounded-3xl p-4 border border-slate-300/80 dark:border-slate-700 shadow-inner">
+                        <div className="bg-slate-100 dark:bg-slate-800/80 rounded-3xl p-4 border border-slate-300/80 dark:border-slate-700 shadow-inner space-y-3">
                           {/* Announcement Preview */}
                           {cmsForm.announcementEn && (
-                            <div className="bg-gradient-to-r from-brand-teal-800 to-brand-olive-600 text-white py-1.5 px-3 rounded-t-xl text-[11px] font-semibold text-center mb-3 truncate">
+                            <div className="bg-gradient-to-r from-brand-teal-800 to-brand-olive-600 text-white py-1.5 px-3 rounded-t-xl text-[11px] font-semibold text-center truncate">
                               {cmsForm.announcementEn}
                             </div>
                           )}
@@ -2560,6 +2740,35 @@ export const AdminDashboard: React.FC = () => {
                                   <p className="text-[9px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">{feat.descEn}</p>
                                 </div>
                               ))}
+                            </div>
+                          </div>
+
+                          {/* Advisor Consultation Bar Preview */}
+                          <div className="p-3.5 rounded-2xl bg-[#0b242e] text-white flex flex-col sm:flex-row items-center justify-between gap-2 text-xs border border-teal-900/40 shadow-md">
+                            <div className="text-center sm:text-start">
+                              <span className="font-bold text-[11px] block">
+                                {language === 'he' ? 'מתלבט איזה מסלול הכי מתאים לך?' : 'Not sure which plan is right for you?'}
+                              </span>
+                              <span className="text-[10px] text-slate-300 block">
+                                {language === 'he' ? 'דבר עם יועצי הלימוד שלנו' : 'Talk to our learning advisors'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="px-2.5 py-1.5 bg-teal-500 text-white rounded-lg text-[10px] font-bold">
+                                {language === 'he' ? 'קבע שיחה' : 'Consultation'}
+                              </span>
+                              <a
+                                href={formatWhatsAppUrl(
+                                  cmsForm.socials?.whatsapp,
+                                  language === 'he' ? cmsForm.whatsappMessageHe : cmsForm.whatsappMessageEn
+                                )}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-xs transition-colors"
+                              >
+                                <WhatsAppIcon className="w-3 h-3" />
+                                <span>{language === 'he' ? 'שוחח בוואטסאפ' : 'Chat with us'}</span>
+                              </a>
                             </div>
                           </div>
                         </div>
@@ -3243,6 +3452,15 @@ export const AdminDashboard: React.FC = () => {
                           <ExternalLink className="w-4 h-4 text-brand-teal-300" />
                           <span>{language === 'he' ? 'צפה בדף הנחיתה' : 'View on Landing Page'}</span>
                         </a>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('landing_cms')}
+                          className="px-4 py-2.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                          title={language === 'he' ? 'שליטה על מספר הוואטסאפ של יועץ הלימודים והודעת הפתיחה' : 'Configure WhatsApp advisor contact number & message'}
+                        >
+                          <WhatsAppIcon className="w-4 h-4 text-emerald-400" />
+                          <span>{language === 'he' ? 'וואטסאפ ייעוץ' : 'Advisor WhatsApp'}</span>
+                        </button>
                         {can('packages:assign') && (
                           <button
                             onClick={() => setIsAssigningPkg(true)}

@@ -6,6 +6,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import { useAuthStore } from '../store/authStore';
 import { PriceDisplay } from '../components/common/PriceDisplay';
 import { haptics } from '../utils/haptics';
+import { formatWhatsAppUrl } from '../utils/whatsapp';
 import {
   WhatsAppIcon,
   InstagramIcon,
@@ -666,7 +667,7 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center gap-1.5">
                     {hasSocialLink(socials.whatsapp) && (
                       <a
-                        href={socials.whatsapp}
+                        href={formatWhatsAppUrl(socials.whatsapp)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-800/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:scale-110 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-all shadow-2xs"
@@ -1253,10 +1254,17 @@ export const LandingPage: React.FC = () => {
               {loc('احجز استشارة', 'קבע שיחת ייעוץ', 'Book a consultation')}
             </Link>
             <a
-              href={socials.whatsapp || 'https://wa.me/972506821213'}
+              href={formatWhatsAppUrl(
+                socials.whatsapp,
+                isAr
+                  ? (config.whatsappMessageAr || 'مرحباً Engrew، أود الاستفسار والحصول على استشارة بخصوص باقات ومسارات الدروس.')
+                  : isHe
+                  ? (config.whatsappMessageHe || 'שלום Engrew, אשמח לקבל ייעוץ ופרטים לגבי מסלולי הלימוד.')
+                  : (config.whatsappMessageEn || 'Hi Engrew, I would like to get consultation regarding your lesson packages.')
+              )}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm transition-all shadow-md hover:scale-105"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm transition-all shadow-md hover:scale-105 cursor-pointer"
             >
               <WhatsAppIcon className="w-4 h-4" />
               <span>{loc('تواصل عبر واتساب', 'שוחח בוואטסאפ', 'Chat with us')}</span>
@@ -1499,7 +1507,7 @@ export const LandingPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 {hasSocialLink(socials.whatsapp) && (
                   <a
-                    href={socials.whatsapp}
+                    href={formatWhatsAppUrl(socials.whatsapp)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:border-emerald-300 transition-colors shadow-2xs"
