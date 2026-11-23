@@ -19,12 +19,14 @@ import {
   Film,
   AlertCircle,
   Loader2,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 import { toast } from '../../store/toastStore';
 import { confirmDialog } from '../../store/confirmDialogStore';
+import { getAvatarUrl, processImageToWebP } from '../../utils/avatar';
 
 export interface TeacherVideo {
   id: string;
@@ -92,6 +94,16 @@ export const TeacherVideosTab: React.FC = () => {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch Platform Teachers
+  const { data: teachers = [], isLoading: isLoadingTeachers } = useQuery<any[]>({
+    queryKey: ['teachersListForVideos'],
+    queryFn: async () => {
+      const res = await api.get('/teachers');
+      return res.data?.teachers || [];
+    },
+  });
 
   // Fetch Teacher Videos
   const { data: videosData, isLoading } = useQuery<{ videos: TeacherVideo[] }>({
@@ -206,6 +218,58 @@ export const TeacherVideosTab: React.FC = () => {
     setVideoFile(null);
     setUploadProgress(null);
     setIsUploading(false);
+  };
+
+  // Avatar file upload & WebP conversion
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const webpDataUrl = await processImageToWebP(file, 400, 0.9);
+      setFormData((prev) => ({ ...prev, avatarUrl: webpDataUrl }));
+      toast.success(
+        language === 'he' ? 'תמונת הפרופיל עודכנה בהצלחה' : isAr ? 'تم تحديث الصورة الشخصية' : 'Avatar updated'
+      );
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to process avatar');
+    }
+  };
+
+  // Auto-fill from selected platform teacher
+  const handleSelectTeacher = (teacherId: string) => {
+    if (!teacherId || teacherId === 'custom') {
+      setFormData((prev) => ({
+        ...prev,
+        teacherId: undefined,
+      }));
+      return;
+    }
+
+    const teacher = teachers.find((t: any) => t.id === teacherId);
+    if (!teacher) return;
+
+    const fullName =
+      `${teacher.user?.firstName || ''} ${teacher.user?.lastName || ''}`.trim() ||
+      teacher.user?.email ||
+      '';
+    const avatar = teacher.user?.avatarUrl || '';
+    const specialtiesText =
+      Array.isArray(teacher.specialties) && teacher.specialties.length > 0
+        ? teacher.specialties.join(', ')
+        : 'Conversational Hebrew Specialist';
+    const ratingVal =
+      teacher.ratingAvg && teacher.ratingAvg > 0 ? Number(teacher.ratingAvg).toFixed(1) : '5.0';
+
+    setFormData((prev) => ({
+      ...prev,
+      teacherId: teacher.id,
+      teacherName: fullName,
+      avatarUrl: avatar || prev.avatarUrl,
+      specialtyEn: specialtiesText,
+      rating: ratingVal,
+      lessonsCount: teacher._count?.lessons || prev.lessonsCount || 120,
+      bioEn: teacher.bio || prev.bioEn,
+    }));
   };
 
   // Video File Selection & Automatic Canvas Thumbnail Generation
@@ -476,7 +540,7 @@ export const TeacherVideosTab: React.FC = () => {
                 <div className="p-5 space-y-3">
                   <div className="flex items-center gap-3">
                     <img
-                      src={vid.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                      src={getAvatarUrl(vid.avatarUrl) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
                       alt={vid.teacherName}
                       className="w-12 h-12 rounded-2xl object-cover ring-2 ring-brand-teal-500/30"
                     />
@@ -490,7 +554,7 @@ export const TeacherVideosTab: React.FC = () => {
                     </div>
                     {vid.rating && (
                       <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-black">
-                        <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                        <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                         <span>{vid.rating}</span>
                       </div>
                     )}
@@ -722,6 +786,89 @@ export const TeacherVideosTab: React.FC = () => {
                 </div>
               )}
 
+              {/* Choose from Platform Teachers Card */}
+              <div className="p-4 rounded-2xl bg-brand-teal-50/70 dark:bg-brand-teal-950/30 border border-brand-teal-500/25 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-brand-teal-700 dark:text-teal-300" />
+                    <label className="block text-xs font-black uppercase tracking-wider text-brand-teal-950 dark:text-teal-200">
+                      {language === 'he'
+                        ? 'בחר מורה קיים מהפלטפורמה'
+                        : isAr
+                        ? 'اختر معلماً مسجلاً في المنصة'
+                        : 'Choose from Platform Teachers'}
+                    </label>
+                  </div>
+                  {formData.teacherId && (
+                    <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      ✓ {language === 'he' ? 'מקושר לחשבון מורה' : isAr ? 'مرتبط بحساب المعلم' : 'Linked to Platform Teacher'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border-2 border-brand-teal-500/30 overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
+                    {formData.avatarUrl ? (
+                      <img
+                        src={getAvatarUrl(formData.avatarUrl)}
+                        alt={formData.teacherName || 'Teacher'}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Users className="w-6 h-6 text-brand-teal-600 dark:text-teal-400" />
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <select
+                      value={formData.teacherId || (editingVideo && !formData.teacherId ? 'custom' : '')}
+                      onChange={(e) => handleSelectTeacher(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-brand-teal-500 focus:outline-none"
+                    >
+                      <option value="">
+                        {isLoadingTeachers
+                          ? language === 'he'
+                            ? 'טוען רשימת מורים...'
+                            : 'Loading teachers...'
+                          : language === 'he'
+                          ? '-- בחר מורה מתוך המערכת (מילוי פרטים אוטומטי) --'
+                          : isAr
+                          ? '-- اختر معلماً مسجلاً في المنصة (تعبئة تلقائية) --'
+                          : '-- Select registered teacher from platform (Auto-fills) --'}
+                      </option>
+                      {teachers.map((t: any) => {
+                        const tName =
+                          `${t.user?.firstName || ''} ${t.user?.lastName || ''}`.trim() ||
+                          t.user?.email ||
+                          'Teacher';
+                        return (
+                          <option key={t.id} value={t.id}>
+                            {tName} {t.user?.email ? `(${t.user.email})` : ''}
+                          </option>
+                        );
+                      })}
+                      <option value="custom">
+                        {language === 'he'
+                          ? '✏️ הזנה ידנית / מורה מותאם אישית'
+                          : isAr
+                          ? '✏️ إدخال يدوي / معلم مخصص'
+                          : '✏️ Custom / Manual Teacher Entry'}
+                      </option>
+                    </select>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                      {language === 'he'
+                        ? 'בחירת מורה תייבא באופן אוטומטי את השם, תמונת הפרופיל, תחומי המומחיות והדירוג ישירות מהחשבון שלו.'
+                        : isAr
+                        ? 'اختيار المعلم سيقوم بتعبئة الاسم وصورة البروفايل والتخصص والتقييم تلقائياً من حسابه في المنصة.'
+                        : 'Selecting a teacher automatically imports their name, avatar, specialties, and rating from their profile.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Teacher Names (Bilingual) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
@@ -837,16 +984,49 @@ export const TeacherVideosTab: React.FC = () => {
               {/* Avatar & Thumbnail URLs */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'he' ? 'תמונת פרופיל מורה (Avatar URL)' : 'Teacher Avatar URL'}
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={formData.avatarUrl || ''}
-                    onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {language === 'he' ? 'תמונת פרופיל מורה (Avatar URL)' : 'Teacher Avatar URL'}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => avatarFileInputRef.current?.click()}
+                      className="text-[10px] font-bold text-brand-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>{language === 'he' ? 'העלאת תמונה' : isAr ? 'رفع صورة' : 'Upload photo'}</span>
+                    </button>
+                    <input
+                      ref={avatarFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileChange}
+                      className="hidden"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden shrink-0 flex items-center justify-center">
+                      {formData.avatarUrl ? (
+                        <img
+                          src={getAvatarUrl(formData.avatarUrl)}
+                          alt="Avatar"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <Users className="w-4 h-4 text-slate-400" />
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="https://... or upload photo"
+                      value={formData.avatarUrl || ''}
+                      onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                      className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">

@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore';
 import { PriceDisplay } from '../components/common/PriceDisplay';
 import { haptics } from '../utils/haptics';
 import { formatWhatsAppUrl } from '../utils/whatsapp';
+import { getAvatarUrl } from '../utils/avatar';
 import {
   WhatsAppIcon,
   InstagramIcon,
@@ -1148,7 +1149,7 @@ export const LandingPage: React.FC = () => {
                     <div className="p-5 sm:p-6 space-y-3">
                       <div className="flex items-center gap-3">
                         <img
-                          src={tv.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                          src={getAvatarUrl(tv.avatarUrl) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
                           alt={name}
                           className="w-12 h-12 rounded-2xl object-cover ring-2 ring-brand-teal-500/30"
                           loading="lazy"
@@ -1251,7 +1252,7 @@ export const LandingPage: React.FC = () => {
                 <div className="p-5 sm:p-6 bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800">
                   <div className="flex items-center gap-3 w-full sm:w-auto">
                     <img
-                      src={activeTeacherVideo.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                      src={getAvatarUrl(activeTeacherVideo.avatarUrl) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
                       alt={activeTeacherVideo.teacherName}
                       className="w-12 h-12 rounded-2xl object-cover ring-2 ring-brand-teal-500/40"
                     />
