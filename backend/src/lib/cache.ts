@@ -13,18 +13,25 @@ const hasRedisConfig = !!process.env.REDIS_URL;
 const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 let isRedisReady = false;
 
-export const redis = new Redis(redisUrl, {
+const redisOptions: any = {
   lazyConnect: true,
   maxRetriesPerRequest: 1,
-  connectTimeout: 2000,
+  connectTimeout: 3000,
   enableOfflineQueue: false,
-  retryStrategy(times) {
-    if (!hasRedisConfig || times > 1) {
-      return null; // Stop retrying if no explicit REDIS_URL or after 1 try
+  retryStrategy(times: number) {
+    if (!hasRedisConfig || times > 2) {
+      return null; // Stop retrying if no explicit REDIS_URL or after 2 tries
     }
     return 1000;
   },
-});
+};
+
+// Automatic TLS handling for Upstash Redis / Redis Cloud (rediss://)
+if (redisUrl.startsWith('rediss://')) {
+  redisOptions.tls = { rejectUnauthorized: false };
+}
+
+export const redis = new Redis(redisUrl, redisOptions);
 
 redis.on('connect', () => {
   isRedisReady = true;
@@ -40,6 +47,10 @@ if (hasRedisConfig) {
   redis.connect().catch(() => {
     isRedisReady = false;
   });
+}
+
+export function getIsRedisReady(): boolean {
+  return isRedisReady;
 }
 
 /**
