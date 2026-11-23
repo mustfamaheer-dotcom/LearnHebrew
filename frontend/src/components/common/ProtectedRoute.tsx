@@ -9,17 +9,25 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   const { user, accessToken } = useAuthStore();
+  const storedToken = typeof window !== 'undefined' ? localStorage.getItem('learnhebrew_token') : null;
+  const storedUserRaw = typeof window !== 'undefined' ? localStorage.getItem('learnhebrew_user') : null;
 
-  if (!accessToken || !user) {
+  const effectiveToken = accessToken || storedToken;
+  const effectiveUser = user || (storedUserRaw ? JSON.parse(storedUserRaw) : null);
+
+  if (!effectiveToken || !effectiveUser) {
     return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
-    // SUPER_ADMIN has access to everything
-    if (user.role !== 'SUPER_ADMIN' && !allowedRoles.includes(user.role)) {
+    // SUPER_ADMIN and ADMIN have access to admin-level sections
+    if (effectiveUser.role !== 'SUPER_ADMIN' && !allowedRoles.includes(effectiveUser.role)) {
       // Redirect to user's appropriate home
-      if (user.role === 'TEACHER') return <Navigate to="/teacher" replace />;
-      if (user.role === 'STUDENT') return <Navigate to="/student" replace />;
+      if (effectiveUser.role === 'ADMIN') return <Navigate to="/admin" replace />;
+      if (effectiveUser.role === 'TEACHER') return <Navigate to="/teacher" replace />;
+      if (effectiveUser.role === 'STUDENT') return <Navigate to="/student" replace />;
+      if (effectiveUser.role === 'SALES') return <Navigate to="/sales" replace />;
+      if (effectiveUser.role === 'CS') return <Navigate to="/cs" replace />;
       return <Navigate to="/" replace />;
     }
   }

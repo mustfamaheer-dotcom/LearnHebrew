@@ -211,20 +211,43 @@ export async function refreshToken(oldToken: string, ipAddress?: string, userAge
     where: { tokenHash: oldHash },
   });
 
-  if (!storedToken || storedToken.revoked || storedToken.expiresAt < new Date()) {
-    // Possible token reuse attack: revoke all tokens for this user family
-    if (storedToken?.revoked) {
-      await prisma.refreshToken.updateMany({
-        where: { userId: payload.userId },
-        data: { revoked: true },
-      });
-      await logAuditEvent({
+  if (!storedToken || storedToken.expiresAt < new Date()) {
+    throw { status: 401, message: 'Invalid or expired refresh token' };
+  }
+
+  // Handle Token Rotation & Grace Period for Concurrent Requests
+  if (storedToken.revoked) {
+    // Check if a new active refresh token was generated for this user recently (within 60 seconds)
+    // This happens legitimately when multiple async requests fire at the same time upon page load
+    const recentActiveToken = await prisma.refreshToken.findFirst({
+      where: {
         userId: payload.userId,
-        action: 'REFRESH_TOKEN_REUSE_DETECTED',
-        ipAddress,
-        userAgent,
-      });
+        revoked: false,
+        expiresAt: { gt: new Date() },
+        createdAt: { gte: new Date(Date.now() - 60 * 1000) },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (recentActiveToken) {
+      // Allow concurrent request within grace period without wiping all sessions
+      const newPayload = {
+        userId: payload.userId,
+        email: payload.email,
+        role: payload.role,
+      };
+      const accessToken = generateAccessToken(newPayload);
+      return { accessToken, refreshToken: oldToken };
     }
+
+    // Only if outside the 60s grace window do we log the reuse attempt
+    await logAuditEvent({
+      userId: payload.userId,
+      action: 'REFRESH_TOKEN_REUSE_DETECTED',
+      ipAddress,
+      userAgent,
+    });
+
     throw { status: 401, message: 'Invalid or revoked refresh token' };
   }
 

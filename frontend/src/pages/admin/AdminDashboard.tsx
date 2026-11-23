@@ -347,11 +347,45 @@ export const AdminDashboard: React.FC = () => {
   const [assignPkgId, setAssignPkgId] = useState('');
   const [assignStudentId, setAssignStudentId] = useState('');
 
+  // Fallback session types in case of network latency
+  const FALLBACK_SESSION_TYPES = [
+    {
+      id: '6b733965-d6dd-4f12-9505-9bc548793277',
+      name: '25min',
+      durationMinutes: 25,
+      labelEn: '25-Min Focus Block',
+      labelHe: 'בלוק מיקוד 25 דקות',
+      isActive: true,
+    },
+    {
+      id: 'c8501b5c-91e5-4298-bd38-deb5196cb9ee',
+      name: '40min',
+      durationMinutes: 40,
+      labelEn: '40-Min Standard Session',
+      labelHe: 'שיעור סטנדרטי 40 דקות',
+      isActive: true,
+    },
+    {
+      id: '47d1cf7a-4827-4dc3-bc2b-2606a9657228',
+      name: '55min',
+      durationMinutes: 55,
+      labelEn: '55-Min Intensive Deep Dive',
+      labelHe: 'שיעור עומק 55 דקות',
+      isActive: true,
+    },
+  ];
+
   // Dynamic Session Types for Automatic Package Allocation
   const { data: sessionTypes = [] } = useQuery({
     queryKey: ['session-types'],
     queryFn: sessionTypesApi.list,
   });
+
+  const activeSessionTypes = useMemo(() => {
+    return Array.isArray(sessionTypes) && sessionTypes.length > 0
+      ? sessionTypes
+      : FALLBACK_SESSION_TYPES;
+  }, [sessionTypes]);
 
   const handleOpenCreatePackage = () => {
     setEditingPkg(null);
@@ -364,9 +398,9 @@ export const AdminDashboard: React.FC = () => {
       originalPrice: '',
       onSale: false,
       isPopular: false,
-      currency: 'USD',
+      currency: 'ILS',
       validityDays: 30,
-      sessionItems: sessionTypes.map((st) => ({
+      sessionItems: activeSessionTypes.map((st) => ({
         sessionTypeId: st.id,
         quantity: st.durationMinutes === 25 ? 10 : 0,
       })),
@@ -376,6 +410,27 @@ export const AdminDashboard: React.FC = () => {
 
   const handleOpenEditPackage = (pkg: any) => {
     setEditingPkg(pkg);
+    const existingLessons = Number(pkg.totalLessons ?? pkg.lessonsCount ?? 0);
+    const mappedItems = activeSessionTypes.map((st) => {
+      const found = pkg.sessionItems?.find((si: any) => si.sessionTypeId === st.id);
+      if (found) {
+        return { sessionTypeId: st.id, quantity: Number(found.quantity) || 0 };
+      }
+      if (existingLessons > 0 && st.durationMinutes === 25) {
+        return { sessionTypeId: st.id, quantity: existingLessons };
+      }
+      return { sessionTypeId: st.id, quantity: 0 };
+    });
+
+    const sumQty = mappedItems.reduce((acc, curr) => acc + curr.quantity, 0);
+    if (sumQty === 0) {
+      const focus = mappedItems.find((i) => {
+        const st = activeSessionTypes.find((s) => s.id === i.sessionTypeId);
+        return st?.durationMinutes === 25;
+      }) || mappedItems[0];
+      if (focus) focus.quantity = existingLessons > 0 ? existingLessons : 10;
+    }
+
     setPkgForm({
       name: pkg.name || pkg.nameEn || '',
       nameHe: pkg.nameHe || '',
@@ -385,19 +440,29 @@ export const AdminDashboard: React.FC = () => {
       originalPrice: pkg.originalPrice ? Number(pkg.originalPrice) : '',
       onSale: Boolean(pkg.onSale),
       isPopular: Boolean(pkg.isPopular),
-      currency: pkg.currency || 'USD',
+      currency: pkg.currency || 'ILS',
       validityDays: Math.min(Number(pkg.validityDays ?? pkg.durationDays ?? 30), 30),
-      sessionItems: sessionTypes.map((st) => {
-        const found = pkg.sessionItems?.find((si: any) => si.sessionTypeId === st.id);
-        return {
-          sessionTypeId: st.id,
-          quantity: found
-            ? Number(found.quantity)
-            : (pkg.lessonsCount && st.durationMinutes === 25 ? Number(pkg.lessonsCount) : 0),
-        };
-      }),
+      sessionItems: mappedItems,
     });
     setIsCreatingPackage(true);
+  };
+
+  const handleTotalSessionsChange = (newTotal: number) => {
+    const val = Math.max(1, newTotal);
+    const primarySt = activeSessionTypes.find((s) => s.durationMinutes === 25) || activeSessionTypes[0];
+    const otherSum = pkgForm.sessionItems
+      .filter((si) => si.sessionTypeId !== primarySt.id)
+      .reduce((acc, curr) => acc + Number(curr.quantity), 0);
+
+    const primaryQty = Math.max(0, val - otherSum);
+    const updated = activeSessionTypes.map((st) => {
+      if (st.id === primarySt.id) {
+        return { sessionTypeId: st.id, quantity: primaryQty > 0 ? primaryQty : val };
+      }
+      const existing = pkgForm.sessionItems.find((si) => si.sessionTypeId === st.id);
+      return { sessionTypeId: st.id, quantity: primaryQty > 0 ? (existing?.quantity || 0) : 0 };
+    });
+    setPkgForm({ ...pkgForm, sessionItems: updated });
   };
 
   // Detailed User Accounts & Roles Management State
@@ -740,8 +805,17 @@ export const AdminDashboard: React.FC = () => {
 
   const savePackageMutation = useMutation({
     mutationFn: async () => {
-      const activeSessionItems = pkgForm.sessionItems.filter((si) => Number(si.quantity) > 0);
-      const totalLessons = activeSessionItems.reduce((acc, curr) => acc + Number(curr.quantity), 0);
+      let activeSessionItems = pkgForm.sessionItems.filter((si) => Number(si.quantity) > 0);
+      let totalLessons = activeSessionItems.reduce((acc, curr) => acc + Number(curr.quantity), 0);
+
+      if (totalLessons === 0) {
+        const default25 = activeSessionTypes.find((s) => s.durationMinutes === 25) || activeSessionTypes[0];
+        if (default25) {
+          activeSessionItems = [{ sessionTypeId: default25.id, quantity: 10 }];
+          totalLessons = 10;
+        }
+      }
+
       const payload = {
         name: pkgForm.name.trim(),
         nameEn: pkgForm.name.trim(),
@@ -753,7 +827,7 @@ export const AdminDashboard: React.FC = () => {
         originalPrice: pkgForm.originalPrice ? Number(pkgForm.originalPrice) : null,
         onSale: Boolean(pkgForm.onSale),
         isPopular: Boolean(pkgForm.isPopular),
-        currency: pkgForm.currency || 'USD',
+        currency: pkgForm.currency || 'ILS',
         validityDays: Math.min(Number(pkgForm.validityDays) || 30, 30),
         sessionItems: activeSessionItems.map((si) => ({
           sessionTypeId: si.sessionTypeId,
@@ -4292,8 +4366,81 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
+            {/* Primary Total Lessons Quick Selector */}
+            <div className="p-4 rounded-xl bg-white dark:bg-slate-850 border border-brand-teal-300 dark:border-brand-teal-700/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-brand-teal-500" />
+                  {language === 'he' ? 'כמות שיעורים בחבילה (מספר השיעורים הכולל)' : 'Total Lessons in Package (Number of Sessions)'}
+                </label>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {language === 'he'
+                    ? 'בחר כמות מהירה או הקלד ידנית את מספר השיעורים הרצוי'
+                    : 'Select a quick preset or enter the exact number of sessions'}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Presets */}
+                <div className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-0.5">
+                  {[5, 10, 15, 20, 30].map((preset) => {
+                    const totalCurrent = pkgForm.sessionItems.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
+                    const isSelected = totalCurrent === preset;
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => handleTotalSessionsChange(preset)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-brand-teal-600 text-white shadow-xs'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:white'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Direct Number Input with Stepper */}
+                <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const totalCurrent = pkgForm.sessionItems.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
+                      handleTotalSessionsChange(Math.max(1, totalCurrent - 1));
+                    }}
+                    className="w-6 h-6 rounded bg-white dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center text-sm shadow-xs cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={pkgForm.sessionItems.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0)}
+                    onChange={(e) => handleTotalSessionsChange(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="w-14 text-center font-black text-sm text-brand-teal-700 dark:text-brand-teal-300 bg-transparent focus:outline-hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const totalCurrent = pkgForm.sessionItems.reduce((acc, curr) => acc + (Number(curr.quantity) || 0), 0);
+                      handleTotalSessionsChange(totalCurrent + 1);
+                    }}
+                    className="w-6 h-6 rounded bg-brand-teal-100 dark:bg-brand-teal-900 hover:bg-brand-teal-200 text-brand-teal-800 dark:text-brand-teal-200 font-bold flex items-center justify-center text-sm cursor-pointer"
+                  >
+                    +
+                  </button>
+                  <span className="text-[11px] font-bold text-slate-400 ms-1">
+                    {language === 'he' ? 'שיעורים' : 'lessons'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {sessionTypes.map((st) => {
+              {activeSessionTypes.map((st) => {
                 const found = pkgForm.sessionItems.find((si) => si.sessionTypeId === st.id);
                 const qty = found ? Number(found.quantity) : 0;
                 const hasQuantity = qty > 0;

@@ -21,7 +21,9 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
+  const token =
+    useAuthStore.getState().accessToken ||
+    (typeof window !== 'undefined' ? localStorage.getItem('learnhebrew_token') : null);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -59,7 +61,7 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && originalRequest && !isAuthRoute) {
       if (originalRequest._retry) {
-        useAuthStore.getState().logout();
+        // Do not force logout on a single failed retry; reject the error so calling components handle it gracefully
         return Promise.reject(error);
       }
 
@@ -78,7 +80,11 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const storedRefreshToken = localStorage.getItem('learnhebrew_refresh_token');
+        const storedRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('learnhebrew_refresh_token') : null;
+        if (!storedRefreshToken) {
+          throw new Error('No refresh token available');
+        }
+
         const refreshResponse = await axios.post(
           `${api.defaults.baseURL}/auth/refresh`,
           { refreshToken: storedRefreshToken },
@@ -102,9 +108,12 @@ api.interceptors.response.use(
 
         processQueue(null, newAccessToken);
         return api(originalRequest);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         processQueue(refreshError, null);
-        useAuthStore.getState().logout();
+        // Only trigger logout if refresh token was rejected by server with 401
+        if (refreshError?.response?.status === 401 || !localStorage.getItem('learnhebrew_token')) {
+          useAuthStore.getState().logout();
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
