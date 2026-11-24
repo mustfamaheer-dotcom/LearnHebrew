@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import { toast } from '../store/toastStore';
+import { getUserDashboardPath } from '../utils/navigation';
 import {
   Lock,
   Mail,
@@ -33,8 +34,16 @@ export const LoginPage: React.FC = () => {
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
 
   const setAuth = useAuthStore((state) => state.setAuth);
+  const user = useAuthStore((state) => state.user);
   const { t, language, isRtl } = useTranslation();
   const navigate = useNavigate();
+
+  // If candidate or user is already logged in, redirect directly to their dashboard
+  React.useEffect(() => {
+    if (user) {
+      navigate(getUserDashboardPath(user.role), { replace: true });
+    }
+  }, [user, navigate]);
 
   // Active countdown timer for account lockout
   React.useEffect(() => {

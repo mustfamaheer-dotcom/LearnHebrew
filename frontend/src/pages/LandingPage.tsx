@@ -43,7 +43,9 @@ import {
   ShieldCheck,
   Zap,
   Calendar,
+  LayoutDashboard,
 } from 'lucide-react';
+import { getUserDashboardPath, getDashboardButtonLabel } from '../utils/navigation';
 
 export const LandingPage: React.FC = () => {
   const { t, language } = useTranslation();
@@ -116,10 +118,10 @@ export const LandingPage: React.FC = () => {
       'Live 1-on-1 private video lessons (25-minute focused sessions) with certified native tutors in Israel, interactive gamification, and permanent cloud recordings.';
 
   const ctaStudent = isAr
-    ? config.ctaStudentAr || t('landing.ctaStudent') || 'الانتقال إلى لوحة التحكم'
+    ? config.ctaStudentAr || (user ? getDashboardButtonLabel(user.role, 'ar') : t('landing.ctaStudent') || 'الانتقال إلى لوحة التحكم')
     : isHe
-    ? config.ctaStudentHe || 'מעבר ללוח הבקרה שלי'
-    : config.ctaStudentEn || 'Go to My Dashboard';
+    ? config.ctaStudentHe || (user ? getDashboardButtonLabel(user.role, 'he') : 'מעבר ללוח הבקרה שלי')
+    : config.ctaStudentEn || (user ? getDashboardButtonLabel(user.role, 'en') : 'Go to My Dashboard');
 
   const ctaLogin = isAr
     ? config.ctaLoginAr || t('landing.ctaLogin') || 'ابدأ التعلم الآن'
@@ -597,6 +599,33 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="w-full max-w-full overflow-x-hidden space-y-10 sm:space-y-20 pb-20">
+      {/* Logged-In User Quick Return Banner */}
+      {user && (
+        <div className="w-full bg-gradient-to-r from-brand-teal-900 via-brand-teal-950 to-brand-teal-900 border-b border-brand-teal-700/50 text-white py-2.5 px-3 sm:px-6 shadow-sm">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 text-xs sm:text-sm">
+            <div className="flex items-center gap-2.5 text-center sm:text-start">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="font-semibold text-slate-200">
+                {language === 'he'
+                  ? `שלום ${user.firstName}! אתה מחובר כעת לחשבון שלך.`
+                  : isAr
+                  ? `مرحباً ${user.firstName}! أنت مسجل الدخول حالياً بحسابك.`
+                  : `Welcome back, ${user.firstName}! You are currently signed in.`}
+              </span>
+            </div>
+            <Link
+              to={getUserDashboardPath(user.role)}
+              onClick={() => haptics.tap()}
+              className="px-5 py-1.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer shrink-0"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5 text-slate-950" />
+              <span>{getDashboardButtonLabel(user.role, language as any)}</span>
+              <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* HERO SECTION */}
       <section className="relative pt-6 sm:pt-16 pb-12 sm:pb-24 overflow-hidden w-full max-w-full">
         {/* Modern Luminous Background Atmosphere - Clear, Modern & Professional */}
@@ -643,16 +672,11 @@ export const LandingPage: React.FC = () => {
               <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full">
                 {user ? (
                   <Link
-                    to={
-                      user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'
-                        ? '/admin'
-                        : user.role === 'TEACHER'
-                        ? '/teacher'
-                        : '/student'
-                    }
+                    to={getUserDashboardPath(user.role)}
                     onClick={() => haptics.tap()}
-                    className="w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3.5 text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-700 hover:to-brand-teal-900 rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all flex items-center justify-center gap-2 group ring-2 ring-brand-teal-600/30 text-center"
+                    className="w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3.5 text-xs sm:text-sm font-extrabold text-white bg-gradient-to-r from-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-700 hover:to-brand-teal-900 rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl transition-all flex items-center justify-center gap-2 group ring-2 ring-brand-teal-600/30 text-center cursor-pointer"
                   >
+                    <LayoutDashboard className="w-4 h-4 text-brand-olive-400 group-hover:scale-110 transition-transform" />
                     <span>{ctaStudent}</span>
                     <ArrowRight className="w-4 h-4 rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
                   </Link>

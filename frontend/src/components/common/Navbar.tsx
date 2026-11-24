@@ -14,9 +14,12 @@ import {
   ChevronDown,
   Check,
   Award,
+  LayoutDashboard,
+  ArrowRight,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { getAvatarUrl } from '../../utils/avatar';
+import { getUserDashboardPath, getDashboardButtonLabel } from '../../utils/navigation';
 
 const LANGUAGES_LIST: { code: LanguagePref; label: string; nativeLabel: string; flag: string; short: string }[] = [
   { code: 'en', label: 'English', nativeLabel: 'English', flag: '🇺🇸', short: 'EN' },
@@ -195,12 +198,41 @@ export const Navbar: React.FC = () => {
             </div>
 
             {user ? (
-              <div className="flex items-center gap-1 sm:gap-2">
-                <button
-                  type="button"
-                  onClick={openProfileModal}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* 1-Click Direct Access to Dashboard */}
+                <Link
+                  to={getUserDashboardPath(user.role)}
+                  className="flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-700 hover:to-brand-teal-900 text-white font-extrabold text-xs shadow-sm hover:shadow-md transition-all group shrink-0 ring-1 ring-brand-teal-600/40"
+                  title={getDashboardButtonLabel(user.role, language as any)}
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5 text-brand-olive-400 group-hover:scale-110 transition-transform" />
+                  <span className="inline">
+                    {language === 'he'
+                      ? user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+                        ? 'ניהול המערכת'
+                        : user.role === 'TEACHER'
+                        ? 'אזור המורה'
+                        : 'לוח הבקרה'
+                      : language === 'ar'
+                      ? user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+                        ? 'إدارة المنصة'
+                        : user.role === 'TEACHER'
+                        ? 'منطقة المعلم'
+                        : 'لوحة التحكم'
+                      : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+                      ? 'Admin Hub'
+                      : user.role === 'TEACHER'
+                      ? 'Teacher Hub'
+                      : 'Dashboard'}
+                  </span>
+                  <ArrowRight className="w-3 h-3 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform" />
+                </Link>
+
+                {/* User Profile Pill -> Also links directly to Dashboard */}
+                <Link
+                  to={getUserDashboardPath(user.role)}
                   className="flex items-center gap-2 h-8 sm:h-9 p-0.5 sm:p-1 sm:ps-1 sm:pe-3 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group shrink-0"
-                  title={language === 'he' ? 'ערוך פרופיל ושנה סיסמה' : 'Edit profile & change password'}
+                  title={getDashboardButtonLabel(user.role, language as any)}
                 >
                   <div className="w-7 h-7 sm:w-7 sm:h-7 rounded-lg overflow-hidden bg-gradient-to-br from-brand-teal-600 to-indigo-700 text-white flex items-center justify-center font-black text-xs shadow-2xs shrink-0 ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
                     {user.avatarUrl ? (
@@ -235,7 +267,7 @@ export const Navbar: React.FC = () => {
                         : user.role}
                     </span>
                   </div>
-                </button>
+                </Link>
 
                 {/* Settings button shown on sm+ screens; on mobile the avatar already opens profile & settings */}
                 <button
