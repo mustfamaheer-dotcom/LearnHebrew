@@ -51,6 +51,21 @@ interface Question {
 
 type Lang = 'he' | 'en' | 'ar';
 
+/**
+ * Strips any Hebrew or Arabic translations in parentheses, brackets, or after dashes/slashes,
+ * guaranteeing the placement test question and options render in clean, pure English only.
+ */
+function cleanEnglishText(str?: string | null): string {
+  if (!str) return '';
+  // 1. Strip any parenthesized block containing Hebrew or Arabic characters
+  let cleaned = str.replace(/\s*\([^)]*[\u0590-\u05FF\u0600-\u06FF][^)]*\)/g, '');
+  // 2. Strip any bracketed block containing Hebrew or Arabic characters
+  cleaned = cleaned.replace(/\s*\[[^\]]*[\u0590-\u05FF\u0600-\u06FF][^\]]*\]/g, '');
+  // 3. Strip any trailing Hebrew or Arabic phrases separated by dashes or slashes
+  cleaned = cleaned.replace(/\s*[-—/]\s*[\u0590-\u05FF\u0600-\u06FF\s]+$/g, '');
+  return cleaned.trim();
+}
+
 export const PlacementTestPage: React.FC = () => {
   const globalLang = useAuthStore((state) => state.language);
   const setGlobalLang = useAuthStore((state) => state.setLanguage);
@@ -95,12 +110,14 @@ export const PlacementTestPage: React.FC = () => {
   const timerRef = useRef<any>(null);
 
   const isRTL = lang === 'he' || lang === 'ar';
+  const isExamActive = step === 'exam';
+  const effectiveIsRTL = isExamActive ? false : isRTL;
 
   // Apply direction to HTML element on change
   useEffect(() => {
-    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
-    document.documentElement.lang = lang;
-  }, [lang, isRTL]);
+    document.documentElement.dir = effectiveIsRTL ? 'rtl' : 'ltr';
+    document.documentElement.lang = isExamActive ? 'en' : lang;
+  }, [lang, effectiveIsRTL, isExamActive]);
 
   // Load questions on mount
   useEffect(() => {
@@ -431,45 +448,55 @@ export const PlacementTestPage: React.FC = () => {
   }[lang];
 
   return (
-    <div className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans ${isRTL ? 'rtl' : 'ltr'}`}>
+    <div
+      className={`min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans ${effectiveIsRTL ? 'rtl' : 'ltr'}`}
+      dir={effectiveIsRTL ? 'rtl' : 'ltr'}
+    >
       {/* Top Header Navigation */}
       <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 lg:px-8 py-3 flex items-center justify-center shadow-xs">
-        {/* Native Language Selector Switcher */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-          <button
-            onClick={() => handleLangChange('he')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              lang === 'he'
-                ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span>🇮🇱</span>
-            <span>עברית</span>
-          </button>
-          <button
-            onClick={() => handleLangChange('ar')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              lang === 'ar'
-                ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span>🇸🇦</span>
-            <span>العربية</span>
-          </button>
-          <button
-            onClick={() => handleLangChange('en')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-              lang === 'en'
-                ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <span>🇺🇸</span>
-            <span>English</span>
-          </button>
-        </div>
+        {isExamActive ? (
+          <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200" dir="ltr">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Engrew Academy • English Placement Test</span>
+          </div>
+        ) : (
+          /* Native Language Selector Switcher */
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => handleLangChange('he')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                lang === 'he'
+                  ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>🇮🇱</span>
+              <span>עברית</span>
+            </button>
+            <button
+              onClick={() => handleLangChange('ar')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                lang === 'ar'
+                  ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>🇸🇦</span>
+              <span>العربية</span>
+            </button>
+            <button
+              onClick={() => handleLangChange('en')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                lang === 'en'
+                  ? 'bg-white dark:bg-slate-900 text-teal-600 dark:text-teal-400 shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <span>🇺🇸</span>
+              <span>English</span>
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Main Container */}
@@ -726,15 +753,15 @@ export const PlacementTestPage: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* STEP 3: EXAM INTERACTIVE EXPERIENCE                                       */}
+        {/* STEP 3: EXAM INTERACTIVE EXPERIENCE (STRICTLY PURE ENGLISH ONLY)           */}
         {/* ========================================================================= */}
         {step === 'exam' && questions.length > 0 && (
-          <div className="space-y-6 animate-in fade-in duration-200">
+          <div className="space-y-6 animate-in fade-in duration-200" dir="ltr">
             {/* Sticky Header with Timer & Progress */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4" dir="ltr">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300">
-                  {t.exam.questionOf} {currentIndex + 1} {t.exam.of} {questions.length}
+                  Question {currentIndex + 1} of {questions.length}
                 </span>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400">
                   CEFR: {questions[currentIndex]?.level || 'A1'}
@@ -755,87 +782,63 @@ export const PlacementTestPage: React.FC = () => {
             </div>
 
             {/* Progress Bar */}
-            <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+            <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden" dir="ltr">
               <div
                 className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-300"
                 style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
               />
             </div>
 
-            {/* Current Question Card */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 lg:p-10 shadow-sm space-y-6">
-              <div className="space-y-1">
+            {/* Current Question Card - Pure English Text */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 lg:p-10 shadow-sm space-y-6" dir="ltr">
+              <div className="space-y-1 text-left">
                 <span className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">
                   #{questions[currentIndex]?.orderNumber}
                 </span>
                 <h3 className="text-xl lg:text-2xl font-extrabold text-slate-900 dark:text-white leading-snug">
-                  {lang === 'he' && questions[currentIndex]?.questionTextHe
-                    ? questions[currentIndex]?.questionTextHe
-                    : lang === 'ar' && questions[currentIndex]?.questionTextAr
-                    ? questions[currentIndex]?.questionTextAr
-                    : questions[currentIndex]?.questionText}
+                  {cleanEnglishText(questions[currentIndex]?.questionText)}
                 </h3>
               </div>
 
-              {/* 4 Standard Options */}
+              {/* 4 Standard Options - Pure English Only */}
               <div className="grid grid-cols-1 gap-3 pt-2">
                 {[
                   {
                     key: 'A' as const,
-                    text:
-                      lang === 'he' && questions[currentIndex]?.optionAHe
-                        ? questions[currentIndex]?.optionAHe
-                        : lang === 'ar' && questions[currentIndex]?.optionAAr
-                        ? questions[currentIndex]?.optionAAr
-                        : questions[currentIndex]?.optionA,
+                    text: cleanEnglishText(questions[currentIndex]?.optionA),
                   },
                   {
                     key: 'B' as const,
-                    text:
-                      lang === 'he' && questions[currentIndex]?.optionBHe
-                        ? questions[currentIndex]?.optionBHe
-                        : lang === 'ar' && questions[currentIndex]?.optionBAr
-                        ? questions[currentIndex]?.optionBAr
-                        : questions[currentIndex]?.optionB,
+                    text: cleanEnglishText(questions[currentIndex]?.optionB),
                   },
                   {
                     key: 'C' as const,
-                    text:
-                      lang === 'he' && questions[currentIndex]?.optionCHe
-                        ? questions[currentIndex]?.optionCHe
-                        : lang === 'ar' && questions[currentIndex]?.optionCAr
-                        ? questions[currentIndex]?.optionCAr
-                        : questions[currentIndex]?.optionC,
+                    text: cleanEnglishText(questions[currentIndex]?.optionC),
                   },
                   {
                     key: 'D' as const,
-                    text:
-                      lang === 'he' && questions[currentIndex]?.optionDHe
-                        ? questions[currentIndex]?.optionDHe
-                        : lang === 'ar' && questions[currentIndex]?.optionDAr
-                        ? questions[currentIndex]?.optionDAr
-                        : questions[currentIndex]?.optionD,
+                    text: cleanEnglishText(questions[currentIndex]?.optionD),
                   },
                 ].map(({ key, text }) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => handleAnswerQuestion(key)}
-                    className={`w-full p-4 rounded-2xl text-start font-semibold text-sm border transition-all flex items-center justify-between ${
+                    className={`w-full p-4 rounded-2xl text-left font-semibold text-sm border transition-all flex items-center justify-between cursor-pointer ${
                       selectedOption === key
                         ? 'bg-teal-50 dark:bg-teal-950/50 border-teal-500 text-teal-900 dark:text-teal-100 ring-2 ring-teal-500/30'
                         : 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs ${
+                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
                         selectedOption === key
                           ? 'bg-teal-600 text-white'
                           : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                       }`}>
                         {key}
                       </span>
-                      <span>{text}</span>
+                      <span className="text-left font-medium">{text}</span>
                     </div>
                     {selectedOption === key && (
                       <CheckCircle2 className="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0" />
@@ -849,7 +852,7 @@ export const PlacementTestPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleAnswerQuestion('DONT_KNOW')}
-                  className={`w-full p-3.5 rounded-2xl text-start font-semibold text-xs border transition-all flex items-center justify-between ${
+                  className={`w-full p-3.5 rounded-2xl text-left font-semibold text-xs border transition-all flex items-center justify-between cursor-pointer ${
                     selectedOption === 'DONT_KNOW'
                       ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-500 text-purple-900 dark:text-purple-200 ring-2 ring-purple-500/30'
                       : 'bg-slate-50 dark:bg-slate-800/30 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -857,7 +860,7 @@ export const PlacementTestPage: React.FC = () => {
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="text-base">🤷🏽</span>
-                    <span>{t.exam.dontKnow}</span>
+                    <span>I don't know</span>
                   </div>
                   {selectedOption === 'DONT_KNOW' && (
                     <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -877,7 +880,7 @@ export const PlacementTestPage: React.FC = () => {
                   onClick={handleNextQuestion}
                   className={`px-7 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
                     selectedOption && !submitting
-                      ? 'bg-teal-600 hover:bg-teal-700 text-white shadow-md'
+                      ? 'bg-teal-600 hover:bg-teal-700 text-white shadow-md cursor-pointer'
                       : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                   }`}
                 >
@@ -885,13 +888,13 @@ export const PlacementTestPage: React.FC = () => {
                     <span>Submitting...</span>
                   ) : currentIndex + 1 === questions.length ? (
                     <>
-                      <span>{t.exam.finish}</span>
+                      <span>Finish & Submit Test</span>
                       <CheckCircle2 className="w-4 h-4" />
                     </>
                   ) : (
                     <>
-                      <span>{t.exam.next}</span>
-                      {isRTL ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                      <span>Next Question</span>
+                      <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
