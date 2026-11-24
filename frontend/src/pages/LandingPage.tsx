@@ -599,33 +599,6 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="w-full max-w-full overflow-x-hidden space-y-10 sm:space-y-20 pb-20">
-      {/* Logged-In User Quick Return Banner */}
-      {user && (
-        <div className="w-full bg-gradient-to-r from-brand-teal-900 via-brand-teal-950 to-brand-teal-900 border-b border-brand-teal-700/50 text-white py-2.5 px-3 sm:px-6 shadow-sm">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 text-xs sm:text-sm">
-            <div className="flex items-center gap-2.5 text-center sm:text-start">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span className="font-semibold text-slate-200">
-                {language === 'he'
-                  ? `שלום ${user.firstName}! אתה מחובר כעת לחשבון שלך.`
-                  : isAr
-                  ? `مرحباً ${user.firstName}! أنت مسجل الدخول حالياً بحسابك.`
-                  : `Welcome back, ${user.firstName}! You are currently signed in.`}
-              </span>
-            </div>
-            <Link
-              to={getUserDashboardPath(user.role)}
-              onClick={() => haptics.tap()}
-              className="px-5 py-1.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs transition-all shadow-md flex items-center gap-2 cursor-pointer shrink-0"
-            >
-              <LayoutDashboard className="w-3.5 h-3.5 text-slate-950" />
-              <span>{getDashboardButtonLabel(user.role, language as any)}</span>
-              <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
-            </Link>
-          </div>
-        </div>
-      )}
-
       {/* HERO SECTION */}
       <section className="relative pt-6 sm:pt-16 pb-12 sm:pb-24 overflow-hidden w-full max-w-full">
         {/* Modern Luminous Background Atmosphere - Clear, Modern & Professional */}
