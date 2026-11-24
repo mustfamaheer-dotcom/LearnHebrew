@@ -16,6 +16,7 @@ import {
   Award,
   LayoutDashboard,
   ArrowRight,
+  LogIn,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { getAvatarUrl } from '../../utils/avatar';
@@ -28,12 +29,16 @@ const LANGUAGES_LIST: { code: LanguagePref; label: string; nativeLabel: string; 
 ];
 
 export const Navbar: React.FC = () => {
-  const { user, logout, openProfileModal } = useAuthStore();
+  const { user, accessToken, logout, openProfileModal } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const { t, language, setLanguage } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
+
+  // Securely verify authentication state
+  const storedToken = typeof window !== 'undefined' ? localStorage.getItem('learnhebrew_token') : null;
+  const isAuthenticated = Boolean(user && (accessToken || storedToken));
 
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const langMenuRef = useRef<HTMLDivElement>(null);
@@ -197,41 +202,12 @@ export const Navbar: React.FC = () => {
               <NotificationBell />
             </div>
 
-            {user ? (
+            {isAuthenticated && user ? (
               <div className="flex items-center gap-1.5 sm:gap-2">
-                {/* 1-Click Direct Access to Dashboard */}
+                {/* User Profile Pill -> Links directly to Dashboard */}
                 <Link
                   to={getUserDashboardPath(user.role)}
-                  className="flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-700 hover:to-brand-teal-900 text-white font-extrabold text-xs shadow-sm hover:shadow-md transition-all group shrink-0 ring-1 ring-brand-teal-600/40"
-                  title={getDashboardButtonLabel(user.role, language as any)}
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5 text-brand-olive-400 group-hover:scale-110 transition-transform" />
-                  <span className="inline">
-                    {language === 'he'
-                      ? user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
-                        ? 'ניהול המערכת'
-                        : user.role === 'TEACHER'
-                        ? 'אזור המורה'
-                        : 'לוח הבקרה'
-                      : language === 'ar'
-                      ? user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
-                        ? 'إدارة المنصة'
-                        : user.role === 'TEACHER'
-                        ? 'منطقة المعلم'
-                        : 'لوحة التحكم'
-                      : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
-                      ? 'Admin Hub'
-                      : user.role === 'TEACHER'
-                      ? 'Teacher Hub'
-                      : 'Dashboard'}
-                  </span>
-                  <ArrowRight className="w-3 h-3 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform" />
-                </Link>
-
-                {/* User Profile Pill -> Also links directly to Dashboard */}
-                <Link
-                  to={getUserDashboardPath(user.role)}
-                  className="flex items-center gap-2 h-8 sm:h-9 p-0.5 sm:p-1 sm:ps-1 sm:pe-3 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl sm:rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group shrink-0"
+                  className="flex items-center gap-2 h-8 sm:h-9 p-0.5 sm:p-1 sm:ps-1 sm:pe-3 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group shrink-0"
                   title={getDashboardButtonLabel(user.role, language as any)}
                 >
                   <div className="w-7 h-7 sm:w-7 sm:h-7 rounded-lg overflow-hidden bg-gradient-to-br from-brand-teal-600 to-indigo-700 text-white flex items-center justify-center font-black text-xs shadow-2xs shrink-0 ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
@@ -258,6 +234,18 @@ export const Navbar: React.FC = () => {
                           : user.role === 'TEACHER'
                           ? 'מורה'
                           : 'תלמיד'
+                        : language === 'ar'
+                        ? user.role === 'SUPER_ADMIN'
+                          ? 'مالك المنصة'
+                          : user.role === 'ADMIN'
+                          ? 'مدير النظام'
+                          : user.role === 'SALES'
+                          ? 'مبيعات'
+                          : user.role === 'CS'
+                          ? 'خدمة العملاء'
+                          : user.role === 'TEACHER'
+                          ? 'معلم'
+                          : 'طالب'
                         : user.role === 'SUPER_ADMIN'
                         ? 'Platform Owner'
                         : user.role === 'SALES'
@@ -267,6 +255,41 @@ export const Navbar: React.FC = () => {
                         : user.role}
                     </span>
                   </div>
+                </Link>
+
+                {/* Dashboard Navigator Button (Placed next to profile) */}
+                <Link
+                  to={getUserDashboardPath(user.role)}
+                  className="flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-700 to-brand-teal-900 hover:from-emerald-500 hover:via-teal-600 hover:to-brand-teal-800 text-white font-black text-xs shadow-sm hover:shadow-md transition-all group shrink-0 ring-1 ring-emerald-400/40 hover:scale-[1.02] active:scale-[0.98]"
+                  title={getDashboardButtonLabel(user.role, language as any)}
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5 text-emerald-300 group-hover:rotate-12 transition-transform" />
+                  <span className="inline whitespace-nowrap">
+                    {language === 'he'
+                      ? user.role === 'TEACHER'
+                        ? 'אזור המורה'
+                        : user.role === 'STUDENT'
+                        ? 'אזור התלמיד'
+                        : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+                        ? 'ניהול המערכת'
+                        : 'מעבר למערכת'
+                      : language === 'ar'
+                      ? user.role === 'TEACHER'
+                        ? 'لوحة المعلم'
+                        : user.role === 'STUDENT'
+                        ? 'لوحة الطالب'
+                        : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+                        ? 'إدارة المنصة'
+                        : 'لوحة التحكم'
+                      : user.role === 'TEACHER'
+                      ? 'Teacher Portal'
+                      : user.role === 'STUDENT'
+                      ? 'Student Dashboard'
+                      : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+                      ? 'Admin Hub'
+                      : 'Dashboard'}
+                  </span>
+                  <ArrowRight className="w-3 h-3 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform text-emerald-200" />
                 </Link>
 
                 {/* Settings button shown on sm+ screens; on mobile the avatar already opens profile & settings */}
@@ -290,9 +313,13 @@ export const Navbar: React.FC = () => {
             ) : (
               <Link
                 to="/login"
-                className="px-3 sm:px-5 py-1.5 sm:py-2.5 text-xs font-bold text-white bg-gradient-to-r from-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-700 hover:to-brand-teal-900 rounded-xl shadow-xs transition-all hover:shadow-md shrink-0"
+                className="flex items-center gap-1.5 h-8 sm:h-9 px-3.5 sm:px-4 text-xs font-black text-white bg-gradient-to-r from-brand-teal-700 via-brand-teal-800 to-brand-teal-950 hover:from-brand-teal-600 hover:to-brand-teal-900 rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0 ring-1 ring-brand-teal-500/30"
               >
-                {t('nav.login')}
+                <LogIn className="w-3.5 h-3.5 text-brand-olive-300" />
+                <span>
+                  {language === 'he' ? 'כניסה למערכת' : language === 'ar' ? 'تسجيل الدخول' : 'Sign In'}
+                </span>
+                <ArrowRight className="w-3 h-3 rtl:rotate-180" />
               </Link>
             )}
           </div>
