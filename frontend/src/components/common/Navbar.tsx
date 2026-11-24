@@ -257,40 +257,54 @@ export const Navbar: React.FC = () => {
                   </div>
                 </Link>
 
-                {/* Dashboard Navigator Button (Placed next to profile) */}
-                <Link
-                  to={getUserDashboardPath(user.role)}
-                  className="flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-700 to-brand-teal-900 hover:from-emerald-500 hover:via-teal-600 hover:to-brand-teal-800 text-white font-black text-xs shadow-sm hover:shadow-md transition-all group shrink-0 ring-1 ring-emerald-400/40 hover:scale-[1.02] active:scale-[0.98]"
-                  title={getDashboardButtonLabel(user.role, language as any)}
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5 text-emerald-300 group-hover:rotate-12 transition-transform" />
-                  <span className="inline whitespace-nowrap">
-                    {language === 'he'
-                      ? user.role === 'TEACHER'
-                        ? 'אזור המורה'
+                {/* Dashboard Navigator Button (Placed next to profile) - Visible ONLY on Landing Page */}
+                {isLandingPage && (
+                  <Link
+                    to={getUserDashboardPath(user.role)}
+                    className="flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-700 to-brand-teal-900 hover:from-emerald-500 hover:via-teal-600 hover:to-brand-teal-800 text-white font-black text-xs shadow-sm hover:shadow-md transition-all group shrink-0 ring-1 ring-emerald-400/40 hover:scale-[1.02] active:scale-[0.98]"
+                    title={getDashboardButtonLabel(user.role, language as any)}
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5 text-emerald-300 group-hover:rotate-12 transition-transform" />
+                    <span className="inline whitespace-nowrap">
+                      {language === 'he'
+                        ? user.role === 'TEACHER'
+                          ? 'אזור המורה'
+                          : user.role === 'STUDENT'
+                          ? 'אזור התלמיד'
+                          : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+                          ? 'ניהול המערכת'
+                          : user.role === 'SALES'
+                          ? 'אזור מכירות'
+                          : user.role === 'CS'
+                          ? 'שירות לקוחות'
+                          : 'מעבר למערכת'
+                        : language === 'ar'
+                        ? user.role === 'TEACHER'
+                          ? 'مركز المعلمين'
+                          : user.role === 'STUDENT'
+                          ? 'مركز الطلاب'
+                          : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
+                          ? 'إدارة المنصة'
+                          : user.role === 'SALES'
+                          ? 'مركز المبيعات'
+                          : user.role === 'CS'
+                          ? 'مركز الدعم'
+                          : 'لوحة التحكم'
+                        : user.role === 'TEACHER'
+                        ? 'Teacher Hub'
                         : user.role === 'STUDENT'
-                        ? 'אזור התלמיד'
+                        ? 'Student Hub'
                         : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
-                        ? 'ניהול המערכת'
-                        : 'מעבר למערכת'
-                      : language === 'ar'
-                      ? user.role === 'TEACHER'
-                        ? 'لوحة المعلم'
-                        : user.role === 'STUDENT'
-                        ? 'لوحة الطالب'
-                        : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
-                        ? 'إدارة المنصة'
-                        : 'لوحة التحكم'
-                      : user.role === 'TEACHER'
-                      ? 'Teacher Portal'
-                      : user.role === 'STUDENT'
-                      ? 'Student Dashboard'
-                      : user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'
-                      ? 'Admin Hub'
-                      : 'Dashboard'}
-                  </span>
-                  <ArrowRight className="w-3 h-3 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform text-emerald-200" />
-                </Link>
+                        ? 'Admin Hub'
+                        : user.role === 'SALES'
+                        ? 'Sales Hub'
+                        : user.role === 'CS'
+                        ? 'Support Hub'
+                        : 'Dashboard'}
+                    </span>
+                    <ArrowRight className="w-3 h-3 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 transition-transform text-emerald-200" />
+                  </Link>
+                )}
 
                 {/* Settings button shown on sm+ screens; on mobile the avatar already opens profile & settings */}
                 <button
