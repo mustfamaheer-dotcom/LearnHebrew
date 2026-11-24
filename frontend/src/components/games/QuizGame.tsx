@@ -5,6 +5,7 @@ import { triggerConfetti } from '../../utils/confetti';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Check, X, Trophy, Sparkles, AlertCircle } from 'lucide-react';
+import { GamePointsBadge } from './GamePointsBadge';
 
 interface Question {
   question?: string;
@@ -87,14 +88,18 @@ export const QuizGame: React.FC<QuizGameProps> = ({
         score,
         completed: true,
       });
-      setAwardedPoints(res.data.pointsEarned);
-      if (score === 100) {
-        triggerConfetti.fireworks();
-      } else {
-        triggerConfetti.celebrate();
+      const earned = typeof res.data?.pointsEarned === 'number' ? res.data.pointsEarned : 0;
+      setAwardedPoints(earned);
+      if (earned > 0 || score >= 80) {
+        if (score === 100) {
+          triggerConfetti.fireworks();
+        } else {
+          triggerConfetti.celebrate();
+        }
       }
     } catch (err) {
       console.error('Failed to submit quiz session:', err);
+      setAwardedPoints(0);
     }
   };
 
@@ -123,19 +128,12 @@ export const QuizGame: React.FC<QuizGameProps> = ({
 
         <div className="text-4xl font-extrabold text-brand-teal-700 dark:text-brand-teal-400 mb-4">{finalScore}%</div>
 
-        {isPerfect && (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-full mb-4 border border-amber-200 dark:border-amber-800/80">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Perfect Score Bonus (+25 pts)</span>
-          </div>
-        )}
-
-        <div className="block mb-6">
-          <span className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-full font-bold border border-emerald-200 dark:border-emerald-800">
-            <Sparkles className="w-4 h-4" />
-            {t('games.earnedPoints', { points: awardedPoints || pointsReward })}
-          </span>
-        </div>
+        <GamePointsBadge
+          awardedPoints={awardedPoints}
+          score={finalScore}
+          language={language}
+          isPerfect={isPerfect}
+        />
 
         <div className="flex gap-3 justify-center">
           <button

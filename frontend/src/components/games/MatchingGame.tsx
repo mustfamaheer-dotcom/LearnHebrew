@@ -4,6 +4,7 @@ import { haptics } from '../../utils/haptics';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Trophy, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { GamePointsBadge } from './GamePointsBadge';
 
 interface Pair {
   hebrew?: string;
@@ -113,14 +114,18 @@ export const MatchingGame: React.FC<MatchingGameProps> = ({
         score: 100,
         completed: true,
       });
-      setAwardedPoints(res.data.pointsEarned);
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-      });
+      const earned = typeof res.data?.pointsEarned === 'number' ? res.data.pointsEarned : 0;
+      setAwardedPoints(earned);
+      if (earned > 0) {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 },
+        });
+      }
     } catch (err) {
       console.error('Failed to submit matching game session:', err);
+      setAwardedPoints(0);
     }
   };
 
@@ -135,12 +140,12 @@ export const MatchingGame: React.FC<MatchingGameProps> = ({
           You correctly matched all {pairs.length} Hebrew vocabulary pairs!
         </p>
 
-        <div className="block mb-6">
-          <span className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-full font-bold border border-emerald-200 dark:border-emerald-800">
-            <Sparkles className="w-4 h-4" />
-            {t('games.earnedPoints', { points: awardedPoints || pointsReward })}
-          </span>
-        </div>
+        <GamePointsBadge
+          awardedPoints={awardedPoints}
+          score={100}
+          language={language}
+          isPerfect={true}
+        />
 
         <div className="flex gap-3 justify-center">
           <button

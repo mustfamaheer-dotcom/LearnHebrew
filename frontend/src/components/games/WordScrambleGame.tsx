@@ -15,6 +15,7 @@ import {
   ArrowRight,
   HelpCircle,
 } from 'lucide-react';
+import { GamePointsBadge } from './GamePointsBadge';
 
 interface WordScrambleItem {
   word: string;
@@ -136,14 +137,18 @@ export const WordScrambleGame: React.FC<WordScrambleGameProps> = ({
         score,
         completed: true,
       });
-      setAwardedPoints(res.data?.pointsEarned || pointsReward);
-      if (score >= 80) {
-        triggerConfetti.fireworks();
-      } else {
-        triggerConfetti.celebrate();
+      const earned = typeof res.data?.pointsEarned === 'number' ? res.data.pointsEarned : 0;
+      setAwardedPoints(earned);
+      if (earned > 0 || score >= 80) {
+        if (score === 100) {
+          triggerConfetti.fireworks();
+        } else {
+          triggerConfetti.celebrate();
+        }
       }
     } catch (err) {
       console.error('Failed to submit game session:', err);
+      setAwardedPoints(0);
     }
   };
 
@@ -175,12 +180,12 @@ export const WordScrambleGame: React.FC<WordScrambleGameProps> = ({
           {finalScore}%
         </div>
 
-        <div className="block mb-6">
-          <span className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-full font-bold border border-emerald-200 dark:border-emerald-800">
-            <Sparkles className="w-4 h-4" />
-            <span>+{awardedPoints || pointsReward} Points Earned</span>
-          </span>
-        </div>
+        <GamePointsBadge
+          awardedPoints={awardedPoints}
+          score={finalScore}
+          language={language}
+          isPerfect={finalScore === 100}
+        />
 
         <div className="flex gap-3 justify-center">
           <button

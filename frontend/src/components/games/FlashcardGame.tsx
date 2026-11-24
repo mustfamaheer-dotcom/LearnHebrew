@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { api } from '../../lib/api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Sparkles, RotateCw, CheckCircle2, Trophy, Volume2 } from 'lucide-react';
+import { GamePointsBadge } from './GamePointsBadge';
 
 interface FlashcardGameProps {
   gameId: string;
@@ -62,14 +63,18 @@ export const FlashcardGame: React.FC<FlashcardGameProps> = ({
         score,
         completed: true,
       });
-      setAwardedPoints(res.data.pointsEarned);
-      confetti({
-        particleCount: 110,
-        spread: 75,
-        origin: { y: 0.6 },
-      });
+      const earned = typeof res.data?.pointsEarned === 'number' ? res.data.pointsEarned : 0;
+      setAwardedPoints(earned);
+      if (earned > 0 || score >= 80) {
+        confetti({
+          particleCount: 110,
+          spread: 75,
+          origin: { y: 0.6 },
+        });
+      }
     } catch (err) {
       console.error('Failed to record game session:', err);
+      setAwardedPoints(0);
     }
   };
 
@@ -88,14 +93,16 @@ export const FlashcardGame: React.FC<FlashcardGameProps> = ({
           <Trophy className="w-8 h-8" />
         </div>
         <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t('games.congrats')}</h3>
-        <p className="text-slate-600 dark:text-slate-400 mb-6">
+        <p className="text-slate-600 dark:text-slate-400 mb-4">
           {t('games.yourScore', { score: Math.round((knownCount / cards.length) * 100) })}
         </p>
 
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-full font-bold mb-6 border border-emerald-200 dark:border-emerald-800">
-          <Sparkles className="w-4 h-4" />
-          {t('games.earnedPoints', { points: awardedPoints || pointsReward })}
-        </div>
+        <GamePointsBadge
+          awardedPoints={awardedPoints}
+          score={Math.round((knownCount / cards.length) * 100)}
+          language={language}
+          isPerfect={knownCount === cards.length}
+        />
 
         <div className="flex gap-3 justify-center">
           <button

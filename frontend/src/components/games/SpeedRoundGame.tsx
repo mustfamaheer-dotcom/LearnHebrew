@@ -14,6 +14,7 @@ import {
   Play,
   RotateCcw,
 } from 'lucide-react';
+import { GamePointsBadge } from './GamePointsBadge';
 
 interface SpeedRoundItem {
   prompt: string;
@@ -130,14 +131,18 @@ export const SpeedRoundGame: React.FC<SpeedRoundGameProps> = ({
         score: calculatedAccuracy,
         completed: true,
       });
-      setAwardedPoints(res.data?.pointsEarned || pointsReward);
-      if (score >= 50) {
-        triggerConfetti.fireworks();
-      } else {
-        triggerConfetti.celebrate();
+      const earned = typeof res.data?.pointsEarned === 'number' ? res.data.pointsEarned : 0;
+      setAwardedPoints(earned);
+      if (earned > 0 || calculatedAccuracy >= 80) {
+        if (calculatedAccuracy === 100) {
+          triggerConfetti.fireworks();
+        } else {
+          triggerConfetti.celebrate();
+        }
       }
     } catch (err) {
       console.error('Failed to submit speed round session:', err);
+      setAwardedPoints(0);
     }
   };
 
@@ -213,10 +218,12 @@ export const SpeedRoundGame: React.FC<SpeedRoundGameProps> = ({
           </div>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-full font-bold border border-emerald-200 dark:border-emerald-800">
-          <Sparkles className="w-4 h-4" />
-          <span>+{awardedPoints || pointsReward} XP Earned</span>
-        </div>
+        <GamePointsBadge
+          awardedPoints={awardedPoints}
+          score={safeRounds.length > 0 ? Math.min(100, Math.round((score / (safeRounds.length * 10)) * 100)) : 100}
+          language={language}
+          isPerfect={score >= (safeRounds.length * 10)}
+        />
 
         <div className="flex gap-3 justify-center pt-2">
           <button

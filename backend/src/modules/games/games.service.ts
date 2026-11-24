@@ -325,42 +325,98 @@ export async function recordGameSession(
   const game = await prisma.game.findUnique({ where: { id: gameId } });
   if (!game) throw { status: 404, message: 'Game not found' };
 
-  // Calculate points: base reward + perfect score bonus (+25 if score == 100)
-  let points = game.pointsReward;
-  if (score === 100) {
-    points += 25; // Perfect game score bonus
+  // Score clamping between 0 and 100
+  const normalizedScore = Math.min(100, Math.max(0, Math.round(score)));
+
+  // Passing threshold: student must complete the game and achieve at least 50%
+  const isPassing = completed && normalizedScore >= 50;
+
+  // Potential points for this attempt:
+  // Proportional base points (e.g. 80% score of a 20-pt game = 16 pts)
+  // Perfect score bonus: +25 pts when scoring 100%
+  let potentialPoints = 0;
+  if (isPassing) {
+    const baseReward = Math.round(game.pointsReward * (normalizedScore / 100));
+    const perfectBonus = normalizedScore === 100 ? 25 : 0;
+    potentialPoints = baseReward + perfectBonus;
   }
+
+  // Anti-Farming & Replay Protection:
+  // Fetch all previous completed sessions for this game by this student
+  const previousSessions = await prisma.studentGameSession.findMany({
+    where: {
+      studentId: student.id,
+      gameId: game.id,
+      completed: true,
+    },
+    select: { pointsEarned: true, score: true },
+  });
+
+  // Calculate total points this student has already earned for this game
+  const totalPointsAlreadyEarned = previousSessions.reduce(
+    (sum, s) => sum + Math.max(0, s.pointsEarned),
+    0
+  );
+
+  const previousBestScore = previousSessions.length > 0
+    ? Math.max(...previousSessions.map((s) => s.score))
+    : 0;
+
+  // Student can ONLY earn points if potentialPoints exceeds what they already claimed for this game
+  const pointsToAward = Math.max(0, potentialPoints - totalPointsAlreadyEarned);
 
   return prisma.$transaction(async (tx) => {
     const session = await tx.studentGameSession.create({
       data: {
         studentId: student.id,
         gameId: game.id,
-        score,
-        pointsEarned: points,
+        score: normalizedScore,
+        pointsEarned: pointsToAward,
         completed,
       },
     });
 
-    await tx.student.update({
-      where: { id: student.id },
-      data: { totalPoints: { increment: points } },
-    });
-
-    await tx.pointsLedger.create({
-      data: {
+    // Mark any active unplayed unlock as consumed
+    await tx.studentGameUnlock.updateMany({
+      where: {
         studentId: student.id,
-        eventType: PointsEventType.GAME_PLAYED,
-        points,
-        referenceId: session.id,
-        description: `Played game: ${game.title} (Score: ${score}%)`,
+        gameId: game.id,
+        isPlayed: false,
+      },
+      data: {
+        isPlayed: true,
       },
     });
 
+    // Only update student balance and points ledger if new points were awarded
+    if (pointsToAward > 0) {
+      await tx.student.update({
+        where: { id: student.id },
+        data: { totalPoints: { increment: pointsToAward } },
+      });
+
+      await tx.pointsLedger.create({
+        data: {
+          studentId: student.id,
+          eventType: PointsEventType.GAME_PLAYED,
+          points: pointsToAward,
+          referenceId: session.id,
+          description: `Played game: ${game.title} (Score: ${normalizedScore}%${
+            totalPointsAlreadyEarned > 0 ? `, +${pointsToAward} pts delta` : ''
+          })`,
+        },
+      });
+    }
+
     return {
       session,
-      pointsEarned: points,
-      isPerfect: score === 100,
+      pointsEarned: pointsToAward,
+      potentialPoints,
+      totalPointsAlreadyEarned,
+      previousBestScore,
+      isPerfect: normalizedScore === 100,
+      isPassing,
+      alreadyMaxed: pointsToAward === 0 && isPassing,
     };
   });
 }
