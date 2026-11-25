@@ -5,12 +5,30 @@
 /* --------------------------------------------------------------------------
    Shared Keyframes
    -------------------------------------------------------------------------- */
+@keyframes store-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes store-spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
 @keyframes store-gold-pulse {
   0%, 100% {
-    box-shadow: 0 0 8px rgba(255, 215, 0, 0.75), 0 0 16px rgba(255, 165, 0, 0.4);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.75), 0 0 18px rgba(245, 158, 11, 0.45);
   }
   50% {
-    box-shadow: 0 0 18px rgba(255, 215, 0, 0.95), 0 0 32px rgba(255, 165, 0, 0.65);
+    box-shadow: 0 0 18px rgba(255, 215, 0, 1), 0 0 34px rgba(245, 158, 11, 0.75);
   }
 }
 
@@ -19,16 +37,19 @@
     box-shadow: 0 0 8px rgba(6, 182, 212, 0.8), 0 0 16px rgba(34, 211, 238, 0.45);
   }
   50% {
-    box-shadow: 0 0 18px rgba(6, 182, 212, 1), 0 0 32px rgba(34, 211, 238, 0.75);
+    box-shadow: 0 0 18px rgba(6, 182, 212, 1), 0 0 32px rgba(34, 211, 238, 0.8);
   }
 }
 
-@keyframes store-emerald-pulse {
-  0%, 100% {
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.75), 0 0 16px rgba(52, 211, 153, 0.4);
+@keyframes store-emerald-radar {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7), 0 0 12px rgba(16, 185, 129, 0.6);
   }
-  50% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.95), 0 0 34px rgba(52, 211, 153, 0.7);
+  70% {
+    box-shadow: 0 0 0 9px rgba(16, 185, 129, 0), 0 0 22px rgba(52, 211, 153, 0.85);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0), 0 0 12px rgba(16, 185, 129, 0.6);
   }
 }
 
@@ -37,31 +58,39 @@
     box-shadow: 0 0 10px rgba(147, 51, 234, 0.8), 0 0 20px rgba(192, 132, 252, 0.45);
   }
   50% {
-    box-shadow: 0 0 20px rgba(147, 51, 234, 1), 0 0 36px rgba(192, 132, 252, 0.75);
+    box-shadow: 0 0 20px rgba(147, 51, 234, 1), 0 0 36px rgba(192, 132, 252, 0.8);
   }
 }
 
-@keyframes store-crimson-pulse {
+@keyframes store-crimson-flicker {
   0%, 100% {
-    box-shadow: 0 0 8px rgba(239, 68, 68, 0.8), 0 0 16px rgba(249, 115, 22, 0.45);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.85), 0 0 20px rgba(249, 115, 22, 0.55);
   }
-  50% {
-    box-shadow: 0 0 18px rgba(239, 68, 68, 1), 0 0 32px rgba(249, 115, 22, 0.75);
+  35% {
+    box-shadow: 0 0 16px rgba(249, 115, 22, 0.95), 0 0 30px rgba(239, 68, 68, 0.75);
+  }
+  70% {
+    box-shadow: 0 0 12px rgba(251, 146, 60, 0.9), 0 0 24px rgba(220, 38, 38, 0.65);
   }
 }
 
-@keyframes store-rainbow-shift {
-  0% {
-    filter: hue-rotate(0deg);
-    box-shadow: 0 0 14px rgba(244, 63, 94, 0.7), 0 0 24px rgba(59, 130, 246, 0.5);
+@keyframes store-float-gentle {
+  0%, 100% {
+    transform: translateY(0px);
   }
   50% {
-    filter: hue-rotate(180deg);
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8), 0 0 30px rgba(168, 85, 247, 0.6);
+    transform: translateY(-2.5px);
   }
-  100% {
-    filter: hue-rotate(360deg);
-    box-shadow: 0 0 14px rgba(244, 63, 94, 0.7), 0 0 24px rgba(59, 130, 246, 0.5);
+}
+
+@keyframes store-twinkle {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
   }
 }
 
@@ -77,100 +106,225 @@
   }
 }
 
+@keyframes store-cyber-glitch {
+  0%, 92%, 100% {
+    text-shadow: -1.5px 0 #06b6d4, 1.5px 0 #ec4899;
+  }
+  94% {
+    text-shadow: 2px -1px #06b6d4, -2px 1px #ec4899;
+  }
+  96% {
+    text-shadow: -2px 1px #22d3ee, 2px -1px #f43f5e;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Utility Animation Classes
+   -------------------------------------------------------------------------- */
+.store-spin-slow {
+  animation: store-spin 4s linear infinite;
+}
+
+.store-spin-reverse {
+  animation: store-spin-reverse 6s linear infinite;
+}
+
+.store-float-gentle {
+  animation: store-float-gentle 2.4s ease-in-out infinite;
+}
+
+.store-twinkle {
+  animation: store-twinkle 1.8s ease-in-out infinite;
+}
+
 /* --------------------------------------------------------------------------
    Avatar Frame Classes
    -------------------------------------------------------------------------- */
+
+/* 1. Gold Glow — warm golden double-ring with halo */
 .frame-gold-glow {
   border: 3px solid #ffd700;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 20px rgba(255, 165, 0, 0.45);
-  border-radius: 50%;
+  outline: 2px solid rgba(251, 191, 36, 0.45);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.85), inset 0 0 8px rgba(255, 215, 0, 0.35);
 }
-
 .frame-gold-glow.animated,
 .frame-gold-glow.frame-animated {
   animation: store-gold-pulse 2.2s ease-in-out infinite;
 }
 
-.frame-neon-cyan {
-  border: 3px solid #22d3ee;
-  box-shadow: 0 0 10px rgba(6, 182, 212, 0.85), 0 0 20px rgba(34, 211, 238, 0.5);
-  border-radius: 50%;
+/* 2. Royal Crown — deep gold + royal violet double-bevel */
+.frame-royal-crown {
+  border: 3px solid #f59e0b;
+  outline: 2px solid #7c3aed;
+  outline-offset: 1px;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.75), 0 0 24px rgba(124, 58, 237, 0.5);
+}
+.frame-royal-crown.animated,
+.frame-royal-crown.frame-animated {
+  animation: store-gold-pulse 2.4s ease-in-out infinite;
 }
 
+/* 3. Neon Cyan — dashed cybernetic ring + glowing cyan */
+.frame-neon-cyan {
+  border: 3px solid #22d3ee;
+  outline: 2px dashed rgba(34, 211, 238, 0.75);
+  outline-offset: 3px;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.9), 0 0 22px rgba(34, 211, 238, 0.5);
+}
 .frame-neon-cyan.animated,
 .frame-neon-cyan.frame-animated {
   animation: store-cyan-pulse 2s ease-in-out infinite;
 }
 
+/* 4. Cyber Hex — tech shield squircle frame */
+.frame-cyber-hex {
+  border: 3px solid #06b6d4;
+  outline: 2px solid rgba(59, 130, 246, 0.75);
+  outline-offset: 2px;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.85), inset 0 0 10px rgba(59, 130, 246, 0.35);
+}
+.frame-cyber-hex.animated,
+.frame-cyber-hex.frame-animated {
+  animation: store-cyan-pulse 2.2s ease-in-out infinite;
+}
+
+/* 5. Emerald Pulse — radar pulse ring */
 .frame-emerald-pulse {
   border: 3px solid #10b981;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.8), 0 0 20px rgba(52, 211, 153, 0.45);
-  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.85), 0 0 20px rgba(52, 211, 153, 0.45);
 }
-
 .frame-emerald-pulse.animated,
 .frame-emerald-pulse.frame-animated {
-  animation: store-emerald-pulse 2.2s ease-in-out infinite;
+  animation: store-emerald-radar 2s ease-out infinite;
 }
 
+/* 6. Royal Purple — amethyst double ring */
 .frame-royal-purple {
   border: 3px solid #9333ea;
+  outline: 2px solid rgba(192, 132, 252, 0.65);
+  outline-offset: 2px;
   box-shadow: 0 0 12px rgba(147, 51, 234, 0.85), 0 0 24px rgba(192, 132, 252, 0.5);
-  border-radius: 50%;
 }
-
 .frame-royal-purple.animated,
 .frame-royal-purple.frame-animated {
   animation: store-purple-pulse 2.2s ease-in-out infinite;
 }
 
+/* 7. Crimson Flame — fiery red-orange flicker */
 .frame-crimson-flame {
   border: 3px solid #ef4444;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.85), 0 0 22px rgba(249, 115, 22, 0.5);
-  border-radius: 50%;
+  outline: 2px solid rgba(249, 115, 22, 0.7);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.9), 0 0 24px rgba(249, 115, 22, 0.55);
 }
-
 .frame-crimson-flame.animated,
 .frame-crimson-flame.frame-animated {
-  animation: store-crimson-pulse 1.9s ease-in-out infinite;
+  animation: store-crimson-flicker 1.5s ease-in-out infinite;
 }
 
+/* 8. Silver Frost — icy metallic crystal ring */
 .frame-silver-frost {
-  border: 3px solid #cbd5e1;
-  box-shadow: 0 0 10px rgba(148, 163, 184, 0.75), 0 0 18px rgba(226, 232, 240, 0.5);
-  border-radius: 50%;
+  border: 3px solid #e2e8f0;
+  outline: 2px solid rgba(125, 211, 252, 0.75);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(186, 230, 253, 0.85), inset 0 0 8px rgba(224, 242, 254, 0.5);
 }
 
+/* 9. Bronze Classic — antique double-bevel bronze */
 .frame-bronze-classic {
   border: 3px solid #d97706;
-  box-shadow: 0 0 8px rgba(217, 119, 6, 0.6);
-  border-radius: 50%;
+  outline: 2px solid #92400e;
+  outline-offset: 1px;
+  box-shadow: 0 2px 10px rgba(180, 83, 9, 0.6), inset 0 0 6px rgba(251, 191, 36, 0.35);
 }
 
-.frame-rainbow-legendary {
-  border: 3px solid transparent;
-  background:
-    linear-gradient(transparent, transparent) padding-box,
-    conic-gradient(from 0deg, #f43f5e, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ec4899, #f43f5e) border-box;
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+/* 10. Starlight Galaxy — deep cosmic indigo-violet */
+.frame-starlight-galaxy {
+  border: 3px solid #6366f1;
+  outline: 2px dotted rgba(196, 181, 253, 0.85);
+  outline-offset: 3px;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.85), 0 0 26px rgba(139, 92, 246, 0.55);
+}
+.frame-starlight-galaxy.animated,
+.frame-starlight-galaxy.frame-animated {
+  animation: store-purple-pulse 2.6s ease-in-out infinite;
+}
+
+/* 11. Sakura Blossom — soft rose-pink petal ring */
+.frame-sakura-blossom {
+  border: 3px solid #f472b6;
+  outline: 2px solid rgba(251, 207, 232, 0.85);
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(244, 114, 182, 0.7), 0 0 22px rgba(249, 168, 212, 0.5);
+}
+
+/* 12. Angel Halo — radiant celestial white-gold */
+.frame-angel-halo {
+  border: 3px solid #fef08a;
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 2px;
+  box-shadow: 0 0 14px rgba(253, 224, 71, 0.85), 0 0 28px rgba(254, 249, 195, 0.7);
+}
+.frame-angel-halo.animated,
+.frame-angel-halo.frame-animated {
+  animation: store-gold-pulse 2.5s ease-in-out infinite;
+}
+
+/* 13-15. Conic-Gradient Rotating Rings (Rainbow, Aurora Borealis, Cyber Neon) */
+.frame-rainbow-legendary,
+.frame-aurora-borealis,
+.frame-cyber-neon {
+  border: none !important;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.65), 0 0 26px rgba(59, 130, 246, 0.45);
+}
+
+.frame-rainbow-legendary::before,
+.frame-aurora-borealis::before,
+.frame-cyber-neon::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 3.5px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  box-shadow: 0 0 14px rgba(168, 85, 247, 0.65), 0 0 24px rgba(59, 130, 246, 0.45);
-  border-radius: 50%;
+  pointer-events: none;
 }
 
-.frame-rainbow-legendary.animated,
-.frame-rainbow-legendary.frame-animated {
-  animation: store-rainbow-shift 4s linear infinite;
+.frame-rainbow-legendary::before {
+  background: conic-gradient(from 0deg, #f43f5e, #f59e0b, #eab308, #10b981, #06b6d4, #3b82f6, #8b5cf6, #ec4899, #f43f5e);
+}
+
+.frame-aurora-borealis {
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.65), 0 0 26px rgba(139, 92, 246, 0.45);
+}
+.frame-aurora-borealis::before {
+  background: conic-gradient(from 0deg, #10b981, #06b6d4, #6366f1, #a855f7, #14b8a6, #10b981);
+}
+
+.frame-cyber-neon {
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.75), 0 0 26px rgba(236, 72, 153, 0.5);
+}
+.frame-cyber-neon::before {
+  background: conic-gradient(from 0deg, #22d3ee, #06b6d4, #ec4899, #f43f5e, #22d3ee);
+}
+
+.frame-rainbow-legendary.animated::before,
+.frame-rainbow-legendary.frame-animated::before,
+.frame-aurora-borealis.animated::before,
+.frame-aurora-borealis.frame-animated::before,
+.frame-cyber-neon.animated::before,
+.frame-cyber-neon.frame-animated::before {
+  animation: store-spin 3.5s linear infinite;
 }
 
 /* --------------------------------------------------------------------------
    Nickname Classes
    -------------------------------------------------------------------------- */
 .nickname-gold-legendary {
-  background: linear-gradient(90deg, #f59e0b, #fde047, #f59e0b, #fbbf24);
+  background: linear-gradient(90deg, #d97706, #fde047, #f59e0b, #fbbf24);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -185,7 +339,6 @@
   text-shadow: 0 0 8px rgba(147, 51, 234, 0.65), 0 0 16px rgba(192, 132, 252, 0.4);
   font-weight: 700;
 }
-
 .dark .nickname-purple-glow {
   color: #c084fc;
 }
@@ -193,22 +346,23 @@
 .nickname-emerald-bold {
   color: #059669;
   text-shadow: 0 0 8px rgba(16, 185, 129, 0.45);
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.01em;
 }
-
 .dark .nickname-emerald-bold {
   color: #34d399;
 }
 
 .nickname-crimson-fire {
-  background: linear-gradient(90deg, #ef4444, #f97316, #fbbf24, #ef4444);
+  background: linear-gradient(90deg, #dc2626, #f97316, #fbbf24, #ef4444);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
   font-weight: 800;
-  animation: store-text-shimmer 2.8s linear infinite;
+  font-style: italic;
+  animation: store-text-shimmer 2.6s linear infinite;
 }
 
 .nickname-ocean-gradient {
@@ -222,6 +376,17 @@
   animation: store-text-shimmer 4s linear infinite;
 }
 
+.nickname-aurora-wave {
+  background: linear-gradient(90deg, #10b981, #06b6d4, #8b5cf6, #ec4899, #10b981);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight: 800;
+  animation: store-text-shimmer 3.8s linear infinite;
+}
+
 .nickname-rainbow-legendary {
   background: linear-gradient(90deg, #f43f5e, #f59e0b, #10b981, #3b82f6, #a855f7, #f43f5e);
   background-size: 200% auto;
@@ -230,15 +395,79 @@
   -webkit-text-fill-color: transparent;
   color: transparent;
   font-weight: 800;
-  animation: store-text-shimmer 3.5s linear infinite;
+  animation: store-text-shimmer 3.2s linear infinite;
 }
 
 .nickname-neon-cyan {
   color: #0891b2;
-  text-shadow: 0 0 8px rgba(34, 211, 238, 0.75);
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.8), 0 0 16px rgba(6, 182, 212, 0.45);
   font-weight: 700;
 }
-
 .dark .nickname-neon-cyan {
   color: #22d3ee;
+}
+
+.nickname-frost-ice {
+  color: #0284c7;
+  text-shadow: 0 0 8px rgba(186, 230, 253, 0.95), 0 0 14px rgba(56, 189, 248, 0.55);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.dark .nickname-frost-ice {
+  color: #e0f2fe;
+}
+
+.nickname-cyber-glitch {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #0f172a;
+  animation: store-cyber-glitch 3s infinite;
+}
+.dark .nickname-cyber-glitch {
+  color: #f8fafc;
+}
+
+/* Styled Pill / Ribbon Badge Nicknames */
+.nickname-royal-banner {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #4c1d95, #6d28d9, #7c3aed);
+  border: 1.5px solid #fbbf24;
+  color: #fef3c7;
+  font-family: ui-serif, Georgia, Cambria, Times New Roman, serif;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(109, 40, 217, 0.4);
+}
+
+.nickname-dark-velvet {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #0f172a, #1e1b4b);
+  border: 1px solid rgba(244, 114, 182, 0.55);
+  color: #f8fafc;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.35);
+}
+
+.nickname-sakura-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(253, 242, 248, 0.95), rgba(252, 231, 243, 0.95));
+  border: 1px solid #f472b6;
+  color: #be185d;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.25);
+}
+.dark .nickname-sakura-tag {
+  background: linear-gradient(135deg, rgba(131, 24, 67, 0.55), rgba(157, 23, 77, 0.55));
+  color: #fbcfe8;
 }

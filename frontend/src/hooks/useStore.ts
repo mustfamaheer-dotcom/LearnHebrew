@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
+export { FRAME_PRESETS, type FramePresetMeta } from '../components/common/AvatarWithFrame';
+export { NICKNAME_PRESETS, type NicknamePresetMeta } from '../components/common/StyledNickname';
+
 /* ==========================================================================
    Types
    ========================================================================== */

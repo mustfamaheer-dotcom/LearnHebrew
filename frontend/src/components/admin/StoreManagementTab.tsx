@@ -31,8 +31,8 @@ import { api } from '../../lib/api';
 import { toast } from '../../store/toastStore';
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
-import { AvatarWithFrame } from '../common/AvatarWithFrame';
-import { StyledNickname } from '../common/StyledNickname';
+import { AvatarWithFrame, FRAME_PRESETS } from '../common/AvatarWithFrame';
+import { StyledNickname, NICKNAME_PRESETS } from '../common/StyledNickname';
 import {
   StoreItem,
   StoreItemType,
@@ -66,42 +66,23 @@ const RARITY_BADGE_CLASSES: Record<StoreItemRarity, string> = {
   LEGENDARY: 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700',
 };
 
-const FRAME_CSS_PRESETS = [
-  { value: '', label: 'None (Custom Border)' },
-  { value: 'frame-gold-glow', label: 'Gold Glow' },
-  { value: 'frame-neon-cyan', label: 'Neon Cyan' },
-  { value: 'frame-emerald-pulse', label: 'Emerald Pulse' },
-  { value: 'frame-royal-purple', label: 'Royal Purple' },
-  { value: 'frame-crimson-flame', label: 'Crimson Flame' },
-  { value: 'frame-silver-frost', label: 'Silver Frost' },
-  { value: 'frame-bronze-classic', label: 'Bronze Classic' },
-  { value: 'frame-rainbow-legendary', label: 'Rainbow Legendary' },
-];
-
-const NICKNAME_CSS_PRESETS = [
-  { value: '', label: 'None (Custom Style)' },
-  { value: 'nickname-gold-legendary', label: 'Gold Legendary' },
-  { value: 'nickname-purple-glow', label: 'Purple Glow' },
-  { value: 'nickname-emerald-bold', label: 'Emerald Bold' },
-  { value: 'nickname-crimson-fire', label: 'Crimson Fire' },
-  { value: 'nickname-ocean-gradient', label: 'Ocean Gradient' },
-  { value: 'nickname-rainbow-legendary', label: 'Rainbow Legendary' },
-  { value: 'nickname-neon-cyan', label: 'Neon Cyan' },
-];
-
 const NICKNAME_FONT_OPTIONS = [
   { value: 'font-normal', label: 'Normal' },
   { value: 'font-semibold', label: 'Semi-Bold' },
   { value: 'font-bold', label: 'Bold' },
   { value: 'font-extrabold', label: 'Extra Bold' },
   { value: 'font-black', label: 'Black' },
+  { value: 'font-serif font-bold', label: 'Serif Bold' },
   { value: 'font-mono font-bold', label: 'Mono Bold' },
+  { value: 'font-mono tracking-wider uppercase font-bold', label: 'Cyber Mono Uppercase' },
   { value: 'italic font-bold', label: 'Italic Bold' },
+  { value: 'font-extrabold italic', label: 'Extra Bold Italic' },
 ];
 
 const BORDER_RADIUS_OPTIONS = [
   { value: '50%', label: 'Circle (50%)' },
-  { value: '24px', label: 'Squircle (24px)' },
+  { value: '24%', label: 'Squircle (24%)' },
+  { value: '24px', label: 'Soft Squircle (24px)' },
   { value: '16px', label: 'Rounded (16px)' },
   { value: '10px', label: 'Soft (10px)' },
   { value: '0px', label: 'Square (0px)' },
@@ -1415,13 +1396,28 @@ export const StoreManagementTab: React.FC = () => {
                           {tr('Preset CSS Class', 'תבנית CSS מוכנה', 'فئة CSS جاهزة')}
                         </label>
                         <select
-                          value={FRAME_CSS_PRESETS.some((p) => p.value === (formState.frameCssClass || '')) ? (formState.frameCssClass || '') : ''}
-                          onChange={(e) => setFormState({ ...formState, frameCssClass: e.target.value })}
+                          value={FRAME_PRESETS.some((p) => p.cssClass === (formState.frameCssClass || '')) ? (formState.frameCssClass || '') : ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const preset = FRAME_PRESETS.find((p) => p.cssClass === val);
+                            if (preset) {
+                              setFormState({
+                                ...formState,
+                                frameCssClass: preset.cssClass,
+                                frameBorderColor: preset.borderColor,
+                                frameBorderRadius: preset.borderRadius,
+                                frameAnimated: preset.animated,
+                              });
+                            } else {
+                              setFormState({ ...formState, frameCssClass: val });
+                            }
+                          }}
                           className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
                         >
-                          {FRAME_CSS_PRESETS.map((p) => (
-                            <option key={p.label} value={p.value}>
-                              {p.label}
+                          <option value="">{tr('None (Custom Border)', 'ללא (גבול מותאם)', 'بدون (حدود مخصصة)')}</option>
+                          {FRAME_PRESETS.map((p) => (
+                            <option key={p.cssClass} value={p.cssClass}>
+                              {p.label} — {p.description}
                             </option>
                           ))}
                         </select>
@@ -1568,13 +1564,30 @@ export const StoreManagementTab: React.FC = () => {
                           {tr('Preset CSS Class', 'תבנית CSS מוכנה', 'فئة CSS جاهزة')}
                         </label>
                         <select
-                          value={NICKNAME_CSS_PRESETS.some((p) => p.value === (formState.nicknameCssClass || '')) ? (formState.nicknameCssClass || '') : ''}
-                          onChange={(e) => setFormState({ ...formState, nicknameCssClass: e.target.value })}
+                          value={NICKNAME_PRESETS.some((p) => p.cssClass === (formState.nicknameCssClass || '')) ? (formState.nicknameCssClass || '') : ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const preset = NICKNAME_PRESETS.find((p) => p.cssClass === val);
+                            if (preset) {
+                              setFormState({
+                                ...formState,
+                                nicknameCssClass: preset.cssClass,
+                                nicknameColor: preset.color,
+                                nicknameGlow: preset.glow,
+                                nicknameGlowColor: preset.glowColor || '#9333ea',
+                                nicknameFont: preset.font,
+                                nicknameBadgeIcon: preset.badgeIcon,
+                              });
+                            } else {
+                              setFormState({ ...formState, nicknameCssClass: val });
+                            }
+                          }}
                           className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
                         >
-                          {NICKNAME_CSS_PRESETS.map((p) => (
-                            <option key={p.label} value={p.value}>
-                              {p.label}
+                          <option value="">{tr('None (Custom Style)', 'ללא (סגנון מותאם)', 'بدون (نمط مخصص)')}</option>
+                          {NICKNAME_PRESETS.map((p) => (
+                            <option key={p.cssClass} value={p.cssClass}>
+                              {p.badgeIcon} {p.label} — {p.description}
                             </option>
                           ))}
                         </select>
