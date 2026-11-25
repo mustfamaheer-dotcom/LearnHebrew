@@ -1,8 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 
-export { FRAME_PRESETS, type FramePresetMeta } from '../components/common/AvatarWithFrame';
-export { NICKNAME_PRESETS, type NicknamePresetMeta } from '../components/common/StyledNickname';
+export {
+  FRAME_PRESETS,
+  parseFrameStudioTokens,
+  buildFrameCssClass,
+  type FramePresetMeta,
+  type FrameStudioTokens,
+  type FrameRingStyle,
+  type FrameThickness,
+  type FrameGlowLevel,
+  type FrameShape,
+  type FrameOrnament,
+} from '../components/common/AvatarWithFrame';
+export {
+  NICKNAME_PRESETS,
+  parseNicknameStudioTokens,
+  buildNicknameCssClass,
+  type NicknamePresetMeta,
+  type NicknameStudioTokens,
+  type NicknameFillMode,
+  type NicknameTextFx,
+} from '../components/common/StyledNickname';
 
 /* ==========================================================================
    Types

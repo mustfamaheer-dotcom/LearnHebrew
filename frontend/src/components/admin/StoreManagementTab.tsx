@@ -31,8 +31,27 @@ import { api } from '../../lib/api';
 import { toast } from '../../store/toastStore';
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
-import { AvatarWithFrame, FRAME_PRESETS } from '../common/AvatarWithFrame';
-import { StyledNickname, NICKNAME_PRESETS } from '../common/StyledNickname';
+import {
+  AvatarWithFrame,
+  FRAME_PRESETS,
+  parseFrameStudioTokens,
+  buildFrameCssClass,
+  FrameStudioTokens,
+  FrameRingStyle,
+  FrameThickness,
+  FrameGlowLevel,
+  FrameShape,
+  FrameOrnament,
+} from '../common/AvatarWithFrame';
+import {
+  StyledNickname,
+  NICKNAME_PRESETS,
+  parseNicknameStudioTokens,
+  buildNicknameCssClass,
+  NicknameStudioTokens,
+  NicknameFillMode,
+  NicknameTextFx,
+} from '../common/StyledNickname';
 import {
   StoreItem,
   StoreItemType,
@@ -1391,88 +1410,227 @@ export const StoreManagementTab: React.FC = () => {
                     </h4>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                          {tr('Preset CSS Class', 'תבנית CSS מוכנה', 'فئة CSS جاهزة')}
-                        </label>
-                        <select
-                          value={FRAME_PRESETS.some((p) => p.cssClass === (formState.frameCssClass || '')) ? (formState.frameCssClass || '') : ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            const preset = FRAME_PRESETS.find((p) => p.cssClass === val);
-                            if (preset) {
-                              setFormState({
-                                ...formState,
-                                frameCssClass: preset.cssClass,
-                                frameBorderColor: preset.borderColor,
-                                frameBorderRadius: preset.borderRadius,
-                                frameAnimated: preset.animated,
-                              });
-                            } else {
-                              setFormState({ ...formState, frameCssClass: val });
-                            }
-                          }}
-                          className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
-                        >
-                          <option value="">{tr('None (Custom Border)', 'ללא (גבול מותאם)', 'بدون (حدود مخصصة)')}</option>
-                          {FRAME_PRESETS.map((p) => (
-                            <option key={p.cssClass} value={p.cssClass}>
-                              {p.label} — {p.description}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {(() => {
+                        const frameTokens = parseFrameStudioTokens(formState.frameCssClass);
+                        const updateFrameTokens = (patch: Partial<FrameStudioTokens>) => {
+                          const nextTokens: FrameStudioTokens = { ...frameTokens, ...patch };
+                          const nextBorderRadius =
+                            patch.shape === 'circle'
+                              ? '50%'
+                              : patch.shape === 'squircle'
+                              ? '24%'
+                              : patch.shape === 'rounded'
+                              ? '16px'
+                              : formState.frameBorderRadius;
+                          setFormState({
+                            ...formState,
+                            frameCssClass: buildFrameCssClass(nextTokens),
+                            frameBorderRadius: nextBorderRadius,
+                          });
+                        };
 
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                          {tr('Custom CSS Class', 'מחלקת CSS מותאמת', 'فئة CSS مخصصة')}
-                        </label>
-                        <input
-                          type="text"
-                          value={formState.frameCssClass ?? ''}
-                          onChange={(e) => setFormState({ ...formState, frameCssClass: e.target.value })}
-                          placeholder="frame-gold-glow"
-                          className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
-                        />
-                      </div>
+                        return (
+                          <>
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Base Preset Style', 'תבנית בסיס מוכנה', 'نمط أساسي جاهز')}
+                              </label>
+                              <select
+                                value={FRAME_PRESETS.some((p) => p.cssClass === frameTokens.baseClass) ? frameTokens.baseClass : ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const preset = FRAME_PRESETS.find((p) => p.cssClass === val);
+                                  if (preset) {
+                                    setFormState({
+                                      ...formState,
+                                      frameCssClass: buildFrameCssClass({ ...frameTokens, baseClass: preset.cssClass }),
+                                      frameBorderColor: preset.borderColor,
+                                      frameBorderRadius: preset.borderRadius,
+                                      frameAnimated: preset.animated,
+                                    });
+                                  } else {
+                                    updateFrameTokens({ baseClass: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                              >
+                                <option value="">{tr('Custom From Scratch', 'עיצוב מותאם מאפס', 'تصميم مخصص من الصفر')}</option>
+                                {FRAME_PRESETS.map((p) => (
+                                  <option key={p.cssClass} value={p.cssClass}>
+                                    {p.label} — {p.description}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
 
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                          {tr('Border Color', 'צבע מסגרת', 'لون الإطار')}
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={formState.frameBorderColor || '#ffd700'}
-                            onChange={(e) => setFormState({ ...formState, frameBorderColor: e.target.value })}
-                            className="w-10 h-9 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer"
-                          />
-                          <input
-                            type="text"
-                            value={formState.frameBorderColor ?? ''}
-                            onChange={(e) => setFormState({ ...formState, frameBorderColor: e.target.value })}
-                            placeholder="#ffd700"
-                            className="flex-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
-                          />
-                        </div>
-                      </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Shape', 'צורה', 'الشكل')}
+                              </label>
+                              <select
+                                value={frameTokens.shape || ''}
+                                onChange={(e) => updateFrameTokens({ shape: (e.target.value || undefined) as FrameShape | undefined })}
+                                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                              >
+                                <option value="">{tr('Default (Use Radius)', 'ברירת מחדל', 'افتراضي')}</option>
+                                <option value="circle">Circle (50%)</option>
+                                <option value="squircle">Squircle (24%)</option>
+                                <option value="rounded">Rounded (16px)</option>
+                                <option value="hex">Hexagon Shield</option>
+                              </select>
+                            </div>
 
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                          {tr('Border Radius', 'עיגול פינות', 'استدارة الحواف')}
-                        </label>
-                        <select
-                          value={formState.frameBorderRadius || '50%'}
-                          onChange={(e) => setFormState({ ...formState, frameBorderRadius: e.target.value })}
-                          className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
-                        >
-                          {BORDER_RADIUS_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Ring Style', 'סגנון טבעת', 'نمط الحلقة')}
+                              </label>
+                              <select
+                                value={frameTokens.ring || ''}
+                                onChange={(e) => updateFrameTokens({ ring: (e.target.value || undefined) as FrameRingStyle | undefined })}
+                                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                              >
+                                <option value="">{tr('Preset Default', 'ברירת מחדל', 'افتراضي')}</option>
+                                <option value="solid">Solid</option>
+                                <option value="double">Double Bevel</option>
+                                <option value="dashed">Dashed Tech</option>
+                                <option value="dotted">Dotted Spark</option>
+                                <option value="gradient">2-Color Gradient</option>
+                                <option value="conic">Spinning Conic Ring</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Ornament / Badge', 'עיטור / תג', 'زخرفة / شارة')}
+                              </label>
+                              <select
+                                value={frameTokens.ornament || ''}
+                                onChange={(e) => updateFrameTokens({ ornament: (e.target.value || undefined) as FrameOrnament | undefined })}
+                                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                              >
+                                <option value="">{tr('Preset Default', 'ברירת מחדל', 'افتراضي')}</option>
+                                <option value="none">None</option>
+                                <option value="crown">👑 Crown</option>
+                                <option value="vip">👑 VIP Crest</option>
+                                <option value="fire">🔥 Flame Embers</option>
+                                <option value="sparkle">✦ Sparkles</option>
+                                <option value="star">⭐ Star</option>
+                                <option value="diamond">💎 Diamond</option>
+                                <option value="sakura">🌸 Sakura</option>
+                                <option value="snow">❄️ Snowflakes</option>
+                                <option value="halo">😇 Angel Halo</option>
+                                <option value="bolt">⚡ Lightning</option>
+                                <option value="hud">⌖ Cyber HUD</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Thickness & Glow', 'עובי וזוהר', 'السُمك والتوهج')}
+                              </label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <select
+                                  value={frameTokens.thick ?? ''}
+                                  onChange={(e) =>
+                                    updateFrameTokens({ thick: e.target.value ? (Number(e.target.value) as FrameThickness) : undefined })
+                                  }
+                                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                                >
+                                  <option value="">Thick: Auto</option>
+                                  <option value="2">2px</option>
+                                  <option value="3">3px</option>
+                                  <option value="4">4px</option>
+                                  <option value="5">5px</option>
+                                  <option value="6">6px</option>
+                                </select>
+                                <select
+                                  value={frameTokens.glow || ''}
+                                  onChange={(e) => updateFrameTokens({ glow: (e.target.value || undefined) as FrameGlowLevel | undefined })}
+                                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                                >
+                                  <option value="">Glow: Auto</option>
+                                  <option value="none">None</option>
+                                  <option value="soft">Soft</option>
+                                  <option value="strong">Strong</option>
+                                  <option value="neon">Neon</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Secondary Gradient Color (grad2)', 'צבע מעבר שני', 'لون التدرج الثاني')}
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={frameTokens.grad2 || '#ff6b00'}
+                                  onChange={(e) => updateFrameTokens({ grad2: e.target.value })}
+                                  className="w-10 h-9 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={frameTokens.grad2 ?? ''}
+                                  onChange={(e) => updateFrameTokens({ grad2: e.target.value || undefined })}
+                                  placeholder="#ff6b00"
+                                  className="flex-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Primary Border Color', 'צבע מסגרת ראשי', 'لون الإطار الرئيسي')}
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={formState.frameBorderColor || '#ffd700'}
+                                  onChange={(e) => setFormState({ ...formState, frameBorderColor: e.target.value })}
+                                  className="w-10 h-9 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={formState.frameBorderColor ?? ''}
+                                  onChange={(e) => setFormState({ ...formState, frameBorderColor: e.target.value })}
+                                  placeholder="#ffd700"
+                                  className="flex-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Border Radius', 'עיגול פינות', 'استدارة الحواف')}
+                              </label>
+                              <select
+                                value={formState.frameBorderRadius || '50%'}
+                                onChange={(e) => setFormState({ ...formState, frameBorderRadius: e.target.value })}
+                                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                              >
+                                {BORDER_RADIUS_OPTIONS.map((opt) => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="sm:col-span-2">
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('CSS Class & Tokens (Raw)', 'מחלקת CSS וטוקנים', 'فئة CSS والرموز')}
+                              </label>
+                              <input
+                                type="text"
+                                value={formState.frameCssClass ?? ''}
+                                onChange={(e) => setFormState({ ...formState, frameCssClass: e.target.value })}
+                                placeholder="frame-gold-glow ornament:crown ring:double thick:5 glow:neon"
+                                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
+                              />
+                            </div>
+                          </>
+                        );
+                      })()}
 
                       <div className="sm:col-span-2">
                         <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
@@ -1559,52 +1717,155 @@ export const StoreManagementTab: React.FC = () => {
                     </h4>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                          {tr('Preset CSS Class', 'תבנית CSS מוכנה', 'فئة CSS جاهزة')}
-                        </label>
-                        <select
-                          value={NICKNAME_PRESETS.some((p) => p.cssClass === (formState.nicknameCssClass || '')) ? (formState.nicknameCssClass || '') : ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            const preset = NICKNAME_PRESETS.find((p) => p.cssClass === val);
-                            if (preset) {
-                              setFormState({
-                                ...formState,
-                                nicknameCssClass: preset.cssClass,
-                                nicknameColor: preset.color,
-                                nicknameGlow: preset.glow,
-                                nicknameGlowColor: preset.glowColor || '#9333ea',
-                                nicknameFont: preset.font,
-                                nicknameBadgeIcon: preset.badgeIcon,
-                              });
-                            } else {
-                              setFormState({ ...formState, nicknameCssClass: val });
-                            }
-                          }}
-                          className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
-                        >
-                          <option value="">{tr('None (Custom Style)', 'ללא (סגנון מותאם)', 'بدون (نمط مخصص)')}</option>
-                          {NICKNAME_PRESETS.map((p) => (
-                            <option key={p.cssClass} value={p.cssClass}>
-                              {p.badgeIcon} {p.label} — {p.description}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {(() => {
+                        const nickTokens = parseNicknameStudioTokens(formState.nicknameCssClass);
+                        const updateNickTokens = (patch: Partial<NicknameStudioTokens>) => {
+                          const nextTokens: NicknameStudioTokens = { ...nickTokens, ...patch };
+                          setFormState({
+                            ...formState,
+                            nicknameCssClass: buildNicknameCssClass(nextTokens),
+                          });
+                        };
 
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                          {tr('Custom CSS Class', 'מחלקת CSS מותאמת', 'فئة CSS مخصصة')}
-                        </label>
-                        <input
-                          type="text"
-                          value={formState.nicknameCssClass ?? ''}
-                          onChange={(e) => setFormState({ ...formState, nicknameCssClass: e.target.value })}
-                          placeholder="nickname-gold-legendary"
-                          className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
-                        />
-                      </div>
+                        return (
+                          <>
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Base Preset Style', 'תבנית בסיס מוכנה', 'نمط أساسي جاهز')}
+                              </label>
+                              <select
+                                value={NICKNAME_PRESETS.some((p) => p.cssClass === nickTokens.baseClass) ? nickTokens.baseClass : ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const preset = NICKNAME_PRESETS.find((p) => p.cssClass === val);
+                                  if (preset) {
+                                    setFormState({
+                                      ...formState,
+                                      nicknameCssClass: buildNicknameCssClass({ ...nickTokens, baseClass: preset.cssClass }),
+                                      nicknameColor: preset.color,
+                                      nicknameGlow: preset.glow,
+                                      nicknameGlowColor: preset.glowColor || '#9333ea',
+                                      nicknameFont: preset.font,
+                                      nicknameBadgeIcon: preset.badgeIcon,
+                                    });
+                                  } else {
+                                    updateNickTokens({ baseClass: val });
+                                  }
+                                }}
+                                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                              >
+                                <option value="">{tr('Custom From Scratch', 'עיצוב מותאם מאפס', 'تصميم مخصص من الصفر')}</option>
+                                {NICKNAME_PRESETS.map((p) => (
+                                  <option key={p.cssClass} value={p.cssClass}>
+                                    {p.badgeIcon} {p.label} — {p.description}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Fill Mode & Text Effect', 'מילוי ואפקט טקסט', 'التعبئة والتأثير')}
+                              </label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <select
+                                  value={nickTokens.fill || ''}
+                                  onChange={(e) => updateNickTokens({ fill: (e.target.value || undefined) as NicknameFillMode | undefined })}
+                                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                                >
+                                  <option value="">Fill: Auto</option>
+                                  <option value="solid">Solid</option>
+                                  <option value="gradient">2-Color Gradient</option>
+                                  <option value="pill">Pill Badge</option>
+                                </select>
+                                <select
+                                  value={nickTokens.textfx || ''}
+                                  onChange={(e) => updateNickTokens({ textfx: (e.target.value || undefined) as NicknameTextFx | undefined })}
+                                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold"
+                                >
+                                  <option value="">FX: Auto</option>
+                                  <option value="none">None</option>
+                                  <option value="soft">Soft Shadow</option>
+                                  <option value="neon">Neon Glow</option>
+                                  <option value="fire">Fire Aura</option>
+                                  <option value="outline">Crisp Outline</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('Secondary Gradient Color (grad2)', 'צבע מעבר שני', 'لون التدرج الثاني')}
+                              </label>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={nickTokens.grad2 || '#ec4899'}
+                                  onChange={(e) => updateNickTokens({ grad2: e.target.value })}
+                                  className="w-10 h-9 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  value={nickTokens.grad2 ?? ''}
+                                  onChange={(e) => updateNickTokens({ grad2: e.target.value || undefined })}
+                                  placeholder="#ec4899"
+                                  className="flex-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
+                                />
+                              </div>
+                            </div>
+
+                            {nickTokens.fill === 'pill' ? (
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                  {tr('Pill Background Color (pillbg)', 'צבע רקע תג', 'لون خلفية الشارة')}
+                                </label>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="color"
+                                    value={nickTokens.pillbg || '#1e1b4b'}
+                                    onChange={(e) => updateNickTokens({ pillbg: e.target.value })}
+                                    className="w-10 h-9 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={nickTokens.pillbg ?? ''}
+                                    onChange={(e) => updateNickTokens({ pillbg: e.target.value || undefined })}
+                                    placeholder="#1e1b4b"
+                                    className="flex-1 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-end pb-1">
+                                <label className="inline-flex items-center gap-2 cursor-pointer select-none p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 w-full">
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(nickTokens.shimmer)}
+                                    onChange={(e) => updateNickTokens({ shimmer: e.target.checked })}
+                                    className="rounded text-brand-teal-700"
+                                  />
+                                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                                    {tr('Animated Gradient Shimmer', 'אנימציית נצנוץ', 'وميض متدرج متحرك')}
+                                  </span>
+                                </label>
+                              </div>
+                            )}
+
+                            <div className="sm:col-span-2">
+                              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                {tr('CSS Class & Tokens (Raw)', 'מחלקת CSS וטוקנים', 'فئة CSS والرموز')}
+                              </label>
+                              <input
+                                type="text"
+                                value={formState.nicknameCssClass ?? ''}
+                                onChange={(e) => setFormState({ ...formState, nicknameCssClass: e.target.value })}
+                                placeholder="fill:gradient grad2:#ec4899 shimmer:1 textfx:neon"
+                                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono"
+                              />
+                            </div>
+                          </>
+                        );
+                      })()}
 
                       <div>
                         <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">

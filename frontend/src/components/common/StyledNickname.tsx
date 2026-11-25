@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 export interface StyledNicknameConfig {
   nicknameColor?: string | null;
@@ -14,6 +14,71 @@ export interface StyledNicknameProps {
   nicknameItem?: StyledNicknameConfig | null;
   className?: string;
   truncate?: boolean;
+}
+
+export type NicknameFillMode = 'solid' | 'gradient' | 'pill';
+export type NicknameTextFx = 'none' | 'soft' | 'neon' | 'fire' | 'outline';
+
+export interface NicknameStudioTokens {
+  baseClass: string;
+  fill?: NicknameFillMode;
+  grad2?: string;
+  pillbg?: string;
+  shimmer?: boolean;
+  textfx?: NicknameTextFx;
+}
+
+const VALID_FILLS = new Set<string>(['solid', 'gradient', 'pill']);
+const VALID_TEXTFX = new Set<string>(['none', 'soft', 'neon', 'fire', 'outline']);
+
+export function parseNicknameStudioTokens(nicknameCssClass?: string | null): NicknameStudioTokens {
+  const result: NicknameStudioTokens = { baseClass: '' };
+  if (!nicknameCssClass) return result;
+
+  const baseClasses: string[] = [];
+  for (const token of nicknameCssClass.trim().split(/\s+/)) {
+    if (!token) continue;
+    const colonIdx = token.indexOf(':');
+    if (colonIdx > 0) {
+      const key = token.slice(0, colonIdx);
+      const val = token.slice(colonIdx + 1);
+      if (key === 'fill' && VALID_FILLS.has(val)) {
+        result.fill = val as NicknameFillMode;
+        continue;
+      }
+      if (key === 'grad2' && /^#[0-9a-fA-F]{3,8}$/.test(val)) {
+        result.grad2 = val;
+        continue;
+      }
+      if (key === 'pillbg' && /^#[0-9a-fA-F]{3,8}$/.test(val)) {
+        result.pillbg = val;
+        continue;
+      }
+      if (key === 'shimmer' && (val === '1' || val === 'true')) {
+        result.shimmer = true;
+        continue;
+      }
+      if (key === 'textfx' && VALID_TEXTFX.has(val)) {
+        result.textfx = val as NicknameTextFx;
+        continue;
+      }
+    }
+    baseClasses.push(token);
+  }
+
+  result.baseClass = baseClasses.join(' ');
+  return result;
+}
+
+export function buildNicknameCssClass(tokens: Partial<NicknameStudioTokens>): string {
+  const parts: string[] = [];
+  if (tokens.baseClass?.trim()) parts.push(tokens.baseClass.trim());
+  if (tokens.fill) parts.push(`fill:${tokens.fill}`);
+  if (tokens.grad2) parts.push(`grad2:${tokens.grad2}`);
+  if (tokens.pillbg) parts.push(`pillbg:${tokens.pillbg}`);
+  if (tokens.shimmer) parts.push('shimmer:1');
+  if (tokens.textfx) parts.push(`textfx:${tokens.textfx}`);
+  return parts.join(' ');
 }
 
 export interface NicknamePresetMeta {
@@ -165,6 +230,11 @@ export const StyledNickname: React.FC<StyledNicknameProps> = ({
   className = '',
   truncate = false,
 }) => {
+  const tokens = useMemo(
+    () => parseNicknameStudioTokens(nicknameItem?.nicknameCssClass),
+    [nicknameItem?.nicknameCssClass]
+  );
+
   if (!nicknameItem) {
     return (
       <span className={`${truncate ? 'truncate' : ''} ${className}`.trim()}>
@@ -179,22 +249,42 @@ export const StyledNickname: React.FC<StyledNicknameProps> = ({
     nicknameGlowColor,
     nicknameFont,
     nicknameBadgeIcon,
-    nicknameCssClass,
   } = nicknameItem;
 
-  const isGradientColor =
+  const isGradientColorString =
     typeof nicknameColor === 'string' &&
     (nicknameColor.includes('gradient(') ||
       nicknameColor.includes('linear-gradient') ||
       nicknameColor.includes('radial-gradient'));
 
-  const isPillBadge = Boolean(nicknameCssClass && PILL_BADGE_CLASSES.has(nicknameCssClass));
+  const primaryPresetClass = tokens.baseClass.split(' ')[0] || '';
+  const isPresetPill = PILL_BADGE_CLASSES.has(primaryPresetClass);
+  const isCustomPill = tokens.fill === 'pill';
+  const isPill = isCustomPill || (isPresetPill && tokens.fill !== 'solid' && tokens.fill !== 'gradient');
+  const isCustomGradient = tokens.fill === 'gradient';
 
   const textStyle: React.CSSProperties = {};
+  const wrapperStyle: React.CSSProperties = {};
 
-  if (!isPillBadge) {
-    if (nicknameColor && !nicknameCssClass) {
-      if (isGradientColor) {
+  if (isCustomPill) {
+    wrapperStyle.backgroundColor = tokens.pillbg || '#1e1b4b';
+    wrapperStyle.borderColor = nicknameColor || '#fbbf24';
+    wrapperStyle.borderWidth = '1.5px';
+    wrapperStyle.borderStyle = 'solid';
+    textStyle.color = nicknameColor || '#ffffff';
+  } else if (isCustomGradient) {
+    const c1 = !isGradientColorString && nicknameColor ? nicknameColor : '#f59e0b';
+    const c2 = tokens.grad2 || '#ec4899';
+    textStyle.backgroundImage = tokens.shimmer
+      ? `linear-gradient(90deg, ${c1}, ${c2}, ${c1})`
+      : `linear-gradient(90deg, ${c1}, ${c2})`;
+    textStyle.WebkitBackgroundClip = 'text';
+    textStyle.backgroundClip = 'text';
+    textStyle.WebkitTextFillColor = 'transparent';
+    textStyle.color = 'transparent';
+  } else if (!isPill) {
+    if (nicknameColor && (!tokens.baseClass || tokens.fill === 'solid')) {
+      if (isGradientColorString) {
         textStyle.backgroundImage = nicknameColor;
         textStyle.WebkitBackgroundClip = 'text';
         textStyle.backgroundClip = 'text';
@@ -203,20 +293,49 @@ export const StyledNickname: React.FC<StyledNicknameProps> = ({
       } else {
         textStyle.color = nicknameColor;
       }
-    } else if (nicknameColor && nicknameCssClass && !isGradientColor) {
+    } else if (nicknameColor && tokens.baseClass && !isGradientColorString) {
       textStyle.color = nicknameColor;
     }
+  }
 
-    if (nicknameGlow) {
-      const resolvedGlowColor =
-        nicknameGlowColor || (!isGradientColor && nicknameColor ? nicknameColor : '#9333ea');
+  // Text FX / Glow handling
+  const resolvedGlowColor =
+    nicknameGlowColor || (!isGradientColorString && nicknameColor ? nicknameColor : '#9333ea');
+
+  if (tokens.textfx === 'none') {
+    textStyle.textShadow = 'none';
+  } else if (tokens.textfx === 'soft') {
+    if (isCustomGradient || isGradientColorString) {
+      textStyle.filter = `drop-shadow(0 0 4px ${resolvedGlowColor}88)`;
+    } else {
+      textStyle.textShadow = `0 1px 6px ${resolvedGlowColor}88`;
+    }
+  } else if (tokens.textfx === 'neon') {
+    if (isCustomGradient || isGradientColorString) {
+      textStyle.filter = `drop-shadow(0 0 6px ${resolvedGlowColor})`;
+    } else {
+      textStyle.textShadow = `0 0 8px ${resolvedGlowColor}, 0 0 18px ${resolvedGlowColor}aa`;
+    }
+  } else if (tokens.textfx === 'fire') {
+    if (isCustomGradient || isGradientColorString) {
+      textStyle.filter = 'drop-shadow(0 0 6px #f97316)';
+    } else {
+      textStyle.textShadow = '0 0 6px #fbbf24, 0 -2px 12px #f97316, 0 -4px 18px #ef4444';
+    }
+  } else if (tokens.textfx === 'outline') {
+    textStyle.WebkitTextStroke = `0.6px ${resolvedGlowColor}`;
+  } else if (nicknameGlow && !isPill) {
+    if (isCustomGradient || isGradientColorString) {
+      textStyle.filter = `drop-shadow(0 0 6px ${resolvedGlowColor}99)`;
+    } else {
       textStyle.textShadow = `0 0 8px ${resolvedGlowColor}, 0 0 16px ${resolvedGlowColor}66`;
     }
   }
 
   const textClasses = [
     nicknameFont || '',
-    !isPillBadge ? nicknameCssClass || '' : '',
+    !isPill && !isCustomGradient ? tokens.baseClass : '',
+    tokens.shimmer ? 'store-text-shimmer-anim' : '',
     truncate ? 'truncate' : '',
   ]
     .filter(Boolean)
@@ -224,7 +343,8 @@ export const StyledNickname: React.FC<StyledNicknameProps> = ({
 
   const wrapperClasses = [
     'inline-flex items-center gap-1',
-    isPillBadge ? nicknameCssClass || '' : '',
+    isCustomPill ? 'px-2.5 py-0.5 rounded-full shadow-sm' : '',
+    !isCustomPill && isPill ? tokens.baseClass : '',
     truncate ? 'min-w-0 max-w-full' : '',
     className,
   ]
@@ -232,7 +352,7 @@ export const StyledNickname: React.FC<StyledNicknameProps> = ({
     .join(' ');
 
   return (
-    <span className={wrapperClasses}>
+    <span className={wrapperClasses} style={wrapperStyle}>
       {nicknameBadgeIcon && (
         <span className="shrink-0 leading-none" aria-hidden="true">
           {nicknameBadgeIcon}

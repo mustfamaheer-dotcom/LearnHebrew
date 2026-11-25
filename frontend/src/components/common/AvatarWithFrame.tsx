@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { getAvatarUrl } from '../../utils/avatar';
 
 export interface AvatarFrameConfig {
@@ -15,6 +15,111 @@ export interface AvatarWithFrameProps {
   frameItem?: AvatarFrameConfig | null;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
+}
+
+export type FrameRingStyle = 'solid' | 'double' | 'dashed' | 'dotted' | 'gradient' | 'conic';
+export type FrameThickness = 2 | 3 | 4 | 5 | 6;
+export type FrameGlowLevel = 'none' | 'soft' | 'strong' | 'neon';
+export type FrameShape = 'circle' | 'squircle' | 'rounded' | 'hex';
+export type FrameOrnament =
+  | 'none'
+  | 'crown'
+  | 'fire'
+  | 'sparkle'
+  | 'star'
+  | 'diamond'
+  | 'sakura'
+  | 'snow'
+  | 'halo'
+  | 'bolt'
+  | 'vip'
+  | 'hud';
+
+export interface FrameStudioTokens {
+  baseClass: string;
+  ring?: FrameRingStyle;
+  thick?: FrameThickness;
+  glow?: FrameGlowLevel;
+  grad2?: string;
+  shape?: FrameShape;
+  ornament?: FrameOrnament;
+}
+
+const VALID_RINGS = new Set<string>(['solid', 'double', 'dashed', 'dotted', 'gradient', 'conic']);
+const VALID_THICKS = new Set<number>([2, 3, 4, 5, 6]);
+const VALID_GLOWS = new Set<string>(['none', 'soft', 'strong', 'neon']);
+const VALID_SHAPES = new Set<string>(['circle', 'squircle', 'rounded', 'hex']);
+const VALID_ORNAMENTS = new Set<string>([
+  'none',
+  'crown',
+  'fire',
+  'sparkle',
+  'star',
+  'diamond',
+  'sakura',
+  'snow',
+  'halo',
+  'bolt',
+  'vip',
+  'hud',
+]);
+
+export function parseFrameStudioTokens(frameCssClass?: string | null): FrameStudioTokens {
+  const result: FrameStudioTokens = { baseClass: '' };
+  if (!frameCssClass) return result;
+
+  const baseClasses: string[] = [];
+  for (const token of frameCssClass.trim().split(/\s+/)) {
+    if (!token) continue;
+    const colonIdx = token.indexOf(':');
+    if (colonIdx > 0) {
+      const key = token.slice(0, colonIdx);
+      const val = token.slice(colonIdx + 1);
+      if (key === 'ring' && VALID_RINGS.has(val)) {
+        result.ring = val as FrameRingStyle;
+        continue;
+      }
+      if (key === 'thick') {
+        const num = Number(val);
+        if (VALID_THICKS.has(num)) {
+          result.thick = num as FrameThickness;
+          continue;
+        }
+      }
+      if (key === 'glow' && VALID_GLOWS.has(val)) {
+        result.glow = val as FrameGlowLevel;
+        continue;
+      }
+      if (key === 'grad2' && /^#[0-9a-fA-F]{3,8}$/.test(val)) {
+        result.grad2 = val;
+        continue;
+      }
+      if (key === 'shape' && VALID_SHAPES.has(val)) {
+        result.shape = val as FrameShape;
+        continue;
+      }
+      if (key === 'ornament' && VALID_ORNAMENTS.has(val)) {
+        result.ornament = val as FrameOrnament;
+        continue;
+      }
+    }
+    baseClasses.push(token);
+  }
+
+  result.baseClass = baseClasses.join(' ');
+  return result;
+}
+
+export function buildFrameCssClass(tokens: Partial<FrameStudioTokens>): string {
+  const parts: string[] = [];
+  if (tokens.baseClass?.trim()) parts.push(tokens.baseClass.trim());
+  if (tokens.ring) parts.push(`ring:${tokens.ring}`);
+  if (tokens.thick) parts.push(`thick:${tokens.thick}`);
+  if (tokens.glow) parts.push(`glow:${tokens.glow}`);
+  if (tokens.grad2) parts.push(`grad2:${tokens.grad2}`);
+  if (tokens.shape) parts.push(`shape:${tokens.shape}`);
+  if (tokens.ornament) parts.push(`ornament:${tokens.ornament}`);
+  return parts.join(' ');
 }
 
 export interface FramePresetMeta {
@@ -172,6 +277,8 @@ const INITIALS_BG_PALETTE = [
   'from-violet-500 to-fuchsia-600',
 ];
 
+const HEX_CLIP_PATH = 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)';
+
 function getInitials(name: string): string {
   const trimmed = (name || '').trim();
   if (!trimmed) return '?';
@@ -198,15 +305,29 @@ const CONIC_FRAME_CLASSES = new Set([
 
 const SQUIRCLE_DEFAULT_CLASSES = new Set(['frame-cyber-hex', 'frame-cyber-neon']);
 
+const PRESET_DEFAULT_ORNAMENT: Record<string, FrameOrnament> = {
+  'frame-gold-glow': 'crown',
+  'frame-royal-crown': 'vip',
+  'frame-angel-halo': 'halo',
+  'frame-crimson-flame': 'fire',
+  'frame-neon-cyan': 'hud',
+  'frame-cyber-hex': 'hud',
+  'frame-starlight-galaxy': 'star',
+  'frame-rainbow-legendary': 'star',
+  'frame-sakura-blossom': 'sakura',
+  'frame-silver-frost': 'snow',
+  'frame-royal-purple': 'diamond',
+};
+
 const FrameOrnaments: React.FC<{
-  cssClass?: string | null;
+  ornament?: FrameOrnament;
   size: NonNullable<AvatarWithFrameProps['size']>;
-}> = ({ cssClass, size }) => {
-  if (!cssClass) return null;
+}> = ({ ornament, size }) => {
+  if (!ornament || ornament === 'none') return null;
   const textScale = ORNAMENT_SCALE[size];
   const isCompact = size === 'sm';
 
-  if (cssClass === 'frame-gold-glow' || cssClass === 'frame-royal-crown') {
+  if (ornament === 'crown' || ornament === 'vip') {
     return (
       <>
         <span
@@ -215,7 +336,7 @@ const FrameOrnaments: React.FC<{
         >
           👑
         </span>
-        {!isCompact && cssClass === 'frame-royal-crown' && (
+        {!isCompact && ornament === 'vip' && (
           <span
             aria-hidden="true"
             className="pointer-events-none absolute -bottom-1 left-1/2 z-30 -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 px-1.5 py-[1px] text-[7px] font-black uppercase tracking-wider text-purple-950 shadow"
@@ -227,7 +348,7 @@ const FrameOrnaments: React.FC<{
     );
   }
 
-  if (cssClass === 'frame-angel-halo') {
+  if (ornament === 'halo') {
     return (
       <div
         aria-hidden="true"
@@ -238,7 +359,7 @@ const FrameOrnaments: React.FC<{
     );
   }
 
-  if (cssClass === 'frame-crimson-flame') {
+  if (ornament === 'fire') {
     return (
       <>
         <span
@@ -259,7 +380,7 @@ const FrameOrnaments: React.FC<{
     );
   }
 
-  if (cssClass === 'frame-neon-cyan' || cssClass === 'frame-cyber-hex') {
+  if (ornament === 'hud') {
     const cornerSize = isCompact ? 'h-2 w-2' : 'h-2.5 w-2.5';
     return (
       <div aria-hidden="true" className="pointer-events-none absolute -inset-1 z-30">
@@ -271,7 +392,7 @@ const FrameOrnaments: React.FC<{
     );
   }
 
-  if (cssClass === 'frame-starlight-galaxy' || cssClass === 'frame-rainbow-legendary') {
+  if (ornament === 'star') {
     return (
       <>
         <span
@@ -293,7 +414,28 @@ const FrameOrnaments: React.FC<{
     );
   }
 
-  if (cssClass === 'frame-sakura-blossom') {
+  if (ornament === 'sparkle') {
+    return (
+      <>
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute -top-1.5 -right-1 z-30 leading-none drop-shadow ${textScale} store-twinkle`}
+        >
+          ✨
+        </span>
+        {!isCompact && (
+          <span
+            aria-hidden="true"
+            className={`pointer-events-none absolute -bottom-1 -left-1 z-30 leading-none drop-shadow ${textScale} store-float-gentle`}
+          >
+            ✨
+          </span>
+        )}
+      </>
+    );
+  }
+
+  if (ornament === 'sakura') {
     return (
       <>
         <span
@@ -314,29 +456,22 @@ const FrameOrnaments: React.FC<{
     );
   }
 
-  if (cssClass === 'frame-silver-frost') {
-    return (
-      <span
-        aria-hidden="true"
-        className={`pointer-events-none absolute -top-1.5 -right-1 z-30 leading-none drop-shadow ${textScale} store-twinkle`}
-      >
-        ❄️
-      </span>
-    );
-  }
+  const singleEmojiMap: Partial<Record<FrameOrnament, string>> = {
+    snow: '❄️',
+    diamond: '💎',
+    bolt: '⚡',
+  };
+  const emoji = singleEmojiMap[ornament];
+  if (!emoji) return null;
 
-  if (cssClass === 'frame-royal-purple') {
-    return (
-      <span
-        aria-hidden="true"
-        className={`pointer-events-none absolute -top-1.5 -right-1 z-30 text-purple-300 drop-shadow-[0_0_6px_rgba(192,132,252,0.9)] ${textScale} store-twinkle`}
-      >
-        💎
-      </span>
-    );
-  }
-
-  return null;
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute -top-1.5 -right-1 z-30 leading-none drop-shadow ${textScale} store-twinkle`}
+    >
+      {emoji}
+    </span>
+  );
 };
 
 export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
@@ -347,6 +482,7 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
   className = '',
 }) => {
   const [imgError, setImgError] = useState(false);
+  const svgGradId = useId().replace(/:/g, '');
 
   useEffect(() => {
     setImgError(false);
@@ -356,41 +492,90 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
   const initials = useMemo(() => getInitials(studentName), [studentName]);
   const bgGradient = useMemo(() => getBgGradient(studentName || ''), [studentName]);
 
-  const defaultRadius =
-    frameItem?.frameCssClass && SQUIRCLE_DEFAULT_CLASSES.has(frameItem.frameCssClass)
-      ? '24%'
-      : '50%';
-  const borderRadius = frameItem?.frameBorderRadius || defaultRadius;
+  const tokens = useMemo(
+    () => parseFrameStudioTokens(frameItem?.frameCssClass),
+    [frameItem?.frameCssClass]
+  );
+
+  const primaryPresetClass = tokens.baseClass.split(' ')[0] || '';
+  const isHexShape = tokens.shape === 'hex';
+
+  const shapeRadius = useMemo(() => {
+    if (tokens.shape === 'circle') return '50%';
+    if (tokens.shape === 'squircle') return '24%';
+    if (tokens.shape === 'rounded') return '14px';
+    if (tokens.shape === 'hex') return '0px';
+    if (frameItem?.frameBorderRadius) return frameItem.frameBorderRadius;
+    return SQUIRCLE_DEFAULT_CLASSES.has(primaryPresetClass) ? '24%' : '50%';
+  }, [tokens.shape, frameItem?.frameBorderRadius, primaryPresetClass]);
+
   const showImage = Boolean(resolvedAvatarUrl) && !imgError;
 
-  const isConicFrame = Boolean(
-    frameItem?.frameCssClass && CONIC_FRAME_CLASSES.has(frameItem.frameCssClass)
-  );
+  const isPresetConic = CONIC_FRAME_CLASSES.has(primaryPresetClass);
+  const isTokenGradientOrConic = tokens.ring === 'gradient' || tokens.ring === 'conic';
+
+  const c1 = frameItem?.frameBorderColor || '#ffd700';
+  const c2 = tokens.grad2 || '#ff6b00';
+  const thickness = tokens.thick ?? 3;
+
+  const glowFilterOrShadow = useMemo(() => {
+    if (tokens.glow === 'none') return 'none';
+    if (tokens.glow === 'soft') return `0 0 10px ${c1}88`;
+    if (tokens.glow === 'strong') return `0 0 16px ${c1}cc, 0 0 28px ${c2}66`;
+    if (tokens.glow === 'neon') return `0 0 12px ${c1}, 0 0 24px ${c1}cc, 0 0 38px ${c2}99`;
+    return undefined;
+  }, [tokens.glow, c1, c2]);
+
+  const resolvedOrnament: FrameOrnament | undefined =
+    tokens.ornament ?? PRESET_DEFAULT_ORNAMENT[primaryPresetClass];
 
   const frameOverlayClasses = [
     'pointer-events-none absolute -inset-[3px] z-10',
-    frameItem?.frameCssClass || '',
+    tokens.baseClass,
     frameItem?.frameAnimated ? 'animated frame-animated' : '',
+    tokens.ring === 'conic' && frameItem?.frameAnimated ? 'store-spin-slow' : '',
+    isTokenGradientOrConic ? 'store-ring-mask' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
   const frameOverlayStyle: React.CSSProperties = {
-    borderRadius,
+    borderRadius: shapeRadius,
   };
 
-  if (!isConicFrame) {
-    if (frameItem?.frameBorderColor && !frameItem?.frameCssClass) {
-      frameOverlayStyle.border = `3px solid ${frameItem.frameBorderColor}`;
-    } else if (frameItem?.frameBorderColor) {
-      frameOverlayStyle.borderColor = frameItem.frameBorderColor;
+  if (isTokenGradientOrConic) {
+    frameOverlayStyle.border = 'none';
+    frameOverlayStyle.outline = 'none';
+    frameOverlayStyle.padding = `${thickness}px`;
+    frameOverlayStyle.background =
+      tokens.ring === 'conic'
+        ? `conic-gradient(from 0deg, ${c1}, ${c2}, ${c1})`
+        : `linear-gradient(135deg, ${c1}, ${c2})`;
+  } else if (!isPresetConic) {
+    if (tokens.ring) {
+      frameOverlayStyle.borderStyle = tokens.ring;
+      frameOverlayStyle.borderWidth = `${thickness}px`;
+      frameOverlayStyle.borderColor = c1;
+    } else {
+      if (tokens.thick) {
+        frameOverlayStyle.borderWidth = `${thickness}px`;
+      }
+      if (frameItem?.frameBorderColor && !tokens.baseClass) {
+        frameOverlayStyle.border = `${thickness}px solid ${c1}`;
+      } else if (frameItem?.frameBorderColor) {
+        frameOverlayStyle.borderColor = c1;
+      }
     }
+  }
+
+  if (glowFilterOrShadow !== undefined) {
+    frameOverlayStyle.boxShadow = glowFilterOrShadow;
   }
 
   return (
     <div
       className={`relative inline-flex shrink-0 select-none items-center justify-center ${SIZE_CLASSES[size]} ${className}`}
-      style={{ borderRadius }}
+      style={{ borderRadius: shapeRadius }}
     >
       {/* Base Avatar (Image or Initials Fallback) */}
       <div
@@ -399,7 +584,11 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
             ? 'bg-slate-100 dark:bg-slate-800'
             : `bg-gradient-to-br ${bgGradient} font-semibold text-white`
         }`}
-        style={{ borderRadius }}
+        style={
+          isHexShape
+            ? { clipPath: HEX_CLIP_PATH }
+            : { borderRadius: shapeRadius }
+        }
       >
         {showImage ? (
           <img
@@ -413,8 +602,46 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
         )}
       </div>
 
-      {/* CSS / Border / Conic-Gradient Frame Overlay */}
-      {frameItem && (frameItem.frameCssClass || frameItem.frameBorderColor) && (
+      {/* Hexagon SVG Frame Overlay */}
+      {frameItem && isHexShape && (
+        <svg
+          viewBox="0 0 100 100"
+          aria-hidden="true"
+          className={`pointer-events-none absolute -inset-[4px] z-10 h-[calc(100%+8px)] w-[calc(100%+8px)] ${
+            frameItem.frameAnimated ? 'animate-pulse' : ''
+          }`}
+          style={{
+            filter:
+              tokens.glow && tokens.glow !== 'none'
+                ? `drop-shadow(0 0 ${tokens.glow === 'neon' ? '8px' : '5px'} ${c1})`
+                : undefined,
+          }}
+        >
+          <defs>
+            <linearGradient id={svgGradId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={c1} />
+              <stop offset="100%" stopColor={isTokenGradientOrConic ? c2 : c1} />
+            </linearGradient>
+          </defs>
+          <polygon
+            points="50,3 93,26 93,74 50,97 7,74 7,26"
+            fill="none"
+            stroke={`url(#${svgGradId})`}
+            strokeWidth={thickness * 1.4}
+            strokeLinejoin="round"
+            strokeDasharray={
+              tokens.ring === 'dashed'
+                ? '10 5'
+                : tokens.ring === 'dotted'
+                ? '3 5'
+                : undefined
+            }
+          />
+        </svg>
+      )}
+
+      {/* Standard CSS / Gradient / Conic Frame Overlay */}
+      {frameItem && !isHexShape && (tokens.baseClass || frameItem.frameBorderColor || tokens.ring) && (
         <div
           className={frameOverlayClasses}
           style={frameOverlayStyle}
@@ -423,8 +650,8 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
       )}
 
       {/* Ornate / Badge / Corner Ornaments */}
-      {frameItem?.frameCssClass && (
-        <FrameOrnaments cssClass={frameItem.frameCssClass} size={size} />
+      {frameItem && (
+        <FrameOrnaments ornament={resolvedOrnament} size={size} />
       )}
 
       {/* Optional Frame Image Overlay */}

@@ -137,6 +137,17 @@
   animation: store-twinkle 1.8s ease-in-out infinite;
 }
 
+.store-text-shimmer-anim {
+  background-size: 200% auto;
+  animation: store-text-shimmer 3s linear infinite;
+}
+
+.store-ring-mask {
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
 /* --------------------------------------------------------------------------
    Avatar Frame Classes
    -------------------------------------------------------------------------- */
