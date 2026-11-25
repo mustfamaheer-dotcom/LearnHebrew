@@ -209,7 +209,7 @@ export const Navbar: React.FC = () => {
                 {/* User Profile Pill -> Links directly to Dashboard */}
                 <Link
                   to={getUserDashboardPath(user.role)}
-                  className="flex items-center gap-2.5 min-h-[40px] ps-1.5 pe-3 py-1 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group shrink-0"
+                  className="flex items-center gap-2 md:gap-2.5 min-h-[38px] md:min-h-[40px] p-1 md:ps-1.5 md:pe-3 md:py-1 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group shrink-0"
                   title={getDashboardButtonLabel(user.role, language as any)}
                 >
                   {user.role === 'STUDENT' ? (

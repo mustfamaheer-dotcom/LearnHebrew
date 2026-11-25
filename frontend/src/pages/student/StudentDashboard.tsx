@@ -1298,52 +1298,56 @@ export const StudentDashboard: React.FC = () => {
           {activeTab === 'overview' && (
             <div className="space-y-8">
               {/* Top Welcome Banner with Brand Teal & Olive */}
-              <div className="bg-gradient-to-r from-brand-teal-900 via-brand-teal-800 to-brand-olive-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  <div className="flex items-center gap-4 sm:gap-5">
-                    <AvatarWithFrame
-                      avatarUrl={user?.avatarUrl}
-                      studentName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Student'}
-                      frameItem={student?.equippedAvatarFrame}
-                      size="lg"
-                    />
-                    <div>
-                      <span className="inline-block px-3 py-1 bg-white/10 text-brand-olive-300 text-xs font-semibold rounded-full mb-2 backdrop-blur-md border border-white/15">
-                        {t(`levels.${student?.level || 'BEGINNER'}`)}
-                      </span>
-                      <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight flex flex-wrap items-center gap-2">
-                        <span>{t('dashboard.welcome', { name: '' }).replace(/\s*!\s*$/, '')}</span>
-                        <StyledNickname
-                          name={`${user?.firstName || 'Student'}${user?.lastName ? ` ${user.lastName}` : ''}`}
-                          nicknameItem={student?.equippedNickname}
-                        />
-                      </h1>
-                      <p className="text-brand-teal-100 text-sm mt-1 max-w-xl leading-relaxed">
-                        {isAr
-                          ? 'واصل تقدمك نحو إتقان اللغة العبرية مع حصص فردية تفاعلية مدتها 25 دقيقة، وألعاب تعليمية ممتعة، وملاحظات مباشرة من معلمك المعتمد.'
-                          : isHe
-                          ? 'המשך להתקדם לעבר שטף בדיבור בעברית עם שיעורים ממוקדים של 25 דקות, משחקים חווייתיים ומשוב אישי מהמורה.'
-                          : 'Keep progressing towards Hebrew fluency with high-retention 25-minute live lessons, interactive games, and teacher feedback.'}
-                      </p>
+              <div className="bg-gradient-to-r from-brand-teal-900 via-brand-teal-800 to-brand-olive-800 rounded-3xl p-5 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  {/* Top / Left: Avatar + Identity + Greeting + Description */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3.5 sm:gap-5">
+                      <AvatarWithFrame
+                        avatarUrl={user?.avatarUrl}
+                        studentName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Student'}
+                        frameItem={student?.equippedAvatarFrame}
+                        size="lg"
+                        className="shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <span className="inline-block px-2.5 py-0.5 bg-white/10 text-brand-olive-300 text-[11px] sm:text-xs font-semibold rounded-full mb-1 backdrop-blur-md border border-white/15">
+                          {t(`levels.${student?.level || 'BEGINNER'}`)}
+                        </span>
+                        <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight flex flex-wrap items-center gap-2">
+                          <span>{t('dashboard.welcome', { name: '' }).replace(/\s*!\s*$/, '')}</span>
+                          <StyledNickname
+                            name={`${user?.firstName || 'Student'}${user?.lastName ? ` ${user.lastName}` : ''}`}
+                            nicknameItem={student?.equippedNickname}
+                          />
+                        </h1>
+                      </div>
                     </div>
+                    <p className="text-brand-teal-100 text-xs sm:text-sm max-w-xl leading-relaxed">
+                      {isAr
+                        ? 'واصل تقدمك نحو إتقان اللغة العبرية مع حصص فردية تفاعلية مدتها 25 دقيقة، وألعاب تعليمية ممتعة، وملاحظات مباشرة من معلمك المعتمد.'
+                        : isHe
+                        ? 'המשך להתקדם לעבר שטף בדיבור בעברית עם שיעורים ממוקדים של 25 דקות, משחקים חווייתיים ומשוב אישי מהמורה.'
+                        : 'Keep progressing towards Hebrew fluency with high-retention 25-minute live lessons, interactive games, and teacher feedback.'}
+                    </p>
                   </div>
 
                   {/* Balance, Points & Coins Stats */}
-                  <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:flex lg:items-center lg:gap-4 shrink-0">
                     <button
                       type="button"
                       onClick={() => {
                         setActiveTab('store');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="bg-white/10 hover:bg-white/20 transition-all cursor-pointer backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[100px] border border-amber-300/30 group"
+                      className="bg-white/10 hover:bg-white/20 transition-all cursor-pointer backdrop-blur-md rounded-2xl p-2.5 sm:p-4 text-center border border-amber-300/30 group"
                       title={isAr ? 'فتح متجر العملات' : isHe ? 'פתח חנות מטבעות' : 'Open Student Store'}
                     >
-                      <div className="flex items-center justify-center gap-1 text-amber-300 font-extrabold text-lg sm:text-xl group-hover:scale-105 transition-transform">
-                        <Coins className="w-5 h-5 shrink-0" />
+                      <div className="flex items-center justify-center gap-1 text-amber-300 font-extrabold text-base sm:text-xl group-hover:scale-105 transition-transform">
+                        <Coins className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                         <span>{myCoinsData?.coins ?? student?.coins ?? 0}</span>
                       </div>
-                      <p className="text-[10px] sm:text-[11px] font-semibold text-amber-100 uppercase mt-0.5">
+                      <p className="text-[9px] sm:text-[11px] font-semibold text-amber-100 uppercase mt-0.5 truncate">
                         {isAr ? 'العملات' : isHe ? 'מטבעות' : 'Coins'}
                       </p>
                     </button>
@@ -1353,24 +1357,24 @@ export const StudentDashboard: React.FC = () => {
                         setActiveTab('balance');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="bg-white/10 hover:bg-white/20 transition-all cursor-pointer backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[110px] border border-white/15 group"
+                      className="bg-white/10 hover:bg-white/20 transition-all cursor-pointer backdrop-blur-md rounded-2xl p-2.5 sm:p-4 text-center border border-white/15 group"
                       title={isAr ? 'عرض باقات الحصص والأرصدة' : isHe ? 'צפה בחבילות ומכסת שיעורים' : 'View Session Packages & Balances'}
                     >
-                      <div className="flex items-center justify-center gap-1 text-emerald-300 font-extrabold text-lg sm:text-xl group-hover:scale-105 transition-transform">
-                        <Layers className="w-5 h-5 text-emerald-300 shrink-0" />
+                      <div className="flex items-center justify-center gap-1 text-emerald-300 font-extrabold text-base sm:text-xl group-hover:scale-105 transition-transform">
+                        <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-300 shrink-0" />
                         <span>{totalAvailableSessions}</span>
                       </div>
-                      <p className="text-[10px] sm:text-[11px] font-semibold text-brand-teal-100 uppercase mt-0.5">
+                      <p className="text-[9px] sm:text-[11px] font-semibold text-brand-teal-100 uppercase mt-0.5 truncate">
                         {isAr ? 'الحصص المتبقية' : isHe ? 'מפגשים זמינים' : 'Sessions Left'}
                       </p>
                     </button>
 
-                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[105px] border border-white/15">
-                      <div className="flex items-center justify-center gap-1 text-amber-400 font-extrabold text-lg sm:text-xl">
-                        <Award className="w-5 h-5 shrink-0" />
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-2.5 sm:p-4 text-center border border-white/15">
+                      <div className="flex items-center justify-center gap-1 text-amber-400 font-extrabold text-base sm:text-xl">
+                        <Award className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
                         <span>{student?.totalPoints || 0}</span>
                       </div>
-                      <p className="text-[10px] sm:text-[11px] font-semibold text-brand-teal-100 uppercase mt-0.5">
+                      <p className="text-[9px] sm:text-[11px] font-semibold text-brand-teal-100 uppercase mt-0.5 truncate">
                         {t('dashboard.pointsEarned')}
                       </p>
                     </div>
@@ -1379,11 +1383,11 @@ export const StudentDashboard: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsExamsAndPackagesModalOpen(true)}
-                      className="flex items-center gap-2.5 px-4 py-3 sm:py-3.5 bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white rounded-2xl font-bold text-xs sm:text-sm border border-white/20 shadow-md backdrop-blur-md cursor-pointer group"
+                      className="col-span-3 lg:col-auto flex items-center justify-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3.5 bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white rounded-2xl font-bold text-xs sm:text-sm border border-white/20 shadow-md backdrop-blur-md cursor-pointer group"
                       title={isAr ? 'باقات الحصص والاختبارات' : isHe ? 'חבילות שיעורים ומבחנים' : 'Session Packages & Exams'}
                     >
                       <div className="p-1 rounded-lg bg-emerald-400/20 text-emerald-300 group-hover:scale-110 transition-transform">
-                        <Layers className="w-4 h-4 text-emerald-300 shrink-0" />
+                        <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300 shrink-0" />
                       </div>
                       <span className="whitespace-nowrap font-extrabold">
                         {isAr ? 'باقات الحصص والاختبارات' : isHe ? 'חבילות שיעורים ומבחנים' : 'Session Packages & Exams'}
