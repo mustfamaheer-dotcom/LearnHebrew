@@ -20,6 +20,8 @@ import { MatchingGame } from '../../components/games/MatchingGame';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
 import { StructuredNotesEditorModal } from '../../components/lessons/StructuredNotesEditorModal';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
+import { AvatarWithFrame } from '../../components/common/AvatarWithFrame';
+import { StyledNickname } from '../../components/common/StyledNickname';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { TeacherShareModal } from '../../components/teacher/TeacherShareModal';
 import { TeachersCalendarTab } from '../../components/admin/TeachersCalendarTab';
@@ -2210,15 +2212,22 @@ export const TeacherDashboard: React.FC = () => {
                       <div className="space-y-3.5">
                         {/* Student Identity Row: Avatar + Full Name + Email */}
                         <div className="flex items-center gap-3.5 min-w-0 min-h-[52px]">
-                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-teal-700 to-brand-teal-900 text-white font-black text-base flex items-center justify-center shadow-xs shrink-0 ring-2 ring-brand-teal-100 dark:ring-brand-teal-950">
-                            {studentUser?.firstName?.[0] || 'S'}
-                          </div>
+                          <AvatarWithFrame
+                            avatarUrl={studentUser?.avatarUrl}
+                            studentName={studentName}
+                            frameItem={student?.equippedAvatarFrame}
+                            size="lg"
+                          />
                           <div className="min-w-0 flex-1">
                             <h4
                               className="font-extrabold text-slate-900 dark:text-white text-sm sm:text-base leading-snug break-words"
                               title={studentName}
                             >
-                              {studentName}
+                              <StyledNickname
+                                name={studentName}
+                                nicknameItem={student?.equippedNickname}
+                                truncate
+                              />
                             </h4>
                             <span
                               className="text-xs text-slate-500 dark:text-slate-400 block truncate mt-0.5"
@@ -3293,12 +3302,18 @@ export const TeacherDashboard: React.FC = () => {
           <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-brand-teal-800 text-white font-black text-lg flex items-center justify-center shadow-xs">
-                  {selectedStudentDetail.user?.firstName?.[0] || 'S'}
-                </div>
+                <AvatarWithFrame
+                  avatarUrl={selectedStudentDetail.user?.avatarUrl}
+                  studentName={`${selectedStudentDetail.user?.firstName || ''} ${selectedStudentDetail.user?.lastName || ''}`.trim() || 'Student'}
+                  frameItem={selectedStudentDetail.equippedAvatarFrame}
+                  size="lg"
+                />
                 <div>
                   <h3 className="font-black text-slate-900 dark:text-white text-base">
-                    {selectedStudentDetail.user?.firstName} {selectedStudentDetail.user?.lastName}
+                    <StyledNickname
+                      name={`${selectedStudentDetail.user?.firstName || ''} ${selectedStudentDetail.user?.lastName || ''}`.trim()}
+                      nicknameItem={selectedStudentDetail.equippedNickname}
+                    />
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {selectedStudentDetail.user?.email} • {t(`levels.${selectedStudentDetail.level || 'BEGINNER'}`)}

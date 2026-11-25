@@ -44,6 +44,9 @@ export interface StudentProfile {
   level: HebrewLevel;
   totalPoints: number;
   streakDays: number;
+  coins?: number;
+  equippedAvatarFrame?: any;
+  equippedNickname?: any;
   lastLessonAt?: string;
   notes?: string;
   packages?: StudentPackage[];

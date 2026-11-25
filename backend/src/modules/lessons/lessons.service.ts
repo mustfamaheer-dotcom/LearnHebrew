@@ -51,6 +51,8 @@ export async function listLessons(filters: {
         include: {
           user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
           levelModel: true,
+          equippedAvatarFrame: true,
+          equippedNickname: true,
         },
       },
       teacher: {

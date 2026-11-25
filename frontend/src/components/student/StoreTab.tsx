@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
+import { api } from '../../lib/api';
 import { toast } from '../../store/toastStore';
 import { triggerConfetti } from '../../utils/confetti';
 import { haptics } from '../../utils/haptics';
@@ -196,6 +197,7 @@ export const StoreTab: React.FC = () => {
     try {
       await redeemMutation.mutateAsync({ storeItemId: redeemTarget.id });
       queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
       haptics.success();
       triggerConfetti.celebrate();
       toast.success(
@@ -217,11 +219,44 @@ export const StoreTab: React.FC = () => {
 
   const handleToggleEquip = async (storeItemId: string, currentlyEquipped: boolean, itemName: string) => {
     try {
-      await equipMutation.mutateAsync({
+      const equipRes: any = await equipMutation.mutateAsync({
         storeItemId,
         equip: !currentlyEquipped,
       });
       queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+
+      // Immediately sync Navbar & authStore user.studentProfile
+      const currentUser = useAuthStore.getState().user;
+      const setUser = useAuthStore.getState().setUser;
+      if (currentUser && equipRes && ('equippedAvatarFrame' in equipRes || 'equippedNickname' in equipRes)) {
+        setUser({
+          ...currentUser,
+          studentProfile: currentUser.studentProfile
+            ? {
+                ...currentUser.studentProfile,
+                ...(equipRes.equippedAvatarFrame !== undefined && {
+                  equippedAvatarFrame: equipRes.equippedAvatarFrame,
+                }),
+                ...(equipRes.equippedNickname !== undefined && {
+                  equippedNickname: equipRes.equippedNickname,
+                }),
+              }
+            : currentUser.studentProfile,
+        });
+      }
+      // Also refresh /auth/me in background to guarantee full consistency
+      api
+        .get('/auth/me')
+        .then((meRes) => {
+          if (meRes.data?.user) {
+            setUser(meRes.data.user);
+          } else if (meRes.data?.id) {
+            setUser(meRes.data);
+          }
+        })
+        .catch(() => {});
+
       haptics.tap();
       toast.success(
         !currentlyEquipped

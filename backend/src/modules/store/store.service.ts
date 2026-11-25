@@ -321,7 +321,19 @@ export async function equipItem(userId: string, storeItemId: string, equip: bool
     }
   });
 
-  return { success: true };
+  const updatedStudent = await prisma.student.findUnique({
+    where: { id: student.id },
+    select: {
+      equippedAvatarFrame: true,
+      equippedNickname: true,
+    },
+  });
+
+  return {
+    success: true,
+    equippedAvatarFrame: updatedStudent?.equippedAvatarFrame ?? null,
+    equippedNickname: updatedStudent?.equippedNickname ?? null,
+  };
 }
 
 export async function createStoreItem(data: CreateStoreItemInput, createdById?: string) {

@@ -72,7 +72,9 @@ export async function getTeacherCalendar(teacherIdOrUserId: string) {
       include: {
         student: {
           include: {
-            user: { select: { firstName: true, lastName: true, email: true } },
+            user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
+            equippedAvatarFrame: true,
+            equippedNickname: true,
           },
         },
         sessionType: true,
@@ -329,6 +331,8 @@ export async function getTeacherStudents(teacherIdOrUserId: string) {
       examAttempts: {
         include: { exam: true },
       },
+      equippedAvatarFrame: true,
+      equippedNickname: true,
     },
     orderBy: { createdAt: 'desc' },
   });

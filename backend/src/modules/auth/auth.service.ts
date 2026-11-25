@@ -27,7 +27,13 @@ export async function login(
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
     include: {
-      studentProfile: true,
+      studentProfile: {
+        include: {
+          levelModel: true,
+          equippedAvatarFrame: true,
+          equippedNickname: true,
+        },
+      },
       teacherProfile: true,
       nativeLanguage: true,
       learningLanguage: true,

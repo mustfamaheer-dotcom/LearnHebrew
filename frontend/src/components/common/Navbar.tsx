@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { getAvatarUrl } from '../../utils/avatar';
+import { AvatarWithFrame } from './AvatarWithFrame';
+import { StyledNickname } from './StyledNickname';
 import { getUserDashboardPath, getDashboardButtonLabel } from '../../utils/navigation';
 
 const LANGUAGES_LIST: { code: LanguagePref; label: string; nativeLabel: string; flag: string; short: string }[] = [
@@ -210,16 +212,33 @@ export const Navbar: React.FC = () => {
                   className="flex items-center gap-2 h-8 sm:h-9 p-0.5 sm:p-1 sm:ps-1 sm:pe-3 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group shrink-0"
                   title={getDashboardButtonLabel(user.role, language as any)}
                 >
-                  <div className="w-7 h-7 sm:w-7 sm:h-7 rounded-lg overflow-hidden bg-gradient-to-br from-brand-teal-600 to-indigo-700 text-white flex items-center justify-center font-black text-xs shadow-2xs shrink-0 ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
-                    {user.avatarUrl ? (
-                      <img src={getAvatarUrl(user.avatarUrl)} alt={user.firstName} className="w-full h-full object-cover" />
-                    ) : (
-                      `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() || 'U'
-                    )}
-                  </div>
+                  {user.role === 'STUDENT' ? (
+                    <AvatarWithFrame
+                      avatarUrl={user.avatarUrl}
+                      studentName={`${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Student'}
+                      frameItem={user.studentProfile?.equippedAvatarFrame}
+                      size="sm"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 sm:w-7 sm:h-7 rounded-lg overflow-hidden bg-gradient-to-br from-brand-teal-600 to-indigo-700 text-white flex items-center justify-center font-black text-xs shadow-2xs shrink-0 ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
+                      {user.avatarUrl ? (
+                        <img src={getAvatarUrl(user.avatarUrl)} alt={user.firstName} className="w-full h-full object-cover" />
+                      ) : (
+                        `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() || 'U'
+                      )}
+                    </div>
+                  )}
                   <div className="text-start hidden md:block">
                     <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                      {user.firstName} {user.lastName}
+                      {user.role === 'STUDENT' ? (
+                        <StyledNickname
+                          name={`${user.firstName || ''} ${user.lastName || ''}`.trim()}
+                          nicknameItem={user.studentProfile?.equippedNickname}
+                          truncate
+                        />
+                      ) : (
+                        `${user.firstName} ${user.lastName}`
+                      )}
                     </p>
                     <span className="text-[10px] font-extrabold text-brand-olive-600 dark:text-brand-olive-400 uppercase tracking-wider block">
                       {language === 'he'
