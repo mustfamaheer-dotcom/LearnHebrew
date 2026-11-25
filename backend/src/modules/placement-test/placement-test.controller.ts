@@ -41,6 +41,22 @@ export async function checkEligibility(req: Request, res: Response, next: NextFu
   }
 }
 
+const checkAnswerSchema = z.object({
+  questionId: z.string().max(100).optional(),
+  orderNumber: z.number().int().min(1).max(200).optional(),
+  selectedOption: z.string().min(1).max(50),
+});
+
+export async function checkAnswer(req: Request, res: Response, next: NextFunction) {
+  try {
+    const validated = checkAnswerSchema.parse(req.body);
+    const result = await service.checkPlacementAnswer(validated);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function submitTest(req: Request, res: Response, next: NextFunction) {
   try {
     const validated = submitSchema.parse(req.body);

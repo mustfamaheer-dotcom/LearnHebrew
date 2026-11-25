@@ -102,12 +102,22 @@ export const PlacementTestPage: React.FC = () => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Array<{ questionId: string; orderNumber: number; selectedOption: string }>>([]);
   const [wrongCount, setWrongCount] = useState(0);
+  const [checkingAnswer, setCheckingAnswer] = useState(false);
   const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 minutes in seconds
   const [submitting, setSubmitting] = useState(false);
   const [examResult, setExamResult] = useState<any>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [lastSubmittedAnswers, setLastSubmittedAnswers] = useState<
+    Array<{ questionId: string; orderNumber: number; selectedOption: string }>
+  >([]);
+  const [stoppedEarlyModal, setStoppedEarlyModal] = useState(false);
 
-  // Timer Ref
+  // Timer & Answers Refs
   const timerRef = useRef<any>(null);
+  const answersRef = useRef(answers);
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   const isRTL = lang === 'he' || lang === 'ar';
   const isExamActive = step === 'exam';
@@ -156,7 +166,7 @@ export const PlacementTestPage: React.FC = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [step, answers]);
+  }, [step]);
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -215,6 +225,8 @@ export const PlacementTestPage: React.FC = () => {
     setSelectedOption(null);
     setAnswers([]);
     setWrongCount(0);
+    setSubmitError(null);
+    setStoppedEarlyModal(false);
     setTimeLeft(20 * 60);
   };
 
@@ -223,8 +235,8 @@ export const PlacementTestPage: React.FC = () => {
     setSelectedOption(optionKey);
   };
 
-  const handleNextQuestion = () => {
-    if (!selectedOption) return;
+  const handleNextQuestion = async () => {
+    if (!selectedOption || checkingAnswer || submitting) return;
 
     const currentQ = questions[currentIndex];
     const newAnswers = [
@@ -237,22 +249,53 @@ export const PlacementTestPage: React.FC = () => {
     ];
     setAnswers(newAnswers);
 
+    setCheckingAnswer(true);
+    let nextWrongCount = wrongCount;
+    try {
+      const checkRes = await api.post('/placement-test/check-answer', {
+        questionId: currentQ.id,
+        orderNumber: currentQ.orderNumber,
+        selectedOption,
+      });
+      if (checkRes.data?.isMistake) {
+        nextWrongCount = wrongCount + 1;
+        setWrongCount(nextWrongCount);
+      }
+    } catch (err) {
+      console.error('Check answer failed:', err);
+      // If check-answer fails transiently, count DONT_KNOW as mistake and continue
+      if (selectedOption === 'DONT_KNOW') {
+        nextWrongCount = wrongCount + 1;
+        setWrongCount(nextWrongCount);
+      }
+    } finally {
+      setCheckingAnswer(false);
+    }
+
+    // Stop immediately when 4 mistakes are reached
+    if (nextWrongCount >= 4) {
+      await submitFinalTest(newAnswers, true);
+      return;
+    }
+
     // Advance or Finish
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedOption(null);
     } else {
       // Completed all 36 questions!
-      submitFinalTest(newAnswers);
+      await submitFinalTest(newAnswers, false);
     }
   };
 
   const handleAutoSubmit = () => {
-    submitFinalTest(answers);
+    submitFinalTest(answersRef.current, false);
   };
 
-  const submitFinalTest = async (collectedAnswers: typeof answers) => {
+  const submitFinalTest = async (collectedAnswers: typeof answers, stoppedByMistakes = false) => {
     setSubmitting(true);
+    setSubmitError(null);
+    setLastSubmittedAnswers(collectedAnswers);
     try {
       const res = await api.post('/placement-test/submit', {
         firstName: firstName.trim(),
@@ -260,22 +303,29 @@ export const PlacementTestPage: React.FC = () => {
         email: email.trim(),
         phone: phone.trim(),
         nativeLanguage: lang,
-        timeSpentSeconds: 20 * 60 - timeLeft,
+        timeSpentSeconds: Math.max(0, 20 * 60 - timeLeft),
         answers: collectedAnswers,
       });
 
       setExamResult(res.data);
       setStep('result');
-
-      // Trigger Celebration Confetti
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-      });
+      if (stoppedByMistakes || res.data?.stoppedEarly) {
+        setStoppedEarlyModal(true);
+      } else {
+        // Trigger Celebration Confetti
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 },
+        });
+      }
     } catch (err: any) {
       console.error('Submission failed:', err);
-      alert(err.response?.data?.message || 'Failed to submit test. Please contact support.');
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        'Failed to submit test. Please try again or contact support.';
+      setSubmitError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -774,10 +824,30 @@ export const PlacementTestPage: React.FC = () => {
                 <span className="font-mono">{formatTimer(timeLeft)}</span>
               </div>
 
-              {/* Safeguard: 4 Wrong Answers Stop Indicator */}
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                <span>Mistake Limit:</span>
-                <span className="font-bold text-rose-500">4 Stops Exam</span>
+              {/* Live Mistakes Counter: X / 4 */}
+              <div
+                className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-xl border ${
+                  wrongCount >= 3
+                    ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300'
+                    : wrongCount >= 1
+                    ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300'
+                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+                }`}
+              >
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <span>Mistakes: {wrongCount} / 4</span>
+                <div className="flex items-center gap-1 ms-1">
+                  {[0, 1, 2, 3].map((idx) => (
+                    <span
+                      key={idx}
+                      className={`w-2 h-2 rounded-full ${
+                        idx < wrongCount
+                          ? 'bg-rose-500'
+                          : 'bg-slate-300 dark:bg-slate-600'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -876,16 +946,18 @@ export const PlacementTestPage: React.FC = () => {
 
                 <button
                   type="button"
-                  disabled={!selectedOption || submitting}
+                  disabled={!selectedOption || submitting || checkingAnswer}
                   onClick={handleNextQuestion}
                   className={`px-7 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
-                    selectedOption && !submitting
+                    selectedOption && !submitting && !checkingAnswer
                       ? 'bg-teal-600 hover:bg-teal-700 text-white shadow-md cursor-pointer'
                       : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                   }`}
                 >
                   {submitting ? (
                     <span>Submitting...</span>
+                  ) : checkingAnswer ? (
+                    <span>Checking...</span>
                   ) : currentIndex + 1 === questions.length ? (
                     <>
                       <span>Finish & Submit Test</span>
@@ -920,6 +992,18 @@ export const PlacementTestPage: React.FC = () => {
                 <span className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-widest">
                   Engrew Verified Placement Test
                 </span>
+                {examResult.stoppedEarly && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-xs font-bold mx-auto">
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>
+                      {lang === 'he'
+                        ? 'המבחן נעצר לאחר 4 טעויות — הרמה שלך נקבעה לפי השאלות שענית'
+                        : lang === 'ar'
+                        ? 'توقف الاختبار عند الوصول إلى 4 أخطاء — تم تحديد مستواك بناءً على إجاباتك'
+                        : 'Exam stopped at 4 mistakes limit — your CEFR level was determined from your answers'}
+                    </span>
+                  </div>
+                )}
                 <h2 className="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white">
                   {t.result.congrats}, {firstName}!
                 </h2>
@@ -1055,6 +1139,107 @@ export const PlacementTestPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* 4-Mistakes Exam Stopped Popup Modal */}
+      {stoppedEarlyModal && examResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-amber-300 dark:border-amber-700 space-y-5 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                {lang === 'he'
+                  ? 'המבחן הסתיים (4 טעויות)'
+                  : lang === 'ar'
+                  ? 'توقف الاختبار (تم الوصول إلى 4 أخطاء)'
+                  : 'Exam Stopped (4 Mistakes Limit Reached)'}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                {lang === 'he'
+                  ? 'המבחן נעצר אוטומטית לאחר 4 תשובות שגויות כדי לקבוע את רמתך המדויקת.'
+                  : lang === 'ar'
+                  ? 'توقف الاختبار تلقائياً بعد 4 إجابات خاطئة لتحديد مستواك الدقيق في اللغة الإنجليزية.'
+                  : 'The placement test automatically stopped after 4 wrong answers to pinpoint your accurate English level.'}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                {lang === 'he' ? 'הרמה שהושגה' : lang === 'ar' ? 'المستوى الذي تم الوصول إليه' : 'CEFR Level Reached'}
+              </p>
+              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 text-white text-2xl font-black shadow-md">
+                <Award className="w-5 h-5 text-yellow-300" />
+                <span>{examResult.evaluatedLevel}</span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold pt-1">
+                {lang === 'he'
+                  ? `ציון: ${examResult.score} / ${examResult.totalQuestions} • נענו ${examResult.answeredCount ?? answers.length} שאלות`
+                  : lang === 'ar'
+                  ? `النتيجة: ${examResult.score} / ${examResult.totalQuestions} • تمت الإجابة على ${examResult.answeredCount ?? answers.length} سؤالاً`
+                  : `Score: ${examResult.score} / ${examResult.totalQuestions} • ${examResult.answeredCount ?? answers.length} questions answered`}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setStoppedEarlyModal(false)}
+              className="w-full py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-sm shadow-md transition cursor-pointer"
+            >
+              {lang === 'he'
+                ? 'צפה בתוצאות המלאות ובתעודה'
+                : lang === 'ar'
+                ? 'عرض النتيجة الكاملة والشهادة'
+                : 'View Full Results & Certificate'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Submission Error Modal with Retry (never browser alert) */}
+      {submitError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-rose-300 dark:border-rose-800 space-y-5 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 rounded-2xl bg-rose-100 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                {lang === 'he'
+                  ? 'שגיאה בשליחת המבחן'
+                  : lang === 'ar'
+                  ? 'تعذر إرسال الاختبار'
+                  : 'Test Submission Error'}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                {submitError}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSubmitError(null)}
+                disabled={submitting}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                {lang === 'he' ? 'סגור' : lang === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => submitFinalTest(lastSubmittedAnswers, wrongCount >= 4)}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-extrabold transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{lang === 'he' ? 'נסה שוב' : lang === 'ar' ? 'إعادة المحاولة' : 'Retry Submit'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

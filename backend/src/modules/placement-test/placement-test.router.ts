@@ -11,6 +11,7 @@ const router = Router();
 // ==========================================
 router.get('/config', controller.getPublicQuestions);
 router.post('/check-eligibility', placementTestLimiter, controller.checkEligibility);
+router.post('/check-answer', controller.checkAnswer);
 router.post('/submit', placementTestLimiter, controller.submitTest);
 
 // ==========================================

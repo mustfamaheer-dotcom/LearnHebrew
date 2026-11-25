@@ -105,6 +105,46 @@ export async function checkTestEligibility(email: string, phone: string) {
 }
 
 /**
+ * Public: Check a single question answer (used for live 4-mistake stop tracking)
+ */
+export async function checkPlacementAnswer(input: {
+  questionId?: string;
+  orderNumber?: number;
+  selectedOption: string;
+}) {
+  const questions = await getCachedOrFetch('placement-test:questions:grading', 600, async () => {
+    return prisma.placementTestQuestion.findMany({
+      where: { isActive: true },
+      orderBy: { orderNumber: 'asc' },
+    });
+  });
+
+  const q =
+    (input.questionId ? questions.find((x) => x.id === input.questionId) : undefined) ||
+    (input.orderNumber !== undefined ? questions.find((x) => x.orderNumber === input.orderNumber) : undefined);
+
+  if (!q) {
+    throw { status: 404, message: 'Placement test question not found' };
+  }
+
+  const isDontKnow = input.selectedOption === 'DONT_KNOW' || input.selectedOption === "I don't know";
+  const isCorrect = !isDontKnow && input.selectedOption.trim().toUpperCase() === q.correctOption.toUpperCase();
+  const isMistake = !isCorrect;
+
+  return {
+    questionId: q.id,
+    orderNumber: q.orderNumber,
+    isCorrect,
+    isDontKnow,
+    isMistake,
+    correctOption: q.correctOption,
+    explanation: q.explanation,
+    explanationHe: q.explanationHe,
+    explanationAr: q.explanationAr,
+  };
+}
+
+/**
  * Public: Process exam submission, evaluate answers, calculate CEFR level
  */
 export async function submitPlacementTest(
@@ -142,8 +182,8 @@ export async function submitPlacementTest(
     if (!q) continue;
 
     const isDontKnow = ans.selectedOption === 'DONT_KNOW' || ans.selectedOption === "I don't know";
-    const isCorrect = !isDontKnow && ans.selectedOption.toUpperCase() === q.correctOption.toUpperCase();
-    const isWrong = !isCorrect && !isDontKnow;
+    const isCorrect = !isDontKnow && ans.selectedOption.trim().toUpperCase() === q.correctOption.toUpperCase();
+    const isWrong = !isCorrect;
 
     if (isCorrect) {
       score += 1;
@@ -185,7 +225,7 @@ export async function submitPlacementTest(
       wrongCount,
       stoppedEarly,
       evaluatedLevel,
-      timeSpentSeconds: data.timeSpentSeconds || null,
+      timeSpentSeconds: data.timeSpentSeconds !== undefined ? Math.max(0, Math.round(data.timeSpentSeconds)) : null,
       answers: gradedAnswers,
       status: 'COMPLETED',
       ipAddress: meta?.ipAddress,
@@ -201,6 +241,7 @@ export async function submitPlacementTest(
     lastName: submission.lastName,
     score,
     totalQuestions: 36,
+    answeredCount: gradedAnswers.length,
     evaluatedLevel,
     wrongCount,
     stoppedEarly,
