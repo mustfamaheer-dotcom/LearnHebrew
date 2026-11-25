@@ -34,6 +34,7 @@ import {
   Globe,
   Radio,
   FileCheck2,
+  ShoppingBag,
 } from 'lucide-react';
 import { PageHeaderBanner } from '../common/PageHeaderBanner';
 
@@ -58,6 +59,8 @@ const getGroupIcon = (group: string) => {
       return Award;
     case 'rewards':
       return Gamepad2;
+    case 'store':
+      return ShoppingBag;
     case 'games':
       return Gamepad2;
     case 'notifications':
@@ -84,7 +87,7 @@ const DOMAIN_GROUPS = [
   { id: 'lessons', labelEn: 'Lessons & Calendar', labelHe: 'שיעורים ויומנים', groups: ['Lessons'] },
   { id: 'finance', labelEn: 'Finance & Bundles', labelHe: 'כספים וחבילות', groups: ['Packages', 'Payments'] },
   { id: 'academic', labelEn: 'Curriculum & Exams', labelHe: 'מסלולים ומבחנים', groups: ['Curriculum', 'Exams'] },
-  { id: 'engagement', labelEn: 'Engagement & Alerts', labelHe: 'משובים והתראות', groups: ['Rewards', 'Reviews', 'Surveys', 'Notifications'] },
+  { id: 'engagement', labelEn: 'Engagement & Alerts', labelHe: 'משובים והתראות', groups: ['Rewards', 'Store', 'Reviews', 'Surveys', 'Notifications'] },
   { id: 'security', labelEn: 'Security & Matrix', labelHe: 'אבטחה ומערכת', groups: ['Security', 'Roles', 'Settings'] },
 ];
 
@@ -493,6 +496,40 @@ const PERMISSION_CATALOG: Record<string, PermissionMeta> = {
     titleHe: 'ניהול שפות ותרגומים',
     descEn: 'Activate platform languages and edit translation dictionaries',
     descHe: 'הפעלה וכיבוי של שפות ממשק ועריכת מחרוזות תרגום',
+  },
+
+  // Store & Coin Economy
+  'store:view_items': {
+    titleEn: 'Browse Gamification Store',
+    titleHe: 'צפייה בחנות המשחקים והפרסים',
+    descEn: 'View available avatar frames and styled nicknames in the store',
+    descHe: 'צפייה במסגרות אווטאר וכינויים מעוצבים הזמינים בחנות',
+  },
+  'store:redeem': {
+    titleEn: 'Redeem Store Cosmetics',
+    titleHe: 'רכישת פריטים בחנות במטבעות',
+    descEn: 'Spend earned coins to unlock and equip avatar frames and nicknames',
+    descHe: 'מימוש מטבעות לצורך פתיחה וציוד של מסגרות אווטאר וכינויים',
+  },
+  'store:manage_items': {
+    titleEn: 'Manage Store Catalog',
+    titleHe: 'ניהול קטלוג ופריטי החנות',
+    descEn: 'Create, edit, preview, and deactivate avatar frames and nickname items',
+    descHe: 'יצירה, עריכה והשבתה של מסגרות אווטאר וכינויים מעוצבים',
+    risk: 'medium',
+  },
+  'store:grant_coins': {
+    titleEn: 'Grant or Deduct Student Coins',
+    titleHe: 'הענקת או הפחתת מטבעות לתלמידים',
+    descEn: 'Manually adjust student coin balances with a mandatory audit reason',
+    descHe: 'עדכון ידני של יתרת מטבעות לתלמיד בצירוף סיבת ביקורת',
+    risk: 'financial',
+  },
+  'store:view_transactions': {
+    titleEn: 'View Coin Transaction Ledger',
+    titleHe: 'צפייה ביומן תנועות המטבעות',
+    descEn: 'Audit all student coin earnings, redemptions, and admin adjustments',
+    descHe: 'צפייה ובקרה על כל צבירות, מימושי והתאמות המטבעות במערכת',
   },
 };
 

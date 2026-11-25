@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  ShoppingBag,
 } from 'lucide-react';
 import { EnterpriseSubTab } from './EnterpriseTabsContainer';
 
@@ -107,6 +108,15 @@ export const PLATFORM_SETTINGS_MODULES: PlatformSettingsModuleItem[] = [
     colorClass: 'from-yellow-500/20 to-amber-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
   },
   {
+    id: 'store_management',
+    label: 'Gamification Store',
+    labelHe: 'ניהול חנות ומטבעות',
+    desc: 'Manage avatar frames, styled nicknames, coin grants & audit logs',
+    descHe: 'ניהול מסגרות אווטאר, כינויים מעוצבים, הענקת מטבעות ויומן עסקאות',
+    icon: ShoppingBag,
+    colorClass: 'from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30',
+  },
+  {
     id: 'languages',
     label: 'Multi-Language Registry',
     labelHe: 'שפות פלטפורמה נתמכות',
@@ -139,6 +149,7 @@ export const PlatformSettingsNavModal: React.FC<PlatformSettingsNavModalProps> =
     exams: 'exams:view',
     review_links: 'reviews:manage_links',
     point_rules: 'rewards:view_rules',
+    store_management: 'store:manage_items',
     languages: 'languages:manage',
   };
 

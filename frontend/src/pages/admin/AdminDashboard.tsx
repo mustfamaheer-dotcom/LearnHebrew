@@ -88,6 +88,7 @@ import {
   Info,
   Settings,
   DollarSign,
+  ShoppingBag,
   CheckCircle2,
   PlayCircle,
   TrendingUp,
@@ -146,6 +147,7 @@ export const AdminDashboard: React.FC = () => {
     | 'exams'
     | 'review_links'
     | 'point_rules'
+    | 'store_management'
     | 'languages'
     | 'reminders_hub'
     | 'placement_test'
@@ -172,6 +174,7 @@ export const AdminDashboard: React.FC = () => {
         'exams',
         'review_links',
         'point_rules',
+        'store_management',
         'languages',
         'reminders_hub',
         'placement_test',
@@ -205,6 +208,7 @@ export const AdminDashboard: React.FC = () => {
           'exams',
           'review_links',
           'point_rules',
+          'store_management',
           'languages',
           'reminders_hub',
           'users',
@@ -237,6 +241,7 @@ export const AdminDashboard: React.FC = () => {
         'exams',
         'review_links',
         'point_rules',
+        'store_management',
         'languages',
         'reminders_hub',
         'users',
@@ -269,6 +274,7 @@ export const AdminDashboard: React.FC = () => {
           'exams',
           'review_links',
           'point_rules',
+          'store_management',
           'languages',
           'reminders_hub',
           'users',
@@ -1277,6 +1283,14 @@ export const AdminDashboard: React.FC = () => {
           labelAr: 'قواعد نقاط الألعاب',
           icon: Coins,
           permission: 'rewards:view_rules',
+        },
+        {
+          id: 'store_management',
+          label: 'Manage Store',
+          labelHe: 'ניהול חנות ומטבעות',
+          labelAr: 'إدارة المتجر والعملات',
+          icon: ShoppingBag,
+          permission: 'store:manage_items',
         },
         {
           id: 'languages',
@@ -3650,6 +3664,7 @@ export const AdminDashboard: React.FC = () => {
                 activeTab === 'exams' ||
                 activeTab === 'review_links' ||
                 activeTab === 'point_rules' ||
+                activeTab === 'store_management' ||
                 activeTab === 'languages') && (
                   <EnterpriseTabsContainer
                     currentTab={activeTab === 'enterprise' ? 'levels' : (activeTab as any)}
@@ -5688,6 +5703,7 @@ export const AdminDashboard: React.FC = () => {
         activeTab === 'exams' ||
         activeTab === 'review_links' ||
         activeTab === 'point_rules' ||
+        activeTab === 'store_management' ||
         activeTab === 'languages';
       const isHubSecondaryActive =
         activeTab === 'teachers' ||
@@ -5929,6 +5945,7 @@ export const AdminDashboard: React.FC = () => {
               activeTab === 'exams' ||
               activeTab === 'review_links' ||
               activeTab === 'point_rules' ||
+              activeTab === 'store_management' ||
               activeTab === 'languages'
               ? 'border-brand-teal-600 dark:border-brand-teal-400 ring-2 ring-brand-teal-600/20 dark:ring-brand-teal-400/20'
               : 'border-slate-200/90 dark:border-slate-700/60'
@@ -6002,6 +6019,7 @@ export const AdminDashboard: React.FC = () => {
       activeTab === 'exams' ||
       activeTab === 'review_links' ||
       activeTab === 'point_rules' ||
+      activeTab === 'store_management' ||
       activeTab === 'languages'
       ? (activeTab as any)
       : 'levels'

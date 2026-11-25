@@ -1,6 +1,7 @@
 import { prisma } from '../../config/database';
 import { Prisma, HebrewLevel, GameType, PointsEventType } from '@prisma/client';
 import { getCachedOrFetch, cacheInvalidatePrefix } from '../../lib/cache';
+import { awardCoinsForPoints } from '../store/store.service';
 
 export async function listGames(filters: {
   level?: HebrewLevel;
@@ -115,9 +116,11 @@ export async function getLeaderboard(
     });
 
     const studentInclude: Prisma.StudentInclude = {
-      user: { select: { firstName: true, lastName: true } },
+      user: { select: { firstName: true, lastName: true, avatarUrl: true } },
       levelModel: { select: { code: true, labelEn: true, labelHe: true } },
       badges: { orderBy: { awardedAt: 'desc' }, take: 3 },
+      equippedAvatarFrame: true,
+      equippedNickname: true,
     };
 
     const studentIds = grouped.map((g) => g.studentId);
@@ -136,6 +139,7 @@ export async function getLeaderboard(
           rank: idx + 1,
           studentId: student.id,
           name: `${student.user.firstName} ${student.user.lastName}`,
+          avatarUrl: student.user.avatarUrl,
           level: student.levelModel?.code || student.level,
           levelLabelEn: student.levelModel?.labelEn,
           levelLabelHe: student.levelModel?.labelHe,
@@ -143,6 +147,8 @@ export async function getLeaderboard(
           lifetimePoints: student.totalPoints,
           streakDays: student.streakDays,
           badges: student.badges,
+          equippedAvatarFrame: student.equippedAvatarFrame,
+          equippedNickname: student.equippedNickname,
         };
       })
       .filter(Boolean);
@@ -161,6 +167,7 @@ export async function getLeaderboard(
         select: {
           firstName: true,
           lastName: true,
+          avatarUrl: true,
         },
       },
       levelModel: {
@@ -174,6 +181,8 @@ export async function getLeaderboard(
         orderBy: { awardedAt: 'desc' },
         take: 3,
       },
+      equippedAvatarFrame: true,
+      equippedNickname: true,
     } satisfies Prisma.StudentInclude,
   });
 
@@ -181,6 +190,7 @@ export async function getLeaderboard(
     rank: idx + 1,
     studentId: s.id,
     name: `${s.user.firstName} ${s.user.lastName}`,
+    avatarUrl: s.user.avatarUrl,
     level: s.levelModel?.code || s.level,
     levelLabelEn: s.levelModel?.labelEn,
     levelLabelHe: s.levelModel?.labelHe,
@@ -188,6 +198,8 @@ export async function getLeaderboard(
     lifetimePoints: s.totalPoints,
     streakDays: s.streakDays,
     badges: s.badges,
+    equippedAvatarFrame: s.equippedAvatarFrame,
+    equippedNickname: s.equippedNickname,
   }));
 }
 
@@ -390,10 +402,15 @@ export async function recordGameSession(
 
     // Only update student balance and points ledger if new points were awarded
     if (pointsToAward > 0) {
-      await tx.student.update({
+      const updatedStudent = await tx.student.update({
         where: { id: student.id },
         data: { totalPoints: { increment: pointsToAward } },
+        select: { totalPoints: true },
       });
+
+      const newPoints = updatedStudent.totalPoints;
+      const previousPoints = newPoints - pointsToAward;
+      await awardCoinsForPoints(student.id, previousPoints, newPoints, tx);
 
       await tx.pointsLedger.create({
         data: {

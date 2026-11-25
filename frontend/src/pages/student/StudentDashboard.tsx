@@ -13,6 +13,9 @@ import { SentenceBuilderGame } from '../../components/games/SentenceBuilderGame'
 import { WordScrambleGame } from '../../components/games/WordScrambleGame';
 import { SpeedRoundGame } from '../../components/games/SpeedRoundGame';
 import { GlassSidebar } from '../../components/common/GlassSidebar';
+import { AvatarWithFrame } from '../../components/common/AvatarWithFrame';
+import { StyledNickname } from '../../components/common/StyledNickname';
+import { useMyCoins } from '../../hooks/useStore';
 import { DashboardSkeleton } from '../../components/common/DashboardSkeleton';
 import { DriveViewerModal } from '../../components/common/DriveViewerModal';
 import { RescheduleModal } from '../../components/student/RescheduleModal';
@@ -88,6 +91,8 @@ import {
   CalendarDays,
   Info,
   Printer,
+  ShoppingBag,
+  Coins,
 } from 'lucide-react';
 import { ReceiptModal } from '../../components/receipts/ReceiptModal';
 import { ReceiptData } from '../../utils/receiptGenerator';
@@ -188,6 +193,12 @@ const StudentProgressTab = React.lazy(() =>
   }))
 );
 
+const StoreTab = React.lazy(() =>
+  import('../../components/student/StoreTab').then((m) => ({
+    default: m.default || m.StoreTab,
+  }))
+);
+
 export const StudentDashboard: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const { t, language } = useTranslation();
@@ -200,14 +211,15 @@ export const StudentDashboard: React.FC = () => {
   const { isCollapsed } = useSidebarStore();
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'games' | 'leaderboard' | 'balance' | 'progress'
+    'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'games' | 'leaderboard' | 'store' | 'balance' | 'progress'
   >(() => {
     const searchTab = new URLSearchParams(window.location.search).get('tab');
-    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'balance', 'progress'].includes(searchTab)) {
+    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(searchTab)) {
       return searchTab as any;
     }
     if (location.pathname.includes('/games')) return 'games';
     if (location.pathname.includes('/leaderboard')) return 'leaderboard';
+    if (location.pathname.includes('/store')) return 'store';
     if (location.pathname.includes('/recordings')) return 'recordings';
     if (location.pathname.includes('/balance') || location.pathname.includes('/transactions')) return 'balance';
     if (location.pathname.includes('/progress') || location.pathname.includes('/analytics')) return 'progress';
@@ -219,7 +231,7 @@ export const StudentDashboard: React.FC = () => {
 
   useEffect(() => {
     const handleNavEvent = (e: any) => {
-      if (e.detail?.tab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'balance', 'progress'].includes(e.detail.tab)) {
+      if (e.detail?.tab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(e.detail.tab)) {
         setActiveTab(e.detail.tab);
       }
     };
@@ -229,7 +241,7 @@ export const StudentDashboard: React.FC = () => {
 
   useEffect(() => {
     const searchTab = new URLSearchParams(location.search).get('tab');
-    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'balance', 'progress'].includes(searchTab)) {
+    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(searchTab)) {
       setActiveTab(searchTab as any);
     }
   }, [location.search]);
@@ -239,6 +251,8 @@ export const StudentDashboard: React.FC = () => {
       setActiveTab('games');
     } else if (location.pathname.includes('/leaderboard')) {
       setActiveTab('leaderboard');
+    } else if (location.pathname.includes('/store')) {
+      setActiveTab('store');
     } else if (location.pathname.includes('/recordings')) {
       setActiveTab('recordings');
     } else if (location.pathname.includes('/balance') || location.pathname.includes('/transactions')) {
@@ -247,6 +261,8 @@ export const StudentDashboard: React.FC = () => {
       setActiveTab('progress');
     }
   }, [location.pathname]);
+
+  const { data: myCoinsData } = useMyCoins(Boolean(user?.id));
 
   const [activeGame, setActiveGame] = useState<any | null>(null);
   const [studentGameLevelFilter, setStudentGameLevelFilter] = useState<string>('ALL');
@@ -1060,6 +1076,14 @@ export const StudentDashboard: React.FC = () => {
       badge: student?.totalPoints ? (language === 'he' ? `${student.totalPoints} נק׳` : language === 'ar' ? `${student.totalPoints} نقطة` : `${student.totalPoints} pts`) : null,
     },
     {
+      id: 'store',
+      label: 'Store',
+      labelHe: 'חנות',
+      labelAr: 'المتجر',
+      icon: ShoppingBag,
+      badge: `🪙 ${myCoinsData?.coins ?? student?.coins ?? 0}`,
+    },
+    {
       id: 'balance',
       label: 'Session Packages & Balances',
       labelHe: 'חבילות ומכסת שיעורים',
@@ -1074,6 +1098,7 @@ export const StudentDashboard: React.FC = () => {
     activeTab === 'homework' ||
     activeTab === 'balance' ||
     activeTab === 'leaderboard' ||
+    activeTab === 'store' ||
     activeTab === 'progress';
 
   const mobileTabs = [
@@ -1276,24 +1301,53 @@ export const StudentDashboard: React.FC = () => {
               {/* Top Welcome Banner with Brand Teal & Olive */}
               <div className="bg-gradient-to-r from-brand-teal-900 via-brand-teal-800 to-brand-olive-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  <div>
-                    <span className="inline-block px-3 py-1 bg-white/10 text-brand-olive-300 text-xs font-semibold rounded-full mb-3 backdrop-blur-md border border-white/15">
-                      {t(`levels.${student?.level || 'BEGINNER'}`)}
-                    </span>
-                    <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
-                      {t('dashboard.welcome', { name: user?.firstName || 'Student' })}
-                    </h1>
-                    <p className="text-brand-teal-100 text-sm mt-1 max-w-xl leading-relaxed">
-                      {isAr
-                        ? 'واصل تقدمك نحو إتقان اللغة العبرية مع حصص فردية تفاعلية مدتها 25 دقيقة، وألعاب تعليمية ممتعة، وملاحظات مباشرة من معلمك المعتمد.'
-                        : isHe
-                        ? 'המשך להתקדם לעבר שטף בדיבור בעברית עם שיעורים ממוקדים של 25 דקות, משחקים חווייתיים ומשוב אישי מהמורה.'
-                        : 'Keep progressing towards Hebrew fluency with high-retention 25-minute live lessons, interactive games, and teacher feedback.'}
-                    </p>
+                  <div className="flex items-center gap-4 sm:gap-5">
+                    <AvatarWithFrame
+                      avatarUrl={user?.avatarUrl}
+                      studentName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Student'}
+                      frameItem={student?.equippedAvatarFrame}
+                      size="lg"
+                    />
+                    <div>
+                      <span className="inline-block px-3 py-1 bg-white/10 text-brand-olive-300 text-xs font-semibold rounded-full mb-2 backdrop-blur-md border border-white/15">
+                        {t(`levels.${student?.level || 'BEGINNER'}`)}
+                      </span>
+                      <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight flex flex-wrap items-center gap-2">
+                        <span>{t('dashboard.welcome', { name: '' }).replace(/\s*!\s*$/, '')}</span>
+                        <StyledNickname
+                          name={`${user?.firstName || 'Student'}${user?.lastName ? ` ${user.lastName}` : ''}`}
+                          nicknameItem={student?.equippedNickname}
+                        />
+                      </h1>
+                      <p className="text-brand-teal-100 text-sm mt-1 max-w-xl leading-relaxed">
+                        {isAr
+                          ? 'واصل تقدمك نحو إتقان اللغة العبرية مع حصص فردية تفاعلية مدتها 25 دقيقة، وألعاب تعليمية ممتعة، وملاحظات مباشرة من معلمك المعتمد.'
+                          : isHe
+                          ? 'המשך להתקדם לעבר שטף בדיבור בעברית עם שיעורים ממוקדים של 25 דקות, משחקים חווייתיים ומשוב אישי מהמורה.'
+                          : 'Keep progressing towards Hebrew fluency with high-retention 25-minute live lessons, interactive games, and teacher feedback.'}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Balance & Points Stats */}
+                  {/* Balance, Points & Coins Stats */}
                   <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab('store');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="bg-white/10 hover:bg-white/20 transition-all cursor-pointer backdrop-blur-md rounded-2xl p-3 sm:p-4 text-center min-w-[100px] border border-amber-300/30 group"
+                      title={isAr ? 'فتح متجر العملات' : isHe ? 'פתח חנות מטבעות' : 'Open Student Store'}
+                    >
+                      <div className="flex items-center justify-center gap-1 text-amber-300 font-extrabold text-lg sm:text-xl group-hover:scale-105 transition-transform">
+                        <Coins className="w-5 h-5 shrink-0" />
+                        <span>{myCoinsData?.coins ?? student?.coins ?? 0}</span>
+                      </div>
+                      <p className="text-[10px] sm:text-[11px] font-semibold text-amber-100 uppercase mt-0.5">
+                        {isAr ? 'العملات' : isHe ? 'מטבעות' : 'Coins'}
+                      </p>
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
@@ -3568,11 +3622,20 @@ export const StudentDashboard: React.FC = () => {
                           <Medal className="w-3.5 h-3.5 text-slate-400" />
                           <span>{isAr ? '#2 المركز الفضي' : isHe ? '#2 כסף' : '#2 Silver'}</span>
                         </div>
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-400 to-slate-600 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-slate-300 dark:ring-slate-700 mb-2 shrink-0">
-                          {leaderboardData[1].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '2'}
+                        <div className="mb-2">
+                          <AvatarWithFrame
+                            avatarUrl={leaderboardData[1].avatarUrl}
+                            studentName={leaderboardData[1].name || '2'}
+                            frameItem={leaderboardData[1].equippedAvatarFrame}
+                            size="lg"
+                          />
                         </div>
                         <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-full">
-                          {leaderboardData[1].name}
+                          <StyledNickname
+                            name={leaderboardData[1].name}
+                            nicknameItem={leaderboardData[1].equippedNickname}
+                            truncate
+                          />
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
                           {isAr ? (LEVEL_AR_MAP[leaderboardData[1].level] || leaderboardData[1].levelLabelAr || t(`levels.${leaderboardData[1].level || 'BEGINNER'}`)) : isHe && leaderboardData[1].levelLabelHe
@@ -3596,11 +3659,20 @@ export const StudentDashboard: React.FC = () => {
                           <Trophy className="w-3.5 h-3.5 text-amber-500" />
                           <span>{isAr ? '#1 المركز الذهبي' : isHe ? '#1 זהב' : '#1 Gold'}</span>
                         </div>
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-lg flex items-center justify-center shadow-lg ring-4 ring-amber-300 dark:ring-amber-500/60 mb-2 shrink-0">
-                          {leaderboardData[0].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '1'}
+                        <div className="mb-2">
+                          <AvatarWithFrame
+                            avatarUrl={leaderboardData[0].avatarUrl}
+                            studentName={leaderboardData[0].name || '1'}
+                            frameItem={leaderboardData[0].equippedAvatarFrame}
+                            size="xl"
+                          />
                         </div>
                         <h3 className="font-extrabold text-base text-slate-900 dark:text-white truncate max-w-full">
-                          {leaderboardData[0].name}
+                          <StyledNickname
+                            name={leaderboardData[0].name}
+                            nicknameItem={leaderboardData[0].equippedNickname}
+                            truncate
+                          />
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-300 border border-amber-300/60 mt-1">
                           {isAr ? (LEVEL_AR_MAP[leaderboardData[0].level] || leaderboardData[0].levelLabelAr || t(`levels.${leaderboardData[0].level || 'BEGINNER'}`)) : isHe && leaderboardData[0].levelLabelHe
@@ -3620,11 +3692,20 @@ export const StudentDashboard: React.FC = () => {
                           <Award className="w-3.5 h-3.5 text-amber-700" />
                           <span>{isAr ? '#3 المركز البرونزي' : isHe ? '#3 ארד' : '#3 Bronze'}</span>
                         </div>
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-700 to-amber-900 text-white font-black text-base flex items-center justify-center shadow-md ring-4 ring-amber-700/40 mb-2 shrink-0">
-                          {leaderboardData[2].name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '3'}
+                        <div className="mb-2">
+                          <AvatarWithFrame
+                            avatarUrl={leaderboardData[2].avatarUrl}
+                            studentName={leaderboardData[2].name || '3'}
+                            frameItem={leaderboardData[2].equippedAvatarFrame}
+                            size="lg"
+                          />
                         </div>
                         <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate max-w-full">
-                          {leaderboardData[2].name}
+                          <StyledNickname
+                            name={leaderboardData[2].name}
+                            nicknameItem={leaderboardData[2].equippedNickname}
+                            truncate
+                          />
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-1">
                           {isAr ? (LEVEL_AR_MAP[leaderboardData[2].level] || leaderboardData[2].levelLabelAr || t(`levels.${leaderboardData[2].level || 'BEGINNER'}`)) : isHe && leaderboardData[2].levelLabelHe
@@ -3731,14 +3812,21 @@ export const StudentDashboard: React.FC = () => {
                                 </td>
                                 <td className="py-3">
                                   <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-teal-500 to-indigo-700 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                                      {entry.name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || 'U'}
-                                    </div>
-                                    <div>
-                                      <p className="font-bold text-slate-900 dark:text-white">
-                                        {entry.name}
+                                    <AvatarWithFrame
+                                      avatarUrl={entry.avatarUrl}
+                                      studentName={entry.name || 'U'}
+                                      frameItem={entry.equippedAvatarFrame}
+                                      size="sm"
+                                    />
+                                    <div className="min-w-0">
+                                      <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                        <StyledNickname
+                                          name={entry.name}
+                                          nicknameItem={entry.equippedNickname}
+                                          truncate
+                                        />
                                         {entry.studentId === student?.id && (
-                                          <span className="ms-1.5 text-[9px] px-1.5 py-0.5 rounded-md bg-teal-500/20 text-teal-700 dark:text-teal-300">
+                                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-teal-500/20 text-teal-700 dark:text-teal-300 shrink-0">
                                             {isAr ? 'أنت' : isHe ? 'אתה' : 'You'}
                                           </span>
                                         )}
@@ -4342,6 +4430,13 @@ export const StudentDashboard: React.FC = () => {
           {activeTab === 'progress' && student?.id && (
             <React.Suspense fallback={<DashboardSkeleton />}>
               <StudentProgressTab studentId={student.id} />
+            </React.Suspense>
+          )}
+
+          {/* TAB 10: GAMIFICATION STORE */}
+          {activeTab === 'store' && (
+            <React.Suspense fallback={<DashboardSkeleton />}>
+              <StoreTab />
             </React.Suspense>
           )}
         </main>

@@ -1,4 +1,5 @@
 import { prisma } from '../../config/database';
+import { awardCoinsForPoints } from '../store/store.service';
 import { Prisma, SlotType, LessonStatus, AttendanceStatus, PointsEventType } from '@prisma/client';
 import { logAuditEvent } from '../../utils/audit';
 import { notificationService } from '../notifications/notifications.service';
@@ -730,13 +731,20 @@ export async function completeLesson(id: string) {
       data: { status: LessonStatus.COMPLETED },
     });
 
-    await tx.student.update({
+    const updatedStudent = await tx.student.update({
       where: { id: lesson.studentId },
       data: {
         totalPoints: { increment: pointsToAward },
         lastLessonAt: new Date(),
       },
+      select: { totalPoints: true },
     });
+
+    if (pointsToAward > 0) {
+      const newPoints = updatedStudent.totalPoints;
+      const previousPoints = newPoints - pointsToAward;
+      await awardCoinsForPoints(lesson.studentId, previousPoints, newPoints, tx);
+    }
 
     await tx.pointsLedger.create({
       data: {

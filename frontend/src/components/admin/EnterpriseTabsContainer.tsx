@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { LevelsTab } from './LevelsTab';
 import { SessionTypesTab } from './SessionTypesTab';
 import { RolesPermissionsTab } from './RolesPermissionsTab';
@@ -11,6 +11,8 @@ import { usePermissions } from '../../hooks/usePermissions';
 import { useAuthStore } from '../../store/authStore';
 import { ShieldAlert } from 'lucide-react';
 
+const StoreManagementTab = React.lazy(() => import('./StoreManagementTab'));
+
 export type EnterpriseSubTab =
   | 'levels'
   | 'session_types'
@@ -19,6 +21,7 @@ export type EnterpriseSubTab =
   | 'exams'
   | 'review_links'
   | 'point_rules'
+  | 'store_management'
   | 'languages';
 
 interface EnterpriseTabsContainerProps {
@@ -83,6 +86,21 @@ export const EnterpriseTabsContainer: React.FC<EnterpriseTabsContainerProps> = (
         )}
         {activeSubTab === 'point_rules' && (
           can('rewards:view_rules') ? <PointRulesTab /> : <AccessRestrictedCard permCode="rewards:view_rules" language={language} />
+        )}
+        {activeSubTab === 'store_management' && (
+          can('store:manage_items') ? (
+            <Suspense
+              fallback={
+                <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
+                  {language === 'he' ? 'טוען ניהול חנות...' : language === 'ar' ? 'جاري تحميل إدارة المتجر...' : 'Loading Store Management...'}
+                </div>
+              }
+            >
+              <StoreManagementTab />
+            </Suspense>
+          ) : (
+            <AccessRestrictedCard permCode="store:manage_items" language={language} />
+          )
         )}
         {activeSubTab === 'languages' && (
           can('languages:manage') ? <LanguagesTab /> : <AccessRestrictedCard permCode="languages:manage" language={language} />

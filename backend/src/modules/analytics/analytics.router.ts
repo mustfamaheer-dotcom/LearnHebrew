@@ -95,6 +95,8 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
         include: {
           user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
           _count: { select: { lessons: true } },
+          equippedAvatarFrame: true,
+          equippedNickname: true,
         },
       }).catch(() => []),
       prisma.teacher.findMany({
@@ -264,6 +266,8 @@ router.get('/overview', async (req: AuthRequest, res: Response, next: NextFuncti
       points: s.totalPoints,
       streakDays: s.streakDays,
       lessonsCount: s._count.lessons,
+      equippedAvatarFrame: s.equippedAvatarFrame,
+      equippedNickname: s.equippedNickname,
     }));
 
     // Top teachers

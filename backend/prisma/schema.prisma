@@ -84,6 +84,27 @@ enum PointsEventType {
   HOMEWORK_SUBMITTED
   STREAK_BONUS
   MANUAL
+  COIN_EARNED
+  ITEM_REDEEMED
+}
+
+enum StoreItemType {
+  AVATAR_FRAME
+  NICKNAME
+}
+
+enum StoreItemRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum CoinTransactionType {
+  EARNED_FROM_POINTS
+  REDEEMED_ITEM
+  ADMIN_GRANT
+  ADMIN_DEDUCT
 }
 
 enum NotificationCategory {
@@ -265,6 +286,7 @@ model User {
   createdPayments        Payment[]                   @relation("CreatedPayments")
   approvedPayments       Payment[]                   @relation("ApprovedPayments")
   createdReviewLinks     ReviewLink[]                @relation("CreatedReviewLinks")
+  createdStoreItems      StoreItem[]                 @relation("CreatedStoreItems")
   notificationPreference UserNotificationPreference?
 
   @@index([email])
@@ -312,29 +334,36 @@ model Student {
   levelId      String?
   levelModel   Level?      @relation(fields: [levelId], references: [id], onDelete: SetNull)
   level        HebrewLevel @default(BEGINNER) // Kept for backwards compatibility
-  totalPoints  Int         @default(0)
-  streakDays   Int         @default(0)
-  balance      Decimal     @default(0.00) @db.Decimal(10, 2)
-  lastLessonAt DateTime?
-  notes        String?
-  createdAt    DateTime    @default(now())
+  totalPoints            Int         @default(0)
+  streakDays             Int         @default(0)
+  balance                Decimal     @default(0.00) @db.Decimal(10, 2)
+  coins                  Int         @default(0)
+  equippedAvatarFrameId  String?
+  equippedNicknameId     String?
+  lastLessonAt           DateTime?
+  notes                  String?
+  createdAt              DateTime    @default(now())
 
-  packages            StudentPackage[]
-  sessionBalances     StudentSessionBalance[]
-  sessionLedgers      SessionBalanceLedger[]
-  payments            Payment[]
-  lessons             Lesson[]
-  homeworks           Homework[]
-  feedback            LessonFeedback[]
-  teacherSurveys      TeacherSurvey[]
-  gameSessions        StudentGameSession[]
-  gameUnlocks         StudentGameUnlock[]
-  examAttempts        StudentLevelExam[]
-  pointsLedger        PointsLedger[]
-  recordedSessions    RecordedSession[]
-  balanceTransactions BalanceTransaction[]
-  badges              Badge[]
-  certificates        Certificate[]
+  equippedAvatarFrame    StoreItem?         @relation("EquippedFrame", fields: [equippedAvatarFrameId], references: [id], onDelete: SetNull)
+  equippedNickname       StoreItem?         @relation("EquippedNickname", fields: [equippedNicknameId], references: [id], onDelete: SetNull)
+  packages               StudentPackage[]
+  sessionBalances        StudentSessionBalance[]
+  sessionLedgers         SessionBalanceLedger[]
+  payments               Payment[]
+  lessons                Lesson[]
+  homeworks              Homework[]
+  feedback               LessonFeedback[]
+  teacherSurveys         TeacherSurvey[]
+  gameSessions           StudentGameSession[]
+  gameUnlocks            StudentGameUnlock[]
+  examAttempts           StudentLevelExam[]
+  pointsLedger           PointsLedger[]
+  recordedSessions       RecordedSession[]
+  balanceTransactions    BalanceTransaction[]
+  badges                 Badge[]
+  certificates           Certificate[]
+  coinTransactions       CoinTransaction[]
+  storeInventory         StudentStoreItem[]
 
   @@index([userId])
   @@index([levelId])
@@ -1063,5 +1092,91 @@ model PlacementTestSubmission {
   @@index([evaluatedLevel])
   @@index([status])
   @@index([createdAt])
+}
+
+// ----------------------------------------------------
+// Gamification Store (Avatar Frames, Nicknames, Coins)
+// ----------------------------------------------------
+model StoreItem {
+  id          String          @id @default(uuid())
+  type        StoreItemType
+  rarity      StoreItemRarity @default(COMMON)
+  isActive    Boolean         @default(true)
+  sortOrder   Int             @default(0)
+  coinCost    Int
+
+  // Multilingual names
+  nameEn      String
+  nameHe      String
+  nameAr      String
+  descEn      String?
+  descHe      String?
+  descAr      String?
+
+  // Avatar Frame fields (populated when type = AVATAR_FRAME)
+  frameImageUrl     String?
+  frameAnimated     Boolean  @default(false)
+  frameCssClass     String?
+  frameBorderColor  String?
+  frameBorderRadius String?
+
+  // Nickname fields (populated when type = NICKNAME)
+  nicknameColor      String?
+  nicknameGlow       Boolean  @default(false)
+  nicknameGlowColor  String?
+  nicknameFont       String?
+  nicknameBadgeIcon  String?
+  nicknameCssClass   String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+
+  // Relations
+  createdBy        User?              @relation("CreatedStoreItems", fields: [createdById], references: [id], onDelete: SetNull)
+  redemptions      StudentStoreItem[]
+  coinTransactions CoinTransaction[]
+
+  // Reverse relations for equipped
+  equippedAsFrameBy    Student[] @relation("EquippedFrame")
+  equippedAsNicknameBy Student[] @relation("EquippedNickname")
+
+  @@index([type])
+  @@index([rarity])
+  @@index([isActive])
+  @@map("store_items")
+}
+
+model StudentStoreItem {
+  id          String    @id @default(uuid())
+  studentId   String
+  storeItemId String
+  redeemedAt  DateTime  @default(now())
+  isEquipped  Boolean   @default(false)
+
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  storeItem   StoreItem @relation(fields: [storeItemId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, storeItemId])
+  @@index([studentId])
+  @@map("student_store_items")
+}
+
+model CoinTransaction {
+  id          String              @id @default(uuid())
+  studentId   String
+  amount      Int
+  coinsAfter  Int
+  type        CoinTransactionType
+  referenceId String?
+  description String?
+  createdAt   DateTime            @default(now())
+
+  student     Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  storeItem   StoreItem? @relation(fields: [referenceId], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+  @@index([createdAt])
+  @@map("coin_transactions")
 }
 

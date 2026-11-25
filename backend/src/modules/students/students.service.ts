@@ -45,6 +45,8 @@ export async function getStudentById(id: string) {
       packages: {
         include: { package: true },
       },
+      equippedAvatarFrame: true,
+      equippedNickname: true,
     },
   });
 
@@ -549,8 +551,11 @@ export async function getStudentProgressAnalytics(studentIdOrUserId: string) {
       userId: student.userId,
       level: student.level,
       totalPoints: student.totalPoints,
+      coins: student.coins,
       streakDays: student.streakDays,
       balance: Number(student.balance || 0),
+      equippedAvatarFrame: student.equippedAvatarFrame,
+      equippedNickname: student.equippedNickname,
     },
     summary: {
       totalStudyHours: totalHours,
