@@ -513,10 +513,9 @@ export const StudentDashboard: React.FC = () => {
   });
 
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<'weekly' | 'monthly' | 'all_time'>('weekly');
-  const [selectedLeaderboardLevel, setSelectedLeaderboardLevel] = useState<string>('');
 
   const studentLevelFromDashboard = dashboard?.student?.levelModel?.code || dashboard?.student?.level || 'BEGINNER';
-  const activeLeaderboardLevel = selectedLeaderboardLevel || studentLevelFromDashboard;
+  const activeLeaderboardLevel = studentLevelFromDashboard;
 
   // 4. Fetch Leaderboard by Level (Weekly, Monthly Seasons & All-Time)
   const { data: leaderboardData = [], isLoading: isLeaderboardLoading } = useQuery({
@@ -3485,124 +3484,58 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Level Tabs Selection */}
+                {/* Enrolled Level League Display */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                      {isAr ? 'اختر المستوى لعرض لوحة الصدارة:' : isHe ? 'בחר רמת לימוד לתצוגת דירוג:' : 'Select Proficiency Level League:'}
+                      {isAr ? 'دوري المستوى الدراسي الخاص بك:' : isHe ? 'ליגת רמת הלימוד שלך:' : 'Your Proficiency Level League:'}
                     </span>
-                    <span className="text-xs font-bold text-brand-teal-600 dark:text-brand-teal-400">
-                      {isAr
-                        ? `مستواك الحالي: ${t(`levels.${studentLevelFromDashboard}`)}`
-                        : isHe
-                        ? `רמתך: ${t(`levels.${studentLevelFromDashboard}`)}`
-                        : `Your Enrolled Level: ${t(`levels.${studentLevelFromDashboard}`)}`}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                    {availableLevels.map((lvl: any) => {
-                      const isSelected = activeLeaderboardLevel === lvl.code;
-                      const isMyLevel = studentLevelFromDashboard === lvl.code;
-                      const label = isAr ? (LEVEL_AR_MAP[lvl.code] || lvl.labelAr || t(`levels.${lvl.code}`)) : isHe && lvl.labelHe ? lvl.labelHe : (lvl.labelEn || t(`levels.${lvl.code}`));
-
-                      return (
-                        <button
-                          key={lvl.code}
-                          type="button"
-                          onClick={() => setSelectedLeaderboardLevel(lvl.code)}
-                          className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center gap-2 border cursor-pointer ${
-                            isSelected
-                              ? 'bg-brand-teal-800 text-white border-brand-teal-700 shadow-sm ring-2 ring-brand-teal-500/20'
-                              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
-                          }`}
-                        >
-                          <span>{label}</span>
-                          {isMyLevel && (
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-black tracking-wide ${
-                              isSelected
-                                ? 'bg-brand-olive-400 text-slate-950'
-                                : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                            }`}>
-                              {isAr ? 'مستواك الحالي' : isHe ? 'הרמה שלך' : 'My Level'}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+                    <div className="inline-flex items-center gap-2">
+                      <span className="px-3.5 py-1.5 rounded-xl bg-brand-teal-800 text-white text-xs font-extrabold shadow-xs flex items-center gap-2 border border-brand-teal-700">
+                        <span>{isAr ? (LEVEL_AR_MAP[activeLeaderboardLevel] || currentLevelObj?.labelAr || t(`levels.${activeLeaderboardLevel}`)) : isHe && currentLevelObj?.labelHe ? currentLevelObj?.labelHe : (currentLevelObj?.labelEn || t(`levels.${activeLeaderboardLevel}`))}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-black bg-brand-olive-400 text-slate-950">
+                          {isAr ? 'مستواك الحالي' : isHe ? 'הרמה שלך' : 'My League'}
+                        </span>
+                      </span>
+                    </div>
                   </div>
 
                   {/* Level Context & Current Standing Summary Banner */}
-                  <div className={`p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                    isViewingMyLevel
-                      ? 'bg-teal-50/70 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/80 text-teal-950 dark:text-teal-100 shadow-2xs'
-                      : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 shadow-2xs'
-                  }`}>
+                  <div className="p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-teal-50/70 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/80 text-teal-950 dark:text-teal-100 shadow-2xs">
                     <div className="flex items-center gap-3.5 min-w-0">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-xs ${
-                        isViewingMyLevel
-                          ? 'bg-brand-teal-800 text-brand-olive-300'
-                          : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                      }`}>
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-xs bg-brand-teal-800 text-brand-olive-300">
                         <Trophy className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs sm:text-sm font-extrabold truncate">
-                          {isViewingMyLevel ? (
-                            isAr ? (
-                              <>
-                                أنت تنافس في دوري <span className="underline decoration-brand-teal-500 underline-offset-4">{LEVEL_AR_MAP[activeLeaderboardLevel] || currentLevelObj?.labelAr || t(`levels.${activeLeaderboardLevel}`)}</span>
-                                {myRankNumber
-                                  ? ` • ترتيبك: المركز #${myRankNumber} من بين ${leaderboardData.length} طلاب (${myRankEntry?.totalPoints || 0} نقطة XP)`
-                                  : ` • لا توجد نقاط مسجلة لهذه الفترة بعد (${student?.totalPoints || 0} إجمالي نقاط XP)`}
-                              </>
-                            ) : isHe ? (
-                              <>
-                                אתה מתחרה בליגת <span className="underline decoration-brand-teal-500 underline-offset-4">{currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span>
-                                {myRankNumber
-                                  ? ` • דירוגך: מקום #${myRankNumber} מתוך ${leaderboardData.length} תלמידים (${myRankEntry?.totalPoints || 0} XP)`
-                                  : ` • אין עדיין נקודות בתקופה זו (${student?.totalPoints || 0} XP בסה״כ)`}
-                              </>
-                            ) : (
-                              <>
-                                You are competing in <span className="underline decoration-brand-teal-500 underline-offset-4">{currentLevelObj?.labelEn || t(`levels.${activeLeaderboardLevel}`)}</span>
-                                {myRankNumber
-                                  ? ` • Your Rank: #${myRankNumber} of ${leaderboardData.length} students (${myRankEntry?.totalPoints || 0} XP)`
-                                  : ` • No points recorded in this period yet (${student?.totalPoints || 0} lifetime XP)`}
-                              </>
-                            )
+                          {isAr ? (
+                            <>
+                              أنت تنافس في دوري <span className="underline decoration-brand-teal-500 underline-offset-4">{LEVEL_AR_MAP[activeLeaderboardLevel] || currentLevelObj?.labelAr || t(`levels.${activeLeaderboardLevel}`)}</span>
+                              {myRankNumber
+                                ? ` • ترتيبك: المركز #${myRankNumber} من بين ${leaderboardData.length} طلاب (${myRankEntry?.totalPoints || 0} نقطة XP)`
+                                : ` • لا توجد نقاط مسجلة لهذه الفترة بعد (${student?.totalPoints || 0} إجمالي نقاط XP)`}
+                            </>
+                          ) : isHe ? (
+                            <>
+                              אתה מתחרה בליגת <span className="underline decoration-brand-teal-500 underline-offset-4">{currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span>
+                              {myRankNumber
+                                ? ` • דירוגך: מקום #${myRankNumber} מתוך ${leaderboardData.length} תלמידים (${myRankEntry?.totalPoints || 0} XP)`
+                                : ` • אין עדיין נקודות בתקופה זו (${student?.totalPoints || 0} XP בסה״כ)`}
+                            </>
                           ) : (
-                            isAr ? (
-                              <>
-                                عرض ترتيب <span className="font-black text-slate-900 dark:text-white">{LEVEL_AR_MAP[activeLeaderboardLevel] || currentLevelObj?.labelAr || t(`levels.${activeLeaderboardLevel}`)}</span> ({leaderboardData.length} طلاب مصنفون)
-                              </>
-                            ) : isHe ? (
-                              <>
-                                מוצג לוח המובילים של <span className="font-black text-slate-900 dark:text-white">{currentLevelObj?.labelHe || t(`levels.${activeLeaderboardLevel}`)}</span> ({leaderboardData.length} תלמידים בדירוג)
-                              </>
-                            ) : (
-                              <>
-                                Viewing standings for <span className="font-black text-slate-900 dark:text-white">{currentLevelObj?.labelEn || t(`levels.${activeLeaderboardLevel}`)}</span> ({leaderboardData.length} students ranked)
-                              </>
-                            )
+                            <>
+                              You are competing in <span className="underline decoration-brand-teal-500 underline-offset-4">{currentLevelObj?.labelEn || t(`levels.${activeLeaderboardLevel}`)}</span>
+                              {myRankNumber
+                                ? ` • Your Rank: #${myRankNumber} of ${leaderboardData.length} students (${myRankEntry?.totalPoints || 0} XP)`
+                                : ` • No points recorded in this period yet (${student?.totalPoints || 0} lifetime XP)`}
+                            </>
                           )}
                         </p>
                         <p className="text-[11px] opacity-80 mt-0.5">
-                          {isAr ? 'يتم ترتيب الطلاب فقط مقابل أقرانهم في نفس المستوى التعليمي.' : isHe ? 'הדירוג מחושב אך ורק מול תלמידים מאותה הרמה ולא מול כלל התלמידים באקדמיה.' : 'Students are ranked exclusively against peers within the same level, not against the entire academy.'}
+                          {isAr ? 'يتم ترتيب الطلاب فقط مقابل أقرانهم في نفس المستوى التعليمي.' : isHe ? 'הדירוג מחושב אך ורק מול תלמידים מאותה הרמה ולא מול כלל התלמידים באקדמיה.' : 'Students are ranked exclusively against peers within your enrolled level.'}
                         </p>
                       </div>
                     </div>
-
-                    {!isViewingMyLevel && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLeaderboardLevel(studentLevelFromDashboard)}
-                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-700 text-white text-xs font-bold transition shrink-0 cursor-pointer shadow-xs active:scale-95"
-                      >
-                        <Award className="w-3.5 h-3.5 text-brand-olive-300" />
-                        <span>{isAr ? 'العودة لمستواي' : isHe ? 'חזור לרמה שלי' : 'View My Level'}</span>
-                      </button>
-                    )}
                   </div>
                 </div>
 
