@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import { levelExamsApi } from '../../lib/enterpriseApi';
+import { LevelExamModel } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSidebarStore } from '../../store/sidebarStore';
@@ -259,6 +261,46 @@ export const TeacherDashboard: React.FC = () => {
 
   // Student progress details modal state
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<any | null>(null);
+
+  // Open Level Exam modal state
+  const [examModalStudent, setExamModalStudent] = useState<any | null>(null);
+  const [openingExamId, setOpeningExamId] = useState<string | null>(null);
+
+  const { data: levelExams = [], isLoading: isLevelExamsLoading } = useQuery<LevelExamModel[]>({
+    queryKey: ['level-exams'],
+    queryFn: levelExamsApi.list,
+    enabled: Boolean(examModalStudent),
+  });
+
+  const openLevelExamMutation = useMutation({
+    mutationFn: ({ examId, studentId }: { examId: string; studentId: string }) =>
+      levelExamsApi.openForStudent(examId, studentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['level-exams'] });
+      haptics.success();
+      toast.success(
+        language === 'ar'
+          ? 'تم فتح امتحان المستوى للطالب بنجاح!'
+          : language === 'he'
+          ? 'מבחן המעבר נפתח לתלמיד בהצלחה!'
+          : 'Level exam unlocked for student!'
+      );
+      setOpeningExamId(null);
+      setExamModalStudent(null);
+    },
+    onError: (err: any) => {
+      setOpeningExamId(null);
+      const msg =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        (language === 'ar'
+          ? 'تعذر فتح الامتحان للطالب.'
+          : language === 'he'
+          ? 'פתיחת המבחן נכשלה.'
+          : 'Failed to open level exam for student.');
+      toast.error(msg);
+    },
+  });
 
   // Recorded Sessions state
   const [isCreatingRecording, setIsCreatingRecording] = useState(false);
@@ -2281,6 +2323,20 @@ export const TeacherDashboard: React.FC = () => {
                           <Eye className="w-3.5 h-3.5 shrink-0" />
                           <span>{language === 'he' ? 'פרופיל' : 'View'}</span>
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setExamModalStudent({ ...student, user: studentUser })}
+                          className="col-span-3 py-2 px-3 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/60 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                        >
+                          <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+                          <span>
+                            {language === 'ar'
+                              ? 'فتح امتحان انتقال المستوى'
+                              : language === 'he'
+                              ? 'פתח מבחן מעבר רמה'
+                              : 'Open Level Exam'}
+                          </span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -3305,7 +3361,25 @@ export const TeacherDashboard: React.FC = () => {
             </div>
 
             {/* Footer buttons */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = selectedStudentDetail;
+                  setSelectedStudentDetail(null);
+                  setExamModalStudent(target);
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-xs hover:bg-indigo-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>
+                  {language === 'ar'
+                    ? 'فتح امتحان المستوى'
+                    : language === 'he'
+                    ? 'פתח מבחן רמה'
+                    : 'Open Level Exam'}
+                </span>
+              </button>
               <button
                 onClick={() => {
                   setHwStudentId(selectedStudentDetail.id);
@@ -3327,6 +3401,147 @@ export const TeacherDashboard: React.FC = () => {
                 + {language === 'he' ? 'הוספת הקלטה' : 'Add Recording'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Open Level Exam Modal */}
+      {examModalStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 my-8">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <GraduationCap className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                    {language === 'ar'
+                      ? 'فتح امتحان انتقال المستوى'
+                      : language === 'he'
+                      ? 'פתיחת מבחן מעבר רמה'
+                      : 'Open Level Transition Exam'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {`${examModalStudent.user?.firstName || ''} ${examModalStudent.user?.lastName || ''}`.trim()}{' '}
+                    • {t(`levels.${examModalStudent.level || 'BEGINNER'}`)}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExamModalStudent(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {isLevelExamsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((n) => (
+                  <div key={n} className="h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[55vh] overflow-y-auto pe-1">
+                {[...levelExams]
+                  .filter((ex) => ex.isActive)
+                  .sort((a, b) => {
+                    const aMatch = a.level?.code === examModalStudent.level ? 0 : 1;
+                    const bMatch = b.level?.code === examModalStudent.level ? 0 : 1;
+                    return aMatch - bMatch;
+                  })
+                  .map((exam) => {
+                    const isCurrentLevel = exam.level?.code === examModalStudent.level;
+                    const isOpening = openingExamId === exam.id && openLevelExamMutation.isPending;
+                    const examTitle =
+                      language === 'he' ? exam.titleHe || exam.title : exam.title;
+                    const questionCount = Array.isArray(exam.questions) ? exam.questions.length : 0;
+
+                    return (
+                      <div
+                        key={exam.id}
+                        className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+                          isCurrentLevel
+                            ? 'bg-indigo-50/70 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-700'
+                            : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                              {examTitle}
+                            </span>
+                            {isCurrentLevel && (
+                              <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black">
+                                {language === 'ar'
+                                  ? 'المستوى الحالي'
+                                  : language === 'he'
+                                  ? 'הרמה הנוכחית'
+                                  : 'Current Level'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                            <span>
+                              {language === 'ar'
+                                ? `${questionCount} أسئلة`
+                                : language === 'he'
+                                ? `${questionCount} שאלות`
+                                : `${questionCount} questions`}
+                            </span>
+                            <span>•</span>
+                            <span>
+                              {language === 'ar'
+                                ? `درجة النجاح: ${exam.passingScore}%`
+                                : language === 'he'
+                                ? `ציון עובר: ${exam.passingScore}%`
+                                : `Passing: ${exam.passingScore}%`}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={openLevelExamMutation.isPending}
+                          onClick={() => {
+                            setOpeningExamId(exam.id);
+                            openLevelExamMutation.mutate({
+                              examId: exam.id,
+                              studentId: examModalStudent.id,
+                            });
+                          }}
+                          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-xs transition shrink-0 cursor-pointer disabled:opacity-60"
+                        >
+                          {isOpening
+                            ? language === 'ar'
+                              ? 'جاري الفتح...'
+                              : language === 'he'
+                              ? 'פותח...'
+                              : 'Opening...'
+                            : language === 'ar'
+                            ? 'فتح الامتحان'
+                            : language === 'he'
+                            ? 'פתח מבחן'
+                            : 'Unlock Exam'}
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                {levelExams.filter((ex) => ex.isActive).length === 0 && (
+                  <p className="text-xs text-slate-400 py-8 text-center">
+                    {language === 'ar'
+                      ? 'لا توجد امتحانات مستوى نشطة حالياً.'
+                      : language === 'he'
+                      ? 'אין מבחני רמה פעילים כרגע.'
+                      : 'No active level exams available.'}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
