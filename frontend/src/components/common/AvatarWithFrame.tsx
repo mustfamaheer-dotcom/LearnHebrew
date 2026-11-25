@@ -13,7 +13,7 @@ export interface AvatarWithFrameProps {
   avatarUrl?: string | null;
   studentName: string;
   frameItem?: AvatarFrameConfig | null;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
@@ -255,6 +255,7 @@ export const FRAME_PRESETS: FramePresetMeta[] = [
 ];
 
 const SIZE_CLASSES: Record<NonNullable<AvatarWithFrameProps['size']>, string> = {
+  xs: 'w-7 h-7 text-[11px]',
   sm: 'w-8 h-8 text-xs',
   md: 'w-10 h-10 text-sm',
   lg: 'w-14 h-14 text-base',
@@ -262,6 +263,7 @@ const SIZE_CLASSES: Record<NonNullable<AvatarWithFrameProps['size']>, string> = 
 };
 
 const ORNAMENT_SCALE: Record<NonNullable<AvatarWithFrameProps['size']>, string> = {
+  xs: 'text-[8px]',
   sm: 'text-[9px]',
   md: 'text-[11px]',
   lg: 'text-sm',
@@ -325,14 +327,17 @@ const FrameOrnaments: React.FC<{
 }> = ({ ornament, size }) => {
   if (!ornament || ornament === 'none') return null;
   const textScale = ORNAMENT_SCALE[size];
-  const isCompact = size === 'sm';
+  const isCompact = size === 'xs' || size === 'sm';
+  const isXs = size === 'xs';
 
   if (ornament === 'crown' || ornament === 'vip') {
     return (
       <>
         <span
           aria-hidden="true"
-          className={`pointer-events-none absolute -top-2.5 left-1/2 z-30 -translate-x-1/2 leading-none drop-shadow ${textScale} store-float-gentle`}
+          className={`pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 leading-none drop-shadow ${
+            isXs ? '-top-1.5' : isCompact ? '-top-2' : '-top-2.5'
+          } ${textScale} store-float-gentle`}
         >
           👑
         </span>
@@ -353,7 +358,7 @@ const FrameOrnaments: React.FC<{
       <div
         aria-hidden="true"
         className={`pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 rounded-full border-2 border-yellow-200 bg-yellow-300/20 shadow-[0_0_10px_rgba(253,224,71,0.95)] store-float-gentle ${
-          isCompact ? '-top-2 h-1.5 w-5' : '-top-3 h-2 w-8'
+          isXs ? '-top-1.5 h-1 w-4' : isCompact ? '-top-2 h-1.5 w-5' : '-top-3 h-2 w-8'
         }`}
       />
     );
@@ -364,7 +369,9 @@ const FrameOrnaments: React.FC<{
       <>
         <span
           aria-hidden="true"
-          className={`pointer-events-none absolute -top-2 -right-1 z-30 leading-none drop-shadow ${textScale} store-float-gentle`}
+          className={`pointer-events-none absolute z-30 leading-none drop-shadow ${
+            isCompact ? '-top-1 -right-0.5' : '-top-2 -right-1'
+          } ${textScale} store-float-gentle`}
         >
           🔥
         </span>
@@ -381,13 +388,15 @@ const FrameOrnaments: React.FC<{
   }
 
   if (ornament === 'hud') {
-    const cornerSize = isCompact ? 'h-2 w-2' : 'h-2.5 w-2.5';
+    const cornerSize = isXs ? 'h-1.5 w-1.5' : isCompact ? 'h-2 w-2' : 'h-2.5 w-2.5';
+    const cornerBorder = isCompact ? 'border-[1.5px]' : 'border-2';
+    const insetCls = isCompact ? '-inset-0.5' : '-inset-1';
     return (
-      <div aria-hidden="true" className="pointer-events-none absolute -inset-1 z-30">
-        <span className={`absolute top-0 left-0 ${cornerSize} border-t-2 border-l-2 border-cyan-300`} />
-        <span className={`absolute top-0 right-0 ${cornerSize} border-t-2 border-r-2 border-cyan-300`} />
-        <span className={`absolute bottom-0 left-0 ${cornerSize} border-b-2 border-l-2 border-cyan-300`} />
-        <span className={`absolute bottom-0 right-0 ${cornerSize} border-b-2 border-r-2 border-cyan-300`} />
+      <div aria-hidden="true" className={`pointer-events-none absolute ${insetCls} z-30`}>
+        <span className={`absolute top-0 left-0 ${cornerSize} border-t-2 border-l-2 ${cornerBorder} border-cyan-300`} />
+        <span className={`absolute top-0 right-0 ${cornerSize} border-t-2 border-r-2 ${cornerBorder} border-cyan-300`} />
+        <span className={`absolute bottom-0 left-0 ${cornerSize} border-b-2 border-l-2 ${cornerBorder} border-cyan-300`} />
+        <span className={`absolute bottom-0 right-0 ${cornerSize} border-b-2 border-r-2 ${cornerBorder} border-cyan-300`} />
       </div>
     );
   }
@@ -397,7 +406,9 @@ const FrameOrnaments: React.FC<{
       <>
         <span
           aria-hidden="true"
-          className={`pointer-events-none absolute -top-1.5 -right-1 z-30 text-amber-300 drop-shadow-[0_0_6px_rgba(253,224,71,0.9)] ${textScale} store-twinkle`}
+          className={`pointer-events-none absolute z-30 text-amber-300 drop-shadow-[0_0_6px_rgba(253,224,71,0.9)] ${
+            isCompact ? '-top-1 -right-0.5' : '-top-1.5 -right-1'
+          } ${textScale} store-twinkle`}
         >
           ✦
         </span>
@@ -419,7 +430,9 @@ const FrameOrnaments: React.FC<{
       <>
         <span
           aria-hidden="true"
-          className={`pointer-events-none absolute -top-1.5 -right-1 z-30 leading-none drop-shadow ${textScale} store-twinkle`}
+          className={`pointer-events-none absolute z-30 leading-none drop-shadow ${
+            isCompact ? '-top-1 -right-0.5' : '-top-1.5 -right-1'
+          } ${textScale} store-twinkle`}
         >
           ✨
         </span>
@@ -440,7 +453,9 @@ const FrameOrnaments: React.FC<{
       <>
         <span
           aria-hidden="true"
-          className={`pointer-events-none absolute -top-1.5 -right-1 z-30 leading-none drop-shadow ${textScale} store-float-gentle`}
+          className={`pointer-events-none absolute z-30 leading-none drop-shadow ${
+            isCompact ? '-top-1 -right-0.5' : '-top-1.5 -right-1'
+          } ${textScale} store-float-gentle`}
         >
           🌸
         </span>
@@ -467,7 +482,9 @@ const FrameOrnaments: React.FC<{
   return (
     <span
       aria-hidden="true"
-      className={`pointer-events-none absolute -top-1.5 -right-1 z-30 leading-none drop-shadow ${textScale} store-twinkle`}
+      className={`pointer-events-none absolute z-30 leading-none drop-shadow ${
+        isCompact ? '-top-1 -right-0.5' : '-top-1.5 -right-1'
+      } ${textScale} store-twinkle`}
     >
       {emoji}
     </span>
@@ -514,9 +531,11 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
   const isPresetConic = CONIC_FRAME_CLASSES.has(primaryPresetClass);
   const isTokenGradientOrConic = tokens.ring === 'gradient' || tokens.ring === 'conic';
 
+  const isCompactSize = size === 'xs' || size === 'sm';
   const c1 = frameItem?.frameBorderColor || '#ffd700';
   const c2 = tokens.grad2 || '#ff6b00';
-  const thickness = tokens.thick ?? 3;
+  const rawThickness = tokens.thick ?? 3;
+  const thickness = size === 'xs' ? Math.min(rawThickness, 2) : size === 'sm' ? Math.min(rawThickness, 2.5) : rawThickness;
 
   const glowFilterOrShadow = useMemo(() => {
     if (tokens.glow === 'none') return 'none';
@@ -530,7 +549,8 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
     tokens.ornament ?? PRESET_DEFAULT_ORNAMENT[primaryPresetClass];
 
   const frameOverlayClasses = [
-    'pointer-events-none absolute -inset-[3px] z-10',
+    'pointer-events-none absolute z-10',
+    isCompactSize ? '-inset-[2px] avatar-frame-compact' : '-inset-[3px]',
     tokens.baseClass,
     frameItem?.frameAnimated ? 'animated frame-animated' : '',
     tokens.ring === 'conic' && frameItem?.frameAnimated ? 'store-spin-slow' : '',
@@ -607,7 +627,11 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
         <svg
           viewBox="0 0 100 100"
           aria-hidden="true"
-          className={`pointer-events-none absolute -inset-[4px] z-10 h-[calc(100%+8px)] w-[calc(100%+8px)] ${
+          className={`pointer-events-none absolute z-10 ${
+            isCompactSize
+              ? '-inset-[2px] h-[calc(100%+4px)] w-[calc(100%+4px)]'
+              : '-inset-[4px] h-[calc(100%+8px)] w-[calc(100%+8px)]'
+          } ${
             frameItem.frameAnimated ? 'animate-pulse' : ''
           }`}
           style={{
@@ -660,7 +684,11 @@ export const AvatarWithFrame: React.FC<AvatarWithFrameProps> = ({
           src={getAvatarUrl(frameItem.frameImageUrl) || frameItem.frameImageUrl}
           alt=""
           aria-hidden="true"
-          className={`pointer-events-none absolute -inset-1.5 z-20 h-[calc(100%+12px)] w-[calc(100%+12px)] max-w-none object-contain ${
+          className={`pointer-events-none absolute z-20 max-w-none object-contain ${
+            isCompactSize
+              ? '-inset-0.5 h-[calc(100%+4px)] w-[calc(100%+4px)]'
+              : '-inset-1.5 h-[calc(100%+12px)] w-[calc(100%+12px)]'
+          } ${
             frameItem.frameAnimated ? 'animate-pulse' : ''
           }`}
         />

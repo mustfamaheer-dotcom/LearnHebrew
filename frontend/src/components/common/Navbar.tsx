@@ -200,16 +200,16 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* Real-time Notification Bell & Drawer */}
-            <div className="relative me-1.5 sm:me-2 shrink-0 flex items-center">
+            <div className="relative me-2.5 sm:me-3 shrink-0 flex items-center">
               <NotificationBell />
             </div>
 
             {isAuthenticated && user ? (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-3">
                 {/* User Profile Pill -> Links directly to Dashboard */}
                 <Link
                   to={getUserDashboardPath(user.role)}
-                  className="flex items-center gap-2 h-8 sm:h-9 p-0.5 sm:p-1 sm:ps-1 sm:pe-3 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group shrink-0"
+                  className="flex items-center gap-2.5 min-h-[40px] ps-1.5 pe-3 py-1 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-850 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs transition-colors cursor-pointer group shrink-0"
                   title={getDashboardButtonLabel(user.role, language as any)}
                 >
                   {user.role === 'STUDENT' ? (
@@ -217,7 +217,8 @@ export const Navbar: React.FC = () => {
                       avatarUrl={user.avatarUrl}
                       studentName={`${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Student'}
                       frameItem={user.studentProfile?.equippedAvatarFrame}
-                      size="sm"
+                      size="xs"
+                      className="shrink-0"
                     />
                   ) : (
                     <div className="w-7 h-7 sm:w-7 sm:h-7 rounded-lg overflow-hidden bg-gradient-to-br from-brand-teal-600 to-indigo-700 text-white flex items-center justify-center font-black text-xs shadow-2xs shrink-0 ring-1 ring-teal-400/30 group-hover:ring-teal-400 transition-all">
@@ -234,6 +235,7 @@ export const Navbar: React.FC = () => {
                         <StyledNickname
                           name={`${user.firstName || ''} ${user.lastName || ''}`.trim()}
                           nicknameItem={user.studentProfile?.equippedNickname}
+                          compact
                           truncate
                         />
                       ) : (

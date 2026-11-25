@@ -14,6 +14,7 @@ export interface StyledNicknameProps {
   nicknameItem?: StyledNicknameConfig | null;
   className?: string;
   truncate?: boolean;
+  compact?: boolean;
 }
 
 export type NicknameFillMode = 'solid' | 'gradient' | 'pill';
@@ -229,6 +230,7 @@ export const StyledNickname: React.FC<StyledNicknameProps> = ({
   nicknameItem,
   className = '',
   truncate = false,
+  compact = false,
 }) => {
   const tokens = useMemo(
     () => parseNicknameStudioTokens(nicknameItem?.nicknameCssClass),
@@ -237,7 +239,7 @@ export const StyledNickname: React.FC<StyledNicknameProps> = ({
 
   if (!nicknameItem) {
     return (
-      <span className={`${truncate ? 'truncate' : ''} ${className}`.trim()}>
+      <span className={`${compact ? 'text-[13px] leading-tight' : ''} ${truncate ? 'truncate' : ''} ${className}`.trim()}>
         {name}
       </span>
     );
@@ -336,15 +338,18 @@ export const StyledNickname: React.FC<StyledNicknameProps> = ({
     nicknameFont || '',
     !isPill && !isCustomGradient ? tokens.baseClass : '',
     tokens.shimmer ? 'store-text-shimmer-anim' : '',
+    compact && !isPill ? 'text-[13px] leading-tight' : '',
     truncate ? 'truncate' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
   const wrapperClasses = [
-    'inline-flex items-center gap-1',
-    isCustomPill ? 'px-2.5 py-0.5 rounded-full shadow-sm' : '',
+    'inline-flex items-center',
+    compact ? 'gap-0.5 leading-tight' : 'gap-1',
+    isCustomPill ? (compact ? 'px-2 py-0.5 text-xs rounded-full shadow-sm' : 'px-2.5 py-0.5 rounded-full shadow-sm') : '',
     !isCustomPill && isPill ? tokens.baseClass : '',
+    compact && !isCustomPill && isPill ? 'nickname-compact' : '',
     truncate ? 'min-w-0 max-w-full' : '',
     className,
   ]

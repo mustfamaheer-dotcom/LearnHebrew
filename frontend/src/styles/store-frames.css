@@ -148,6 +148,23 @@
   mask-composite: exclude;
 }
 
+.avatar-frame-compact {
+  outline-offset: 0.5px !important;
+}
+
+.nickname-compact {
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+}
+
+.nickname-compact.nickname-royal-banner,
+.nickname-compact.nickname-dark-velvet,
+.nickname-compact.nickname-sakura-tag {
+  padding: 1px 7px !important;
+  font-size: 11.5px !important;
+  line-height: 1.2 !important;
+}
+
 /* --------------------------------------------------------------------------
    Avatar Frame Classes
    -------------------------------------------------------------------------- */

@@ -3811,18 +3811,20 @@ export const StudentDashboard: React.FC = () => {
                                   )}
                                 </td>
                                 <td className="py-3">
-                                  <div className="flex items-center gap-2.5">
+                                  <div className="flex items-center gap-3">
                                     <AvatarWithFrame
                                       avatarUrl={entry.avatarUrl}
                                       studentName={entry.name || 'U'}
                                       frameItem={entry.equippedAvatarFrame}
                                       size="sm"
+                                      className="shrink-0"
                                     />
                                     <div className="min-w-0">
-                                      <p className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                      <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                                         <StyledNickname
                                           name={entry.name}
                                           nicknameItem={entry.equippedNickname}
+                                          compact
                                           truncate
                                         />
                                         {entry.studentId === student?.id && (
@@ -3830,7 +3832,7 @@ export const StudentDashboard: React.FC = () => {
                                             {isAr ? 'أنت' : isHe ? 'אתה' : 'You'}
                                           </span>
                                         )}
-                                      </p>
+                                      </div>
                                     </div>
                                   </div>
                                 </td>
