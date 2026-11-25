@@ -45,6 +45,8 @@ import {
   useDeleteStoreItem,
   useGrantCoins,
   useStoreTransactions,
+  useStudentTransactions,
+  STORE_QUERY_KEYS,
 } from '../../hooks/useStore';
 
 type AdminStoreSubView = 'items' | 'transactions' | 'grant_coins';
@@ -192,24 +194,35 @@ export const StoreManagementTab: React.FC = () => {
   const [grantReason, setGrantReason] = useState('');
   const grantCoinsMutation = useGrantCoins();
 
+  const getStudentProfile = (u: any) => u?.studentProfile || u?.student;
+  const selectedStudentId = getStudentProfile(selectedStudentUser)?.id as string | undefined;
+  const { data: selectedStudentTxs = [] } = useStudentTransactions(selectedStudentId);
+  const selectedStudentCoins =
+    getStudentProfile(selectedStudentUser)?.coins ??
+    selectedStudentTxs[0]?.coinsAfter ??
+    0;
+
   const { data: usersData = [], isLoading: usersLoading } = useQuery({
     queryKey: ['admin-store-students'],
     queryFn: async () => {
-      const res = await api.get('/users');
+      const res = await api.get('/users', { params: { role: 'STUDENT' } });
       return Array.isArray(res.data) ? res.data : res.data?.users ?? [];
     },
     enabled: subView === 'grant_coins',
   });
 
   const filteredStudents = useMemo(() => {
-    const students = (usersData || []).filter((u: any) => u.role === 'STUDENT' && u.student?.id);
+    const students = (usersData || []).filter(
+      (u: any) => u.role === 'STUDENT' && Boolean(getStudentProfile(u)?.id)
+    );
     if (!studentSearch.trim()) return students.slice(0, 30);
     const q = studentSearch.trim().toLowerCase();
     return students
       .filter((u: any) => {
         const name = `${u.firstName || ''} ${u.lastName || ''}`.toLowerCase();
         const email = (u.email || '').toLowerCase();
-        return name.includes(q) || email.includes(q);
+        const phone = (u.phone || '').toLowerCase();
+        return name.includes(q) || email.includes(q) || phone.includes(q);
       })
       .slice(0, 30);
   }, [usersData, studentSearch]);
@@ -409,7 +422,7 @@ export const StoreManagementTab: React.FC = () => {
   // ---------------------------------------------------------------------------
   const handleGrantCoinsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedStudentUser?.student?.id) {
+    if (!selectedStudentId) {
       toast.error(tr('Please select a student', 'יש לבחור תלמיד', 'يرجى اختيار طالب'));
       return;
     }
@@ -437,7 +450,7 @@ export const StoreManagementTab: React.FC = () => {
 
     try {
       const res = await grantCoinsMutation.mutateAsync({
-        studentId: selectedStudentUser.student.id,
+        studentId: selectedStudentId,
         amount: Number(coinDelta),
         reason: grantReason.trim(),
       });
@@ -450,8 +463,15 @@ export const StoreManagementTab: React.FC = () => {
       );
       setGrantReason('');
       queryClient.invalidateQueries({ queryKey: ['admin-store-students'] });
+      queryClient.invalidateQueries({ queryKey: STORE_QUERY_KEYS.studentTransactions(selectedStudentId) });
       setSelectedStudentUser((prev: any) =>
-        prev ? { ...prev, student: { ...prev.student, coins: res.coinsAfter } } : null
+        prev
+          ? {
+              ...prev,
+              studentProfile: prev.studentProfile ? { ...prev.studentProfile, coins: res.coinsAfter } : prev.studentProfile,
+              student: prev.student ? { ...prev.student, coins: res.coinsAfter } : prev.student,
+            }
+          : null
       );
     } catch (err: any) {
       toast.error(err?.response?.data?.message || tr('Failed to update coins', 'עדכון המטבעות נכשל', 'فشل تحديث العملات'));
@@ -1079,10 +1099,12 @@ export const StoreManagementTab: React.FC = () => {
                           <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{u.email}</div>
                         </div>
                       </div>
-                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-black shrink-0">
-                        <Coins className="w-3.5 h-3.5" />
-                        <span>{u.student?.coins ?? 0}</span>
-                      </div>
+                      {typeof getStudentProfile(u)?.coins === 'number' && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-black shrink-0">
+                          <Coins className="w-3.5 h-3.5" />
+                          <span>{getStudentProfile(u).coins}</span>
+                        </div>
+                      )}
                     </button>
                   );
                 })
@@ -1122,7 +1144,7 @@ export const StoreManagementTab: React.FC = () => {
                     </div>
                     <div className="font-black text-base text-amber-600 dark:text-amber-400 flex items-center justify-end gap-1">
                       <Coins className="w-4 h-4" />
-                      {selectedStudentUser.student?.coins ?? 0}
+                      {selectedStudentCoins}
                     </div>
                   </div>
                 </div>

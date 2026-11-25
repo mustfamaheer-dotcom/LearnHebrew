@@ -41,11 +41,29 @@ const STORE_PERMISSIONS: Array<{
 ];
 
 const STARTER_STORE_ITEMS = [
+  // ── 8 Avatar Frames ────────────────────────────────────────────────────────
   {
     type: StoreItemType.AVATAR_FRAME,
     rarity: StoreItemRarity.COMMON,
     isActive: true,
     sortOrder: 1,
+    coinCost: 50,
+    nameEn: 'Bronze Classic Frame',
+    nameHe: 'מסגרת ברונזה קלאסית',
+    nameAr: 'إطار برونزي كلاسيكي',
+    descEn: 'A timeless warm bronze ring to kick off your collection.',
+    descHe: 'טבעת ברונזה חמה וקלאסית לתחילת האוסף שלך.',
+    descAr: 'حلقة برونزية دافئة كلاسيكية لبداية مجموعتك.',
+    frameAnimated: false,
+    frameCssClass: 'frame-bronze-classic',
+    frameBorderColor: '#cd7f32',
+    frameBorderRadius: '50%',
+  },
+  {
+    type: StoreItemType.AVATAR_FRAME,
+    rarity: StoreItemRarity.COMMON,
+    isActive: true,
+    sortOrder: 2,
     coinCost: 80,
     nameEn: 'Emerald Pulse Frame',
     nameHe: 'מסגרת אמרלד',
@@ -62,7 +80,24 @@ const STARTER_STORE_ITEMS = [
     type: StoreItemType.AVATAR_FRAME,
     rarity: StoreItemRarity.RARE,
     isActive: true,
-    sortOrder: 2,
+    sortOrder: 3,
+    coinCost: 180,
+    nameEn: 'Silver Frost Frame',
+    nameHe: 'מסגרת כסף קפוא',
+    nameAr: 'إطار الفضة المتجمدة',
+    descEn: 'Cool metallic silver sheen with a frosty shimmer.',
+    descHe: 'ברק כסוף מטאלי עם נצנוץ קריר.',
+    descAr: 'بريق فضي معدني بارد مع وميض جليدي.',
+    frameAnimated: true,
+    frameCssClass: 'frame-silver-frost',
+    frameBorderColor: '#94a3b8',
+    frameBorderRadius: '50%',
+  },
+  {
+    type: StoreItemType.AVATAR_FRAME,
+    rarity: StoreItemRarity.RARE,
+    isActive: true,
+    sortOrder: 4,
     coinCost: 250,
     nameEn: 'Neon Cyan Frame',
     nameHe: 'מסגרת ניאון תכלת',
@@ -77,9 +112,43 @@ const STARTER_STORE_ITEMS = [
   },
   {
     type: StoreItemType.AVATAR_FRAME,
+    rarity: StoreItemRarity.EPIC,
+    isActive: true,
+    sortOrder: 5,
+    coinCost: 450,
+    nameEn: 'Royal Purple Frame',
+    nameHe: 'מסגרת סגול מלכותי',
+    nameAr: 'إطار أرجواني ملكي',
+    descEn: 'Majestic violet aura crafted for dedicated learners.',
+    descHe: 'הילה סגולה מלכותית ללומדים מסורים.',
+    descAr: 'هالة بنفسجية ملكية مصممة للمتعلمين المجتهدين.',
+    frameAnimated: true,
+    frameCssClass: 'frame-royal-purple',
+    frameBorderColor: '#8b5cf6',
+    frameBorderRadius: '50%',
+  },
+  {
+    type: StoreItemType.AVATAR_FRAME,
+    rarity: StoreItemRarity.EPIC,
+    isActive: true,
+    sortOrder: 6,
+    coinCost: 650,
+    nameEn: 'Crimson Flame Frame',
+    nameHe: 'מסגרת להבת ארגמן',
+    nameAr: 'إطار اللهب القرمزي',
+    descEn: 'Blazing crimson energy pulsing around your profile.',
+    descHe: 'אנרגיית אש אדומה פועמת סביב הפרופיל שלך.',
+    descAr: 'طاقة قرمزية مشتعلة تنبض حول ملفك الشخصي.',
+    frameAnimated: true,
+    frameCssClass: 'frame-crimson-flame',
+    frameBorderColor: '#ef4444',
+    frameBorderRadius: '50%',
+  },
+  {
+    type: StoreItemType.AVATAR_FRAME,
     rarity: StoreItemRarity.LEGENDARY,
     isActive: true,
-    sortOrder: 3,
+    sortOrder: 7,
     coinCost: 1200,
     nameEn: 'Golden Champion Frame',
     nameHe: 'מסגרת אלופים מוזהבת',
@@ -93,10 +162,47 @@ const STARTER_STORE_ITEMS = [
     frameBorderRadius: '50%',
   },
   {
+    type: StoreItemType.AVATAR_FRAME,
+    rarity: StoreItemRarity.LEGENDARY,
+    isActive: true,
+    sortOrder: 8,
+    coinCost: 1800,
+    nameEn: 'Rainbow Prism Frame',
+    nameHe: 'מסגרת פריזמת קשת',
+    nameAr: 'إطار قوس قزح الأسطوري',
+    descEn: 'Dazzling rotating spectrum border — the ultimate status symbol.',
+    descHe: 'מסגרת קשת מסתובבת מרהיבה — סמל הסטטוס האולטימטיבי.',
+    descAr: 'إطار طيفي دوّار مذهل — رمز التميز الأعلى.',
+    frameAnimated: true,
+    frameCssClass: 'frame-rainbow-legendary',
+    frameBorderColor: '#ec4899',
+    frameBorderRadius: '50%',
+  },
+
+  // ── 8 Nicknames ────────────────────────────────────────────────────────────
+  {
     type: StoreItemType.NICKNAME,
     rarity: StoreItemRarity.COMMON,
     isActive: true,
-    sortOrder: 4,
+    sortOrder: 9,
+    coinCost: 75,
+    nameEn: 'Sky Scholar Name',
+    nameHe: 'כינוי חוקר שמיים',
+    nameAr: 'لقب باحث السماء',
+    descEn: 'Clean sky-blue display name with a scholar book badge.',
+    descHe: 'שם תצוגה כחול-שמיים נקי עם סמל ספר.',
+    descAr: 'اسم عرض أزرق سماوي أنيق مع شارة كتاب.',
+    nicknameColor: '#0ea5e9',
+    nicknameGlow: false,
+    nicknameFont: 'font-semibold',
+    nicknameBadgeIcon: '📘',
+    nicknameCssClass: '',
+  },
+  {
+    type: StoreItemType.NICKNAME,
+    rarity: StoreItemRarity.COMMON,
+    isActive: true,
+    sortOrder: 10,
     coinCost: 100,
     nameEn: 'Emerald Bold Nickname',
     nameHe: 'כינוי אמרלד מודגש',
@@ -112,9 +218,46 @@ const STARTER_STORE_ITEMS = [
   },
   {
     type: StoreItemType.NICKNAME,
+    rarity: StoreItemRarity.RARE,
+    isActive: true,
+    sortOrder: 11,
+    coinCost: 220,
+    nameEn: 'Ocean Wave Name',
+    nameHe: 'כינוי גל אוקיינוס',
+    nameAr: 'لقب موجة المحيط',
+    descEn: 'Smooth deep-ocean gradient typography with a wave badge.',
+    descHe: 'טיפוגרפיה בגרדיאנט אוקיינוס עמוק עם סמל גל.',
+    descAr: 'تدرج لوني عميق بألوان المحيط مع شارة موجة.',
+    nicknameColor: '#0284c7',
+    nicknameGlow: false,
+    nicknameFont: 'font-bold',
+    nicknameBadgeIcon: '🌊',
+    nicknameCssClass: 'nickname-ocean-gradient',
+  },
+  {
+    type: StoreItemType.NICKNAME,
+    rarity: StoreItemRarity.RARE,
+    isActive: true,
+    sortOrder: 12,
+    coinCost: 300,
+    nameEn: 'Neon Cyan Spark',
+    nameHe: 'כינוי ניצוץ ניאון',
+    nameAr: 'لقب شرارة النيون',
+    descEn: 'Electrifying cyan glow with a lightning bolt emblem.',
+    descHe: 'זוהר תכלת מחשמל עם סמל ברק.',
+    descAr: 'توهج سماوي كهربائي مع شارة البرق.',
+    nicknameColor: '#06b6d4',
+    nicknameGlow: true,
+    nicknameGlowColor: '#22d3ee',
+    nicknameFont: 'font-bold',
+    nicknameBadgeIcon: '⚡',
+    nicknameCssClass: 'nickname-neon-cyan',
+  },
+  {
+    type: StoreItemType.NICKNAME,
     rarity: StoreItemRarity.EPIC,
     isActive: true,
-    sortOrder: 5,
+    sortOrder: 13,
     coinCost: 600,
     nameEn: 'Royal Purple Glow',
     nameHe: 'כינוי סגול מלכותי',
@@ -131,9 +274,28 @@ const STARTER_STORE_ITEMS = [
   },
   {
     type: StoreItemType.NICKNAME,
+    rarity: StoreItemRarity.EPIC,
+    isActive: true,
+    sortOrder: 14,
+    coinCost: 750,
+    nameEn: 'Crimson Fire Name',
+    nameHe: 'כינוי אש ארגמן',
+    nameAr: 'لقب النار القرمزية',
+    descEn: 'Fiery crimson glow with a flame icon for unstoppable streaks.',
+    descHe: 'זוהר אדום לוהט עם אייקון להבה לרצפי למידה מרשימים.',
+    descAr: 'توهج قرمزي ناري مع رمز الشعلة لأصحاب السلاسل المستمرة.',
+    nicknameColor: '#ef4444',
+    nicknameGlow: true,
+    nicknameGlowColor: '#f87171',
+    nicknameFont: 'font-extrabold',
+    nicknameBadgeIcon: '🔥',
+    nicknameCssClass: 'nickname-crimson-fire',
+  },
+  {
+    type: StoreItemType.NICKNAME,
     rarity: StoreItemRarity.LEGENDARY,
     isActive: true,
-    sortOrder: 6,
+    sortOrder: 15,
     coinCost: 1500,
     nameEn: 'Legendary Gold Name',
     nameHe: 'כינוי זהב אגדי',
@@ -147,6 +309,25 @@ const STARTER_STORE_ITEMS = [
     nicknameFont: 'font-extrabold',
     nicknameBadgeIcon: '🏆',
     nicknameCssClass: 'nickname-gold-legendary',
+  },
+  {
+    type: StoreItemType.NICKNAME,
+    rarity: StoreItemRarity.LEGENDARY,
+    isActive: true,
+    sortOrder: 16,
+    coinCost: 2000,
+    nameEn: 'Rainbow Mythic Name',
+    nameHe: 'כינוי קשת מיתי',
+    nameAr: 'الاسم الطيفي الأسطوري',
+    descEn: 'Animated rainbow gradient name with a radiant star badge.',
+    descHe: 'שם בגרדיאנט קשת אנימטיבי עם כוכב זוהר.',
+    descAr: 'اسم بتدرج ألوان قوس قزح متحرك مع شارة نجمة مشرقة.',
+    nicknameColor: '#ec4899',
+    nicknameGlow: true,
+    nicknameGlowColor: '#f472b6',
+    nicknameFont: 'font-extrabold',
+    nicknameBadgeIcon: '🌟',
+    nicknameCssClass: 'nickname-rainbow-legendary',
   },
 ];
 
@@ -192,16 +373,31 @@ async function main() {
 
   console.log(`Upserted ${STORE_PERMISSIONS.length} store permissions & role mappings.`);
 
-  const existingItemCount = await prisma.storeItem.count();
-  if (existingItemCount === 0) {
-    await prisma.storeItem.createMany({
-      data: STARTER_STORE_ITEMS,
+  let createdCount = 0;
+  let updatedCount = 0;
+
+  for (const item of STARTER_STORE_ITEMS) {
+    const existing = await prisma.storeItem.findFirst({
+      where: { nameEn: item.nameEn },
+      select: { id: true },
     });
-    console.log(`Seeded ${STARTER_STORE_ITEMS.length} starter StoreItems.`);
-  } else {
-    console.log(`StoreItems already exist (${existingItemCount}); skipping starter item creation.`);
+
+    if (existing) {
+      await prisma.storeItem.update({
+        where: { id: existing.id },
+        data: item,
+      });
+      updatedCount++;
+    } else {
+      await prisma.storeItem.create({
+        data: item,
+      });
+      createdCount++;
+    }
   }
 
+  const totalItems = await prisma.storeItem.count();
+  console.log(`StoreItems synced: ${createdCount} created, ${updatedCount} updated. Total in DB: ${totalItems}.`);
   console.log('Gamification Store seed complete!');
 }
 
