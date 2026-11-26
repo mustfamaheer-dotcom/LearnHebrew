@@ -449,15 +449,15 @@ export const LandingPage: React.FC = () => {
           primary: 'שָׁלוֹם',
           phonetic: 'Sha-lom',
           trans: 'ברכה ושלום',
-          voiceText: 'שָׁלוֹם',
+          voiceText: 'שלום',
           langCode: 'he-IL',
         },
         {
           id: 'he-2',
-          primary: 'סַבָּבָה',
-          phonetic: 'Sa-ba-ba',
-          trans: 'מעולה ואחלה',
-          voiceText: 'סַבָּבָה',
+          primary: 'אַחְלָה',
+          phonetic: 'Ach-la',
+          trans: 'מעולה ונהדר',
+          voiceText: 'אחלה',
           langCode: 'he-IL',
         },
         {
@@ -465,7 +465,7 @@ export const LandingPage: React.FC = () => {
           primary: 'תּוֹדָה רַבָּה',
           phonetic: 'To-da Ra-ba',
           trans: 'תודה מעומק הלב',
-          voiceText: 'תּוֹדָה רַבָּה',
+          voiceText: 'תודה רבה',
           langCode: 'he-IL',
         },
         {
@@ -473,7 +473,7 @@ export const LandingPage: React.FC = () => {
           primary: 'מַה נִּשְׁמַע?',
           phonetic: 'Ma Nish-ma?',
           trans: 'איך הולך היום?',
-          voiceText: 'מַה נִּשְׁמַע?',
+          voiceText: 'מה נשמע',
           langCode: 'he-IL',
         },
         {
@@ -481,7 +481,7 @@ export const LandingPage: React.FC = () => {
           primary: 'יַאלְלָה!',
           phonetic: 'Yal-la!',
           trans: 'קדימה ובהצלחה',
-          voiceText: 'יַאלְלָה!',
+          voiceText: 'יאללה',
           langCode: 'he-IL',
         },
         {
@@ -489,7 +489,7 @@ export const LandingPage: React.FC = () => {
           primary: 'בְּתֵאָבוֹן',
           phonetic: 'Be-te-a-von',
           trans: 'אכילה מהנה וטובה',
-          voiceText: 'בְּתֵאָבוֹן',
+          voiceText: 'בתיאבון',
           langCode: 'he-IL',
         },
       ],
@@ -596,7 +596,11 @@ export const LandingPage: React.FC = () => {
 
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(item.voiceText);
+      // For Hebrew, strip any diacritics from speech synthesis input so the TTS dictionary matches words natively
+      const spokenText = item.langCode.startsWith('he')
+        ? item.voiceText.replace(/[\u0591-\u05C7]/g, '').trim()
+        : item.voiceText;
+      const utterance = new SpeechSynthesisUtterance(spokenText);
       utterance.lang = item.langCode;
       utterance.rate = 0.9;
       utterance.pitch = 1.0;
