@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import { ShieldAlert } from 'lucide-react';
 
 const StoreManagementTab = React.lazy(() => import('./StoreManagementTab'));
+const ShortsManagementTab = React.lazy(() => import('./ShortsManagementTab'));
 
 export type EnterpriseSubTab =
   | 'levels'
@@ -22,6 +23,7 @@ export type EnterpriseSubTab =
   | 'review_links'
   | 'point_rules'
   | 'store_management'
+  | 'shorts_management'
   | 'languages';
 
 interface EnterpriseTabsContainerProps {
@@ -100,6 +102,21 @@ export const EnterpriseTabsContainer: React.FC<EnterpriseTabsContainerProps> = (
             </Suspense>
           ) : (
             <AccessRestrictedCard permCode="store:manage_items" language={language} />
+          )
+        )}
+        {activeSubTab === 'shorts_management' && (
+          can('shorts:manage') ? (
+            <Suspense
+              fallback={
+                <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
+                  {language === 'he' ? 'טוען ניהול סרטונים לתרגול...' : language === 'ar' ? 'جاري تحميل إدارة مقاطع التدريب...' : 'Loading Shorts Management...'}
+                </div>
+              }
+            >
+              <ShortsManagementTab />
+            </Suspense>
+          ) : (
+            <AccessRestrictedCard permCode="shorts:manage" language={language} />
           )
         )}
         {activeSubTab === 'languages' && (

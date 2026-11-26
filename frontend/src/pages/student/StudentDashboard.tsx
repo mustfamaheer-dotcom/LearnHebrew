@@ -83,6 +83,7 @@ import {
   ShieldCheck,
   TrendingUp,
   Flame,
+  Film,
   Trophy,
   Medal,
   Repeat,
@@ -199,6 +200,12 @@ const StoreTab = React.lazy(() =>
   }))
 );
 
+const StudentShortsFeed = React.lazy(() =>
+  import('../../components/student/StudentShortsFeed').then((m) => ({
+    default: m.default || m.StudentShortsFeed,
+  }))
+);
+
 export const StudentDashboard: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const { t, language } = useTranslation();
@@ -211,12 +218,13 @@ export const StudentDashboard: React.FC = () => {
   const { isCollapsed } = useSidebarStore();
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'games' | 'leaderboard' | 'store' | 'balance' | 'progress'
+    'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'shorts' | 'games' | 'leaderboard' | 'store' | 'balance' | 'progress'
   >(() => {
     const searchTab = new URLSearchParams(window.location.search).get('tab');
-    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(searchTab)) {
+    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'shorts', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(searchTab)) {
       return searchTab as any;
     }
+    if (location.pathname.includes('/shorts')) return 'shorts';
     if (location.pathname.includes('/games')) return 'games';
     if (location.pathname.includes('/leaderboard')) return 'leaderboard';
     if (location.pathname.includes('/store')) return 'store';
@@ -231,7 +239,7 @@ export const StudentDashboard: React.FC = () => {
 
   useEffect(() => {
     const handleNavEvent = (e: any) => {
-      if (e.detail?.tab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(e.detail.tab)) {
+      if (e.detail?.tab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'shorts', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(e.detail.tab)) {
         setActiveTab(e.detail.tab);
       }
     };
@@ -1059,6 +1067,14 @@ export const StudentDashboard: React.FC = () => {
       badge: pendingHomeworkCount > 0 ? `${pendingHomeworkCount}` : null,
     },
     {
+      id: 'shorts',
+      label: 'Learn in Shorts',
+      labelHe: 'סרטונים לתרגול',
+      labelAr: 'فيديوهات للتدريب',
+      icon: Film,
+      badge: 'Reels 🔥',
+    },
+    {
       id: 'games',
       label: 'Hebrew Games',
       labelHe: 'משחקי עברית',
@@ -1095,6 +1111,7 @@ export const StudentDashboard: React.FC = () => {
   const isSecondaryActive =
     activeTab === 'recordings' ||
     activeTab === 'homework' ||
+    activeTab === 'shorts' ||
     activeTab === 'balance' ||
     activeTab === 'leaderboard' ||
     activeTab === 'store' ||
@@ -1112,6 +1129,12 @@ export const StudentDashboard: React.FC = () => {
       label: language === 'he' ? 'הזמנה' : language === 'ar' ? 'حجز' : 'Book',
       icon: Calendar,
       badge: !hasEnoughBalance ? '!' : null,
+    },
+    {
+      id: 'shorts',
+      label: language === 'he' ? 'סרטונים' : language === 'ar' ? 'مقاطع' : 'Shorts',
+      icon: Film,
+      badge: '🔥',
     },
     {
       id: 'lessons',
@@ -4376,6 +4399,13 @@ export const StudentDashboard: React.FC = () => {
           {activeTab === 'store' && (
             <React.Suspense fallback={<DashboardSkeleton />}>
               <StoreTab />
+            </React.Suspense>
+          )}
+
+          {/* TAB 11: LEARN IN SHORTS (סרטונים לתרגול) */}
+          {activeTab === 'shorts' && (
+            <React.Suspense fallback={<DashboardSkeleton />}>
+              <StudentShortsFeed studentLevel={student?.level?.code} />
             </React.Suspense>
           )}
         </main>

@@ -139,6 +139,7 @@ export const App: React.FC = () => {
                 {/* Student Routes */}
                 <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
                   <Route path="/student" element={<StudentDashboard />} />
+                  <Route path="/student/shorts" element={<StudentDashboard />} />
                   <Route path="/student/games" element={<StudentDashboard />} />
                   <Route path="/student/leaderboard" element={<StudentDashboard />} />
                 </Route>

@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Sparkles,
   ShoppingBag,
+  Film,
 } from 'lucide-react';
 import { EnterpriseSubTab } from './EnterpriseTabsContainer';
 
@@ -117,6 +118,15 @@ export const PLATFORM_SETTINGS_MODULES: PlatformSettingsModuleItem[] = [
     colorClass: 'from-amber-500/20 to-orange-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30',
   },
   {
+    id: 'shorts_management',
+    label: 'Learn in Shorts (Reels)',
+    labelHe: 'ניהול סרטונים לתרגול (Shorts)',
+    desc: 'Manage Google Drive vertical video lessons, CEFR levels & playback order',
+    descHe: 'ניהול סרטוני תרגול קצרים מ-Google Drive, שיוך רמות וסדר הופעה לתלמידים',
+    icon: Film,
+    colorClass: 'from-rose-500/20 to-pink-500/20 text-rose-600 dark:text-rose-400 border-rose-500/30',
+  },
+  {
     id: 'languages',
     label: 'Multi-Language Registry',
     labelHe: 'שפות פלטפורמה נתמכות',
@@ -150,6 +160,7 @@ export const PlatformSettingsNavModal: React.FC<PlatformSettingsNavModalProps> =
     review_links: 'reviews:manage_links',
     point_rules: 'rewards:view_rules',
     store_management: 'store:manage_items',
+    shorts_management: 'shorts:manage',
     languages: 'languages:manage',
   };
 

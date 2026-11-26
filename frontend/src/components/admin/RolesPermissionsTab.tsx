@@ -353,6 +353,25 @@ const PERMISSION_CATALOG: Record<string, PermissionMeta> = {
     descHe: 'מחיקה או ביטול של רמות לימוד מהמערך הפדגוגי',
     risk: 'high',
   },
+  'shorts:view': {
+    titleEn: 'Access Practice Shorts (Reels)',
+    titleHe: 'צפייה בסרטוני תרגול קצרים (Shorts)',
+    descEn: 'Stream micro-learning video drills, practice shorts, and like/bookmark videos',
+    descHe: 'צפייה בסרטוני תרגול וסרטונים קצרים ללימוד שפה, סימון לייקים ושמירת סרטונים',
+  },
+  'shorts:manage': {
+    titleEn: 'Manage Practice Shorts Library',
+    titleHe: 'ניהול ספריית סרטוני תרגול (Shorts)',
+    descEn: 'Upload Google Drive videos, edit titles, assign proficiency levels, and sort videos',
+    descHe: 'הוספת סרטונים מ-Google Drive, עריכת שמות ותמונות, שיוך רמות ושינוי סדר הופעה',
+    risk: 'academic',
+  },
+  'shorts:analytics': {
+    titleEn: 'View Shorts Engagement Analytics',
+    titleHe: 'צפייה בנתוני צפייה ומעורבות בסרטונים',
+    descEn: 'Monitor views, completion metrics, and student engagement across shorts',
+    descHe: 'מעקב אחר נתוני צפייה, שניות צפייה ואינטראקציות של תלמידים בסרטונים',
+  },
 
   // Exams
   'exams:view': {
