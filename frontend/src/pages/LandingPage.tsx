@@ -55,9 +55,29 @@ export const LandingPage: React.FC = () => {
   const isRtl = isAr || isHe;
   const loc = (ar: string, he: string, en: string) => (isAr ? ar : isHe ? he : en);
 
-  // Audio preview state for interactive Alef-Bet widget
+  // Audio preview state for interactive Soundboard widget
   const [playingWord, setPlayingWord] = useState<string | null>(null);
+  const [soundboardLangOverride, setSoundboardLangOverride] = useState<'en' | 'he' | 'ar' | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  // Automatically sync soundboard with the site language when changed
+  useEffect(() => {
+    setSoundboardLangOverride(null);
+  }, [language]);
+
+  // Pre-load synthesis voices for responsive, lag-free speech
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      const onVoices = () => {
+        window.speechSynthesis.getVoices();
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', onVoices);
+      return () => {
+        window.speechSynthesis.removeEventListener('voiceschanged', onVoices);
+      };
+    }
+  }, []);
 
   // Fetch real-time CMS settings from backend
   const { data: settingsData } = useQuery({
@@ -348,25 +368,245 @@ export const LandingPage: React.FC = () => {
     hasSocialLink(socials[key as keyof typeof socials])
   );
 
-  // Curated Interactive Soundboard Words
-  const soundboardWords = [
-    { he: 'שָׁלוֹם', phonetic: 'Sha-lom', trans: loc('مرحباً / سلام', 'שלום / ברכה', 'Hello & Peace') },
-    { he: 'סַבָּבָה', phonetic: 'Sa-ba-ba', trans: loc('رائع / تمام', 'מעולה / אחלה', 'Awesome & Great') },
-    { he: 'תּוֹדָה רַבָּה', phonetic: 'To-da Ra-ba', trans: loc('شكراً جزيلاً', 'תודה מעומק הלב', 'Thank you very much') },
-    { he: 'מַה נִּשְׁמַע?', phonetic: 'Ma Nish-ma?', trans: loc('كيف الحال؟ / شو الأخبار؟', 'איך הולך?', "How's it going?") },
-    { he: 'יַאלְלָה!', phonetic: 'Yal-la!', trans: loc('يلا! / هيا بنا!', 'קדימה / זזנו', "Let's do this!") },
-    { he: 'בְּתֵאָבוֹן', phonetic: 'Be-te-a-von', trans: loc('بالهناء والشفاء / صحتين', 'אכילה מהנה', 'Bon Appétit') },
-  ];
+  // Curated Multi-Language Interactive Soundboard
+  interface SoundboardItem {
+    id: string;
+    primary: string;
+    phonetic: string;
+    trans: string;
+    voiceText: string;
+    langCode: string;
+  }
 
-  // Interactive Hebrew Pronunciation Sample
-  const playSampleAudio = (text: string) => {
+  const soundboardDataByLang: Record<
+    'en' | 'he' | 'ar',
+    {
+      title: string;
+      accentBadge: string;
+      items: SoundboardItem[];
+    }
+  > = {
+    en: {
+      title: 'Live Audio — Tap to Listen',
+      accentBadge: 'Native English Accent',
+      items: [
+        {
+          id: 'en-1',
+          primary: 'Hello & Welcome',
+          phonetic: '[həˈloʊ & ˈwɛlkəm]',
+          trans: 'Friendly Greeting',
+          voiceText: 'Hello and welcome!',
+          langCode: 'en-US',
+        },
+        {
+          id: 'en-2',
+          primary: 'Awesome!',
+          phonetic: '[ˈɔːsəm]',
+          trans: 'Great & Wonderful',
+          voiceText: 'Awesome!',
+          langCode: 'en-US',
+        },
+        {
+          id: 'en-3',
+          primary: 'Thank You',
+          phonetic: '[θæŋk juː]',
+          trans: 'Heartfelt Gratitude',
+          voiceText: 'Thank you very much!',
+          langCode: 'en-US',
+        },
+        {
+          id: 'en-4',
+          primary: "How's it going?",
+          phonetic: '[haʊz ɪt ˈɡoʊɪŋ]',
+          trans: 'Daily Conversation',
+          voiceText: "How's it going?",
+          langCode: 'en-US',
+        },
+        {
+          id: 'en-5',
+          primary: "Let's do this!",
+          phonetic: '[lɛts duː ðɪs]',
+          trans: 'Energy & Motivation',
+          voiceText: "Let's do this!",
+          langCode: 'en-US',
+        },
+        {
+          id: 'en-6',
+          primary: 'Enjoy!',
+          phonetic: '[ɪnˈdʒɔɪ]',
+          trans: 'Wishing Well',
+          voiceText: 'Enjoy!',
+          langCode: 'en-US',
+        },
+      ],
+    },
+    he: {
+      title: 'לוח שמע חי — לחץ להגייה',
+      accentBadge: 'הגייה ישראלית אותנטית',
+      items: [
+        {
+          id: 'he-1',
+          primary: 'שָׁלוֹם',
+          phonetic: 'Sha-lom',
+          trans: 'ברכה ושלום',
+          voiceText: 'שָׁלוֹם',
+          langCode: 'he-IL',
+        },
+        {
+          id: 'he-2',
+          primary: 'סַבָּבָה',
+          phonetic: 'Sa-ba-ba',
+          trans: 'מעולה ואחלה',
+          voiceText: 'סַבָּבָה',
+          langCode: 'he-IL',
+        },
+        {
+          id: 'he-3',
+          primary: 'תּוֹדָה רַבָּה',
+          phonetic: 'To-da Ra-ba',
+          trans: 'תודה מעומק הלב',
+          voiceText: 'תּוֹדָה רַבָּה',
+          langCode: 'he-IL',
+        },
+        {
+          id: 'he-4',
+          primary: 'מַה נִּשְׁמַע?',
+          phonetic: 'Ma Nish-ma?',
+          trans: 'איך הולך היום?',
+          voiceText: 'מַה נִּשְׁמַע?',
+          langCode: 'he-IL',
+        },
+        {
+          id: 'he-5',
+          primary: 'יַאלְלָה!',
+          phonetic: 'Yal-la!',
+          trans: 'קדימה ובהצלחה',
+          voiceText: 'יַאלְלָה!',
+          langCode: 'he-IL',
+        },
+        {
+          id: 'he-6',
+          primary: 'בְּתֵאָבוֹן',
+          phonetic: 'Be-te-a-von',
+          trans: 'אכילה מהנה וטובה',
+          voiceText: 'בְּתֵאָבוֹן',
+          langCode: 'he-IL',
+        },
+      ],
+    },
+    ar: {
+      title: 'صوت حي — اضغط للاستماع',
+      accentBadge: 'نطق فصيح ومتقن',
+      items: [
+        {
+          id: 'ar-1',
+          primary: 'مَرْحَباً',
+          phonetic: 'Mar-ha-ban',
+          trans: 'أهلاً وسلاماً',
+          voiceText: 'مَرْحَباً',
+          langCode: 'ar-SA',
+        },
+        {
+          id: 'ar-2',
+          primary: 'مُمْتَاز!',
+          phonetic: 'Mum-taz!',
+          trans: 'رائع وعظيم',
+          voiceText: 'مُمْتَاز!',
+          langCode: 'ar-SA',
+        },
+        {
+          id: 'ar-3',
+          primary: 'شُكْراً جَزِيلاً',
+          phonetic: 'Shuk-ran Ja-zee-lan',
+          trans: 'تقدير وامتنان',
+          voiceText: 'شُكْراً جَزِيلاً',
+          langCode: 'ar-SA',
+        },
+        {
+          id: 'ar-4',
+          primary: 'كَيْفَ الحَال؟',
+          phonetic: 'Kay-fa Al-hal?',
+          trans: 'سؤال واطمئنان',
+          voiceText: 'كَيْفَ الحَال؟',
+          langCode: 'ar-SA',
+        },
+        {
+          id: 'ar-5',
+          primary: 'هَيَّا بِنَا!',
+          phonetic: 'Hay-ya Bi-na!',
+          trans: 'حماس وانطلاق',
+          voiceText: 'هَيَّا بِنَا!',
+          langCode: 'ar-SA',
+        },
+        {
+          id: 'ar-6',
+          primary: 'بِالتَّوْفِيق!',
+          phonetic: 'Bi-at-taw-feeq!',
+          trans: 'تمنيات بالنجاح',
+          voiceText: 'بِالتَّوْفِيق!',
+          langCode: 'ar-SA',
+        },
+      ],
+    },
+  };
+
+  const activeSoundboardLang: 'en' | 'he' | 'ar' =
+    soundboardLangOverride || (language === 'he' ? 'he' : language === 'ar' ? 'ar' : 'en');
+  const currentSoundboard = soundboardDataByLang[activeSoundboardLang];
+
+  // Helper to find the cleanest and most natural voice available in the client browser
+  const getBestVoice = (langCode: string): SpeechSynthesisVoice | null => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    const prefix = langCode.split('-')[0].toLowerCase();
+    const matchingVoices = voices.filter((v) => {
+      const vLang = (v.lang || '').toLowerCase().replace('_', '-');
+      return vLang.startsWith(prefix);
+    });
+
+    if (matchingVoices.length === 0) return null;
+
+    // Prefer high quality / natural / enhanced voices
+    const premiumVoice = matchingVoices.find((v) => {
+      const name = (v.name || '').toLowerCase();
+      return (
+        name.includes('natural') ||
+        name.includes('premium') ||
+        name.includes('enhanced') ||
+        name.includes('neural') ||
+        name.includes('google') ||
+        name.includes('siri') ||
+        name.includes('samantha') ||
+        name.includes('daniel') ||
+        name.includes('carmit') ||
+        name.includes('tarik') ||
+        name.includes('maged')
+      );
+    });
+
+    return premiumVoice || matchingVoices[0];
+  };
+
+  // Interactive Pronunciation Player matching exact site/target language
+  const playSampleAudio = (item: SoundboardItem) => {
     haptics.tap();
-    setPlayingWord(text);
-    if ('speechSynthesis' in window) {
+    setPlayingWord(item.id);
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'he-IL';
-      utterance.rate = 0.85;
+      const utterance = new SpeechSynthesisUtterance(item.voiceText);
+      utterance.lang = item.langCode;
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      const voice = getBestVoice(item.langCode);
+      if (voice) {
+        utterance.voice = voice;
+      }
+
       utterance.onend = () => setPlayingWord(null);
       utterance.onerror = () => setPlayingWord(null);
       window.speechSynthesis.speak(utterance);
@@ -762,52 +1002,82 @@ export const LandingPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] sm:text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
-                    25 MIN
+                    {loc('25 دقيقة', '25 דק׳', '25 MIN')}
                   </div>
                 </div>
 
-                {/* Interactive Hebrew Soundboard */}
-                <div className="space-y-2 w-full min-w-0">
-                  <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
+                {/* Interactive Soundboard according to Site Language */}
+                <div className="space-y-2.5 w-full min-w-0">
+                  <div className="flex items-center justify-between gap-1 text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400">
                     <span className="flex items-center gap-1.5 text-brand-teal-800 dark:text-brand-teal-300 font-extrabold text-[10px] sm:text-xs truncate">
                       <Volume2 className="w-3.5 h-3.5 text-brand-teal-600 dark:text-teal-400 shrink-0" />
-                      <span>{loc('صوت حي — اضغط للنطق', 'לוח שמע חי — לחץ להגייה', 'Live Audio — Tap to Listen')}</span>
+                      <span>{currentSoundboard.title}</span>
                     </span>
-                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono shrink-0">
-                      {loc('نطق محلي أصلي', 'הגייה ישראלית', 'Native Israeli')}
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Language Quick Switch Pills */}
+                      <div className="inline-flex rounded-lg p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700">
+                        {(['en', 'he', 'ar'] as const).map((lCode) => (
+                          <button
+                            key={lCode}
+                            type="button"
+                            onClick={() => {
+                              haptics.tap();
+                              setSoundboardLangOverride(lCode);
+                            }}
+                            className={`px-1.5 py-0.5 text-[9px] font-extrabold rounded-md transition-all ${
+                              activeSoundboardLang === lCode
+                                ? 'bg-white dark:bg-slate-700 text-brand-teal-700 dark:text-white shadow-2xs'
+                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                            }`}
+                          >
+                            {lCode.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="hidden sm:inline-block text-[9px] text-slate-400 font-medium">
+                        {currentSoundboard.accentBadge}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 w-full min-w-0">
-                    {soundboardWords.map((word) => {
-                      const isPlaying = playingWord === word.he;
+                    {currentSoundboard.items.map((item) => {
+                      const isPlaying = playingWord === item.id;
                       return (
                         <button
-                          key={word.he}
+                          key={item.id}
                           type="button"
-                          onClick={() => playSampleAudio(word.he)}
+                          onClick={() => playSampleAudio(item)}
                           className={`p-2 sm:p-2.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-center relative overflow-hidden group min-w-0 w-full active:scale-95 ${
                             isPlaying
                               ? 'bg-brand-teal-800 text-white border-brand-teal-800 scale-[1.02] shadow-md ring-2 ring-emerald-400/50'
                               : 'bg-slate-50/70 hover:bg-white dark:bg-slate-850/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/70 dark:border-slate-700/70 hover:border-brand-teal-300 dark:hover:border-brand-teal-600 shadow-2xs hover:shadow-xs'
                           }`}
                         >
-                          <span className="font-hebrew text-xs sm:text-base font-bold block truncate max-w-full">
-                            {word.he}
+                          <span
+                            className={`block truncate max-w-full ${
+                              activeSoundboardLang === 'he'
+                                ? 'font-hebrew text-sm sm:text-base font-bold'
+                                : activeSoundboardLang === 'ar'
+                                ? 'font-sans text-xs sm:text-sm font-bold'
+                                : 'font-sans text-xs sm:text-sm font-extrabold tracking-tight'
+                            }`}
+                          >
+                            {item.primary}
                           </span>
                           <span
                             className={`text-[9px] sm:text-[10px] font-semibold truncate block mt-0.5 max-w-full ${
                               isPlaying ? 'text-brand-olive-300' : 'text-slate-500 dark:text-slate-400'
                             }`}
                           >
-                            {word.phonetic}
+                            {item.phonetic}
                           </span>
                           <span
                             className={`text-[8px] sm:text-[9px] truncate block opacity-75 max-w-full ${
                               isPlaying ? 'text-teal-100' : 'text-slate-400 dark:text-slate-500'
                             }`}
                           >
-                            {word.trans}
+                            {item.trans}
                           </span>
 
                           {isPlaying && (
@@ -828,7 +1098,7 @@ export const LandingPage: React.FC = () => {
                     </span>
                   </div>
                   <span className="text-[9px] sm:text-[10px] font-extrabold text-brand-teal-800 dark:text-brand-teal-400 font-mono shrink-0">
-                    IST 12h AM/PM
+                    {loc('توقيت إسرائيل (IST)', 'שעון ישראל (IST)', 'Israel Time (IST)')}
                   </span>
                 </div>
               </div>
