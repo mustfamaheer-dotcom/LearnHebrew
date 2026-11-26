@@ -51,6 +51,15 @@ export interface PracticeShortItem {
   };
 }
 
+const LEVEL_TO_CEFR: Record<string, string> = {
+  BEGINNER: 'A1',
+  ELEMENTARY: 'A2',
+  INTERMEDIATE: 'B1',
+  UPPER_INTERMEDIATE: 'B2',
+  ADVANCED: 'C1',
+  FLUENT: 'C2',
+};
+
 interface StudentShortsFeedProps {
   studentLevel?: string;
 }
@@ -61,8 +70,13 @@ export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLev
   const isAr = language === 'ar';
   const isHe = language === 'he';
 
-  // Level Filter state: Defaults to student's level, or ALL
-  const [selectedLevel, setSelectedLevel] = useState<string>(studentLevel || 'ALL');
+  // Normalize student level (e.g. BEGINNER -> A1)
+  const normalizedLevel = useMemo(() => {
+    if (!studentLevel) return 'A1';
+    const upper = String(studentLevel).trim().toUpperCase();
+    return LEVEL_TO_CEFR[upper] || upper;
+  }, [studentLevel]);
+
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -71,12 +85,12 @@ export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLev
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch shorts
+  // Fetch shorts strictly for student's level
   const { data: shorts = [], isLoading } = useQuery<PracticeShortItem[]>({
-    queryKey: ['studentPracticeShorts', selectedLevel],
+    queryKey: ['studentPracticeShorts', normalizedLevel],
     queryFn: async () => {
       const res = await api.get('/shorts', {
-        params: { levelCode: selectedLevel !== 'ALL' ? selectedLevel : undefined },
+        params: { levelCode: normalizedLevel },
       });
       return res.data?.shorts || [];
     },
@@ -186,8 +200,6 @@ export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLev
     }
   };
 
-  const levelsList = ['ALL', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-
   if (isLoading) {
     return (
       <div className="h-[75vh] flex flex-col items-center justify-center space-y-4">
@@ -208,7 +220,7 @@ export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLev
 
   return (
     <div className="space-y-4 max-w-6xl mx-auto">
-      {/* Top Header & Level Filter Chips */}
+      {/* Top Header & Automatic Level Indicator */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80 dark:border-slate-800">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-600 text-white flex items-center justify-center shadow-md">
@@ -233,32 +245,12 @@ export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLev
           </div>
         </div>
 
-        {/* Level Filters */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-          <span className="text-[11px] font-bold text-slate-400 shrink-0 hidden md:inline">
-            {isHe ? 'רמה:' : isAr ? 'المستوى:' : 'Level:'}
+        {/* Automatic Student Level Badge (Locked Strictly to Student Level) */}
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200/80 dark:border-brand-teal-800/80 shrink-0 self-start sm:self-auto">
+          <span className="w-2 h-2 rounded-full bg-brand-teal-500 animate-pulse" />
+          <span className="text-xs font-bold text-brand-teal-900 dark:text-brand-teal-200">
+            {isHe ? `רמת תרגול: ${normalizedLevel}` : isAr ? `مستوى التدريب: ${normalizedLevel}` : `Target Level: ${normalizedLevel}`}
           </span>
-          {levelsList.map((lvl) => {
-            const isSelected = selectedLevel === lvl;
-            return (
-              <button
-                key={lvl}
-                type="button"
-                onClick={() => {
-                  haptics.tap();
-                  setSelectedLevel(lvl);
-                  setCurrentIndex(0);
-                }}
-                className={`px-3 py-1 text-xs font-bold rounded-xl transition-all shrink-0 cursor-pointer ${
-                  isSelected
-                    ? 'bg-brand-teal-600 text-white shadow-xs'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
-              >
-                {lvl === 'ALL' ? (isHe ? 'כל הרמות' : isAr ? 'الكل' : 'All') : lvl}
-              </button>
-            );
-          })}
         </div>
       </div>
 
@@ -268,22 +260,19 @@ export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLev
             <Film className="w-8 h-8" />
           </div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            {isHe ? 'אין סרטונים זמינים ברמה זו' : isAr ? 'لا توجد مقاطع متاحة في هذا المستوى حالياً' : 'No shorts in this level yet'}
+            {isHe
+              ? `אין סרטונים זמינים לרמה ${normalizedLevel} כרגע`
+              : isAr
+              ? `لا توجد مقاطع متاحة لمستوى ${normalizedLevel} حالياً`
+              : `No practice shorts for Level ${normalizedLevel} yet`}
           </h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             {isHe
-              ? 'נסה לבחור "כל הרמות" לצפייה בכל סרטוני התרגול במערכת.'
+              ? 'המורים מעלים סרטוני תרגול חדשים באופן שוטף, חזור לבדוק בקרוב!'
               : isAr
-              ? 'اختر "الكل" لاستعراض المقاطع المتاحة لجميع المستويات.'
-              : 'Switch to "All" to browse all available interactive practice shorts.'}
+              ? 'يقوم المعلمون بإضافة مقاطع تدريبية جديدة بشكل دوري، تحقق مجدداً قريباً!'
+              : 'Teachers upload new practice shorts regularly. Check back soon!'}
           </p>
-          <button
-            type="button"
-            onClick={() => setSelectedLevel('ALL')}
-            className="px-4 py-2 bg-brand-teal-600 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
-          >
-            {isHe ? 'הצג את כל הסרטונים' : isAr ? 'عرض الكل' : 'View All Levels'}
-          </button>
         </div>
       ) : (
         /* Dual Layout: Adaptive Shorts Theater (Desktop side queue + Mobile TikTok Stage) */

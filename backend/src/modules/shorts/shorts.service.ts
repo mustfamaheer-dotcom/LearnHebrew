@@ -10,12 +10,24 @@ export function formatGoogleDriveThumbnail(driveId: string): string {
   return `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000`;
 }
 
+const LEVEL_TO_CEFR: Record<string, string> = {
+  BEGINNER: 'A1',
+  ELEMENTARY: 'A2',
+  INTERMEDIATE: 'B1',
+  UPPER_INTERMEDIATE: 'B2',
+  ADVANCED: 'C1',
+  FLUENT: 'C2',
+};
+
 export async function listActiveShorts(params: { levelCode?: string; userId?: string }) {
   const where: any = { isActive: true };
 
   if (params.levelCode && params.levelCode.toUpperCase() !== 'ALL') {
+    const raw = params.levelCode.toUpperCase();
+    const mapped = LEVEL_TO_CEFR[raw] || raw;
     where.OR = [
-      { levelCode: params.levelCode.toUpperCase() },
+      { levelCode: mapped },
+      { levelCode: raw },
       { levelCode: 'ALL' },
       { levelCode: null },
     ];

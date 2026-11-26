@@ -4314,7 +4314,14 @@ export const StudentDashboard: React.FC = () => {
           {/* TAB 11: LEARN IN SHORTS (סרטונים לתרגול) */}
           {activeTab === 'shorts' && (
             <React.Suspense fallback={<DashboardSkeleton />}>
-              <StudentShortsFeed studentLevel={student?.level?.code} />
+              <StudentShortsFeed
+                studentLevel={
+                  dashboard?.student?.levelModel?.code ||
+                  dashboard?.student?.level ||
+                  (user as any)?.level ||
+                  'A1'
+                }
+              />
             </React.Suspense>
           )}
         </main>

@@ -46,6 +46,7 @@ export async function getStudentById(id: string) {
       packages: {
         include: { package: true },
       },
+      levelModel: true,
       equippedAvatarFrame: true,
       equippedNickname: true,
     },
