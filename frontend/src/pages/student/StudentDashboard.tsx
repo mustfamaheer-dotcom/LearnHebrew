@@ -1088,9 +1088,9 @@ export const StudentDashboard: React.FC = () => {
   ];
 
   const isSecondaryActive =
+    activeTab === 'lessons' ||
     activeTab === 'recordings' ||
     activeTab === 'homework' ||
-    activeTab === 'shorts' ||
     activeTab === 'balance' ||
     activeTab === 'leaderboard' ||
     activeTab === 'store' ||
@@ -1116,12 +1116,6 @@ export const StudentDashboard: React.FC = () => {
       badge: '🔥',
     },
     {
-      id: 'lessons',
-      label: language === 'he' ? 'שיעורים' : language === 'ar' ? 'الدروس' : 'Lessons',
-      icon: Video,
-      badge: upcomingLessons.length > 0 ? `${upcomingLessons.length}` : null,
-    },
-    {
       id: 'games',
       label: language === 'he' ? 'משחקים' : language === 'ar' ? 'ألعاب' : 'Games',
       icon: Gamepad2,
@@ -1131,7 +1125,7 @@ export const StudentDashboard: React.FC = () => {
       id: 'more',
       label: language === 'he' ? 'עוד' : language === 'ar' ? 'المزيد' : 'More',
       icon: Sliders,
-      badge: pendingHomeworkCount > 0 ? `${pendingHomeworkCount}` : null,
+      badge: upcomingLessons.length > 0 || pendingHomeworkCount > 0 ? `${upcomingLessons.length + pendingHomeworkCount}` : null,
     },
   ];
 
@@ -4454,7 +4448,7 @@ export const StudentDashboard: React.FC = () => {
                   {isAr ? 'أدوات ومصادر تعليمية إضافية' : isHe ? 'פעולות ותכנים נוספים' : 'More Learning Tools'}
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {isAr ? 'الدروس المسجلة، الواجبات، لوحة الصدارة والباقات' : isHe ? 'שיעורים מוקלטים, שיעורי בית, לוח דירוג וחבילות' : 'Recorded sessions, homework, rankings & packages'}
+                  {isAr ? 'الدروس، التسجيلات، الواجبات، المتجر ولوحة الصدارة' : isHe ? 'שיעורים, הקלטות, שיעורי בית, חנות ולוח דירוג' : 'Lessons, recordings, homework, store & rankings'}
                 </p>
               </div>
               <button
@@ -4467,6 +4461,40 @@ export const StudentDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-1">
+              {/* Card 0: Lessons Schedule & Live Classroom */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('lessons');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
+                  activeTab === 'lessons'
+                    ? 'border-brand-teal-500 dark:border-cyan-400 ring-2 ring-brand-teal-500/20 dark:ring-cyan-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/40">
+                    <Video className="w-5 h-5" />
+                  </div>
+                  {upcomingLessons.length > 0 && (
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/80 text-blue-900 dark:text-blue-200 border border-blue-300/60 dark:border-blue-700/50">
+                      {upcomingLessons.length}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
+                    {isAr ? 'الدروس والمواعيد' : isHe ? 'שיעורים ויומן' : 'Lessons & Schedule'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {isAr ? 'الحصص المجدولة ورابط الغرفة' : isHe ? 'שיעורים קרובים וכניסה לזום' : 'Upcoming sessions & Zoom links'}
+                  </p>
+                </div>
+              </button>
+
               {/* Card 1: Recorded Sessions */}
               <button
                 type="button"
@@ -4601,7 +4629,39 @@ export const StudentDashboard: React.FC = () => {
                 </div>
               </button>
 
-              {/* Card 5: My Progress Analytics */}
+              {/* Card 5: Gamification Store */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('store');
+                  setIsMobileMoreOpen(false);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`p-3.5 rounded-2xl text-start transition-all flex flex-col justify-between space-y-2 active:scale-95 bg-slate-50/90 hover:bg-slate-100/90 dark:bg-slate-800/60 dark:hover:bg-slate-800/90 border shadow-xs ${
+                  activeTab === 'store'
+                    ? 'border-amber-500 dark:border-amber-400 ring-2 ring-amber-500/20 dark:ring-amber-400/20'
+                    : 'border-slate-200/90 dark:border-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 border border-amber-300/70 dark:border-amber-700/50">
+                    {student?.coins || 0} 🪙
+                  </span>
+                </div>
+                <div>
+                  <p className="font-extrabold text-xs text-slate-900 dark:text-white">
+                    {isAr ? 'متجر المكافآت' : isHe ? 'חנות פריטים' : 'Rewards Store'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {isAr ? 'إطارات الصورة، الألقاب والميزات' : isHe ? 'מסגרות פרופיל, כינויים ושדרוגים' : 'Avatar frames, titles & perks'}
+                  </p>
+                </div>
+              </button>
+
+              {/* Card 6: My Progress Analytics */}
               <button
                 type="button"
                 onClick={() => {
