@@ -785,8 +785,13 @@ export const AdminDashboard: React.FC = () => {
       );
     },
     onError: (err: any) => {
+      const details = err.response?.data?.details;
+      let msg = err.response?.data?.message || err.response?.data?.error;
+      if (details && Array.isArray(details) && details.length > 0) {
+        msg = details.map((d: any) => `${d.path ? `${d.path}: ` : ''}${d.message}`).join(', ');
+      }
       toast.error(
-        err.response?.data?.error || (language === 'he' ? 'שגיאה ביצירת משתמש' : 'Failed to create user')
+        msg || (language === 'he' ? 'שגיאה ביצירת משתמש' : 'Failed to create user')
       );
     },
   });
@@ -4472,16 +4477,31 @@ export const AdminDashboard: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                if (!newUserEmail || !newUserFirst || !newUserLast) {
+                const trimmedEmail = newUserEmail.trim();
+                const trimmedFirst = newUserFirst.trim();
+                const trimmedLast = newUserLast.trim();
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if (!trimmedEmail || !trimmedFirst || !trimmedLast) {
                   toast.warning(language === 'he' ? 'אנא מלא את כל השדות הנדרשים' : 'Please fill out all required fields.');
                   return;
                 }
+
+                if (!emailRegex.test(trimmedEmail)) {
+                  toast.warning(
+                    language === 'he'
+                      ? 'כתובת אימייל לא תקינה. אנא הזן אימייל תקין ומלא (למשל: name@example.com)'
+                      : 'Invalid email address format. Please enter a valid email (e.g. name@example.com).'
+                  );
+                  return;
+                }
+
                 createUserMutation.mutate({
-                  email: newUserEmail,
+                  email: trimmedEmail,
                   phone: newUserPhone || undefined,
                   password: newUserPass,
-                  firstName: newUserFirst,
-                  lastName: newUserLast,
+                  firstName: trimmedFirst,
+                  lastName: trimmedLast,
                   role: newUserRole,
                   roleDefinitionId: newUserRoleDefId || undefined,
                   parentId: newUserAccountType === 'CHILD' ? newUserParentId : undefined,

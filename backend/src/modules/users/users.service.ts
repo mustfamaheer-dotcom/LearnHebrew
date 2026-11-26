@@ -221,7 +221,10 @@ export async function createUser(data: {
     where: { email: resolvedEmail },
   });
   if (existing) {
-    throw { status: 400, message: `User with email "${resolvedEmail}" already exists` };
+    throw {
+      status: 409,
+      message: `User with email "${resolvedEmail}" already exists. Please choose a different email address.`,
+    };
   }
 
   const resolvedPassword =
@@ -428,6 +431,19 @@ export async function updateUser(id: string, data: any) {
     if (roleDef && Object.values(Role).includes(roleDef.name as any)) {
       userData.role = roleDef.name as Role;
     }
+  }
+
+  if (userData.email && userData.email.trim().toLowerCase() !== existing.email.toLowerCase()) {
+    const emailConflict = await prisma.user.findUnique({
+      where: { email: userData.email.trim().toLowerCase() },
+    });
+    if (emailConflict) {
+      throw {
+        status: 409,
+        message: `User with email "${userData.email}" already exists. Please choose a different email address.`,
+      };
+    }
+    userData.email = userData.email.trim().toLowerCase();
   }
 
   const isTargetTeacher = userData.role === Role.TEACHER || (!userData.role && existing.role === Role.TEACHER);

@@ -38,12 +38,30 @@ export function errorHandler(
   });
 
   if (err instanceof ZodError) {
+    const errorSummary = err.errors
+      .map((e) => {
+        const field = e.path.join('.');
+        return field ? `${field}: ${e.message}` : e.message;
+      })
+      .join(', ');
+
     return res.status(400).json({
-      error: 'Validation error',
+      error: `Validation error: ${errorSummary}`,
+      message: `Validation error: ${errorSummary}`,
       details: err.errors.map((e) => ({
         path: e.path.join('.'),
         message: e.message,
       })),
+    });
+  }
+
+  // Prisma Unique Constraint Violation (e.g. duplicate email)
+  if (err.code === 'P2002') {
+    const targetFields = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : 'email';
+    const conflictMessage = `An account with this ${targetFields} already exists. Please choose a different ${targetFields}.`;
+    return res.status(409).json({
+      error: conflictMessage,
+      message: conflictMessage,
     });
   }
 

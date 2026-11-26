@@ -28,14 +28,38 @@
 
   html {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   
   html[dir="rtl"] {
-    font-family: 'Heebo', 'Rubik', system-ui, sans-serif;
+    font-family: 'Assistant', 'Rubik', 'Heebo', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  html[lang="he"], html[lang="he"][dir="rtl"] {
+    font-family: 'Assistant', 'Rubik', 'Heebo', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   html[lang="ar"], html[lang="ar"][dir="rtl"] {
     font-family: 'Cairo', 'Tajawal', 'Almarai', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Prevent eye-strain & blurry glyph collapse in Hebrew bold typography */
+  html[lang="he"] .font-black,
+  html[dir="rtl"]:not([lang="ar"]) .font-black {
+    font-weight: 750;
+    letter-spacing: 0.015em;
+  }
+  html[lang="he"] h1, html[lang="he"] h2, html[lang="he"] h3,
+  html[dir="rtl"]:not([lang="ar"]) h1, html[dir="rtl"]:not([lang="ar"]) h2, html[dir="rtl"]:not([lang="ar"]) h3 {
+    letter-spacing: 0.01em;
   }
 }
 

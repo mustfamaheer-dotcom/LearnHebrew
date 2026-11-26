@@ -66,7 +66,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        hebrew: ['Heebo', 'Rubik', 'Assistant', 'system-ui', 'sans-serif'],
+        hebrew: ['Assistant', 'Rubik', 'Heebo', 'system-ui', 'sans-serif'],
       },
       backdropBlur: {
         '2xl': '40px',
