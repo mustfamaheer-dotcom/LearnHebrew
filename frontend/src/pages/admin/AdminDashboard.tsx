@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
@@ -31,6 +31,7 @@ import { AddChildModal } from '../../components/admin/AddChildModal';
 import { StudentCrmTable } from '../../components/admin/StudentCrmTable';
 import { PlacementTestAdminTab } from '../../components/admin/PlacementTestAdminTab';
 import { TeacherVideosTab } from '../../components/admin/TeacherVideosTab';
+const ShortsManagementTab = React.lazy(() => import('../../components/admin/ShortsManagementTab'));
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { sessionTypesApi, levelsApi, languagesApi, rolesApi } from '../../lib/enterpriseApi';
@@ -83,6 +84,7 @@ import {
   Link2,
   ShieldCheck,
   Video,
+  Film,
   AlertTriangle,
   XCircle,
   Info,
@@ -148,6 +150,7 @@ export const AdminDashboard: React.FC = () => {
     | 'review_links'
     | 'point_rules'
     | 'store_management'
+    | 'shorts_management'
     | 'languages'
     | 'reminders_hub'
     | 'placement_test'
@@ -175,6 +178,7 @@ export const AdminDashboard: React.FC = () => {
         'review_links',
         'point_rules',
         'store_management',
+        'shorts_management',
         'languages',
         'reminders_hub',
         'placement_test',
@@ -209,6 +213,7 @@ export const AdminDashboard: React.FC = () => {
           'review_links',
           'point_rules',
           'store_management',
+          'shorts_management',
           'languages',
           'reminders_hub',
           'users',
@@ -242,6 +247,7 @@ export const AdminDashboard: React.FC = () => {
         'review_links',
         'point_rules',
         'store_management',
+        'shorts_management',
         'languages',
         'reminders_hub',
         'users',
@@ -1170,6 +1176,16 @@ export const AdminDashboard: React.FC = () => {
       permission: 'teachers:view_all',
     },
     {
+      id: 'shorts_management',
+      label: 'Practice Shorts (Reels)',
+      labelHe: 'סרטונים לתרגול (Shorts)',
+      labelAr: 'فيديوهات للتدريب (Reels)',
+      icon: Film,
+      badge: 'New',
+      badgeColor: 'bg-emerald-500 text-white',
+      permission: 'shorts:manage',
+    },
+    {
       id: 'teachers_calendar',
       label: 'Teachers Calendar',
       labelHe: 'יומן מורים מפורט',
@@ -1231,7 +1247,7 @@ export const AdminDashboard: React.FC = () => {
       labelHe: 'הגדרות פלטפורמה',
       labelAr: 'إعدادات المنصة',
       icon: Settings,
-      badge: '8',
+      badge: '10',
       badgeColor: 'bg-brand-teal-600 text-white',
       defaultExpanded: true,
       children: [
@@ -1298,6 +1314,14 @@ export const AdminDashboard: React.FC = () => {
           labelAr: 'إدارة المتجر والعملات',
           icon: ShoppingBag,
           permission: 'store:manage_items',
+        },
+        {
+          id: 'shorts_management',
+          label: 'Practice Shorts (Reels)',
+          labelHe: 'סרטונים לתרגול (Shorts)',
+          labelAr: 'فيديوهات التدريب (Reels)',
+          icon: Film,
+          permission: 'shorts:manage',
         },
         {
           id: 'languages',
@@ -3467,6 +3491,19 @@ export const AdminDashboard: React.FC = () => {
                 <TeacherVideosTab />
               )}
 
+              {/* TAB: PRACTICE SHORTS (REELS) */}
+              {activeTab === 'shorts_management' && (
+                <Suspense
+                  fallback={
+                    <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
+                      {language === 'he' ? 'טוען ניהול סרטונים לתרגול...' : language === 'ar' ? 'جاري تحميل إدارة مقاطع التدريب...' : 'Loading Shorts Management...'}
+                    </div>
+                  }
+                >
+                  <ShortsManagementTab />
+                </Suspense>
+              )}
+
               {/* TAB 5: PACKAGES & PRICING */}
               {activeTab === 'packages' && (
                 <div className="space-y-6">
@@ -3672,6 +3709,7 @@ export const AdminDashboard: React.FC = () => {
                 activeTab === 'review_links' ||
                 activeTab === 'point_rules' ||
                 activeTab === 'store_management' ||
+                activeTab === 'shorts_management' ||
                 activeTab === 'languages') && (
                   <EnterpriseTabsContainer
                     currentTab={activeTab === 'enterprise' ? 'levels' : (activeTab as any)}
@@ -6052,6 +6090,7 @@ export const AdminDashboard: React.FC = () => {
               activeTab === 'review_links' ||
               activeTab === 'point_rules' ||
               activeTab === 'store_management' ||
+              activeTab === 'shorts_management' ||
               activeTab === 'languages'
               ? 'border-brand-teal-600 dark:border-brand-teal-400 ring-2 ring-brand-teal-600/20 dark:ring-brand-teal-400/20'
               : 'border-slate-200/90 dark:border-slate-700/60'
@@ -6062,7 +6101,7 @@ export const AdminDashboard: React.FC = () => {
                 <Settings className="w-5 h-5" />
               </div>
               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-900 dark:text-brand-teal-200 border border-brand-teal-300/70 dark:border-brand-teal-700/50">
-                8
+                10
               </span>
             </div>
             <div>
