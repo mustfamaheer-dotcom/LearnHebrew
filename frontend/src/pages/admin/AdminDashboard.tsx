@@ -1318,14 +1318,6 @@ export const AdminDashboard: React.FC = () => {
           permission: 'store:manage_items',
         },
         {
-          id: 'shorts_management',
-          label: 'Practice Shorts (Reels)',
-          labelHe: 'סרטונים לתרגול (Shorts)',
-          labelAr: 'فيديوهات التدريب (Reels)',
-          icon: Film,
-          permission: 'shorts:manage',
-        },
-        {
           id: 'languages',
           label: 'Languages Setup',
           labelHe: 'ניהול שפות אם ויעד',
@@ -3495,15 +3487,33 @@ export const AdminDashboard: React.FC = () => {
 
               {/* TAB: PRACTICE SHORTS (REELS) */}
               {activeTab === 'shorts_management' && (
-                <Suspense
-                  fallback={
-                    <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
-                      {language === 'he' ? 'טוען ניהול סרטונים לתרגול...' : language === 'ar' ? 'جاري تحميل إدارة مقاطع التدريب...' : 'Loading Shorts Management...'}
+                can('shorts:manage') ? (
+                  <Suspense
+                    fallback={
+                      <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
+                        {language === 'he' ? 'טוען ניהול סרטונים לתרגול...' : language === 'ar' ? 'جاري تحميل إدارة مقاطع التدريب...' : 'Loading Shorts Management...'}
+                      </div>
+                    }
+                  >
+                    <ShortsManagementTab />
+                  </Suspense>
+                ) : (
+                  <div className="p-8 rounded-3xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-center space-y-3 shadow-xs">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center mx-auto">
+                      <ShieldAlert className="w-6 h-6" />
                     </div>
-                  }
-                >
-                  <ShortsManagementTab />
-                </Suspense>
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-bold text-amber-950 dark:text-amber-200">
+                        {language === 'he' ? 'אין הרשאת גישה ללשונית זו' : 'Access Restricted by Role Policy'}
+                      </h3>
+                      <p className="text-xs text-amber-800/90 dark:text-amber-300/90 max-w-md mx-auto">
+                        {language === 'he'
+                          ? 'תפקידך במערכת אינו כולל את ההרשאה [shorts:manage] הנדרשת לצפייה בעמוד זה.'
+                          : 'Your account role does not have the required permission [shorts:manage] to view this tab.'}
+                      </p>
+                    </div>
+                  </div>
+                )
               )}
 
               {/* TAB 5: PACKAGES & PRICING */}
@@ -3711,7 +3721,6 @@ export const AdminDashboard: React.FC = () => {
                 activeTab === 'review_links' ||
                 activeTab === 'point_rules' ||
                 activeTab === 'store_management' ||
-                activeTab === 'shorts_management' ||
                 activeTab === 'languages') && (
                   <EnterpriseTabsContainer
                     currentTab={activeTab === 'enterprise' ? 'levels' : (activeTab as any)}
@@ -6341,7 +6350,6 @@ export const AdminDashboard: React.FC = () => {
               activeTab === 'review_links' ||
               activeTab === 'point_rules' ||
               activeTab === 'store_management' ||
-              activeTab === 'shorts_management' ||
               activeTab === 'languages'
               ? 'border-brand-teal-600 dark:border-brand-teal-400 ring-2 ring-brand-teal-600/20 dark:ring-brand-teal-400/20'
               : 'border-slate-200/90 dark:border-slate-700/60'
@@ -6352,7 +6360,7 @@ export const AdminDashboard: React.FC = () => {
                 <Settings className="w-5 h-5" />
               </div>
               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-900 dark:text-brand-teal-200 border border-brand-teal-300/70 dark:border-brand-teal-700/50">
-                10
+                9
               </span>
             </div>
             <div>
