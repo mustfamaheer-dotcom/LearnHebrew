@@ -1,6 +1,7 @@
 import { prisma } from '../../config/database';
 import { HomeworkStatus, PointsEventType } from '@prisma/client';
 import { notificationService } from '../notifications/notifications.service';
+import { cacheInvalidatePrefix } from '../../lib/cache';
 
 export async function listHomework(params: {
   studentId?: string;
@@ -83,6 +84,9 @@ export async function createHomework(data: {
     console.error('[Notification Trigger Error - notifyHomeworkAssigned]', err)
   );
 
+  await cacheInvalidatePrefix('student:');
+  await cacheInvalidatePrefix('teachers:');
+
   return homework;
 }
 
@@ -126,6 +130,10 @@ export async function submitHomework(id: string, studentNote: string) {
     console.error('[Notification Trigger Error - notifyHomeworkSubmitted]', err)
   );
 
+  await cacheInvalidatePrefix('student:');
+  await cacheInvalidatePrefix('teachers:');
+  await cacheInvalidatePrefix('games:leaderboard');
+
   return updated;
 }
 
@@ -145,6 +153,9 @@ export async function reviewHomework(id: string, teacherFeedback: string) {
   notificationService.notifyHomeworkReviewed(reviewed).catch((err) =>
     console.error('[Notification Trigger Error - notifyHomeworkReviewed]', err)
   );
+
+  await cacheInvalidatePrefix('student:');
+  await cacheInvalidatePrefix('teachers:');
 
   return reviewed;
 }

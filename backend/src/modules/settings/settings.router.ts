@@ -100,10 +100,13 @@ const DEFAULT_SESSION_PRICING = {
 // GET Session Pricing by Duration (25m, 40m, 55m)
 router.get('/session-pricing', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const setting = await prisma.systemSetting.findUnique({
-      where: { key: 'session_pricing' },
+    const pricing = await getCachedOrFetch('setting:session_pricing', 300, async () => {
+      const setting = await prisma.systemSetting.findUnique({
+        where: { key: 'session_pricing' },
+      });
+      return setting?.valueJson || DEFAULT_SESSION_PRICING;
     });
-    res.json({ pricing: setting?.valueJson || DEFAULT_SESSION_PRICING });
+    res.json({ pricing });
   } catch (error) {
     next(error);
   }
@@ -125,6 +128,7 @@ router.put(
           valueJson: pricing,
         },
       });
+      await cacheDel('setting:session_pricing');
       res.json({
         message: 'Session pricing updated successfully!',
         pricing: setting.valueJson,

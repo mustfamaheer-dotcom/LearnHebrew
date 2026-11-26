@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, useTransition } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
@@ -135,6 +135,7 @@ export const TeacherDashboard: React.FC = () => {
   const queryClient = useQueryClient();
   const { isCollapsed } = useSidebarStore();
   const { can } = usePermissions();
+  const [, startTransition] = useTransition();
 
   const [activeTab, setActiveTab] = useState<'calendar' | 'calendar_monitor' | 'lessons' | 'students' | 'homework' | 'recordings' | 'games'>(() => {
     const searchTab = new URLSearchParams(window.location.search).get('tab');
@@ -144,20 +145,75 @@ export const TeacherDashboard: React.FC = () => {
     return 'calendar';
   });
 
+  const handleTabChange = useCallback((tabId: any) => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tabId);
+      window.history.replaceState({}, '', url.toString());
+    }
+    startTransition(() => {
+      setActiveTab(tabId);
+    });
+    setMobileMenuOpen(false);
+    setIsMobileMoreOpen(false);
+  }, []);
+
+  const handleTabHover = useCallback((tabId: string) => {
+    if (tabId === 'students') {
+      queryClient.prefetchQuery({
+        queryKey: ['teacherStudents', user?.id],
+        queryFn: async () => {
+          const res = await api.get(`/teachers/${user?.id}/students`);
+          return res.data.students;
+        },
+        staleTime: 3 * 60 * 1000,
+      });
+    } else if (tabId === 'homework') {
+      queryClient.prefetchQuery({
+        queryKey: ['teacherHomework', user?.id],
+        queryFn: async () => {
+          const res = await api.get('/homework');
+          return res.data.homework;
+        },
+        staleTime: 2 * 60 * 1000,
+      });
+    } else if (tabId === 'recordings') {
+      queryClient.prefetchQuery({
+        queryKey: ['teacherRecordedSessions', user?.id],
+        queryFn: async () => {
+          const res = await api.get('/recorded-sessions');
+          return res.data.sessions;
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    } else if (tabId === 'games') {
+      queryClient.prefetchQuery({
+        queryKey: ['teacherGames'],
+        queryFn: async () => {
+          const res = await api.get('/games');
+          return res.data.games;
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  }, [queryClient, user?.id]);
+
   useEffect(() => {
     const handleNavEvent = (e: any) => {
       if (e.detail?.tab && ['calendar', 'calendar_monitor', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(e.detail.tab)) {
-        setActiveTab(e.detail.tab);
+        handleTabChange(e.detail.tab);
       }
     };
     window.addEventListener('engrew:navigate-tab', handleNavEvent);
     return () => window.removeEventListener('engrew:navigate-tab', handleNavEvent);
-  }, []);
+  }, [handleTabChange]);
 
   useEffect(() => {
     const searchTab = new URLSearchParams(location.search).get('tab');
     if (searchTab && ['calendar', 'calendar_monitor', 'lessons', 'students', 'homework', 'recordings', 'games'].includes(searchTab)) {
-      setActiveTab(searchTab as any);
+      startTransition(() => {
+        setActiveTab(searchTab as any);
+      });
     }
   }, [location.search]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -373,6 +429,7 @@ export const TeacherDashboard: React.FC = () => {
       return res.data;
     },
     enabled: !!user?.id,
+    staleTime: 60 * 1000,
   });
 
   useEffect(() => {
@@ -393,6 +450,7 @@ export const TeacherDashboard: React.FC = () => {
       return res.data.students;
     },
     enabled: !!user?.id,
+    staleTime: 3 * 60 * 1000,
   });
 
   // 3. Fetch Homework for this Teacher
@@ -402,6 +460,7 @@ export const TeacherDashboard: React.FC = () => {
       const res = await api.get('/homework');
       return res.data.homework;
     },
+    staleTime: 2 * 60 * 1000,
   });
 
   // 4. Fetch Recorded Sessions for this Teacher
@@ -411,6 +470,7 @@ export const TeacherDashboard: React.FC = () => {
       const res = await api.get('/recorded-sessions');
       return res.data.sessions;
     },
+    staleTime: 5 * 60 * 1000,
   });
 
   const createRecordedSessionMutation = useMutation({
@@ -446,13 +506,37 @@ export const TeacherDashboard: React.FC = () => {
     },
   });
 
-  // Complete lesson mutation
+  // Complete lesson mutation with Optimistic Update
   const completeLessonMutation = useMutation({
     mutationFn: async (lessonId: string) => {
       return api.post(`/lessons/${lessonId}/complete`);
     },
-    onSuccess: () => {
+    onMutate: async (lessonId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['teacherCalendar', user?.id] });
+      const previousCalendar = queryClient.getQueryData(['teacherCalendar', user?.id]);
+      queryClient.setQueryData(['teacherCalendar', user?.id], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          lessons: (old.lessons || []).map((l: any) =>
+            l.id === lessonId ? { ...l, status: 'COMPLETED' } : l
+          ),
+        };
+      });
+      return { previousCalendar };
+    },
+    onError: (_err: any, _vars: any, context: any) => {
+      if (context?.previousCalendar) {
+        queryClient.setQueryData(['teacherCalendar', user?.id], context.previousCalendar);
+      }
+      toast.error(
+        language === 'he' ? 'שגיאה בסימון שיעור כהושלם' : 'Failed to mark lesson completed'
+      );
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
+    },
+    onSuccess: () => {
       toast.success(
         language === 'he' ? 'השיעור סומן כהושלם בהצלחה (+50 נקודות לתלמיד)!' : 'Lesson marked as completed (+50 pts)!'
       );
@@ -478,7 +562,7 @@ export const TeacherDashboard: React.FC = () => {
     },
   });
 
-  // Add slot mutation (supports 25, 40, and 55 minute sessions with Zoom meeting link)
+  // Add slot mutation with Optimistic Update (<16ms feedback)
   const addSlotMutation = useMutation({
     mutationFn: async (data: {
       dayOfWeek: number;
@@ -490,8 +574,41 @@ export const TeacherDashboard: React.FC = () => {
     }) => {
       return api.post(`/teachers/${user?.id}/slots`, data);
     },
-    onSuccess: (_, vars) => {
+    onMutate: async (newSlotData) => {
+      await queryClient.cancelQueries({ queryKey: ['teacherCalendar', user?.id] });
+      const previousCalendar = queryClient.getQueryData(['teacherCalendar', user?.id]);
+      const optimisticSlot = {
+        id: `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        teacherId: user?.id,
+        dayOfWeek: newSlotData.dayOfWeek,
+        startTime: newSlotData.startTime,
+        endTime: newSlotData.endTime,
+        zoomLink: newSlotData.zoomLink,
+        isBooked: false,
+      };
+      queryClient.setQueryData(['teacherCalendar', user?.id], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          slots: [...(old.slots || []), optimisticSlot],
+        };
+      });
+      return { previousCalendar };
+    },
+    onError: (err: any, _vars: any, context: any) => {
+      if (context?.previousCalendar) {
+        queryClient.setQueryData(['teacherCalendar', user?.id], context.previousCalendar);
+      }
+      toast.error(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          (language === 'he' ? 'שגיאה בפתיחת שעת הזמינות' : 'Failed to open availability slot')
+      );
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
+    },
+    onSuccess: (_, vars) => {
       setIsConfiguringSlot(false);
       setSelectedSlotBlock(null);
       const slotRange = formatSlotRange12Hour(vars.startTime, vars.endTime);
@@ -499,13 +616,6 @@ export const TeacherDashboard: React.FC = () => {
         language === 'he'
           ? `שעת הזמינות (${slotRange}) נפתחה בהצלחה עם קישור הזום הקבוע שלך!`
           : `Availability slot (${slotRange}) opened with your permanent Zoom link!`
-      );
-    },
-    onError: (err: any) => {
-      toast.error(
-        err.response?.data?.error ||
-          err.response?.data?.message ||
-          (language === 'he' ? 'שגיאה בפתיחת שעת הזמינות' : 'Failed to open availability slot')
       );
     },
   });
@@ -606,13 +716,33 @@ export const TeacherDashboard: React.FC = () => {
     });
   };
 
-  // Delete slot mutation
+  // Delete slot mutation with Optimistic Update (<16ms feedback)
   const deleteSlotMutation = useMutation({
     mutationFn: async (slotId: string) => {
       return api.delete(`/teachers/${user?.id}/slots/${slotId}`);
     },
-    onSuccess: () => {
+    onMutate: async (slotId: string) => {
+      await queryClient.cancelQueries({ queryKey: ['teacherCalendar', user?.id] });
+      const previousCalendar = queryClient.getQueryData(['teacherCalendar', user?.id]);
+      queryClient.setQueryData(['teacherCalendar', user?.id], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          slots: (old.slots || []).filter((s: any) => s.id !== slotId),
+        };
+      });
+      return { previousCalendar };
+    },
+    onError: (_err: any, _vars: any, context: any) => {
+      if (context?.previousCalendar) {
+        queryClient.setQueryData(['teacherCalendar', user?.id], context.previousCalendar);
+      }
+      toast.error(language === 'he' ? 'שגיאה בהסרת שעת הזמינות' : 'Failed to remove slot');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
+    },
+    onSuccess: () => {
       toast.info(language === 'he' ? 'שעת הזמינות הוסרה.' : 'Availability slot removed.');
     },
   });
@@ -643,13 +773,33 @@ export const TeacherDashboard: React.FC = () => {
     },
   });
 
-  // Clear Day Slots Mutation
+  // Clear Day Slots Mutation with Optimistic Update (<16ms feedback)
   const clearDaySlotsMutation = useMutation({
     mutationFn: async () => {
       return api.delete(`/teachers/${user?.id}/slots/day/${selectedDay}`);
     },
-    onSuccess: (res) => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['teacherCalendar', user?.id] });
+      const previousCalendar = queryClient.getQueryData(['teacherCalendar', user?.id]);
+      queryClient.setQueryData(['teacherCalendar', user?.id], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          slots: (old.slots || []).filter((s: any) => s.dayOfWeek !== selectedDay || s.isBooked),
+        };
+      });
+      return { previousCalendar };
+    },
+    onError: (_err: any, _vars: any, context: any) => {
+      if (context?.previousCalendar) {
+        queryClient.setQueryData(['teacherCalendar', user?.id], context.previousCalendar);
+      }
+      toast.error(language === 'he' ? 'שגיאה בניקוי שעות היום' : 'Failed to clear day slots');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['teacherCalendar'] });
+    },
+    onSuccess: (res) => {
       toast.info(
         language === 'he'
           ? `הוסרו ${res.data?.deletedCount || 0} שעות זמינות לא מוזמנות מיום ${DAYS_HE[selectedDay]}.`
@@ -754,6 +904,7 @@ export const TeacherDashboard: React.FC = () => {
       const res = await api.get('/games');
       return res.data.games;
     },
+    staleTime: 5 * 60 * 1000,
   });
 
   const saveGameMutation = useMutation({
@@ -959,6 +1110,40 @@ export const TeacherDashboard: React.FC = () => {
   const lessons = calendarData?.lessons || [];
   const slots = calendarData?.slots || [];
 
+  // Memoized slot counts by day of week (O(1) lookup per day tab)
+  const slotCountsByDay = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0, 0, 0];
+    for (const s of slots) {
+      if (typeof s.dayOfWeek === 'number' && s.dayOfWeek >= 0 && s.dayOfWeek < 7) {
+        counts[s.dayOfWeek]++;
+      }
+    }
+    return counts;
+  }, [slots]);
+
+  // Memoized scheduled lessons count by date string YYYY-MM-DD
+  const scheduledLessonsByDate = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const l of lessons) {
+      if (l.status === 'SCHEDULED' && l.scheduledAt) {
+        const d = new Date(l.scheduledAt).toISOString().split('T')[0];
+        map.set(d, (map.get(d) || 0) + 1);
+      }
+    }
+    return map;
+  }, [lessons]);
+
+  // Memoized configured slot start times for selectedDay
+  const configuredSlotStarts = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of slots) {
+      if (s.dayOfWeek === selectedDay && s.startTime) {
+        set.add(s.startTime);
+      }
+    }
+    return set;
+  }, [slots, selectedDay]);
+
   const navItems = [
     {
       id: 'calendar',
@@ -1041,10 +1226,8 @@ export const TeacherDashboard: React.FC = () => {
         <GlassSidebar
           navItems={authorizedNavItems}
           activeTab={activeTab}
-          onTabChange={(tabId) => {
-            setActiveTab(tabId as any);
-            setIsMobileMoreOpen(false);
-          }}
+          onTabChange={handleTabChange}
+          onTabHover={handleTabHover}
           user={user}
           panelSubtitle="Certified Teacher Portal"
           isOpenMobile={false}
@@ -1503,7 +1686,7 @@ export const TeacherDashboard: React.FC = () => {
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
                     {DAYS.map((dayName, dayIndex) => {
-                      const daySlotsCount = slots.filter((s: any) => s.dayOfWeek === dayIndex).length;
+                      const daySlotsCount = slotCountsByDay[dayIndex];
                       const isSelected = selectedDay === dayIndex;
                       const weekDate = weekDates[dayIndex];
                       const dateObj = new Date(weekDate + 'T00:00:00');
@@ -1512,10 +1695,7 @@ export const TeacherDashboard: React.FC = () => {
                         day: 'numeric',
                       });
 
-                      const bookedCount = lessons.filter((l: any) => {
-                        const lDateStr = new Date(l.scheduledAt).toISOString().split('T')[0];
-                        return lDateStr === weekDate && l.status === 'SCHEDULED';
-                      }).length;
+                      const bookedCount = scheduledLessonsByDate.get(weekDate) || 0;
 
                       const isPastDay = isDateInPast(weekDate);
 
@@ -1578,7 +1758,7 @@ export const TeacherDashboard: React.FC = () => {
                   </div>
                   <span className="text-xs text-brand-teal-800 dark:text-brand-teal-300 font-bold bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200 dark:border-brand-teal-800 px-3 py-1 rounded-xl shrink-0">
                     {language === 'he' ? 'מוגדרים ליום זה: ' : 'Configured: '}
-                    {slots.filter((s: any) => s.dayOfWeek === selectedDay).length}{' '}
+                    {configuredSlotStarts.size}{' '}
                     {language === 'he' ? 'שעות' : 'slots'}
                   </span>
                 </div>
@@ -1590,13 +1770,13 @@ export const TeacherDashboard: React.FC = () => {
                   const eveningBlocks = currentBlocks.filter((b) => isEveningSlot(b.start));
 
                   const morningConfiguredCount = morningBlocks.filter((b) =>
-                    slots.some((s: any) => s.dayOfWeek === selectedDay && s.startTime === b.start)
+                    configuredSlotStarts.has(b.start)
                   ).length;
                   const afternoonConfiguredCount = afternoonBlocks.filter((b) =>
-                    slots.some((s: any) => s.dayOfWeek === selectedDay && s.startTime === b.start)
+                    configuredSlotStarts.has(b.start)
                   ).length;
                   const eveningConfiguredCount = eveningBlocks.filter((b) =>
-                    slots.some((s: any) => s.dayOfWeek === selectedDay && s.startTime === b.start)
+                    configuredSlotStarts.has(b.start)
                   ).length;
 
                   let displayedBlocks = currentBlocks;
@@ -1864,7 +2044,7 @@ export const TeacherDashboard: React.FC = () => {
 
                                   <button
                                     onClick={() => deleteSlotMutation.mutate(existingSlot.id)}
-                                    disabled={deleteSlotMutation.isPending}
+                                    disabled={deleteSlotMutation.isPending && deleteSlotMutation.variables === existingSlot.id}
                                     className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                                     title={language === 'he' ? 'הסר שעת זמינות' : 'Remove slot'}
                                   >
@@ -1904,7 +2084,7 @@ export const TeacherDashboard: React.FC = () => {
                             <button
                               key={block.start}
                               onClick={() => handleOpenSlotModal(block, slotLabel12h)}
-                              disabled={addSlotMutation.isPending}
+                              disabled={addSlotMutation.isPending && (addSlotMutation.variables as any)?.startTime === block.start}
                               className="group relative p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-brand-teal-500/70 dark:hover:border-brand-teal-400 hover:shadow-md transition-all flex flex-col justify-between min-h-[6.5rem] text-start shadow-2xs cursor-pointer active:scale-98"
                             >
                               <div className="flex items-center justify-between gap-1 w-full mb-1">

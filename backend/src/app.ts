@@ -122,6 +122,7 @@ app.use(
       }
     },
     credentials: true,
+    maxAge: 86400,
   })
 );
 

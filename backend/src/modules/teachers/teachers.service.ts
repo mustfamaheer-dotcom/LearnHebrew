@@ -66,35 +66,45 @@ export async function getTeacherById(id: string) {
 export async function getTeacherCalendar(teacherIdOrUserId: string) {
   const teacher = await getTeacherById(teacherIdOrUserId);
 
-  const [lessons, slots] = await Promise.all([
-    prisma.lesson.findMany({
-      where: { teacherId: teacher.id },
-      include: {
-        student: {
-          include: {
-            user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
-            equippedAvatarFrame: true,
-            equippedNickname: true,
-          },
-        },
-        sessionType: true,
-      },
-      orderBy: { scheduledAt: 'asc' },
-    }),
-    prisma.timeSlot.findMany({
-      where: { teacherId: teacher.id },
-      orderBy: [{ date: 'asc' }, { dayOfWeek: 'asc' }, { startTime: 'asc' }],
-    }),
-  ]);
+  return getCachedOrFetch(`teachers:calendar:${teacher.id}`, 15, async () => {
+    // Window lessons to past 30 days and all future lessons to eliminate historical payload bloat
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  return { lessons, slots, defaultZoomLink: teacher.defaultZoomLink };
+    const [lessons, slots] = await Promise.all([
+      prisma.lesson.findMany({
+        where: {
+          teacherId: teacher.id,
+          scheduledAt: { gte: thirtyDaysAgo },
+        },
+        include: {
+          student: {
+            include: {
+              user: { select: { firstName: true, lastName: true, email: true, avatarUrl: true } },
+              equippedAvatarFrame: true,
+              equippedNickname: true,
+            },
+          },
+          sessionType: true,
+        },
+        orderBy: { scheduledAt: 'asc' },
+      }),
+      prisma.timeSlot.findMany({
+        where: { teacherId: teacher.id },
+        orderBy: [{ date: 'asc' }, { dayOfWeek: 'asc' }, { startTime: 'asc' }],
+      }),
+    ]);
+
+    return { lessons, slots, defaultZoomLink: teacher.defaultZoomLink };
+  });
 }
 
 export async function getTeacherSlots(teacherIdOrUserId: string) {
   const teacher = await getTeacherById(teacherIdOrUserId);
-  return prisma.timeSlot.findMany({
-    where: { teacherId: teacher.id },
-    orderBy: [{ date: 'asc' }, { dayOfWeek: 'asc' }, { startTime: 'asc' }],
+  return getCachedOrFetch(`teachers:slots:${teacher.id}`, 15, async () => {
+    return prisma.timeSlot.findMany({
+      where: { teacherId: teacher.id },
+      orderBy: [{ date: 'asc' }, { dayOfWeek: 'asc' }, { startTime: 'asc' }],
+    });
   });
 }
 
@@ -307,59 +317,61 @@ export async function copyDaySlots(
 export async function getTeacherStudents(teacherIdOrUserId: string) {
   const teacher = await getTeacherById(teacherIdOrUserId);
 
-  const allStudents = await prisma.student.findMany({
-    include: {
-      user: {
-        select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true, createdAt: true },
+  return getCachedOrFetch(`teachers:students:${teacher.id}`, 20, async () => {
+    const allStudents = await prisma.student.findMany({
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true, avatarUrl: true, createdAt: true },
+        },
+        levelModel: true,
+        sessionBalances: {
+          include: { sessionType: true },
+        },
+        lessons: {
+          where: { teacherId: teacher.id },
+          include: { sessionType: true },
+          orderBy: { scheduledAt: 'desc' },
+        },
+        homeworks: {
+          where: { teacherId: teacher.id },
+          orderBy: { createdAt: 'desc' },
+        },
+        gameUnlocks: {
+          include: { game: true },
+        },
+        examAttempts: {
+          include: { exam: true },
+        },
+        equippedAvatarFrame: true,
+        equippedNickname: true,
       },
-      levelModel: true,
-      sessionBalances: {
-        include: { sessionType: true },
-      },
-      lessons: {
-        where: { teacherId: teacher.id },
-        include: { sessionType: true },
-        orderBy: { scheduledAt: 'desc' },
-      },
-      homeworks: {
-        where: { teacherId: teacher.id },
-        orderBy: { createdAt: 'desc' },
-      },
-      gameUnlocks: {
-        include: { game: true },
-      },
-      examAttempts: {
-        include: { exam: true },
-      },
-      equippedAvatarFrame: true,
-      equippedNickname: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      orderBy: { createdAt: 'desc' },
+    });
 
-  const now = new Date();
+    const now = new Date();
 
-  return allStudents.map((s) => {
-    const teacherLessons = s.lessons || [];
-    const completedLessons = teacherLessons.filter((l) => l.status === 'COMPLETED');
-    const scheduledLessons = teacherLessons.filter(
-      (l) => l.status === 'SCHEDULED' && new Date(l.scheduledAt) >= now
-    );
-    const nextLesson = scheduledLessons[0] || null;
+    return allStudents.map((s) => {
+      const teacherLessons = s.lessons || [];
+      const completedLessons = teacherLessons.filter((l) => l.status === 'COMPLETED');
+      const scheduledLessons = teacherLessons.filter(
+        (l) => l.status === 'SCHEDULED' && new Date(l.scheduledAt) >= now
+      );
+      const nextLesson = scheduledLessons[0] || null;
 
-    return {
-      ...s,
-      student: s,
-      stats: {
-        totalLessons: teacherLessons.length,
-        completedLessons: completedLessons.length,
-        scheduledLessons: scheduledLessons.length,
-        nextLesson,
-        lastLessonDate: completedLessons[0]?.scheduledAt || null,
-        nextLessonDate: nextLesson?.scheduledAt || null,
-        pendingHomework: (s.homeworks || []).filter((h: any) => h.status === 'SUBMITTED').length,
-        homeworkTotal: (s.homeworks || []).length,
-      },
-    };
+      return {
+        ...s,
+        student: s,
+        stats: {
+          totalLessons: teacherLessons.length,
+          completedLessons: completedLessons.length,
+          scheduledLessons: scheduledLessons.length,
+          nextLesson,
+          lastLessonDate: completedLessons[0]?.scheduledAt || null,
+          nextLessonDate: nextLesson?.scheduledAt || null,
+          pendingHomework: (s.homeworks || []).filter((h: any) => h.status === 'SUBMITTED').length,
+          homeworkTotal: (s.homeworks || []).length,
+        },
+      };
+    });
   });
 }

@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database';
 import { HebrewLevel } from '@prisma/client';
+import { getCachedOrFetch, cacheInvalidatePrefix } from '../../lib/cache';
 
 export async function listStudents() {
   return prisma.student.findMany({
@@ -56,99 +57,103 @@ export async function getStudentById(id: string) {
 
 export async function updateStudentLevel(studentIdOrUserId: string, level: HebrewLevel) {
   const student = await getStudentById(studentIdOrUserId);
-  return prisma.student.update({
+  const updated = await prisma.student.update({
     where: { id: student.id },
     data: { level },
     include: { user: true },
   });
+  await cacheInvalidatePrefix('student:');
+  return updated;
 }
 
 export async function getStudentDashboard(studentIdOrUserId: string) {
   const student = await getStudentById(studentIdOrUserId);
 
-  const now = new Date();
+  return getCachedOrFetch(`student:dashboard:${student.id}`, 15, async () => {
+    const now = new Date();
 
-  const [upcomingLessons, activePackage, recentHomework, pointsHistory, recentLessons, sessionBalances] =
-    await Promise.all([
-      prisma.lesson.findMany({
-        where: {
-          studentId: student.id,
-          scheduledAt: { gte: now },
-          status: 'SCHEDULED',
-        },
-        include: {
-          teacher: {
-            include: {
-              user: { select: { firstName: true, lastName: true, avatarUrl: true } },
-            },
+    const [upcomingLessons, activePackage, recentHomework, pointsHistory, recentLessons, sessionBalances] =
+      await Promise.all([
+        prisma.lesson.findMany({
+          where: {
+            studentId: student.id,
+            scheduledAt: { gte: now },
+            status: 'SCHEDULED',
           },
-        },
-        orderBy: { scheduledAt: 'asc' },
-        take: 3,
-      }),
-      prisma.studentPackage.findFirst({
-        where: {
-          studentId: student.id,
-          status: 'ACTIVE',
-        },
-        include: { package: true },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.homework.findMany({
-        where: {
-          studentId: student.id,
-          status: { in: ['PENDING', 'SUBMITTED'] },
-        },
-        include: {
-          teacher: {
-            include: {
-              user: { select: { firstName: true, lastName: true } },
-            },
-          },
-        },
-        orderBy: { dueDate: 'asc' },
-        take: 3,
-      }),
-      prisma.pointsLedger.findMany({
-        where: { studentId: student.id },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      }),
-      prisma.lesson.findMany({
-        where: {
-          studentId: student.id,
-          status: 'COMPLETED',
-        },
-        include: {
-          teacher: {
-            include: {
-              user: { select: { firstName: true, lastName: true, avatarUrl: true } },
-              surveys: {
-                where: { studentId: student.id },
-                take: 1,
+          include: {
+            teacher: {
+              include: {
+                user: { select: { firstName: true, lastName: true, avatarUrl: true } },
               },
             },
           },
-          feedback: true,
-        },
-        orderBy: { scheduledAt: 'desc' },
-        take: 5,
-      }),
-      prisma.studentSessionBalance.findMany({
-        where: { studentId: student.id },
-        include: { sessionType: true },
-      }),
-    ]);
+          orderBy: { scheduledAt: 'asc' },
+          take: 3,
+        }),
+        prisma.studentPackage.findFirst({
+          where: {
+            studentId: student.id,
+            status: 'ACTIVE',
+          },
+          include: { package: true },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.homework.findMany({
+          where: {
+            studentId: student.id,
+            status: { in: ['PENDING', 'SUBMITTED'] },
+          },
+          include: {
+            teacher: {
+              include: {
+                user: { select: { firstName: true, lastName: true } },
+              },
+            },
+          },
+          orderBy: { dueDate: 'asc' },
+          take: 3,
+        }),
+        prisma.pointsLedger.findMany({
+          where: { studentId: student.id },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        }),
+        prisma.lesson.findMany({
+          where: {
+            studentId: student.id,
+            status: 'COMPLETED',
+          },
+          include: {
+            teacher: {
+              include: {
+                user: { select: { firstName: true, lastName: true, avatarUrl: true } },
+                surveys: {
+                  where: { studentId: student.id },
+                  take: 1,
+                },
+              },
+            },
+            feedback: true,
+          },
+          orderBy: { scheduledAt: 'desc' },
+          take: 5,
+        }),
+        prisma.studentSessionBalance.findMany({
+          where: { studentId: student.id },
+          include: { sessionType: true },
+        }),
+      ]);
 
-  return {
-    student,
-    upcomingLessons,
-    activePackage,
-    recentHomework,
-    pointsHistory,
-    recentLessons,
-    sessionBalances,
-  };
+    return {
+      student,
+      upcomingLessons,
+      activePackage,
+      recentHomework,
+      pointsHistory,
+      recentLessons,
+      sessionBalances,
+    };
+  });
 }
 
 export async function getStudentLessons(studentIdOrUserId: string) {
@@ -213,7 +218,8 @@ export async function getStudentHomework(studentIdOrUserId: string) {
 export async function getStudentTransactions(studentIdOrUserId: string) {
   const student = await getStudentById(studentIdOrUserId);
 
-  const [ledgers, studentPackages, balanceTransactions, studentBalances] = await Promise.all([
+  return getCachedOrFetch(`student:transactions:${student.id}`, 20, async () => {
+    const [ledgers, studentPackages, balanceTransactions, studentBalances] = await Promise.all([
     prisma.sessionBalanceLedger.findMany({
       where: { studentId: student.id },
       include: { sessionType: true },
@@ -425,7 +431,8 @@ export async function getStudentTransactions(studentIdOrUserId: string) {
       transactionCount: unifiedTransactions.length,
     },
     transactions: unifiedTransactions,
-  };
+    };
+  });
 }
 
 export async function getStudentProgressAnalytics(studentIdOrUserId: string) {
@@ -638,6 +645,8 @@ export async function generateCertificate(
       certificateNumber: certNumber,
     },
   });
+
+  await cacheInvalidatePrefix('student:');
 
   return certificate;
 }

@@ -66,141 +66,145 @@ export async function getLeaderboard(
 ) {
   const validHebrewLevels = Object.values(HebrewLevel) as string[];
   const normalizedLevel = level ? level.trim().toUpperCase() : undefined;
-  const isEnumLevel = normalizedLevel ? validHebrewLevels.includes(normalizedLevel) : false;
+  const cacheKey = `games:leaderboard:${period}:${normalizedLevel || 'all'}`;
 
-  const levelCondition: Prisma.StudentWhereInput | null =
-    normalizedLevel && normalizedLevel !== 'ALL'
-      ? isEnumLevel
-        ? {
-            OR: [
-              { level: normalizedLevel as HebrewLevel },
-              { levelModel: { code: normalizedLevel } },
-              { levelId: level },
-            ],
-          }
-        : {
-            OR: [
-              { levelModel: { code: level } },
-              { levelId: level },
-            ],
-          }
-      : null;
+  return getCachedOrFetch(cacheKey, 30, async () => {
+    const isEnumLevel = normalizedLevel ? validHebrewLevels.includes(normalizedLevel) : false;
 
-  if (period === 'weekly' || period === 'monthly') {
-    const days = period === 'weekly' ? 7 : 30;
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const levelCondition: Prisma.StudentWhereInput | null =
+      normalizedLevel && normalizedLevel !== 'ALL'
+        ? isEnumLevel
+          ? {
+              OR: [
+                { level: normalizedLevel as HebrewLevel },
+                { levelModel: { code: normalizedLevel } },
+                { levelId: level },
+              ],
+            }
+          : {
+              OR: [
+                { levelModel: { code: level } },
+                { levelId: level },
+              ],
+            }
+        : null;
 
-    let eligibleStudentIds: string[] | undefined = undefined;
-    if (levelCondition) {
-      const eligibleStudents = await prisma.student.findMany({
-        where: levelCondition,
-        select: { id: true },
-      });
-      eligibleStudentIds = eligibleStudents.map((s) => s.id);
-      if (eligibleStudentIds.length === 0) {
-        return [];
+    if (period === 'weekly' || period === 'monthly') {
+      const days = period === 'weekly' ? 7 : 30;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+      let eligibleStudentIds: string[] | undefined = undefined;
+      if (levelCondition) {
+        const eligibleStudents = await prisma.student.findMany({
+          where: levelCondition,
+          select: { id: true },
+        });
+        eligibleStudentIds = eligibleStudents.map((s) => s.id);
+        if (eligibleStudentIds.length === 0) {
+          return [];
+        }
       }
+
+      const whereLedger: Prisma.PointsLedgerWhereInput = {
+        createdAt: { gte: since },
+        ...(eligibleStudentIds ? { studentId: { in: eligibleStudentIds } } : {}),
+      };
+
+      const grouped = await prisma.pointsLedger.groupBy({
+        by: ['studentId'],
+        _sum: { points: true },
+        where: whereLedger,
+        orderBy: { _sum: { points: 'desc' } },
+        take: 50,
+      });
+
+      const studentInclude: Prisma.StudentInclude = {
+        user: { select: { firstName: true, lastName: true, avatarUrl: true } },
+        levelModel: { select: { code: true, labelEn: true, labelHe: true } },
+        badges: { orderBy: { awardedAt: 'desc' }, take: 3 },
+        equippedAvatarFrame: true,
+        equippedNickname: true,
+      };
+
+      const studentIds = grouped.map((g) => g.studentId);
+      const students = await prisma.student.findMany({
+        where: { id: { in: studentIds } },
+        include: studentInclude,
+      });
+
+      const studentMap = new Map(students.map((s) => [s.id, s]));
+
+      const results = grouped
+        .map((g, idx) => {
+          const student = studentMap.get(g.studentId);
+          if (!student) return null;
+          return {
+            rank: idx + 1,
+            studentId: student.id,
+            name: `${student.user.firstName} ${student.user.lastName}`,
+            avatarUrl: student.user.avatarUrl,
+            level: student.levelModel?.code || student.level,
+            levelLabelEn: student.levelModel?.labelEn,
+            levelLabelHe: student.levelModel?.labelHe,
+            totalPoints: g._sum.points || 0,
+            lifetimePoints: student.totalPoints,
+            streakDays: student.streakDays,
+            badges: student.badges,
+            equippedAvatarFrame: student.equippedAvatarFrame,
+            equippedNickname: student.equippedNickname,
+          };
+        })
+        .filter(Boolean);
+
+      // If new week has records, return them
+      if (results.length > 0) return results;
     }
 
-    const whereLedger: Prisma.PointsLedgerWhereInput = {
-      createdAt: { gte: since },
-      ...(eligibleStudentIds ? { studentId: { in: eligibleStudentIds } } : {}),
-    };
-
-    const grouped = await prisma.pointsLedger.groupBy({
-      by: ['studentId'],
-      _sum: { points: true },
-      where: whereLedger,
-      orderBy: { _sum: { points: 'desc' } },
+    // All-time leaderboard (or fallback when period has no records)
+    const topStudents = await prisma.student.findMany({
+      where: levelCondition || {},
       take: 50,
+      orderBy: { totalPoints: 'desc' },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+          },
+        },
+        levelModel: {
+          select: {
+            code: true,
+            labelEn: true,
+            labelHe: true,
+          },
+        },
+        badges: {
+          orderBy: { awardedAt: 'desc' },
+          take: 3,
+        },
+        equippedAvatarFrame: true,
+        equippedNickname: true,
+      } satisfies Prisma.StudentInclude,
     });
 
-    const studentInclude: Prisma.StudentInclude = {
-      user: { select: { firstName: true, lastName: true, avatarUrl: true } },
-      levelModel: { select: { code: true, labelEn: true, labelHe: true } },
-      badges: { orderBy: { awardedAt: 'desc' }, take: 3 },
-      equippedAvatarFrame: true,
-      equippedNickname: true,
-    };
-
-    const studentIds = grouped.map((g) => g.studentId);
-    const students = await prisma.student.findMany({
-      where: { id: { in: studentIds } },
-      include: studentInclude,
-    });
-
-    const studentMap = new Map(students.map((s) => [s.id, s]));
-
-    const results = grouped
-      .map((g, idx) => {
-        const student = studentMap.get(g.studentId);
-        if (!student) return null;
-        return {
-          rank: idx + 1,
-          studentId: student.id,
-          name: `${student.user.firstName} ${student.user.lastName}`,
-          avatarUrl: student.user.avatarUrl,
-          level: student.levelModel?.code || student.level,
-          levelLabelEn: student.levelModel?.labelEn,
-          levelLabelHe: student.levelModel?.labelHe,
-          totalPoints: g._sum.points || 0,
-          lifetimePoints: student.totalPoints,
-          streakDays: student.streakDays,
-          badges: student.badges,
-          equippedAvatarFrame: student.equippedAvatarFrame,
-          equippedNickname: student.equippedNickname,
-        };
-      })
-      .filter(Boolean);
-
-    // If new week has records, return them
-    if (results.length > 0) return results;
-  }
-
-  // All-time leaderboard (or fallback when period has no records)
-  const topStudents = await prisma.student.findMany({
-    where: levelCondition || {},
-    take: 50,
-    orderBy: { totalPoints: 'desc' },
-    include: {
-      user: {
-        select: {
-          firstName: true,
-          lastName: true,
-          avatarUrl: true,
-        },
-      },
-      levelModel: {
-        select: {
-          code: true,
-          labelEn: true,
-          labelHe: true,
-        },
-      },
-      badges: {
-        orderBy: { awardedAt: 'desc' },
-        take: 3,
-      },
-      equippedAvatarFrame: true,
-      equippedNickname: true,
-    } satisfies Prisma.StudentInclude,
+    return topStudents.map((s, idx) => ({
+      rank: idx + 1,
+      studentId: s.id,
+      name: `${s.user.firstName} ${s.user.lastName}`,
+      avatarUrl: s.user.avatarUrl,
+      level: s.levelModel?.code || s.level,
+      levelLabelEn: s.levelModel?.labelEn,
+      levelLabelHe: s.levelModel?.labelHe,
+      totalPoints: s.totalPoints,
+      lifetimePoints: s.totalPoints,
+      streakDays: s.streakDays,
+      badges: s.badges,
+      equippedAvatarFrame: s.equippedAvatarFrame,
+      equippedNickname: s.equippedNickname,
+    }));
   });
-
-  return topStudents.map((s, idx) => ({
-    rank: idx + 1,
-    studentId: s.id,
-    name: `${s.user.firstName} ${s.user.lastName}`,
-    avatarUrl: s.user.avatarUrl,
-    level: s.levelModel?.code || s.level,
-    levelLabelEn: s.levelModel?.labelEn,
-    levelLabelHe: s.levelModel?.labelHe,
-    totalPoints: s.totalPoints,
-    lifetimePoints: s.totalPoints,
-    streakDays: s.streakDays,
-    badges: s.badges,
-    equippedAvatarFrame: s.equippedAvatarFrame,
-    equippedNickname: s.equippedNickname,
-  }));
 }
 
 export async function resetLeaderboardSeason(

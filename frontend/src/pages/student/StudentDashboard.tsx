@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useTransition } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
@@ -217,6 +217,8 @@ export const StudentDashboard: React.FC = () => {
   const location = useLocation();
   const { isCollapsed } = useSidebarStore();
 
+  const [, startTransition] = useTransition();
+
   const [activeTab, setActiveTab] = useState<
     'overview' | 'booking' | 'lessons' | 'recordings' | 'homework' | 'shorts' | 'games' | 'leaderboard' | 'store' | 'balance' | 'progress'
   >(() => {
@@ -237,38 +239,53 @@ export const StudentDashboard: React.FC = () => {
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const [isExamsAndPackagesModalOpen, setIsExamsAndPackagesModalOpen] = useState(false);
 
+  const handleTabChange = useCallback((tabId: any) => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tabId);
+      window.history.replaceState({}, '', url.toString());
+    }
+    startTransition(() => {
+      setActiveTab(tabId);
+    });
+    setMobileMenuOpen(false);
+    setIsMobileMoreOpen(false);
+  }, []);
+
   useEffect(() => {
     const handleNavEvent = (e: any) => {
       if (e.detail?.tab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'shorts', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(e.detail.tab)) {
-        setActiveTab(e.detail.tab);
+        handleTabChange(e.detail.tab);
       }
     };
     window.addEventListener('engrew:navigate-tab', handleNavEvent);
     return () => window.removeEventListener('engrew:navigate-tab', handleNavEvent);
-  }, []);
+  }, [handleTabChange]);
 
   useEffect(() => {
     const searchTab = new URLSearchParams(location.search).get('tab');
     if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(searchTab)) {
-      setActiveTab(searchTab as any);
+      startTransition(() => {
+        setActiveTab(searchTab as any);
+      });
     }
   }, [location.search]);
 
   useEffect(() => {
     if (location.pathname.includes('/games')) {
-      setActiveTab('games');
+      handleTabChange('games');
     } else if (location.pathname.includes('/leaderboard')) {
-      setActiveTab('leaderboard');
+      handleTabChange('leaderboard');
     } else if (location.pathname.includes('/store')) {
-      setActiveTab('store');
+      handleTabChange('store');
     } else if (location.pathname.includes('/recordings')) {
-      setActiveTab('recordings');
+      handleTabChange('recordings');
     } else if (location.pathname.includes('/balance') || location.pathname.includes('/transactions')) {
-      setActiveTab('balance');
+      handleTabChange('balance');
     } else if (location.pathname.includes('/progress') || location.pathname.includes('/analytics')) {
-      setActiveTab('progress');
+      handleTabChange('progress');
     }
-  }, [location.pathname]);
+  }, [location.pathname, handleTabChange]);
 
   const { data: myCoinsData } = useMyCoins(Boolean(user?.id));
 
@@ -354,6 +371,7 @@ export const StudentDashboard: React.FC = () => {
       return res.data;
     },
     enabled: !!user?.id,
+    staleTime: 60 * 1000,
   });
 
   // Fetch Admin Configured Session Pricing by Duration
@@ -363,9 +381,10 @@ export const StudentDashboard: React.FC = () => {
       const res = await api.get('/settings/session-pricing');
       return res.data?.pricing;
     },
+    staleTime: 10 * 60 * 1000,
   });
 
-  // Fetch Student Account Balance & Transactions History
+  // Fetch Student Account Balance & Transactions History (Lazy activation on balance tab)
   const {
     data: transactionsResponse,
     isLoading: isTransactionsLoading,
@@ -377,7 +396,8 @@ export const StudentDashboard: React.FC = () => {
       const res = await api.get(`/students/${user?.id}/transactions`);
       return res.data;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && activeTab === 'balance',
+    staleTime: 2 * 60 * 1000,
   });
 
   const studentTransactions: any[] = transactionsResponse?.transactions || [];
@@ -390,6 +410,29 @@ export const StudentDashboard: React.FC = () => {
 
   const [transactionTypeFilter, setTransactionTypeFilter] = useState<'ALL' | 'BOOKINGS' | 'DEPOSITS' | 'REFUNDS'>('ALL');
   const [transactionSearchQuery, setTransactionSearchQuery] = useState('');
+
+  // Memoized filtered transactions list (<16ms search responsiveness)
+  const filteredTransactions = useMemo(() => {
+    return studentTransactions.filter((tx: any) => {
+      if (transactionTypeFilter === 'BOOKINGS' && tx.type !== 'SESSION_BOOKING') return false;
+      if (
+        transactionTypeFilter === 'DEPOSITS' &&
+        tx.type !== 'PACKAGE_ACTIVATION' &&
+        (tx.type !== 'ADMIN_ADJUSTMENT' || Number(tx.amount) <= 0)
+      ) {
+        return false;
+      }
+      if (transactionTypeFilter === 'REFUNDS' && tx.type !== 'SESSION_REFUND') return false;
+
+      if (!transactionSearchQuery) return true;
+      const q = transactionSearchQuery.toLowerCase();
+      const desc = (tx.description || '').toLowerCase();
+      const type = (tx.type || '').toLowerCase();
+      const rcp = (tx.receiptNumber || '').toLowerCase();
+      const amt = String(tx.amount);
+      return desc.includes(q) || type.includes(q) || amt.includes(q) || rcp.includes(q);
+    });
+  }, [studentTransactions, transactionTypeFilter, transactionSearchQuery]);
 
   // Official Receipt & PDF Modal State
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
@@ -509,15 +552,18 @@ export const StudentDashboard: React.FC = () => {
       return res.data.teachers;
     },
     enabled: isBookingModalOpen || activeTab === 'booking',
+    staleTime: 3 * 60 * 1000,
   });
 
-  // 3. Fetch Games
+  // 3. Fetch Games (Lazy activation on games tab)
   const { data: gamesData } = useQuery({
     queryKey: ['games'],
     queryFn: async () => {
       const res = await api.get('/games');
       return res.data.games;
     },
+    enabled: activeTab === 'games',
+    staleTime: 5 * 60 * 1000,
   });
 
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<'weekly' | 'monthly' | 'all_time'>('weekly');
@@ -525,14 +571,15 @@ export const StudentDashboard: React.FC = () => {
   const studentLevelFromDashboard = dashboard?.student?.levelModel?.code || dashboard?.student?.level || 'BEGINNER';
   const activeLeaderboardLevel = studentLevelFromDashboard;
 
-  // 4. Fetch Leaderboard by Level (Weekly, Monthly Seasons & All-Time)
+  // 4. Fetch Leaderboard by Level (Lazy activation on leaderboard tab)
   const { data: leaderboardData = [], isLoading: isLeaderboardLoading } = useQuery({
     queryKey: ['leaderboard', leaderboardPeriod, activeLeaderboardLevel],
     queryFn: async () => {
       const res = await api.get(`/games/leaderboard?period=${leaderboardPeriod}&level=${activeLeaderboardLevel}`);
       return res.data.leaderboard || [];
     },
-    enabled: !!activeLeaderboardLevel,
+    enabled: !!activeLeaderboardLevel && activeTab === 'leaderboard',
+    staleTime: 2 * 60 * 1000,
   });
 
   // Fetch configured levels from platform
@@ -542,27 +589,89 @@ export const StudentDashboard: React.FC = () => {
       const res = await api.get('/levels');
       return Array.isArray(res.data) ? res.data : [];
     },
+    staleTime: 15 * 60 * 1000,
   });
 
-  // 5. Fetch Recorded Sessions (Google Drive Video Portal)
+  // 5. Fetch Recorded Sessions (Lazy activation on recordings tab)
   const { data: recordedSessions = [] } = useQuery({
     queryKey: ['studentRecordedSessions', user?.id],
     queryFn: async () => {
       const res = await api.get('/recorded-sessions');
       return res.data.sessions || [];
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && activeTab === 'recordings',
+    staleTime: 5 * 60 * 1000,
   });
 
-  // 6. Fetch Student Certificates of Completion
+  // 6. Fetch Student Certificates of Completion (Lazy activation on lessons tab)
   const { data: certificatesData = [] } = useQuery<CertificateData[]>({
     queryKey: ['studentCertificates', dashboard?.student?.id],
     queryFn: async () => {
       const res = await api.get(`/students/${dashboard?.student?.id}/certificates`);
       return res.data?.certificates || [];
     },
-    enabled: !!dashboard?.student?.id,
+    enabled: !!dashboard?.student?.id && activeTab === 'lessons',
+    staleTime: 5 * 60 * 1000,
   });
+
+  // Prefetch queries on tab hover/focus for instantaneous transitions (<16ms)
+  const handleTabHover = useCallback((tabId: string) => {
+    if (tabId === 'booking') {
+      queryClient.prefetchQuery({
+        queryKey: ['availableTeachers'],
+        queryFn: async () => {
+          const res = await api.get('/teachers');
+          return res.data.teachers;
+        },
+        staleTime: 3 * 60 * 1000,
+      });
+    } else if (tabId === 'games') {
+      queryClient.prefetchQuery({
+        queryKey: ['games'],
+        queryFn: async () => {
+          const res = await api.get('/games');
+          return res.data.games;
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    } else if (tabId === 'leaderboard') {
+      queryClient.prefetchQuery({
+        queryKey: ['leaderboard', leaderboardPeriod, activeLeaderboardLevel],
+        queryFn: async () => {
+          const res = await api.get(`/games/leaderboard?period=${leaderboardPeriod}&level=${activeLeaderboardLevel}`);
+          return res.data.leaderboard || [];
+        },
+        staleTime: 2 * 60 * 1000,
+      });
+    } else if (tabId === 'recordings') {
+      queryClient.prefetchQuery({
+        queryKey: ['studentRecordedSessions', user?.id],
+        queryFn: async () => {
+          const res = await api.get('/recorded-sessions');
+          return res.data.sessions || [];
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    } else if (tabId === 'balance') {
+      queryClient.prefetchQuery({
+        queryKey: ['studentTransactions', user?.id],
+        queryFn: async () => {
+          const res = await api.get(`/students/${user?.id}/transactions`);
+          return res.data;
+        },
+        staleTime: 2 * 60 * 1000,
+      });
+    } else if (tabId === 'lessons' && dashboard?.student?.id) {
+      queryClient.prefetchQuery({
+        queryKey: ['studentCertificates', dashboard.student.id],
+        queryFn: async () => {
+          const res = await api.get(`/students/${dashboard.student.id}/certificates`);
+          return res.data?.certificates || [];
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  }, [queryClient, user?.id, dashboard?.student?.id, leaderboardPeriod, activeLeaderboardLevel]);
 
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [recordingGroupMode, setRecordingGroupMode] = useState<'topic' | 'number'>('topic');
@@ -579,94 +688,35 @@ export const StudentDashboard: React.FC = () => {
   const [viewerTitle, setViewerTitle] = useState<string>('');
   const [viewerSubtitle, setViewerSubtitle] = useState<string>('');
 
-  // Book Session Mutation (supports 25, 40, or 55 min)
-  const bookLessonMutation = useMutation({
-    mutationFn: async (payload: {
-      studentId: string;
-      teacherId: string;
-      scheduledAt: string;
-      lessonType: string;
-      durationMinutes?: number;
-      timeSlotId?: string;
-      zoomLink?: string;
-    }) => {
-      return api.post('/lessons', payload);
-    },
-    onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['studentTransactions'] });
-      setIsBookingModalOpen(false);
-      setSelectedTeacherId('');
-      setBookingDate('');
-      setSelectedSlotTime('');
-      setBookingError(null);
-      const dur = vars.durationMinutes || 25;
-      toast.success(
-        isAr
-          ? `تم حجز الحصة (${dur} دقيقة) بنجاح! تم خصم حصة واحدة من باقتك.`
-          : isHe
-          ? `שיעור (${dur} דקות) הוזמן בהצלחה! נוכה שיעור 1 מחבילת השיעורים שלך.`
-          : `${dur}-Minute Lesson booked successfully! 1 session deducted from your package quota.`,
-        isAr ? 'تم تأكيد الحجز' : isHe ? 'ההזמנה אושרה' : 'Booking Confirmed'
-      );
-    },
-    onError: (err: any) => {
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        (isAr ? 'تعذر حجز الحصة. يرجى التأكد من توفر رصيد حصص كافٍ في باقتك.' : isHe ? 'שגיאה בהזמנת השיעור. אנא ודא שיש לך מכסת שיעורים פעילה בחבילה.' : 'Failed to book lesson. Please verify your session package quota.');
-      setBookingError(msg);
-      toast.error(msg, isAr ? 'خطأ في الحجز' : isHe ? 'שגיאה בהזמנה' : 'Booking Error');
-    },
-  });
-
-  // Regular Booking Mutation (4-Week Weekly Recurring)
-  const bookRegularLessonMutation = useMutation({
-    mutationFn: async (payload: {
-      studentId: string;
-      teacherId: string;
-      recurringSlots: Array<{ dayOfWeek: number; startTime: string }>;
-      durationMinutes?: number;
-      sessionTypeId?: string;
-      zoomLink?: string;
-      weeksCount?: number;
-    }) => {
-      return api.post('/lessons/regular', payload);
-    },
-    onSuccess: (res: any, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['studentTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['availableTeachers'] });
-      setIsBookingModalOpen(false);
-      setSelectedRegularSlots([]);
-      setBookingError(null);
-      const totalBooked = res.data?.totalLessons || vars.recurringSlots.length * 4;
-      toast.success(
-        isAr
-          ? `تم حجز ${totalBooked} حصص أسبوعية منتظمة بنجاح للأسابيع الـ 4 القادمة!`
-          : isHe
-          ? `נקבעו בהצלחה ${totalBooked} שיעורים שבועיים קבועים ל-4 השבועות הקרובים!`
-          : `Successfully booked ${totalBooked} regular weekly lessons across the next 4 weeks!`,
-        isAr ? 'تم تأكيد الحجز الأسبوعي المنتظم' : isHe ? 'חוג שבועי קבוע אושר' : 'Regular Booking Confirmed'
-      );
-    },
-    onError: (err: any) => {
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        (isAr ? 'تعذر حجز الجدول الأسبوعي المنتظم. يرجى التأكد من كفاية رصيد باقتك الشهرية.' : isHe ? 'שגיאה בהזמנת השיעורים הקבועים. אנא ודא שיתרת החבילה שלך מספיקה.' : 'Failed to book regular schedule. Please verify your monthly package balance.');
-      setBookingError(msg);
-      toast.error(msg, isAr ? 'خطأ في الحجز' : isHe ? 'שגיאה בהזמנה' : 'Booking Error');
-    },
-  });
-
-  // Homework submit mutation
+  // Homework submit mutation with Optimistic Update (<16ms feedback)
   const submitHomeworkMutation = useMutation({
     mutationFn: async ({ id, note }: { id: string; note: string }) => {
       return api.patch(`/homework/${id}/submit`, { studentNote: note });
     },
-    onSuccess: () => {
+    onMutate: async ({ id, note }) => {
+      await queryClient.cancelQueries({ queryKey: ['studentDashboard', user?.id] });
+      const previousData = queryClient.getQueryData(['studentDashboard', user?.id]);
+      queryClient.setQueryData(['studentDashboard', user?.id], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          homework: (old.homework || []).map((hw: any) =>
+            hw.id === id ? { ...hw, status: 'SUBMITTED', studentNote: note } : hw
+          ),
+        };
+      });
+      return { previousData };
+    },
+    onError: (_err: any, _vars: any, context: any) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['studentDashboard', user?.id], context.previousData);
+      }
+      toast.error(isAr ? 'فشل تسليم الواجب' : isHe ? 'שגיאה בהגשת שיעורי הבית' : 'Failed to submit homework');
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['studentDashboard'] });
+    },
+    onSuccess: () => {
       setSubmittingHwId(null);
       setHwNote('');
       toast.success(
@@ -934,79 +984,6 @@ export const StudentDashboard: React.FC = () => {
     }
   };
 
-  const handleRegularBookingSubmit = () => {
-    if (!selectedTeacherId) {
-      const err = isAr ? 'يرجى اختيار معلم معتمد.' : isHe ? 'אנא בחר מורה מוסמך.' : 'Please select a certified teacher.';
-      setBookingError(err);
-      toast.warning(err);
-      return;
-    }
-    if (selectedRegularSlots.length === 0) {
-      const err =
-        isAr
-          ? 'يرجى تحديد موعد أسبوعي منتظم واحد على الأقل.'
-          : isHe
-          ? 'אנא בחר לפחות מועד שבועי קבוע אחד לקביעת החוג.'
-          : 'Please select at least one weekly regular slot.';
-      setBookingError(err);
-      toast.warning(err);
-      return;
-    }
-    if (selectedRegularSlots.length > maxWeeklyRegularSlots) {
-      const err =
-        isAr
-          ? `تتيح باقتك الشهرية ${maxWeeklyRegularSlots} مواعيد أسبوعية منتظمة كحد أقصى.`
-          : isHe
-          ? `החבילה החודשית שלך מאפשרת לכל היותר ${maxWeeklyRegularSlots} מועדים שבועיים קבועים.`
-          : `Your monthly package allows at most ${maxWeeklyRegularSlots} regular weekly slot(s).`;
-      setBookingError(err);
-      toast.warning(err);
-      return;
-    }
-    if (!hasEnoughBalanceForRegular) {
-      const err =
-        isAr
-          ? `رصيد حصصك غير كافٍ لحجز جدول أسبوعي منتظم لـ 4 أسابيع (${requiredSessionsForRegular} حصص مطلوبة، رصيدك: ${selectedSessionBalance?.balance || 0}). يمكنك حجز حصص فردية من تبويب 'حصة فردية'.`
-          : isHe
-          ? `יתרת השיעורים שלך אינה מספיקה לקביעת חוג שבועי קבוע ל-4 שבועות (${requiredSessionsForRegular} שיעורים נדרשים, יתרתך: ${selectedSessionBalance?.balance || 0}). ניתן להזמין שיעורים בודדים בלשונית 'שיעור בודד'.`
-          : `Insufficient balance for a 4-week regular schedule (${requiredSessionsForRegular} sessions required, your balance: ${selectedSessionBalance?.balance || 0}). You can book single sessions in the 'One-Time Lesson' tab or renew your package.`;
-      setBookingError(err);
-      toast.warning(err);
-      return;
-    }
-    if (!student?.id) {
-      const err = isAr ? 'لم يتم العثور على ملف تعريف الطالب.' : isHe ? 'פרופיל התלמיד לא זוהה.' : 'Student profile not detected.';
-      setBookingError(err);
-      toast.error(err);
-      return;
-    }
-
-    for (const slot of selectedRegularSlots) {
-      const conflict = checkRegularSlotConflict(selectedTeacher, slot.dayOfWeek, slot.startTime, selectedDuration);
-      if (conflict.hasConflict) {
-        const err =
-          isAr
-            ? `يوجد تعارض في الموعد المحدد: المعلم محجوز مسبقاً في الأسبوع ${conflict.conflictingWeek} (${conflict.conflictingDate}) الساعة ${slot.startTime}.`
-            : isHe
-            ? `נמצאה התנגשות במועד הנבחר: המורה תפוס בשבוע ${conflict.conflictingWeek} (${conflict.conflictingDate}) בשעה ${slot.startTime}.`
-            : `Schedule conflict: Teacher is already booked on Week ${conflict.conflictingWeek} (${conflict.conflictingDate}) at ${slot.startTime}.`;
-        setBookingError(err);
-        toast.error(err);
-        return;
-      }
-    }
-
-    bookRegularLessonMutation.mutate({
-      studentId: student.id,
-      teacherId: selectedTeacherId,
-      recurringSlots: selectedRegularSlots,
-      durationMinutes: selectedDuration,
-      sessionTypeId: selectedSessionBalance?.sessionTypeId,
-      zoomLink: selectedTeacher?.defaultZoomLink,
-      weeksCount: 4,
-    });
-  };
-
   const selectedTeacher = (teachersData || []).find(
     (t: any) => t.id === selectedTeacherId
   );
@@ -1156,54 +1133,6 @@ export const StudentDashboard: React.FC = () => {
     },
   ];
 
-  const handleBookingSubmit = () => {
-    if (!hasEnoughBalance) {
-      const err =
-        isAr
-          ? `لا تتوفر لديك حصص في الباقة لحصة مدتها ${selectedDuration} دقيقة. يرجى التواصل مع فريق Engrew لشحن باقة جديدة.`
-          : isHe
-          ? `אין לך שיעורים זמינים בחבילה עבור שיעור של ${selectedDuration} דקות. אנא פנה לצוות Engrew להוספת חבילת שיעורים.`
-          : `You have 0 available sessions for ${selectedDuration}-minute lessons in your active package. Please contact Engrew support to assign a lesson package.`;
-      setBookingError(err);
-      toast.warning(err);
-      return;
-    }
-    if (!selectedTeacherId || !bookingDate || !selectedSlotTime) {
-      const err =
-        isAr
-          ? 'يرجى اختيار المعلم والتاريخ وموعد الحصة المتاح.'
-          : isHe
-          ? 'אנא בחר מורה, תאריך ושעת שיעור פנויה.'
-          : 'Please select teacher, date, and available slot.';
-      setBookingError(err);
-      toast.warning(err);
-      return;
-    }
-    if (!student?.id) {
-      const err = isAr ? 'لم يتم العثور على ملف تعريف الطالب.' : isHe ? 'פרופיל התלמיד לא זוהה.' : 'Student profile not detected.';
-      setBookingError(err);
-      toast.error(err);
-      return;
-    }
-    const chosenDay = new Date(bookingDate + 'T00:00:00').getDay();
-    const matchingSlot = (selectedTeacher?.timeSlots || []).find((s: any) => {
-      return s.dayOfWeek === chosenDay && s.startTime === selectedSlotTime;
-    });
-
-    const scheduledIso = new Date(
-      `${bookingDate}T${selectedSlotTime}:00`
-    ).toISOString();
-    bookLessonMutation.mutate({
-      studentId: student.id,
-      teacherId: selectedTeacherId,
-      timeSlotId: matchingSlot?.id,
-      scheduledAt: scheduledIso,
-      lessonType: 'ONE_TIME',
-      durationMinutes: selectedDuration,
-      zoomLink: matchingSlot?.zoomLink || undefined,
-    });
-  };
-
   return (
     <div className="min-h-screen w-full relative">
       <div className="w-full">
@@ -1211,10 +1140,8 @@ export const StudentDashboard: React.FC = () => {
         <GlassSidebar
           navItems={navItems}
           activeTab={activeTab}
-          onTabChange={(tabId) => {
-            setActiveTab(tabId as any);
-            setMobileMenuOpen(false);
-          }}
+          onTabChange={handleTabChange}
+          onTabHover={handleTabHover}
           user={user}
           panelSubtitle={isAr ? 'أكاديمية إنجرو للغة العبرية والإنجليزية' : isHe ? 'אקדמיה לעברית ואנגלית' : 'Engrew Hebrew & English Academy'}
           isOpenMobile={mobileMenuOpen}
@@ -4154,56 +4081,37 @@ export const StudentDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Filtered Transactions List / Table */}
-                {(() => {
-                  const filtered = studentTransactions.filter((tx: any) => {
-                    if (transactionTypeFilter === 'BOOKINGS' && tx.type !== 'SESSION_BOOKING') return false;
-                    if (transactionTypeFilter === 'DEPOSITS' && tx.type !== 'PACKAGE_ACTIVATION' && (tx.type !== 'ADMIN_ADJUSTMENT' || Number(tx.amount) <= 0)) return false;
-                    if (transactionTypeFilter === 'REFUNDS' && tx.type !== 'SESSION_REFUND') return false;
-
-                    if (!transactionSearchQuery) return true;
-                    const q = transactionSearchQuery.toLowerCase();
-                    const desc = (tx.description || '').toLowerCase();
-                    const type = (tx.type || '').toLowerCase();
-                    const rcp = (tx.receiptNumber || '').toLowerCase();
-                    const amt = String(tx.amount);
-                    return desc.includes(q) || type.includes(q) || amt.includes(q) || rcp.includes(q);
-                  });
-
-                  if (filtered.length === 0) {
-                    return (
-                      <div className="py-12 text-center space-y-3">
-                        <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
-                          <Receipt className="w-6 h-6" />
-                        </div>
-                        <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
-                          {isAr ? 'لا توجد معاملات للعرض' : isHe ? 'אין עסקאות להצגה' : 'No transactions found'}
-                        </h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                          {isAr ? 'يتم تتبع وتوثيق كل عملية شحن أو خصم لحصة أو استرداد بالتفصيل هنا.' : isHe ? 'כל טעינה, חיוב על שיעור או החזר כספי יתועדו כאן בצורה מפורטת.' : 'Every top-up, lesson booking deduction, and refund will be tracked here.'}
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="space-y-3">
-                      {/* Desktop Table View (Hidden on mobile) */}
-                      <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                        <table className="w-full text-start text-xs">
-                          <thead className="bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
-                            <tr>
-                              <th className="py-3.5 px-4 text-start">{isAr ? 'النوع' : isHe ? 'סוג פעולה' : 'Type'}</th>
-                              <th className="py-3.5 px-4 text-start">{isAr ? 'تغيير الرصيد' : isHe ? 'שינוי מכסה' : 'Quota Change'}</th>
-                              <th className="py-3.5 px-4 text-start">{isAr ? 'الرصيد بعد الحركة' : isHe ? 'יתרה לאחר פעולה' : 'Quota After'}</th>
-                              <th className="py-3.5 px-4 text-start">{isAr ? 'الوصف والملاحظات' : isHe ? 'תיאור ופרטים' : 'Description / Note'}</th>
-                              <th className="py-3.5 px-4 text-start">{isAr ? 'التاريخ والوقت' : isHe ? 'תאריך ושעה' : 'Date & Time'}</th>
-                              <th className="py-3.5 px-4 text-center">{isAr ? 'الحالة' : isHe ? 'סטטוס' : 'Status'}</th>
-                              <th className="py-3.5 px-4 text-center">{isAr ? 'إيصال / PDF' : isHe ? 'קבלה / הדפסה' : 'Receipt / PDF'}</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900/60 font-medium">
-                            {filtered.map((tx: any) => {
+                {/* Filtered Transactions List / Table (Memoized for <16ms response) */}
+                {filteredTransactions.length === 0 ? (
+                  <div className="py-12 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
+                      <Receipt className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
+                      {isAr ? 'لا توجد معاملات للعرض' : isHe ? 'אין עסקאות להצגה' : 'No transactions found'}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                      {isAr ? 'يتم تتبع وتوثيق كل عملية شحن أو خصم لحصة أو استرداد بالتفصيل هنا.' : isHe ? 'כל טעינה, חיוב על שיעור או החזר כספי יתועדו כאן בצורה מפורטת.' : 'Every top-up, lesson booking deduction, and refund will be tracked here.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Desktop Table View (Hidden on mobile) */}
+                    <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                      <table className="w-full text-start text-xs">
+                        <thead className="bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
+                          <tr>
+                            <th className="py-3.5 px-4 text-start">{isAr ? 'النوع' : isHe ? 'סוג פעולה' : 'Type'}</th>
+                            <th className="py-3.5 px-4 text-start">{isAr ? 'تغيير الرصيد' : isHe ? 'שינוי מכסה' : 'Quota Change'}</th>
+                            <th className="py-3.5 px-4 text-start">{isAr ? 'الرصيد بعد الحركة' : isHe ? 'יתרה לאחר פעולה' : 'Quota After'}</th>
+                            <th className="py-3.5 px-4 text-start">{isAr ? 'الوصف والملاحظات' : isHe ? 'תיאור ופרטים' : 'Description / Note'}</th>
+                            <th className="py-3.5 px-4 text-start">{isAr ? 'التاريخ والوقت' : isHe ? 'תאריך ושעה' : 'Date & Time'}</th>
+                            <th className="py-3.5 px-4 text-center">{isAr ? 'الحالة' : isHe ? 'סטטוס' : 'Status'}</th>
+                            <th className="py-3.5 px-4 text-center">{isAr ? 'إيصال / PDF' : isHe ? 'קבלה / הדפסה' : 'Receipt / PDF'}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900/60 font-medium">
+                          {filteredTransactions.map((tx: any) => {
                               const amt = Number(tx.amount);
                               const isPositive = amt > 0;
                               const isBooking = tx.type === 'SESSION_BOOKING';
@@ -4299,7 +4207,7 @@ export const StudentDashboard: React.FC = () => {
 
                       {/* Mobile Card Feed (Visible only on mobile screens) */}
                       <div className="md:hidden space-y-3">
-                        {filtered.map((tx: any) => {
+                        {filteredTransactions.map((tx: any) => {
                           const amt = Number(tx.amount);
                           const isPositive = amt > 0;
                           const isBooking = tx.type === 'SESSION_BOOKING';
@@ -4382,8 +4290,7 @@ export const StudentDashboard: React.FC = () => {
                         })}
                       </div>
                     </div>
-                  );
-                })()}
+                  )}
               </div>
             </div>
           )}

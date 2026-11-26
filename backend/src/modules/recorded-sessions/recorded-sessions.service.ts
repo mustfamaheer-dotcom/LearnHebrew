@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database';
 import { notificationService } from '../notifications/notifications.service';
+import { getCachedOrFetch, cacheInvalidatePrefix } from '../../lib/cache';
 
 export async function listRecordedSessions(params: {
   teacherId?: string;
@@ -8,64 +9,68 @@ export async function listRecordedSessions(params: {
   userRole?: string;
   userId?: string;
 }) {
-  const where: any = { isPublished: true };
+  const cacheKey = `recordings:list:${params.userRole || 'all'}:${params.userId || 'all'}:${params.teacherId || 'all'}:${params.studentId || 'all'}:${params.category || 'all'}`;
 
-  if (params.userRole === 'STUDENT' && params.userId) {
-    const student = await prisma.student.findUnique({ where: { userId: params.userId } });
-    if (student) {
+  return getCachedOrFetch(cacheKey, 60, async () => {
+    const where: any = { isPublished: true };
+
+    if (params.userRole === 'STUDENT' && params.userId) {
+      const student = await prisma.student.findUnique({ where: { userId: params.userId } });
+      if (student) {
+        where.OR = [
+          { studentId: student.id },
+          { studentId: null }, // broadcast / available to all
+        ];
+      }
+    } else if (params.studentId) {
       where.OR = [
-        { studentId: student.id },
-        { studentId: null }, // broadcast / available to all
+        { studentId: params.studentId },
+        { studentId: null },
       ];
     }
-  } else if (params.studentId) {
-    where.OR = [
-      { studentId: params.studentId },
-      { studentId: null },
-    ];
-  }
 
-  if (params.userRole === 'TEACHER' && params.userId) {
-    const teacher = await prisma.teacher.findUnique({ where: { userId: params.userId } });
-    if (teacher) {
-      // Teachers can see their own recorded sessions, including unpublished
-      delete where.isPublished;
-      where.teacherId = teacher.id;
+    if (params.userRole === 'TEACHER' && params.userId) {
+      const teacher = await prisma.teacher.findUnique({ where: { userId: params.userId } });
+      if (teacher) {
+        // Teachers can see their own recorded sessions, including unpublished
+        delete where.isPublished;
+        where.teacherId = teacher.id;
+      }
+    } else if (params.teacherId) {
+      where.teacherId = params.teacherId;
     }
-  } else if (params.teacherId) {
-    where.teacherId = params.teacherId;
-  }
 
-  if (params.category && params.category !== 'ALL') {
-    where.category = params.category;
-  }
+    if (params.category && params.category !== 'ALL') {
+      where.category = params.category;
+    }
 
-  return prisma.recordedSession.findMany({
-    where,
-    include: {
-      teacher: {
-        include: {
-          user: {
-            select: { firstName: true, lastName: true, email: true, avatarUrl: true },
+    return prisma.recordedSession.findMany({
+      where,
+      include: {
+        teacher: {
+          include: {
+            user: {
+              select: { firstName: true, lastName: true, email: true, avatarUrl: true },
+            },
           },
         },
-      },
-      student: {
-        include: {
-          user: {
-            select: { firstName: true, lastName: true, email: true },
+        student: {
+          include: {
+            user: {
+              select: { firstName: true, lastName: true, email: true },
+            },
           },
         },
+        lesson: {
+          select: { id: true, scheduledAt: true, status: true },
+        },
       },
-      lesson: {
-        select: { id: true, scheduledAt: true, status: true },
-      },
-    },
-    orderBy: [
-      { category: 'asc' },
-      { sessionNumber: 'asc' },
-      { createdAt: 'desc' },
-    ],
+      orderBy: [
+        { category: 'asc' },
+        { sessionNumber: 'asc' },
+        { createdAt: 'desc' },
+      ],
+    });
   });
 }
 
@@ -123,6 +128,8 @@ export async function createRecordedSession(data: {
     }).catch((err) => console.error('[Notification Trigger Error - notifyRecordingCreated]', err));
   }
 
+  await cacheInvalidatePrefix('recordings:');
+
   return session;
 }
 
@@ -139,7 +146,7 @@ export async function updateRecordedSession(
     isPublished?: boolean;
   }
 ) {
-  return prisma.recordedSession.update({
+  const updated = await prisma.recordedSession.update({
     where: { id },
     data,
     include: {
@@ -147,11 +154,17 @@ export async function updateRecordedSession(
       student: { include: { user: true } },
     },
   });
+
+  await cacheInvalidatePrefix('recordings:');
+  return updated;
 }
 
 export async function deleteRecordedSession(id: string) {
-  return prisma.recordedSession.delete({
+  const deleted = await prisma.recordedSession.delete({
     where: { id },
   });
+
+  await cacheInvalidatePrefix('recordings:');
+  return deleted;
 }
 

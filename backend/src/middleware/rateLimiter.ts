@@ -28,25 +28,34 @@ class ResilientRedisStore implements Store {
     if (getIsRedisReady()) {
       try {
         const fullKey = `rl:${this.prefix}:${key}`;
-        const p = redis.pipeline();
-        p.incr(fullKey);
-        p.pttl(fullKey);
-        const results = await p.exec();
+        const redisOp = async () => {
+          const p = redis.pipeline();
+          p.incr(fullKey);
+          p.pttl(fullKey);
+          const results = await p.exec();
 
-        const totalHits = Number(results?.[0]?.[1]) || 1;
-        let ttl = Number(results?.[1]?.[1]);
+          const totalHits = Number(results?.[0]?.[1]) || 1;
+          let ttl = Number(results?.[1]?.[1]);
 
-        if (ttl < 0) {
-          await redis.pexpire(fullKey, this.windowMs);
-          ttl = this.windowMs;
-        }
+          if (ttl < 0) {
+            // Fire-and-forget non-blocking pexpire to eliminate second sequential network roundtrip
+            redis.pexpire(fullKey, this.windowMs).catch(() => {});
+            ttl = this.windowMs;
+          }
 
-        return {
-          totalHits,
-          resetTime: new Date(Date.now() + Math.max(0, ttl)),
+          return {
+            totalHits,
+            resetTime: new Date(Date.now() + Math.max(0, ttl)),
+          };
         };
+
+        const timeout = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Redis timeout')), 50);
+        });
+
+        return await Promise.race([redisOp(), timeout]);
       } catch {
-        // Fallback to memory store on any Redis failure
+        // Fallback to memory store on any Redis failure or timeout
       }
     }
 
@@ -94,6 +103,7 @@ export const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: new ResilientRedisStore('auth'),
+  skip: (req) => req.method === 'OPTIONS',
   message: {
     error: 'Too many authentication attempts. For your security, this IP is temporarily restricted. Please try again in 15 minutes.',
   },
@@ -111,6 +121,8 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false,
   store: new ResilientRedisStore('api'),
   skip: (req) => {
+    // OPTIONS preflight requests must never be rate-limited or incur latency
+    if (req.method === 'OPTIONS') return true;
     // Allow load testing / benchmark runs in development mode
     return process.env.NODE_ENV !== 'production' && req.headers['x-benchmark'] === 'true';
   },
@@ -129,6 +141,7 @@ export const placementTestLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: new ResilientRedisStore('placement'),
+  skip: (req) => req.method === 'OPTIONS',
   message: {
     error: 'Too many test requests from this network. Please wait a few minutes before trying again.',
   },

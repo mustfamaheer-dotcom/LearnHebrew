@@ -261,6 +261,7 @@ export async function bookLesson(data: {
     );
 
     cacheInvalidatePrefix('teachers');
+    cacheInvalidatePrefix('student:');
 
     return lesson;
   });
@@ -543,6 +544,7 @@ export async function bookRegularLessons(data: {
     });
 
     cacheInvalidatePrefix('teachers');
+    cacheInvalidatePrefix('student:');
 
     return {
       message: `Successfully booked ${createdLessons.length} regular lessons across ${weeksCount} weeks!`,
@@ -710,6 +712,9 @@ export async function cancelLesson(id: string, cancelledById: string, cancelReas
       });
     }
 
+    cacheInvalidatePrefix('teachers');
+    cacheInvalidatePrefix('student:');
+
     return updated;
   });
 }
@@ -757,6 +762,10 @@ export async function completeLesson(id: string) {
         description: `Completed ${lesson.durationMinutes || 25}-Minute Hebrew Session`,
       },
     });
+
+    cacheInvalidatePrefix('teachers');
+    cacheInvalidatePrefix('student:');
+    cacheInvalidatePrefix('games:leaderboard');
 
     return updatedLesson;
   });

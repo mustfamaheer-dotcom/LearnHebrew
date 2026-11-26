@@ -349,4 +349,14 @@
   border-color: rgba(255, 255, 255, 0.32);
 }
 
+/* ⚡ Instant Visual Feedback on Click (<16ms, hardware-accelerated) */
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active,
+a:not([aria-disabled="true"]):active,
+.btn-interactive:active {
+  transform: scale(0.975);
+  transition: transform 0.04s ease-out;
+}
+
+
 

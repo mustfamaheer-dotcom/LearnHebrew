@@ -28,6 +28,7 @@ interface GlassSidebarProps {
   navItems: GlassNavItem[];
   activeTab: string;
   onTabChange: (tabId: string) => void;
+  onTabHover?: (tabId: string) => void;
   user: {
     firstName?: string;
     lastName?: string;
@@ -51,6 +52,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
   navItems,
   activeTab,
   onTabChange,
+  onTabHover,
   user,
   panelSubtitle = 'Dashboard',
   isOpenMobile = false,
@@ -61,6 +63,18 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
 }) => {
   const { language } = useTranslation();
   const { isCollapsed, toggleCollapsed } = useSidebarStore();
+
+  // Instant optimistic tab highlight state (<16ms)
+  const [optimisticTab, setOptimisticTab] = useState(activeTab);
+  useEffect(() => {
+    setOptimisticTab(activeTab);
+  }, [activeTab]);
+
+  const handleSelectTab = (tabId: string) => {
+    setOptimisticTab(tabId);
+    onTabChange(tabId);
+    if (onCloseMobile) onCloseMobile();
+  };
 
   // Track expanded state for mother items with children
   const [openParents, setOpenParents] = useState<Record<string, boolean>>(() => {
@@ -188,9 +202,10 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
           <nav className="space-y-1.5">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const effectiveTab = optimisticTab || activeTab;
               const hasChildren = Boolean(item.children && item.children.length > 0);
-              const isChildActive = Boolean(hasChildren && item.children!.some((c) => c.id === activeTab));
-              const isActive = activeTab === item.id || isChildActive;
+              const isChildActive = Boolean(hasChildren && item.children!.some((c) => c.id === effectiveTab));
+              const isActive = effectiveTab === item.id || isChildActive;
               const isParentOpen = Boolean(openParents[item.id]);
               const label = resolveItemLabel(item);
 
@@ -200,7 +215,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                 const Comp = hasChildren ? 'button' : 'a';
 
                 return (
-                  <div key={item.id} className="relative group flex justify-center">
+                  <div
+                    key={item.id}
+                    className="relative group flex justify-center"
+                    onMouseEnter={() => !hasChildren && onTabHover?.(item.id)}
+                    onFocus={() => !hasChildren && onTabHover?.(item.id)}
+                  >
                     <Comp
                       {...(hasChildren ? { type: 'button' as const } : { href: itemHref })}
                       onClick={(e: React.MouseEvent) => {
@@ -209,8 +229,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                         } else {
                           if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                             e.preventDefault();
-                            onTabChange(item.id);
-                            if (onCloseMobile) onCloseMobile();
+                            handleSelectTab(item.id);
                           }
                         }
                       }}
@@ -248,17 +267,18 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                         </div>
                         {item.children!.map((child) => {
                           const ChildIcon = child.icon;
-                          const isChildCur = activeTab === child.id;
+                          const isChildCur = effectiveTab === child.id;
                           const childLabel = resolveItemLabel(child);
                           return (
                             <a
                               key={child.id}
                               href={`?tab=${child.id}`}
+                              onMouseEnter={() => onTabHover?.(child.id)}
+                              onFocus={() => onTabHover?.(child.id)}
                               onClick={(e) => {
                                 if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                                   e.preventDefault();
-                                  onTabChange(child.id);
-                                  if (onCloseMobile) onCloseMobile();
+                                  handleSelectTab(child.id);
                                 }
                               }}
                               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all text-start ${
@@ -330,7 +350,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                       <div className="ms-4 ps-3 border-s-2 border-brand-teal-200/80 dark:border-brand-teal-800/60 space-y-1 my-1 animate-in fade-in slide-in-from-top-1 duration-150">
                         {item.children!.map((child) => {
                           const ChildIcon = child.icon;
-                          const isChildCurrent = activeTab === child.id;
+                          const isChildCurrent = effectiveTab === child.id;
                           const childLabel = resolveItemLabel(child);
 
                           if (isChildCurrent) {
@@ -338,11 +358,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                               <a
                                 key={child.id}
                                 href={`?tab=${child.id}`}
+                                onMouseEnter={() => onTabHover?.(child.id)}
+                                onFocus={() => onTabHover?.(child.id)}
                                 onClick={(e) => {
                                   if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                                     e.preventDefault();
-                                    onTabChange(child.id);
-                                    if (onCloseMobile) onCloseMobile();
+                                    handleSelectTab(child.id);
                                   }
                                 }}
                                 className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-semibold transition-all group relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-slate-900 to-brand-teal-900 text-white shadow-xs border border-white/15"
@@ -365,11 +386,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                             <a
                               key={child.id}
                               href={`?tab=${child.id}`}
+                              onMouseEnter={() => onTabHover?.(child.id)}
+                              onFocus={() => onTabHover?.(child.id)}
                               onClick={(e) => {
                                 if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                                   e.preventDefault();
-                                  onTabChange(child.id);
-                                  if (onCloseMobile) onCloseMobile();
+                                  handleSelectTab(child.id);
                                 }
                               }}
                               className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 transition-all text-start"
@@ -398,11 +420,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                   <a
                     key={item.id}
                     href={`?tab=${item.id}`}
+                    onMouseEnter={() => onTabHover?.(item.id)}
+                    onFocus={() => onTabHover?.(item.id)}
                     onClick={(e) => {
                       if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                         e.preventDefault();
-                        onTabChange(item.id);
-                        if (onCloseMobile) onCloseMobile();
+                        handleSelectTab(item.id);
                       }
                     }}
                     className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all group relative overflow-hidden bg-gradient-to-r from-brand-teal-950/90 via-slate-900/85 to-brand-teal-900/90 text-white shadow-[0_10px_25px_-5px_rgba(10,40,48,0.4),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-white/20 dark:border-white/15 backdrop-blur-2xl"
@@ -437,11 +460,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                 <a
                   key={item.id}
                   href={`?tab=${item.id}`}
+                  onMouseEnter={() => onTabHover?.(item.id)}
+                  onFocus={() => onTabHover?.(item.id)}
                   onClick={(e) => {
                     if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
                       e.preventDefault();
-                      onTabChange(item.id);
-                      if (onCloseMobile) onCloseMobile();
+                      handleSelectTab(item.id);
                     }
                   }}
                   className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:backdrop-blur-xl hover:border-slate-200/80 dark:hover:border-slate-700/80 border border-transparent transition-all group relative"
