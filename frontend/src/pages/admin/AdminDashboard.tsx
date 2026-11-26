@@ -330,6 +330,7 @@ export const AdminDashboard: React.FC = () => {
   const [newUserPhone, setNewUserPhone] = useState('');
   const [newUserAccountType, setNewUserAccountType] = useState<'INDIVIDUAL' | 'PARENT' | 'CHILD'>('INDIVIDUAL');
   const [newUserParentId, setNewUserParentId] = useState('');
+  const [newUserPackageId, setNewUserPackageId] = useState('');
 
   // Family & Parent-Child Account Governance State
   const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
@@ -780,6 +781,7 @@ export const AdminDashboard: React.FC = () => {
       setNewUserPhone('');
       setNewUserAccountType('INDIVIDUAL');
       setNewUserParentId('');
+      setNewUserPackageId('');
       toast.success(
         language === 'he' ? 'המשתמש נוצר בהצלחה!' : 'User created successfully!'
       );
@@ -4410,6 +4412,89 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Initial Package Allocation (Dropdown with pricing) */}
+                  <div className="sm:col-span-2 pt-3 border-t border-brand-teal-200/60 dark:border-brand-teal-800/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
+                        <span>{language === 'ar' ? 'باقة الدروس والمخصصات' : language === 'he' ? 'חבילת שיעורים ומכסות לתלמיד' : 'Lesson Package & Quota Allocation'}</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400">
+                        {language === 'ar' ? '(اختياري — يمكن تحديدها لاحقاً)' : language === 'he' ? '(אופציונלי — ניתן להקצות גם בהמשך)' : '(Optional — can assign later)'}
+                      </span>
+                    </div>
+
+                    <select
+                      value={newUserPackageId}
+                      onChange={(e) => setNewUserPackageId(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-xs focus:outline-hidden focus:ring-2 focus:ring-brand-teal-500"
+                    >
+                      <option value="">
+                        -- {language === 'ar' ? 'بدون باقة حالياً (إنشاء حساب بدون رصيد)' : language === 'he' ? 'ללא חבילה כרגע (יצירה ללא יתרת שיעורים)' : 'No package assigned initially'} --
+                      </option>
+                      {(packagesData || []).map((pkg: any) => {
+                        const items = pkg.sessionItems || [];
+                        const quotaSummary = items.length > 0
+                          ? items.map((si: any) => `${si.quantity}x ${si.sessionType?.durationMinutes ?? 25}m`).join(', ')
+                          : `${pkg.totalLessons ?? pkg.lessonsCount ?? 0} ${language === 'he' ? 'שיעורים' : language === 'ar' ? 'دروس' : 'lessons'}`;
+                        const currencySymbol = pkg.currency === 'ILS' ? '₪' : '$';
+                        const price = pkg.price ?? pkg.priceUsd ?? 0;
+                        const name = language === 'ar' ? (pkg.nameAr || pkg.name || pkg.nameEn) : language === 'he' ? (pkg.nameHe || pkg.name) : (pkg.name || pkg.nameEn);
+
+                        return (
+                          <option key={pkg.id} value={pkg.id}>
+                            {name} — {currencySymbol}{price} • [{quotaSummary}]
+                          </option>
+                        );
+                      })}
+                    </select>
+
+                    {/* Live Package Details & Pricing Card Preview */}
+                    {(() => {
+                      const selectedPkg = (packagesData || []).find((p: any) => p.id === newUserPackageId);
+                      if (!selectedPkg) return null;
+                      const items = selectedPkg.sessionItems || [];
+                      const name = language === 'ar' ? (selectedPkg.nameAr || selectedPkg.name) : language === 'he' ? (selectedPkg.nameHe || selectedPkg.name) : (selectedPkg.name || selectedPkg.nameEn);
+                      const currencySymbol = selectedPkg.currency === 'ILS' ? '₪' : '$';
+                      const price = selectedPkg.price ?? selectedPkg.priceUsd ?? 0;
+
+                      return (
+                        <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-brand-teal-300/80 dark:border-brand-teal-700 shadow-xs flex items-center justify-between gap-3 text-start animate-fade-in">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-teal-500/20 to-emerald-500/20 text-brand-teal-700 dark:text-brand-teal-300 border border-brand-teal-300/40 flex items-center justify-center shrink-0">
+                              <Sparkles className="w-5 h-5 text-brand-teal-600 dark:text-brand-teal-400" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate">{name}</span>
+                                {selectedPkg.isPopular && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase">
+                                    Popular
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                {items.length > 0
+                                  ? items.map((si: any) => `${si.quantity}x ${si.sessionType?.name || `${si.sessionType?.durationMinutes ?? 25}m`}`).join(' + ')
+                                  : `${selectedPkg.totalLessons ?? 0} ${language === 'he' ? 'שיעורים' : 'lessons'}`}
+                                {` • ${selectedPkg.validityDays || 30} ${language === 'he' ? 'ימי תוקף' : 'days validity'}`}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-end shrink-0 ps-2">
+                            <span className="text-base font-black text-brand-teal-800 dark:text-brand-teal-300 block">
+                              {currencySymbol}{price}
+                            </span>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">
+                              {language === 'ar' ? 'تفعيل فوري' : language === 'he' ? 'הפעלה מידית' : 'Immediate grant'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             )}
@@ -4510,6 +4595,7 @@ export const AdminDashboard: React.FC = () => {
                   nativeLanguageId: isStudent ? newUserNativeLangId : undefined,
                   learningLanguageId: isStudent ? newUserLearningLangId : undefined,
                   levelId: isStudent ? newUserLevelId : undefined,
+                  packageId: isStudent && newUserPackageId ? newUserPackageId : undefined,
                   specialties: isTeacher ? newUserSpecialties.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
                   bio: isTeacher ? newUserBio : undefined,
                 });

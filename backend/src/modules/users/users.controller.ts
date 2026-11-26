@@ -20,6 +20,7 @@ const createUserSchema = z.object({
   learningLanguageId: z.string().optional(),
   levelId: z.string().optional(),
   level: z.nativeEnum(HebrewLevel).optional(),
+  packageId: z.string().optional(),
   bio: z.string().optional(),
   specialties: z.array(z.string()).optional(),
 });

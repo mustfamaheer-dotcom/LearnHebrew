@@ -4,6 +4,7 @@ import { Role, HebrewLevel, LanguagePref } from '@prisma/client';
 import { logAuditEvent } from '../../utils/audit';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { invalidateRolePermissionCache } from '../../middleware/permission';
+import { assignPackageToStudent } from '../packages/packages.service';
 import crypto from 'crypto';
 
 export async function listUsers(filters: {
@@ -187,6 +188,7 @@ export async function createUser(data: {
   learningLanguageId?: string;
   levelId?: string;
   level?: HebrewLevel;
+  packageId?: string;
   bio?: string;
   specialties?: string[];
   createdById: string;
@@ -351,6 +353,20 @@ export async function createUser(data: {
     },
   });
 
+  // Assign initial package if specified for student
+  if (data.packageId && user.studentProfile) {
+    try {
+      await assignPackageToStudent({
+        packageId: data.packageId,
+        studentId: user.studentProfile.id,
+        assignedById: data.createdById,
+        startDate: new Date(),
+      });
+    } catch (err) {
+      console.error('Failed to assign initial package to student:', err);
+    }
+  }
+
   await logAuditEvent({
     userId: data.createdById,
     action: data.parentId ? 'CHILD_USER_CREATED' : 'USER_CREATED',
@@ -362,6 +378,7 @@ export async function createUser(data: {
       role: user.role,
       parentId: user.parentId,
       familyRole: user.familyRole,
+      packageId: data.packageId,
     },
   });
 
