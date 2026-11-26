@@ -296,7 +296,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                     <button
                       type="button"
                       onClick={() => toggleParent(item.id)}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all group ${
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all group ${
                         isChildActive
                           ? 'bg-brand-teal-50/80 dark:bg-brand-teal-950/60 text-brand-teal-900 dark:text-brand-teal-200 border border-brand-teal-200/80 dark:border-brand-teal-800/80 shadow-2xs'
                           : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80 border border-transparent'
@@ -308,12 +308,12 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                             ? 'text-brand-teal-700 dark:text-brand-teal-300'
                             : 'text-slate-500 dark:text-slate-400 group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-300'
                         }`} />
-                        <span className="truncate tracking-tight font-extrabold">{label}</span>
+                        <span className="truncate">{label}</span>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
                         {item.badge !== null && item.badge !== undefined && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider bg-brand-teal-100 dark:bg-brand-teal-900/60 text-brand-teal-800 dark:text-brand-teal-200 border border-brand-teal-200 dark:border-brand-teal-800">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider bg-brand-teal-100 dark:bg-brand-teal-900/60 text-brand-teal-800 dark:text-brand-teal-200 border border-brand-teal-200 dark:border-brand-teal-800">
                             {item.badge}
                           </span>
                         )}
@@ -345,7 +345,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                                     if (onCloseMobile) onCloseMobile();
                                   }
                                 }}
-                                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all group relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-slate-900 to-brand-teal-900 text-white shadow-xs border border-white/15"
+                                className="w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-semibold transition-all group relative overflow-hidden bg-gradient-to-r from-brand-teal-950 via-slate-900 to-brand-teal-900 text-white shadow-xs border border-white/15"
                               >
                                 <div className="flex items-center gap-2.5 min-w-0 truncate ps-1">
                                   <div className="w-1.5 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
@@ -353,7 +353,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                                   <span className="truncate">{childLabel}</span>
                                 </div>
                                 {child.badge && (
-                                  <span className="px-1.5 py-0.2 rounded-md bg-white/20 text-emerald-300 text-[9px] font-black">
+                                  <span className="px-1.5 py-0.2 rounded-md bg-white/20 text-emerald-300 text-[9px] font-semibold">
                                     {child.badge}
                                   </span>
                                 )}
@@ -405,7 +405,7 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
                         if (onCloseMobile) onCloseMobile();
                       }
                     }}
-                    className="w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all group relative overflow-hidden bg-gradient-to-r from-brand-teal-950/90 via-slate-900/85 to-brand-teal-900/90 text-white shadow-[0_10px_25px_-5px_rgba(10,40,48,0.4),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-white/20 dark:border-white/15 backdrop-blur-2xl"
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all group relative overflow-hidden bg-gradient-to-r from-brand-teal-950/90 via-slate-900/85 to-brand-teal-900/90 text-white shadow-[0_10px_25px_-5px_rgba(10,40,48,0.4),inset_0_1px_1px_rgba(255,255,255,0.2)] border border-white/20 dark:border-white/15 backdrop-blur-2xl"
                   >
                     {/* Top Glass Sheen */}
                     <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
@@ -420,11 +420,11 @@ export const GlassSidebar: React.FC<GlassSidebarProps> = ({
 
                     <div className="flex items-center gap-3 min-w-0 truncate ps-3.5">
                       <Icon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110 text-emerald-300 drop-shadow-[0_0_10px_rgba(52,211,153,0.65)]" />
-                      <span className="truncate tracking-tight font-extrabold">{label}</span>
+                      <span className="truncate">{label}</span>
                     </div>
 
                     {item.badge !== null && item.badge !== undefined && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider shrink-0 bg-white/15 dark:bg-black/35 backdrop-blur-md text-emerald-300 border border-emerald-400/40 shadow-[0_0_10px_rgba(52,211,153,0.25)]">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider shrink-0 bg-white/15 dark:bg-black/35 backdrop-blur-md text-emerald-300 border border-emerald-400/40 shadow-[0_0_10px_rgba(52,211,153,0.25)]">
                         {item.badge}
                       </span>
                     )}

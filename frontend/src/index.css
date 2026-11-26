@@ -54,8 +54,19 @@
   /* Prevent eye-strain & blurry glyph collapse in Hebrew bold typography */
   html[lang="he"] .font-black,
   html[dir="rtl"]:not([lang="ar"]) .font-black {
-    font-weight: 750;
+    font-weight: 700;
     letter-spacing: 0.015em;
+  }
+  html[lang="he"] .font-extrabold,
+  html[dir="rtl"]:not([lang="ar"]) .font-extrabold {
+    font-weight: 650;
+    letter-spacing: 0.01em;
+  }
+  html[lang="he"] .tracking-tight,
+  html[dir="rtl"]:not([lang="ar"]) .tracking-tight,
+  html[lang="he"] .tracking-tighter,
+  html[dir="rtl"]:not([lang="ar"]) .tracking-tighter {
+    letter-spacing: 0.01em;
   }
   html[lang="he"] h1, html[lang="he"] h2, html[lang="he"] h3,
   html[dir="rtl"]:not([lang="ar"]) h1, html[dir="rtl"]:not([lang="ar"]) h2, html[dir="rtl"]:not([lang="ar"]) h3 {
