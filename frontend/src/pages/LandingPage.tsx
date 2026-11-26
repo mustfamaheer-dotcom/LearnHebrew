@@ -46,6 +46,12 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import { getUserDashboardPath, getDashboardButtonLabel } from '../utils/navigation';
+import {
+  isGoogleDriveUrl,
+  extractGoogleDriveFileId,
+  getVideoEmbedUrl,
+  getYouTubeEmbedUrl,
+} from '../lib/driveUtils';
 
 export const LandingPage: React.FC = () => {
   const { t, language } = useTranslation();
@@ -1380,18 +1386,28 @@ export const LandingPage: React.FC = () => {
                       onClick={() => setActiveTeacherVideo(tv)}
                       className="relative aspect-video bg-slate-950 overflow-hidden cursor-pointer group/video"
                     >
-                      {tv.thumbnailUrl ? (
-                        <img
-                          src={tv.thumbnailUrl}
-                          alt={name}
-                          className="w-full h-full object-cover group-hover/video:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-teal-950 to-slate-900">
-                          <Film className="w-12 h-12 text-teal-700/60" />
-                        </div>
-                      )}
+                      {(() => {
+                        const thumb =
+                          tv.thumbnailUrl ||
+                          (isGoogleDriveUrl(tv.videoUrl)
+                            ? `https://drive.google.com/thumbnail?id=${extractGoogleDriveFileId(tv.videoUrl)}&sz=w600`
+                            : null);
+                        return thumb ? (
+                          <img
+                            src={thumb}
+                            alt={name}
+                            className="w-full h-full object-cover group-hover/video:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-teal-950 to-slate-900">
+                            <Film className="w-12 h-12 text-teal-700/60" />
+                          </div>
+                        );
+                      })()}
 
                       {/* Dark Gradient Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/20" />
@@ -1509,14 +1525,27 @@ export const LandingPage: React.FC = () => {
 
                 {/* Video Player */}
                 <div className="aspect-video w-full bg-black flex items-center justify-center">
-                  <video
-                    src={activeTeacherVideo.videoUrl}
-                    controls
-                    autoPlay
-                    playsInline
-                    preload="metadata"
-                    className="w-full h-full object-contain"
-                  />
+                  {isGoogleDriveUrl(activeTeacherVideo.videoUrl) ||
+                  getYouTubeEmbedUrl(activeTeacherVideo.videoUrl) ||
+                  activeTeacherVideo.videoUrl?.includes('/preview') ||
+                  activeTeacherVideo.videoUrl?.includes('embed') ? (
+                    <iframe
+                      src={getVideoEmbedUrl(activeTeacherVideo.videoUrl)}
+                      className="w-full h-full border-0"
+                      allow="autoplay; fullscreen; encrypted-media"
+                      allowFullScreen
+                      title={activeTeacherVideo.title || activeTeacherVideo.teacherName}
+                    />
+                  ) : (
+                    <video
+                      src={activeTeacherVideo.videoUrl}
+                      controls
+                      autoPlay
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-contain"
+                    />
+                  )}
                 </div>
 
                 {/* Video Footer Info & Booking Link */}

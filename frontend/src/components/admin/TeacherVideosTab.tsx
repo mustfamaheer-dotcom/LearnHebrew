@@ -27,6 +27,12 @@ import { PageHeaderBanner } from '../common/PageHeaderBanner';
 import { toast } from '../../store/toastStore';
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { getAvatarUrl, processImageToWebP } from '../../utils/avatar';
+import {
+  isGoogleDriveUrl,
+  extractGoogleDriveFileId,
+  getVideoEmbedUrl,
+  getYouTubeEmbedUrl,
+} from '../../lib/driveUtils';
 
 export interface TeacherVideo {
   id: string;
@@ -65,7 +71,7 @@ export const TeacherVideosTab: React.FC = () => {
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
 
   // Form State
-  const [sourceType, setSourceType] = useState<'upload' | 'url'>('upload');
+  const [sourceType, setSourceType] = useState<'drive' | 'upload' | 'url'>('drive');
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -197,7 +203,7 @@ export const TeacherVideosTab: React.FC = () => {
       badges: ['Native Speaker', 'Top Rated'],
       isActive: true,
     });
-    setSourceType('upload');
+    setSourceType('drive');
     setVideoFile(null);
     setUploadProgress(null);
     setIsModalOpen(true);
@@ -206,7 +212,13 @@ export const TeacherVideosTab: React.FC = () => {
   const handleOpenEditModal = (video: TeacherVideo) => {
     setEditingVideo(video);
     setFormData({ ...video });
-    setSourceType(video.videoUrl.startsWith('https://engrew.com/uploads/') ? 'upload' : 'url');
+    if (isGoogleDriveUrl(video.videoUrl)) {
+      setSourceType('drive');
+    } else if (video.videoUrl?.startsWith('https://engrew.com/uploads/')) {
+      setSourceType('upload');
+    } else {
+      setSourceType('url');
+    }
     setVideoFile(null);
     setUploadProgress(null);
     setIsModalOpen(true);
@@ -488,17 +500,27 @@ export const TeacherVideosTab: React.FC = () => {
               <div>
                 {/* Video Thumbnail with Play Button */}
                 <div className="relative aspect-video bg-slate-950 overflow-hidden group/thumb">
-                  {vid.thumbnailUrl ? (
-                    <img
-                      src={vid.thumbnailUrl}
-                      alt={vid.teacherName}
-                      className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-teal-950 to-slate-900">
-                      <Film className="w-12 h-12 text-teal-700/60" />
-                    </div>
-                  )}
+                  {(() => {
+                    const thumbUrl =
+                      vid.thumbnailUrl ||
+                      (isGoogleDriveUrl(vid.videoUrl)
+                        ? `https://drive.google.com/thumbnail?id=${extractGoogleDriveFileId(vid.videoUrl)}&sz=w600`
+                        : null);
+                    return thumbUrl ? (
+                      <img
+                        src={thumbUrl}
+                        alt={vid.teacherName}
+                        className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-teal-950 to-slate-900">
+                        <Film className="w-12 h-12 text-teal-700/60" />
+                      </div>
+                    );
+                  })()}
 
                   {/* Play Button Overlay */}
                   <button
@@ -674,41 +696,169 @@ export const TeacherVideosTab: React.FC = () => {
 
             {/* Modal Form */}
             <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-5 max-h-[75vh] overflow-y-auto">
-              {/* Source Type Selector: Upload vs Direct URL */}
+              {/* Source Type Selector: Google Drive vs Upload vs Direct URL */}
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
-                  {language === 'he' ? 'מקור הסרטון' : 'Video Source'}
+                  {language === 'he' ? 'מקור הסרטון' : isAr ? 'مصدر الفيديو' : 'Video Source'}
                 </label>
-                <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800">
+                <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setSourceType('drive')}
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      sourceType === 'drive'
+                        ? 'bg-amber-500 text-slate-950 shadow-sm font-black'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <span className="text-xs">📁</span>
+                    <span>{language === 'he' ? 'Google Drive' : isAr ? 'جوجل درايف' : 'Google Drive'}</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setSourceType('upload')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       sourceType === 'upload'
                         ? 'bg-white dark:bg-slate-900 text-brand-teal-700 dark:text-teal-400 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>{language === 'he' ? 'העלאת קובץ וידאו לשרת' : 'Upload Video File to Server'}</span>
+                    <span>{language === 'he' ? 'העלאת קובץ' : isAr ? 'رفع ملف' : 'Upload File'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSourceType('url')}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       sourceType === 'url'
                         ? 'bg-white dark:bg-slate-900 text-brand-teal-700 dark:text-teal-400 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
                     <LinkIcon className="w-3.5 h-3.5" />
-                    <span>{language === 'he' ? 'קישור וידאו ישיר / יוטיוב' : 'Direct Video URL / Embed'}</span>
+                    <span>{language === 'he' ? 'קישור ישיר / YT' : isAr ? 'رابط مباشر' : 'Direct URL / YT'}</span>
                   </button>
                 </div>
               </div>
 
-              {/* Upload Input Area */}
-              {sourceType === 'upload' ? (
+              {/* Google Drive Input Area */}
+              {sourceType === 'drive' ? (
+                <div className="space-y-3 p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/25">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="block text-xs font-black text-slate-900 dark:text-white">
+                        {language === 'he'
+                          ? 'קישור שיתוף מ-Google Drive'
+                          : isAr
+                          ? 'رابط المشاركة من Google Drive'
+                          : 'Google Drive Video Share Link'} *
+                      </label>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        {language === 'he'
+                          ? 'הדבק קישור רגיל מ-Google Drive (המערכת ממירה אותו אוטומטית לנגן מהיר)'
+                          : isAr
+                          ? 'انسخ رابط المشاركة من Google Drive والصقه هنا وسيتم تحويله تلقائياً لتشغيل سلس'
+                          : 'Paste standard Google Drive share link (auto-converted to streaming embed)'}
+                      </p>
+                    </div>
+                    {extractGoogleDriveFileId(formData.videoUrl || '') && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                        ✓ ID Detected
+                      </span>
+                    )}
+                  </div>
+
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://drive.google.com/file/d/1A2b3C4D.../view?usp=sharing"
+                    value={formData.videoUrl || ''}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      const fileId = extractGoogleDriveFileId(val);
+                      setFormData((prev) => ({
+                        ...prev,
+                        videoUrl: val,
+                        thumbnailUrl:
+                          prev.thumbnailUrl ||
+                          (fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w800` : prev.thumbnailUrl),
+                      }));
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-amber-500/30 dark:border-amber-500/40 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+
+                  {extractGoogleDriveFileId(formData.videoUrl || '') ? (
+                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="text-xs">
+                          <p className="font-bold text-emerald-800 dark:text-emerald-300">
+                            {language === 'he'
+                              ? 'סרטון Google Drive זוהה בהצלחה!'
+                              : isAr
+                              ? 'تم التعرف على فيديو Google Drive بنجاح!'
+                              : 'Google Drive Video Detected!'}
+                          </p>
+                          <p className="font-mono text-[10px] text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">
+                            File ID: {extractGoogleDriveFileId(formData.videoUrl || '')}
+                          </p>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+                            {language === 'he'
+                              ? '💡 שים לב: ודא שב-Google Drive הגדרת השיתוף היא: "כל מי שיש לו את הקישור יכול לצפות" (Anyone with the link can view).'
+                              : isAr
+                              ? '💡 ملاحظة هامة: تأكد في جوجل درايف أن إذن المشاركة هو: "أي شخص لديه الرابط يمكنه المشاهدة" (Anyone with the link can view).'
+                              : '💡 Note: Ensure file sharing in Drive is set to: "Anyone with the link can view".'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewVideoUrl(formData.videoUrl || null)}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shrink-0 flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                      >
+                        <Play className="w-3 h-3 fill-white" />
+                        <span>{language === 'he' ? 'בדוק סרטון' : isAr ? 'معاينة' : 'Preview'}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
+                      <p className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <span>💡</span>
+                        <span>
+                          {language === 'he'
+                            ? 'איך מעתיקים קישור מ-Google Drive?'
+                            : isAr
+                            ? 'كيفية نسخ الرابط من Google Drive؟'
+                            : 'How to get share link from Google Drive:'}
+                        </span>
+                      </p>
+                      <ul className="list-disc list-inside space-y-0.5 text-[10px]">
+                        <li>
+                          {language === 'he'
+                            ? 'לחץ קליק ימני על קובץ הסרטון ב-Drive ובחר "שתף" (Share)'
+                            : isAr
+                            ? 'انقر بالزر الأيمن على ملف الفيديو في درايف واختر "مشاركة" (Share)'
+                            : 'Right click your video file on Drive and choose "Share"'}
+                        </li>
+                        <li>
+                          {language === 'he'
+                            ? 'שנה את הגישה הכללית ל: "כל מי שיש לו את הקישור"'
+                            : isAr
+                            ? 'غيّر إمكانية الوصول العامة إلى: "أي شخص لديه الرابط"'
+                            : 'Change General access to "Anyone with the link"'}
+                        </li>
+                        <li>
+                          {language === 'he'
+                            ? 'לחץ "העתק קישור" והדבק אותו בתיבה כאן למעלה'
+                            : isAr
+                            ? 'اضغط "نسخ الرابط" ثم الصقه في الحقل أعلاه'
+                            : 'Click "Copy link" and paste it here'}
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : sourceType === 'upload' ? (
                 <div className="space-y-3">
                   <div
                     onClick={() => fileInputRef.current?.click()}
@@ -772,17 +922,47 @@ export const TeacherVideosTab: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    {language === 'he' ? 'כתובת וידאו ישירה (URL / MP4 / WebM / Drive / YouTube)' : 'Direct Video URL / Embed'}
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://... or https://engrew.com/uploads/videos/..."
-                    value={formData.videoUrl || ''}
-                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-brand-teal-500 focus:outline-none"
-                  />
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      {language === 'he'
+                        ? 'כתובת וידאו ישירה (URL / MP4 / WebM / Drive / YouTube)'
+                        : 'Direct Video URL / Embed'}
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://... or https://engrew.com/uploads/videos/..."
+                      value={formData.videoUrl || ''}
+                      onChange={(e) => {
+                        const val = e.target.value.trim();
+                        const fileId = extractGoogleDriveFileId(val);
+                        setFormData((prev) => ({
+                          ...prev,
+                          videoUrl: val,
+                          thumbnailUrl:
+                            prev.thumbnailUrl ||
+                            (fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w800` : prev.thumbnailUrl),
+                        }));
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono font-bold focus:ring-2 focus:ring-brand-teal-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {formData.videoUrl && isGoogleDriveUrl(formData.videoUrl) && (
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs">
+                      <span className="font-bold text-amber-700 dark:text-amber-400">
+                        📁 Google Drive Link Detected
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewVideoUrl(formData.videoUrl || null)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-[11px] flex items-center gap-1 cursor-pointer"
+                      >
+                        <Play className="w-3 h-3 fill-slate-950" />
+                        <span>Preview</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1102,12 +1282,25 @@ export const TeacherVideosTab: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
             <div className="aspect-video w-full bg-black flex items-center justify-center">
-              <video
-                src={previewVideoUrl}
-                controls
-                autoPlay
-                className="w-full h-full object-contain"
-              />
+              {isGoogleDriveUrl(previewVideoUrl) ||
+              getYouTubeEmbedUrl(previewVideoUrl) ||
+              previewVideoUrl.includes('/preview') ||
+              previewVideoUrl.includes('embed') ? (
+                <iframe
+                  src={getVideoEmbedUrl(previewVideoUrl)}
+                  className="w-full h-full border-0"
+                  allow="autoplay; fullscreen; encrypted-media"
+                  allowFullScreen
+                  title="Teacher Video Preview"
+                />
+              ) : (
+                <video
+                  src={previewVideoUrl}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain"
+                />
+              )}
             </div>
           </div>
         </div>
