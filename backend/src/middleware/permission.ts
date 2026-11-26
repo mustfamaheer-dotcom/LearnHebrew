@@ -15,7 +15,11 @@ export function requirePermission(permissionCode: string) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      if (req.user.role === 'SUPER_ADMIN') {
+      if (req.user.role === 'SUPER_ADMIN' || req.user.role === 'ADMIN') {
+        return next();
+      }
+
+      if (permissionCode === 'shorts:view' && (req.user.role === 'STUDENT' || req.user.role === 'TEACHER')) {
         return next();
       }
 

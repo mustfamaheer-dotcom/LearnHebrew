@@ -26,7 +26,7 @@ export function usePermissions() {
     initialData: user?.permissions || [],
   });
 
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
 
   const permissions = useMemo<string[]>(() => {
     if (myPermissionsData && myPermissionsData.length > 0) {
@@ -39,9 +39,11 @@ export function usePermissions() {
     (permissionCode?: string): boolean => {
       if (!permissionCode) return true;
       if (isSuperAdmin) return true;
+      if (permissionCode === 'shorts:view') return true;
+      if (permissionCode === 'shorts:manage' && (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN')) return true;
       return permissions.includes(permissionCode);
     },
-    [isSuperAdmin, permissions]
+    [isSuperAdmin, permissions, user?.role]
   );
 
   const canAny = useCallback(

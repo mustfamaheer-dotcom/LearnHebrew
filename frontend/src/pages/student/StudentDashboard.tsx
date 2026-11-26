@@ -264,7 +264,7 @@ export const StudentDashboard: React.FC = () => {
 
   useEffect(() => {
     const searchTab = new URLSearchParams(location.search).get('tab');
-    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(searchTab)) {
+    if (searchTab && ['overview', 'booking', 'lessons', 'recordings', 'homework', 'shorts', 'games', 'leaderboard', 'store', 'balance', 'progress'].includes(searchTab)) {
       startTransition(() => {
         setActiveTab(searchTab as any);
       });
@@ -272,7 +272,9 @@ export const StudentDashboard: React.FC = () => {
   }, [location.search]);
 
   useEffect(() => {
-    if (location.pathname.includes('/games')) {
+    if (location.pathname.includes('/shorts')) {
+      handleTabChange('shorts');
+    } else if (location.pathname.includes('/games')) {
       handleTabChange('games');
     } else if (location.pathname.includes('/leaderboard')) {
       handleTabChange('leaderboard');
