@@ -34,12 +34,9 @@ export function getOptimizedDatabaseUrl(): string | undefined {
       url.searchParams.set('pgbouncer', 'true');
     }
 
-    // 2. In serverless, allow up to 5 connections for PgBouncer pooler (or 3 for direct) to support concurrent queries
+    // 2. In serverless, limit connections to 2 to prevent Supabase pooler exhaustion (EMAXCONNSESSION)
     if (isServerless) {
-      const currentLimit = url.searchParams.get('connection_limit');
-      if (!currentLimit || (isPooler && Number(currentLimit) < 5)) {
-        url.searchParams.set('connection_limit', isPooler ? '5' : '3');
-      }
+      url.searchParams.set('connection_limit', '2');
     }
 
     // 3. Set pool timeout to at least 20s to accommodate batched multi-query reporting dashboards

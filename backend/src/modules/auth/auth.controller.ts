@@ -71,7 +71,11 @@ export async function refreshHandler(req: Request, res: Response, next: NextFunc
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.status === 401 || error?.name === 'JsonWebTokenError' || error?.name === 'TokenExpiredError') {
+      res.clearCookie('refreshToken');
+      return res.status(401).json({ message: error.message || 'Invalid or expired refresh token' });
+    }
     next(error);
   }
 }

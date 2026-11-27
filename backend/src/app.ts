@@ -181,7 +181,7 @@ app.get('/', (req, res) => {
   });
 });
 
-app.get('/api/health', (req, res) => {
+app.get(['/health', '/api/health', '/api/v1/health'], (req, res) => {
   res.json({ status: 'ok', service: 'LearnHebrew API', timestamp: new Date().toISOString() });
 });
 

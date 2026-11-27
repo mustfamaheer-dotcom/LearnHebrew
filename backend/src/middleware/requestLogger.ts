@@ -4,7 +4,9 @@ import { AuthRequest } from './auth';
 import { LogCategory, LogLevel } from '@prisma/client';
 
 const IGNORED_PATHS = [
+  '/health',
   '/api/health',
+  '/api/v1/health',
   '/api/v1/notifications/sse',
   '/api/v1/notifications/stream',
 ];

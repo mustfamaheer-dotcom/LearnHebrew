@@ -210,7 +210,12 @@ export async function login(
 }
 
 export async function refreshToken(oldToken: string, ipAddress?: string, userAgent?: string) {
-  const payload = verifyRefreshToken(oldToken);
+  let payload: any;
+  try {
+    payload = verifyRefreshToken(oldToken);
+  } catch {
+    throw { status: 401, message: 'Invalid or expired refresh token' };
+  }
   const oldHash = crypto.createHash('sha256').update(oldToken).digest('hex');
 
   const storedToken = await prisma.refreshToken.findUnique({

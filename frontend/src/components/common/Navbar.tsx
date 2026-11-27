@@ -199,13 +199,13 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            {/* Real-time Notification Bell & Drawer */}
-            <div className="relative me-2.5 sm:me-3 shrink-0 flex items-center">
-              <NotificationBell />
-            </div>
-
             {isAuthenticated && user ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                {/* Real-time Notification Bell & Drawer */}
+                <div className="relative shrink-0 flex items-center">
+                  <NotificationBell />
+                </div>
+
                 {/* User Profile Pill -> Links directly to Dashboard */}
                 <Link
                   to={getUserDashboardPath(user.role)}

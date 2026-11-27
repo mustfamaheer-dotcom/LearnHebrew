@@ -20,11 +20,7 @@ router.get('/stats', async (req: AuthRequest, res: Response, next: NextFunction)
     const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const [
-      totalToday,
-      criticalToday,
-      errorToday,
-      warnToday,
-      infoToday,
+      countsByLevelToday,
       avgDurationRaw,
       recentCritical,
       countsByLevelRaw,
@@ -32,11 +28,11 @@ router.get('/stats', async (req: AuthRequest, res: Response, next: NextFunction)
       jobRunsToday,
       jobFailuresToday,
     ] = await Promise.all([
-      prisma.systemLog.count({ where: { createdAt: { gte: startOfToday } } }),
-      prisma.systemLog.count({ where: { createdAt: { gte: startOfToday }, level: LogLevel.CRITICAL } }),
-      prisma.systemLog.count({ where: { createdAt: { gte: startOfToday }, level: LogLevel.ERROR } }),
-      prisma.systemLog.count({ where: { createdAt: { gte: startOfToday }, level: LogLevel.WARN } }),
-      prisma.systemLog.count({ where: { createdAt: { gte: startOfToday }, level: LogLevel.INFO } }),
+      prisma.systemLog.groupBy({
+        by: ['level'],
+        where: { createdAt: { gte: startOfToday } },
+        _count: { id: true },
+      }),
       prisma.systemLog.aggregate({
         where: { createdAt: { gte: startOfToday }, durationMs: { not: null } },
         _avg: { durationMs: true },
@@ -70,6 +66,24 @@ router.get('/stats', async (req: AuthRequest, res: Response, next: NextFunction)
         },
       }),
     ]);
+
+    const todayCounts: Record<string, number> = {
+      DEBUG: 0,
+      INFO: 0,
+      WARN: 0,
+      ERROR: 0,
+      CRITICAL: 0,
+    };
+    let totalToday = 0;
+    countsByLevelToday.forEach((row) => {
+      todayCounts[row.level] = row._count.id;
+      totalToday += row._count.id;
+    });
+
+    const criticalToday = todayCounts.CRITICAL || 0;
+    const errorToday = todayCounts.ERROR || 0;
+    const warnToday = todayCounts.WARN || 0;
+    const infoToday = todayCounts.INFO || 0;
 
     const errorCountToday = criticalToday + errorToday;
     const errorRate = totalToday > 0 ? ((errorCountToday / totalToday) * 100).toFixed(2) : '0.00';

@@ -106,6 +106,11 @@ export async function updatePackage(id: string, data: any) {
 }
 
 export async function deletePackage(id: string) {
+  const existing = await prisma.package.findUnique({ where: { id } });
+  if (!existing) {
+    throw { status: 404, message: 'Package not found or already deleted' };
+  }
+
   // 1. Delete associated session items
   await prisma.packageSessionItem.deleteMany({ where: { packageId: id } });
 

@@ -134,7 +134,19 @@ export async function getStoreItemById(id: string) {
 }
 
 export async function getMyCoins(userId: string) {
-  const student = await getStudentByUserIdOrThrow(userId);
+  const student = await prisma.student.findUnique({
+    where: { userId },
+    select: { id: true, userId: true, coins: true },
+  });
+
+  if (!student) {
+    return {
+      coins: 0,
+      transactions: [],
+      totalEarned: 0,
+      totalSpent: 0,
+    };
+  }
 
   const [transactions, earnedAgg, spentAgg] = await Promise.all([
     prisma.coinTransaction.findMany({
@@ -162,7 +174,14 @@ export async function getMyCoins(userId: string) {
 }
 
 export async function getMyInventory(userId: string) {
-  const student = await getStudentByUserIdOrThrow(userId);
+  const student = await prisma.student.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+
+  if (!student) {
+    return [];
+  }
 
   return prisma.studentStoreItem.findMany({
     where: { studentId: student.id },

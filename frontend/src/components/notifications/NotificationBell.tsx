@@ -28,7 +28,7 @@ export const NotificationBell: React.FC = () => {
 
   // Fetch initial notifications
   const fetchNotifications = async () => {
-    if (!user) return;
+    if (!user || !accessToken) return;
     try {
       const res = await api.get('/notifications?limit=30');
       if (res.data?.notifications) {

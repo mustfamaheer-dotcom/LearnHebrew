@@ -114,8 +114,9 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError: any) {
         processQueue(refreshError, null);
-        // Only trigger logout if refresh token was rejected by server with 401
-        if (refreshError?.response?.status === 401 || !localStorage.getItem('learnhebrew_token')) {
+        // Trigger logout if refresh token was rejected by server or invalid signature
+        const status = refreshError?.response?.status;
+        if (status === 401 || status === 403 || status === 500 || !localStorage.getItem('learnhebrew_token')) {
           useAuthStore.getState().logout();
         }
         return Promise.reject(refreshError);
