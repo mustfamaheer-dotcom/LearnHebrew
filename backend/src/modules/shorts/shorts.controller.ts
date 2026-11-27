@@ -12,8 +12,10 @@ const createShortSchema = z.object({
   descriptionAr: z.string().optional(),
   videoUrl: z.string().min(1, 'Video URL is required'),
   thumbnailUrl: z.string().optional(),
-  levelId: z.string().optional(),
-  levelCode: z.string().optional(),
+  levelId: z.string().optional().nullable(),
+  levelCode: z.string().optional().nullable(),
+  levelCodes: z.array(z.string()).optional(),
+  languageTrack: z.string().optional(),
   durationSeconds: z.number().int().nonnegative().optional(),
   sortOrder: z.number().int().optional(),
   isActive: z.boolean().optional(),
@@ -25,8 +27,9 @@ const updateShortSchema = createShortSchema.partial();
 export async function listShorts(req: AuthRequest, res: Response) {
   try {
     const levelCode = req.query.levelCode as string | undefined;
+    const languageTrack = req.query.languageTrack as string | undefined;
     const userId = req.user?.userId;
-    const shorts = await service.listActiveShorts({ levelCode, userId });
+    const shorts = await service.listActiveShorts({ levelCode, languageTrack, userId });
     return res.json({ success: true, shorts });
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Failed to list practice shorts' });

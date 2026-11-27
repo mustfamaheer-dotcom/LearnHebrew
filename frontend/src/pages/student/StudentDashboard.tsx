@@ -4315,6 +4315,21 @@ export const StudentDashboard: React.FC = () => {
                   (user as any)?.level ||
                   'A1'
                 }
+                studentTrack={(() => {
+                  const native =
+                    dashboard?.student?.user?.nativeLanguage?.code ||
+                    (user as any)?.nativeLanguage?.code ||
+                    '';
+                  const learning =
+                    dashboard?.student?.user?.learningLanguage?.code ||
+                    (user as any)?.learningLanguage?.code ||
+                    '';
+                  if (native === 'ar' && learning === 'he') return 'AR_HE';
+                  if (native === 'he' && learning === 'en') return 'HE_EN';
+                  if (native === 'ar' && learning === 'en') return 'AR_EN';
+                  if (learning === 'en') return 'HE_EN';
+                  return 'AR_HE';
+                })()}
               />
             </React.Suspense>
           )}

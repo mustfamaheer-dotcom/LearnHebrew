@@ -41,6 +41,8 @@ export async function getStudentById(id: string) {
           email: true,
           avatarUrl: true,
           languagePref: true,
+          nativeLanguage: { select: { id: true, code: true, labelEn: true } },
+          learningLanguage: { select: { id: true, code: true, labelEn: true } },
         },
       },
       packages: {

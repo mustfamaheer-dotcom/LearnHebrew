@@ -37,6 +37,8 @@ export interface PracticeShortItem {
   googleDriveId?: string;
   thumbnailUrl?: string;
   levelCode?: string;
+  levelCodes?: string[];
+  languageTrack?: string;
   durationSeconds?: number;
   sortOrder: number;
   viewCount: number;
@@ -62,9 +64,10 @@ const LEVEL_TO_CEFR: Record<string, string> = {
 
 interface StudentShortsFeedProps {
   studentLevel?: string;
+  studentTrack?: string;
 }
 
-export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLevel }) => {
+export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLevel, studentTrack }) => {
   const { language } = useTranslation();
   const queryClient = useQueryClient();
   const isAr = language === 'ar';
@@ -85,12 +88,15 @@ export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLev
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch shorts strictly for student's level
+  // Fetch shorts strictly for student's level and language track
   const { data: shorts = [], isLoading } = useQuery<PracticeShortItem[]>({
-    queryKey: ['studentPracticeShorts', normalizedLevel],
+    queryKey: ['studentPracticeShorts', normalizedLevel, studentTrack],
     queryFn: async () => {
       const res = await api.get('/shorts', {
-        params: { levelCode: normalizedLevel },
+        params: {
+          levelCode: normalizedLevel,
+          languageTrack: studentTrack && studentTrack !== 'ALL' ? studentTrack : undefined,
+        },
       });
       return res.data?.shorts || [];
     },
@@ -245,11 +251,15 @@ export const StudentShortsFeed: React.FC<StudentShortsFeedProps> = ({ studentLev
           </div>
         </div>
 
-        {/* Automatic Student Level Badge (Locked Strictly to Student Level) */}
+        {/* Automatic Student Level & Track Badge (Locked Strictly to Student Profile) */}
         <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-brand-teal-50 dark:bg-brand-teal-950/70 border border-brand-teal-200/80 dark:border-brand-teal-800/80 shrink-0 self-start sm:self-auto">
           <span className="w-2 h-2 rounded-full bg-brand-teal-500 animate-pulse" />
           <span className="text-xs font-bold text-brand-teal-900 dark:text-brand-teal-200">
-            {isHe ? `רמת תרגול: ${normalizedLevel}` : isAr ? `مستوى التدريب: ${normalizedLevel}` : `Target Level: ${normalizedLevel}`}
+            {isHe
+              ? `רמת תרגול: ${normalizedLevel} ${studentTrack === 'HE_EN' ? '• עברית לאנגלית' : studentTrack === 'AR_HE' ? '• ערבית לעברית' : studentTrack === 'AR_EN' ? '• ערבית לאנגלית' : ''}`
+              : isAr
+              ? `المستوى: ${normalizedLevel} ${studentTrack === 'AR_HE' ? '• عربي ← عبري' : studentTrack === 'HE_EN' ? '• عبري ← إنجليزي' : studentTrack === 'AR_EN' ? '• عربي ← إنجليزي' : ''}`
+              : `Target: ${normalizedLevel} ${studentTrack === 'AR_HE' ? '• AR ➔ HE' : studentTrack === 'HE_EN' ? '• HE ➔ EN' : studentTrack === 'AR_EN' ? '• AR ➔ EN' : ''}`}
           </span>
         </div>
       </div>

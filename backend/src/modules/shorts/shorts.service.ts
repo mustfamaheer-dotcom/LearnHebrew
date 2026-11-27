@@ -19,18 +19,41 @@ const LEVEL_TO_CEFR: Record<string, string> = {
   FLUENT: 'C2',
 };
 
-export async function listActiveShorts(params: { levelCode?: string; userId?: string }) {
+export async function listActiveShorts(params: { levelCode?: string; languageTrack?: string; userId?: string }) {
   const where: any = { isActive: true };
 
+  const conditions: any[] = [];
+
+  // Filter by Level (supporting multi-level array levelCodes and levelCode)
   if (params.levelCode && params.levelCode.toUpperCase() !== 'ALL') {
     const raw = params.levelCode.toUpperCase();
     const mapped = LEVEL_TO_CEFR[raw] || raw;
-    where.OR = [
-      { levelCode: mapped },
-      { levelCode: raw },
-      { levelCode: 'ALL' },
-      { levelCode: null },
-    ];
+    conditions.push({
+      OR: [
+        { levelCode: mapped },
+        { levelCode: raw },
+        { levelCode: 'ALL' },
+        { levelCode: null },
+        { levelCodes: { hasSome: [mapped, raw, 'ALL'] } },
+        { levelCodes: { isEmpty: true } },
+      ],
+    });
+  }
+
+  // Filter by Language Track (AR_HE, HE_EN, AR_EN, ALL)
+  if (params.languageTrack && params.languageTrack.toUpperCase() !== 'ALL') {
+    const track = params.languageTrack.toUpperCase();
+    conditions.push({
+      OR: [
+        { languageTrack: track },
+        { languageTrack: 'ALL' },
+        { languageTrack: null },
+      ],
+    });
+  }
+
+  if (conditions.length > 0) {
+    where.AND = conditions;
   }
 
   const shorts = await prisma.practiceShort.findMany({
@@ -74,13 +97,15 @@ export async function createShort(data: {
   descriptionAr?: string;
   videoUrl: string;
   thumbnailUrl?: string;
-  levelId?: string;
-  levelCode?: string;
+  levelId?: string | null;
+  levelCode?: string | null;
+  levelCodes?: string[];
+  languageTrack?: string;
   durationSeconds?: number;
   sortOrder?: number;
   isActive?: boolean;
   tags?: string[];
-  createdById?: string;
+  createdById?: string | null;
 }) {
   const driveId = extractGoogleDriveId(data.videoUrl);
   let finalThumbnail = data.thumbnailUrl;
@@ -88,10 +113,13 @@ export async function createShort(data: {
     finalThumbnail = formatGoogleDriveThumbnail(driveId);
   }
 
+  let finalLevelCodes = (data.levelCodes || []).map((c) => c.toUpperCase());
+  if (finalLevelCodes.length === 0 && data.levelCode) {
+    finalLevelCodes = [data.levelCode.toUpperCase()];
+  }
   let resolvedLevelCode = data.levelCode;
-  if (data.levelId && !resolvedLevelCode) {
-    const lvl = await prisma.level.findUnique({ where: { id: data.levelId } });
-    if (lvl) resolvedLevelCode = lvl.code;
+  if (!resolvedLevelCode && finalLevelCodes.length > 0) {
+    resolvedLevelCode = finalLevelCodes[0];
   }
 
   return prisma.practiceShort.create({
@@ -107,6 +135,8 @@ export async function createShort(data: {
       thumbnailUrl: finalThumbnail,
       levelId: data.levelId || null,
       levelCode: resolvedLevelCode ? resolvedLevelCode.toUpperCase() : 'ALL',
+      levelCodes: finalLevelCodes,
+      languageTrack: data.languageTrack ? data.languageTrack.toUpperCase() : 'ALL',
       durationSeconds: data.durationSeconds || 0,
       sortOrder: data.sortOrder || 0,
       isActive: data.isActive !== undefined ? data.isActive : true,
@@ -132,6 +162,8 @@ export async function updateShort(
     thumbnailUrl?: string;
     levelId?: string | null;
     levelCode?: string | null;
+    levelCodes?: string[];
+    languageTrack?: string;
     durationSeconds?: number;
     sortOrder?: number;
     isActive?: boolean;
@@ -143,10 +175,10 @@ export async function updateShort(
     driveId = extractGoogleDriveId(data.videoUrl);
   }
 
+  let finalLevelCodes = data.levelCodes ? data.levelCodes.map((c) => c.toUpperCase()) : undefined;
   let resolvedLevelCode = data.levelCode;
-  if (data.levelId && resolvedLevelCode === undefined) {
-    const lvl = await prisma.level.findUnique({ where: { id: data.levelId } });
-    if (lvl) resolvedLevelCode = lvl.code;
+  if (finalLevelCodes && finalLevelCodes.length > 0 && !resolvedLevelCode) {
+    resolvedLevelCode = finalLevelCodes[0];
   }
 
   return prisma.practiceShort.update({
@@ -155,6 +187,8 @@ export async function updateShort(
       ...data,
       googleDriveId: driveId !== undefined ? driveId : undefined,
       levelCode: resolvedLevelCode !== undefined ? (resolvedLevelCode ? resolvedLevelCode.toUpperCase() : 'ALL') : undefined,
+      levelCodes: finalLevelCodes,
+      languageTrack: data.languageTrack !== undefined ? (data.languageTrack ? data.languageTrack.toUpperCase() : 'ALL') : undefined,
     },
     include: {
       level: true,

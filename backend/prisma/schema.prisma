@@ -1200,6 +1200,8 @@ model PracticeShort {
   levelId         String?
   level           Level?             @relation(fields: [levelId], references: [id], onDelete: SetNull)
   levelCode       String?
+  levelCodes      String[]           @default([])
+  languageTrack   String             @default("ALL") // "AR_HE", "HE_EN", "AR_EN", "ALL"
   durationSeconds Int?               @default(0)
   sortOrder       Int                @default(0)
   isActive        Boolean            @default(true)
