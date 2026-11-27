@@ -63,34 +63,46 @@ export interface PracticeShortAdmin {
   };
 }
 
-export const LANGUAGE_TRACKS = [
+export interface LanguageTrackOption {
+  id: string;
+  badge: string;
+  color: string;
+  getName: (isAr: boolean, isHe: boolean) => string;
+  getDescription: (isAr: boolean, isHe: boolean) => string;
+}
+
+export const LANGUAGE_TRACKS: LanguageTrackOption[] = [
   {
     id: 'AR_HE',
-    label: 'Arabic ➔ Hebrew (من عربي لعبري)',
-    native: 'عربي ← عبري',
     badge: '🇸🇦 ➔ 🇮🇱',
     color: 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200',
+    getName: (isAr, isHe) => (isAr ? 'من العربية إلى العبرية' : isHe ? 'מערבית לעברית' : 'Arabic to Hebrew'),
+    getDescription: (isAr, isHe) =>
+      isAr ? 'للناطقين بالعربية لتعلم العبرية' : isHe ? 'לדוברי ערבית הלומדים עברית' : 'For Arabic speakers learning Hebrew',
   },
   {
     id: 'HE_EN',
-    label: 'Hebrew ➔ English (עברית לאנגלית)',
-    native: 'عبري ← إنجليزي',
     badge: '🇮🇱 ➔ 🇬🇧',
     color: 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200',
+    getName: (isAr, isHe) => (isAr ? 'من العبرية إلى الإنجليزية' : isHe ? 'מעברית לאנגלית' : 'Hebrew to English'),
+    getDescription: (isAr, isHe) =>
+      isAr ? 'للناطقين بالعبرية لتعلم الإنجليزية' : isHe ? 'לדוברי עברית הלומדים אנגלית' : 'For Hebrew speakers learning English',
   },
   {
     id: 'AR_EN',
-    label: 'Arabic ➔ English (من عربي لإنجليزي)',
-    native: 'عربي ← إنجليزي',
     badge: '🇸🇦 ➔ 🇬🇧',
     color: 'border-purple-500 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200',
+    getName: (isAr, isHe) => (isAr ? 'من العربية إلى الإنجليزية' : isHe ? 'מערבית לאנגלית' : 'Arabic to English'),
+    getDescription: (isAr, isHe) =>
+      isAr ? 'للناطقين بالعربية لتعلم الإنجليزية' : isHe ? 'לדוברי ערבית הלומדים אנגלית' : 'For Arabic speakers learning English',
   },
   {
     id: 'ALL',
-    label: 'All Tracks / General (لجميع المسارات)',
-    native: 'متاح للجميع',
     badge: '🌐 ALL',
     color: 'border-slate-500 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200',
+    getName: (isAr, isHe) => (isAr ? 'متاح للجميع' : isHe ? 'כל המסלולים' : 'All Tracks'),
+    getDescription: (isAr, isHe) =>
+      isAr ? 'يظهر لجميع الطلاب' : isHe ? 'מוצג לכל התלמידים' : 'Visible to all students',
   },
 ];
 
@@ -271,13 +283,16 @@ export const ShortsManagementTab: React.FC = () => {
   };
 
   const handleDelete = async (short: PracticeShortAdmin) => {
+    const displayTitle = (isAr ? short.titleAr : isHe ? short.titleHe : short.title) || short.title;
     const confirmed = await confirmDialog({
-      title: 'Delete Practice Short',
-      titleHe: 'מחיקת סרטון תרגול',
-      message: `Are you sure you want to permanently delete "${short.title}"?`,
-      messageHe: `האם אתה בטוח שברצונך למחוק את הסרטון "${short.titleHe || short.title}"?`,
-      confirmText: 'Delete Permanently',
-      confirmTextHe: 'מחק לצמיתות',
+      title: isAr ? 'حذف مقطع التدريب' : isHe ? 'מחיקת סרטון תרגול' : 'Delete Practice Short',
+      message: isAr
+        ? `هل أنت متأكد من رغبتك في حذف مقطع "${displayTitle}" نهائياً؟`
+        : isHe
+        ? `האם אתה בטוח שברצונך למחוק את הסרטון "${displayTitle}" לצמיתות?`
+        : `Are you sure you want to permanently delete "${displayTitle}"?`,
+      confirmText: isAr ? 'حذف نهائياً' : isHe ? 'מחק לצמיתות' : 'Delete Permanently',
+      cancelText: isAr ? 'إلغاء' : isHe ? 'ביטול' : 'Cancel',
       variant: 'danger',
     });
     if (confirmed) {
@@ -299,16 +314,35 @@ export const ShortsManagementTab: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title?.trim()) {
-      toast.error(isHe ? 'אנא הזן כותרת לסרטון' : 'Title is required');
+
+    const currentTitle = isAr ? formData.titleAr : isHe ? formData.titleHe : formData.title;
+    const fallbackTitle = currentTitle || formData.title || formData.titleAr || formData.titleHe;
+
+    if (!fallbackTitle?.trim()) {
+      toast.error(
+        isAr ? 'يرجى إدخال عنوان للمقطع' : isHe ? 'אנא הזן כותרת לסרטון' : 'Title is required'
+      );
       return;
     }
     if (!formData.videoUrl?.trim()) {
-      toast.error(isHe ? 'אנא הזן קישור ל-Google Drive' : 'Google Drive video link is required');
+      toast.error(
+        isAr
+          ? 'يرجى إدخال رابط فيديو Google Drive'
+          : isHe
+          ? 'אנא הזן קישור ל-Google Drive'
+          : 'Google Drive video link is required'
+      );
       return;
     }
 
-    saveMutation.mutate(formData);
+    const payload: Partial<PracticeShortAdmin> = {
+      ...formData,
+      title: (formData.title?.trim() || fallbackTitle).trim(),
+      titleAr: formData.titleAr?.trim() || (isAr ? fallbackTitle.trim() : undefined),
+      titleHe: formData.titleHe?.trim() || (isHe ? fallbackTitle.trim() : undefined),
+    };
+
+    saveMutation.mutate(payload);
   };
 
   return (
@@ -484,7 +518,7 @@ export const ShortsManagementTab: React.FC = () => {
                       disabled={idx === 0}
                       onClick={() => handleMoveOrder(idx, 'up')}
                       className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-100 dark:hover:bg-slate-800"
-                      title={isHe ? 'הזז למעלה' : 'Move Up'}
+                      title={isAr ? 'تحريك لأعلى' : isHe ? 'הזז למעלה' : 'Move Up'}
                     >
                       <ChevronUp className="w-3.5 h-3.5" />
                     </button>
@@ -493,7 +527,7 @@ export const ShortsManagementTab: React.FC = () => {
                       disabled={idx === shorts.length - 1}
                       onClick={() => handleMoveOrder(idx, 'down')}
                       className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-30 disabled:pointer-events-none hover:bg-slate-100 dark:hover:bg-slate-800"
-                      title={isHe ? 'הזז למטה' : 'Move Down'}
+                      title={isAr ? 'تحريك لأسفل' : isHe ? 'הזז למטה' : 'Move Down'}
                     >
                       <ChevronDown className="w-3.5 h-3.5" />
                     </button>
@@ -509,7 +543,7 @@ export const ShortsManagementTab: React.FC = () => {
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    {short.isActive ? (isHe ? 'פעיל' : 'Active') : (isHe ? 'טיוטה' : 'Draft')}
+                    {short.isActive ? (isAr ? 'نشط' : isHe ? 'פעיל' : 'Active') : (isAr ? 'مسودة' : isHe ? 'טיוטה' : 'Draft')}
                   </button>
 
                   {/* Actions: Edit & Delete */}
@@ -518,7 +552,7 @@ export const ShortsManagementTab: React.FC = () => {
                       type="button"
                       onClick={() => handleOpenEdit(short)}
                       className="p-1.5 rounded-lg text-slate-500 hover:text-brand-teal-600 dark:hover:text-teal-400 hover:bg-brand-teal-50 dark:hover:bg-brand-teal-950/60 transition-colors"
-                      title={isHe ? 'ערוך' : 'Edit'}
+                      title={isAr ? 'تعديل' : isHe ? 'ערוך' : 'Edit'}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
@@ -526,7 +560,7 @@ export const ShortsManagementTab: React.FC = () => {
                       type="button"
                       onClick={() => handleDelete(short)}
                       className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors"
-                      title={isHe ? 'מחק' : 'Delete'}
+                      title={isAr ? 'حذف' : isHe ? 'מחק' : 'Delete'}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -546,29 +580,42 @@ export const ShortsManagementTab: React.FC = () => {
         >
           <div
             className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 my-8 space-y-5"
+            dir={isAr || isHe ? 'rtl' : 'ltr'}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950 text-brand-teal-600 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950 text-brand-teal-600 flex items-center justify-center shrink-0">
                   <Film className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     {editingShort
-                      ? isHe ? 'עריכת סרטון תרגול' : isAr ? 'تعديل مقطع تدريبي' : 'Edit Practice Short'
-                      : isHe ? 'הוספת סרטון תרגול חדש' : isAr ? 'إضافة مقطع تدريبي جديد' : 'Add New Practice Short'}
+                      ? isAr
+                        ? 'تعديل مقطع تدريبي'
+                        : isHe
+                        ? 'עריכת סרטון תרגול'
+                        : 'Edit Practice Short'
+                      : isAr
+                      ? 'إضافة مقطع تدريبي جديد'
+                      : isHe
+                      ? 'הוספת סרטון תרגול חדש'
+                      : 'Add New Practice Short'}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    {isHe ? 'הגדר קישור Google Drive, כותרות ומستوى לימוד' : 'Configure Google Drive link, multilingual titles, and level'}
+                    {isAr
+                      ? 'إعداد رابط Google Drive، المسار اللغوي، العناوين، والمستويات المستهدفة'
+                      : isHe
+                      ? 'הגדר קישור Google Drive, מסלול שפה, כותרות ורמות יעד'
+                      : 'Configure Google Drive link, multilingual titles, and level'}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -578,7 +625,11 @@ export const ShortsManagementTab: React.FC = () => {
               {/* Google Drive Video URL Input */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {isHe ? 'קישור וידאו מ-Google Drive *' : 'Google Drive Video Link *'}
+                  {isAr
+                    ? 'رابط فيديو Google Drive *'
+                    : isHe
+                    ? 'קישור וידאו מ-Google Drive *'
+                    : 'Google Drive Video Link *'}
                 </label>
                 <input
                   type="url"
@@ -586,12 +637,15 @@ export const ShortsManagementTab: React.FC = () => {
                   placeholder="https://drive.google.com/file/d/1A2b3C4d.../view?usp=sharing"
                   value={formData.videoUrl || ''}
                   onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs font-mono focus:ring-2 focus:ring-brand-teal-500 focus:outline-hidden"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs font-mono focus:ring-2 focus:ring-brand-teal-500 focus:outline-hidden text-start"
+                  dir="ltr"
                 />
                 <p className="text-[11px] text-slate-500 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
                   <span>
-                    {isHe
+                    {isAr
+                      ? 'تأكد من ضبط أذونات الملف في Google Drive إلى "أي شخص لديه الرابط يمكنه المشاهدة"'
+                      : isHe
                       ? 'וודא שהרשאות השיתוף בדרייב מוגדרות ל-"כל מי שיש לו את הקישור יכול לצפות"'
                       : 'Ensure file permission in Google Drive is set to "Anyone with the link can view"'}
                   </span>
@@ -605,10 +659,18 @@ export const ShortsManagementTab: React.FC = () => {
                     <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
                     <div>
                       <span className="text-xs font-bold text-brand-teal-900 dark:text-brand-teal-200 block">
-                        Google Drive File ID: {previewDriveId}
+                        {isAr
+                          ? `معرّف ملف Google Drive: ${previewDriveId}`
+                          : isHe
+                          ? `מזהה קובץ Google Drive: ${previewDriveId}`
+                          : `Google Drive File ID: ${previewDriveId}`}
                       </span>
                       <span className="text-[10px] text-slate-500">
-                        {isHe ? 'זוהה בהצלחה. תמונה ממוזערת תיווצר אוטומטית.' : 'Successfully recognized. Preview & thumbnail ready.'}
+                        {isAr
+                          ? 'تم التعرف عليه بنجاح. المعاينة والصورة المصغرة جاهزتان.'
+                          : isHe
+                          ? 'זוהה בהצלחה. תמונה ממוזערת ותצוגה מקדימה מוכנות.'
+                          : 'Successfully recognized. Preview & thumbnail ready.'}
                       </span>
                     </div>
                   </div>
@@ -618,52 +680,131 @@ export const ShortsManagementTab: React.FC = () => {
                     className="px-2.5 py-1 bg-white dark:bg-slate-800 text-brand-teal-700 dark:text-teal-300 border border-brand-teal-200 dark:border-brand-teal-700 text-[11px] font-bold rounded-lg shadow-2xs hover:bg-brand-teal-50 transition-colors flex items-center gap-1 cursor-pointer shrink-0"
                   >
                     <Play className="w-3 h-3 fill-current" />
-                    <span>{isHe ? 'בדוק נגינה' : 'Test Player'}</span>
+                    <span>{isAr ? 'معاينة وتشغيل' : isHe ? 'בדוק נגינה' : 'Test Player'}</span>
                   </button>
                 </div>
               )}
 
-              {/* Multilingual Titles */}
+              {/* Multilingual Titles - Localized by user language */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* 1. Primary Title in user's current language (Required) */}
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Title (English) *
+                    {isAr
+                      ? 'عنوان المقطع (بالعربية) *'
+                      : isHe
+                      ? 'כותרת הסרטון (בעברית) *'
+                      : 'Video Title (English) *'}
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Master Hebrew Greetings"
-                    value={formData.title || ''}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+                    placeholder={
+                      isAr
+                        ? 'مثال: أهم التحيات والتعابير اليومية'
+                        : isHe
+                        ? 'לדוגמה: ברכות יומיומיות בעברית'
+                        : 'e.g. Master Hebrew Greetings'
+                    }
+                    value={
+                      isAr
+                        ? formData.titleAr || ''
+                        : isHe
+                        ? formData.titleHe || ''
+                        : formData.title || ''
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (isAr) {
+                        setFormData({ ...formData, titleAr: val, title: formData.title || val });
+                      } else if (isHe) {
+                        setFormData({ ...formData, titleHe: val, title: formData.title || val });
+                      } else {
+                        setFormData({ ...formData, title: val });
+                      }
+                    }}
+                    className={`w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs ${
+                      isHe ? 'font-hebrew' : ''
+                    }`}
+                    dir={isAr || isHe ? 'rtl' : 'ltr'}
                   />
                 </div>
 
+                {/* 2. Secondary Language Title (Optional) */}
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 font-hebrew">
-                    כותרת (עברית)
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {isAr
+                      ? 'العنوان بالعبرية (اختياري)'
+                      : isHe
+                      ? 'כותרת בערבית (אופציונלי)'
+                      : 'Title in Hebrew (Optional)'}
                   </label>
                   <input
                     type="text"
-                    placeholder="לדוגמה: ברכות יומיומיות בעברית"
-                    value={formData.titleHe || ''}
-                    onChange={(e) => setFormData({ ...formData, titleHe: e.target.value })}
+                    placeholder={
+                      isAr
+                        ? 'مثال: ברכות יומיומיות בעברית'
+                        : isHe
+                        ? 'לדוגמה: أهم التحيات والتعابير اليومية'
+                        : 'e.g. ברכות יומיומיות בעברית'
+                    }
+                    value={
+                      isAr
+                        ? formData.titleHe || ''
+                        : isHe
+                        ? formData.titleAr || ''
+                        : formData.titleHe || ''
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (isAr) {
+                        setFormData({ ...formData, titleHe: val });
+                      } else if (isHe) {
+                        setFormData({ ...formData, titleAr: val });
+                      } else {
+                        setFormData({ ...formData, titleHe: val });
+                      }
+                    }}
                     className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs font-hebrew"
                     dir="rtl"
                   />
                 </div>
 
+                {/* 3. Tertiary Language Title (Optional) */}
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    العنوان (عربي)
+                    {isAr
+                      ? 'العنوان بالإنجليزية (اختياري)'
+                      : isHe
+                      ? 'כותרת באנגלית (אופציונלי)'
+                      : 'Title in Arabic (Optional)'}
                   </label>
                   <input
                     type="text"
-                    placeholder="مثال: أهم التحيات والتعابير اليومية"
-                    value={formData.titleAr || ''}
-                    onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+                    placeholder={
+                      isAr
+                        ? 'مثال: Master Hebrew Greetings'
+                        : isHe
+                        ? 'לדוגמה: Master Hebrew Greetings'
+                        : 'e.g. أهم التحيات والتعابير اليومية'
+                    }
+                    value={
+                      isAr
+                        ? formData.title || ''
+                        : isHe
+                        ? formData.title || ''
+                        : formData.titleAr || ''
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (isAr || isHe) {
+                        setFormData({ ...formData, title: val });
+                      } else {
+                        setFormData({ ...formData, titleAr: val });
+                      }
+                    }}
                     className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
-                    dir="rtl"
+                    dir={isAr || isHe ? 'ltr' : 'rtl'}
                   />
                 </div>
               </div>
@@ -671,7 +812,11 @@ export const ShortsManagementTab: React.FC = () => {
               {/* Target Language Track (المسار التعليمي واللغة المستهدفة) */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {isHe ? 'מסלול שפה ויעד לומדים (Language Track) *' : isAr ? 'المسار التعليمي واللغة المستهدفة *' : 'Target Audience / Language Track *'}
+                  {isAr
+                    ? 'المسار التعليمي واللغة المستهدفة *'
+                    : isHe
+                    ? 'מסלול שפה ויעד לומדים *'
+                    : 'Target Audience / Language Track *'}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {LANGUAGE_TRACKS.map((track) => {
@@ -693,10 +838,10 @@ export const ShortsManagementTab: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-[11px] font-black text-slate-900 dark:text-white truncate">
-                            {track.native}
+                            {track.getName(isAr, isHe)}
                           </p>
                           <p className="text-[9px] text-slate-500 dark:text-slate-400 truncate">
-                            {track.label}
+                            {track.getDescription(isAr, isHe)}
                           </p>
                         </div>
                       </button>
@@ -709,13 +854,25 @@ export const ShortsManagementTab: React.FC = () => {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {isHe ? 'רמות יעד (בחר רמה אחת או יותר) *' : isAr ? 'المستويات المستهدفة (اختر مستوى أو أكثر) *' : 'Target Levels (Multi-level Selection) *'}
+                    {isAr
+                      ? 'المستويات المستهدفة (اختيار متعدد) *'
+                      : isHe
+                      ? 'רמות יעד (בחירה מרובה) *'
+                      : 'Target Levels (Multi-level Selection) *'}
                   </label>
                   <span className="text-[10px] text-brand-teal-600 dark:text-teal-400 font-bold">
                     {formData.levelCodes && formData.levelCodes.includes('ALL')
-                      ? (isHe ? 'כל הרמות נבחרו' : isAr ? 'جميع المستويات' : 'All Levels')
+                      ? isAr
+                        ? 'جميع المستويات'
+                        : isHe
+                        ? 'כל הרמות נבחרו'
+                        : 'All Levels'
                       : formData.levelCodes && formData.levelCodes.length > 0
                       ? formData.levelCodes.join(' • ')
+                      : isAr
+                      ? 'جميع المستويات'
+                      : isHe
+                      ? 'כל הרמות'
                       : 'All Levels'}
                   </span>
                 </div>
@@ -737,7 +894,7 @@ export const ShortsManagementTab: React.FC = () => {
                         : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
                     }`}
                   >
-                    {isHe ? 'כל הרמות (All)' : isAr ? 'جميع المستويات' : 'All Levels'}
+                    {isAr ? 'جميع المستويات (All)' : isHe ? 'כל הרמות (All)' : 'All Levels'}
                   </button>
 
                   {/* Individual Level Pills (A1, A2, B1, B2, C1, C2) */}
@@ -780,7 +937,11 @@ export const ShortsManagementTab: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {isHe ? 'משך משוער (בשניות)' : 'Duration (Seconds)'}
+                    {isAr
+                      ? 'مدة المقطع (بالثواني)'
+                      : isHe
+                      ? 'משך משוער (בשניות)'
+                      : 'Duration (Seconds)'}
                   </label>
                   <input
                     type="number"
@@ -794,7 +955,11 @@ export const ShortsManagementTab: React.FC = () => {
 
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {isHe ? 'מספר סדר הופעה' : 'Sort Order Sequence'}
+                    {isAr
+                      ? 'ترتيب الظهور (الترقيم)'
+                      : isHe
+                      ? 'סדר הופעה (מיון)'
+                      : 'Sort Order Sequence'}
                   </label>
                   <input
                     type="number"
@@ -808,14 +973,25 @@ export const ShortsManagementTab: React.FC = () => {
               {/* Custom Thumbnail URL (Optional) */}
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {isHe ? 'קישור תמונה ממוזערת מותאמת (אופציונלי)' : 'Custom Thumbnail URL (Optional)'}
+                  {isAr
+                    ? 'رابط صورة مصغرة مخصصة (اختياري)'
+                    : isHe
+                    ? 'קישור תמונה ממוזערת מותאמת (אופציונלי)'
+                    : 'Custom Thumbnail URL (Optional)'}
                 </label>
                 <input
                   type="url"
-                  placeholder="https://... (Leave blank to auto-generate from Google Drive)"
+                  placeholder={
+                    isAr
+                      ? 'اتركه فارغاً للتوليد التلقائي من Google Drive'
+                      : isHe
+                      ? 'השאר ריק ליצירה אוטומטית מ-Google Drive'
+                      : 'https://... (Leave blank to auto-generate from Google Drive)'
+                  }
                   value={formData.thumbnailUrl || ''}
                   onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                  className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs text-start"
+                  dir="ltr"
                 />
               </div>
 
@@ -829,7 +1005,11 @@ export const ShortsManagementTab: React.FC = () => {
                   className="rounded border-slate-300 text-brand-teal-600 focus:ring-brand-teal-500 w-4 h-4 cursor-pointer"
                 />
                 <label htmlFor="shortIsActive" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
-                  {isHe ? 'פרסם כסרטון פעיל (מוצג לתלמידים מיד)' : 'Publish as Active (Visible immediately in student feed)'}
+                  {isAr
+                    ? 'نشر كمقطع نشط (يظهر فوراً للطلاب في خلاصة الفيديوهات)'
+                    : isHe
+                    ? 'פרסם כסרטון פעיל (מוצג מיד לתלמידים)'
+                    : 'Publish as Active (Visible immediately in student feed)'}
                 </label>
               </div>
 
@@ -840,7 +1020,7 @@ export const ShortsManagementTab: React.FC = () => {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold cursor-pointer"
                 >
-                  {isHe ? 'ביטול' : 'Cancel'}
+                  {isAr ? 'إلغاء' : isHe ? 'ביטול' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
@@ -850,10 +1030,22 @@ export const ShortsManagementTab: React.FC = () => {
                   {saveMutation.isPending ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>{isHe ? 'שומר...' : 'Saving...'}</span>
+                      <span>{isAr ? 'جاري الحفظ...' : isHe ? 'שומר...' : 'Saving...'}</span>
                     </>
                   ) : (
-                    <span>{editingShort ? (isHe ? 'שמור שינויים' : 'Save Changes') : (isHe ? 'פרסם סרטון' : 'Publish Short')}</span>
+                    <span>
+                      {editingShort
+                        ? isAr
+                          ? 'حفظ التعديلات'
+                          : isHe
+                          ? 'שמור שינויים'
+                          : 'Save Changes'
+                        : isAr
+                        ? 'نشر المقطع'
+                        : isHe
+                        ? 'פרסם סרטון'
+                        : 'Publish Short'}
+                    </span>
                   )}
                 </button>
               </div>
