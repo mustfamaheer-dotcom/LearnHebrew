@@ -104,7 +104,6 @@ export async function getStudentDashboard(studentIdOrUserId: string) {
         prisma.homework.findMany({
           where: {
             studentId: student.id,
-            status: { in: ['PENDING', 'SUBMITTED'] },
           },
           include: {
             teacher: {
@@ -112,9 +111,20 @@ export async function getStudentDashboard(studentIdOrUserId: string) {
                 user: { select: { firstName: true, lastName: true } },
               },
             },
+            template: {
+              select: {
+                id: true,
+                title: true,
+                titleAr: true,
+                titleHe: true,
+                levelCode: true,
+                levelCodes: true,
+                totalPoints: true,
+              },
+            },
           },
-          orderBy: { dueDate: 'asc' },
-          take: 3,
+          orderBy: { createdAt: 'desc' },
+          take: 10,
         }),
         prisma.pointsLedger.findMany({
           where: { studentId: student.id },
@@ -213,8 +223,19 @@ export async function getStudentHomework(studentIdOrUserId: string) {
         },
       },
       lesson: true,
+      template: {
+        select: {
+          id: true,
+          title: true,
+          titleAr: true,
+          titleHe: true,
+          levelCode: true,
+          levelCodes: true,
+          totalPoints: true,
+        },
+      },
     },
-    orderBy: { dueDate: 'desc' },
+    orderBy: { createdAt: 'desc' },
   });
 }
 

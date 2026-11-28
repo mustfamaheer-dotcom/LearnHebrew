@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, useTransition
 import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import { levelExamsApi } from '../../lib/enterpriseApi';
+import { levelExamsApi, homeworkTemplatesApi } from '../../lib/enterpriseApi';
 import { LevelExamModel } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -311,6 +311,19 @@ export const TeacherDashboard: React.FC = () => {
   // Homework review state
   const [reviewHwId, setReviewHwId] = useState<string | null>(null);
   const [reviewFeedback, setReviewFeedback] = useState('');
+
+  // Interactive Homework Catalog & Assigning State
+  const [hwViewMode, setHwViewMode] = useState<'catalog' | 'submissions'>('catalog');
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogLevel, setCatalogLevel] = useState('ALL');
+  const [catalogTrack, setCatalogTrack] = useState('ALL');
+  const [assignModalTemplate, setAssignModalTemplate] = useState<any | null>(null);
+  const [assignStudentSearch, setAssignStudentSearch] = useState('');
+  const [assignSelectedStudentId, setAssignSelectedStudentId] = useState('');
+  const [assignDueDate, setAssignDueDate] = useState('');
+  const [assignCustomNotes, setAssignCustomNotes] = useState('');
+  const [inspectHwSubmission, setInspectHwSubmission] = useState<any | null>(null);
+  const [previewTemplateTeacher, setPreviewTemplateTeacher] = useState<any | null>(null);
 
   // Drive viewer modal state
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
@@ -879,6 +892,39 @@ export const TeacherDashboard: React.FC = () => {
       toast.success(
         language === 'he' ? 'שיעורי הבית הוקצו בהצלחה לתלמיד!' : 'Homework assigned successfully!'
       );
+    },
+  });
+
+  // Query: Teacher Homework Catalog from Admin Bank
+  const { data: teacherCatalog = [], isLoading: isTeacherCatalogLoading } = useQuery({
+    queryKey: ['teacherHomeworkCatalog', catalogLevel, catalogTrack, catalogSearch],
+    queryFn: () =>
+      homeworkTemplatesApi.catalog({
+        level: catalogLevel !== 'ALL' ? catalogLevel : undefined,
+        track: catalogTrack !== 'ALL' ? catalogTrack : undefined,
+        search: catalogSearch || undefined,
+      }),
+  });
+
+  // Assign template mutation
+  const assignTemplateMutation = useMutation({
+    mutationFn: (data: { templateId: string; studentId: string; dueDate?: string; customNotes?: string }) =>
+      homeworkTemplatesApi.assign(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacherHomework'] });
+      queryClient.invalidateQueries({ queryKey: ['teacherHomeworkCatalog'] });
+      setAssignModalTemplate(null);
+      setAssignSelectedStudentId('');
+      setAssignStudentSearch('');
+      setAssignCustomNotes('');
+      setAssignDueDate('');
+      setHwViewMode('submissions');
+      toast.success(
+        language === 'he' ? 'שיעורי הבית הוקצו לתלמיד בהצלחה!' : 'Homework assigned to student successfully!'
+      );
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || err.message || 'Failed to assign homework');
     },
   });
 
@@ -2540,189 +2586,393 @@ export const TeacherDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 4: HOMEWORK REVIEWS */}
+          {/* TAB 4: INTERACTIVE HOMEWORK BANK & REVIEWS */}
           {activeTab === 'homework' && (
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6 transition-colors">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-brand-teal-700 dark:text-brand-teal-400" />
-                    <span>{language === 'he' ? 'הגשות שיעורי בית ומטלות' : 'Student Homework & Material Submissions'}</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {language === 'he'
-                      ? 'בדוק שיעורי בית שהוגשו, ספק משוב, וצפה בחומרי PDF המקושרים ישירות במערכת.'
-                      : 'Review submitted assignments, grade them, and view attached Google Drive PDFs directly.'}
-                  </p>
+            <div className="space-y-6">
+              {/* Header with Navigation Pills */}
+              <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5 transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-brand-teal-700 dark:text-brand-teal-400" />
+                      <span>{language === 'he' ? 'מאגר שיعורי בית והגשות תלמידים' : 'Homework Catalog & Student Submissions'}</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {language === 'he'
+                        ? 'בחר שיעור בית מוכן ממאגר המערכת והקצה לתלמיד, או עקוב אחר ההגשות והציונים שנבדקו אוטומטית.'
+                        : 'Search ready-made interactive reading comprehension drills from the bank and assign them to students in one click.'}
+                    </p>
+                  </div>
+
+                  {/* Sub-tab Navigation */}
+                  <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
+                    <button
+                      type="button"
+                      onClick={() => setHwViewMode('catalog')}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+                        hwViewMode === 'catalog'
+                          ? 'bg-white dark:bg-slate-700 text-brand-teal-800 dark:text-brand-teal-300 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>{language === 'he' ? 'מאגר שיעורי הבית' : 'Homework Catalog'}</span>
+                      <span className="px-1.5 py-0.2 rounded-md bg-brand-teal-100 dark:bg-brand-teal-950 text-brand-teal-800 dark:text-brand-teal-300 text-[10px]">
+                        {teacherCatalog.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setHwViewMode('submissions')}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
+                        hwViewMode === 'submissions'
+                          ? 'bg-white dark:bg-slate-700 text-brand-teal-800 dark:text-brand-teal-300 shadow-xs'
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>{language === 'he' ? 'הגשות ומעקב' : 'Assigned & Submissions'}</span>
+                      <span className="px-1.5 py-0.2 rounded-md bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 text-[10px]">
+                        {homeworkData?.length || 0}
+                      </span>
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setIsAssigningHw(true)}
-                  className="px-4 py-2.5 bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4 text-brand-olive-300" />
-                  <span>{language === 'he' ? 'הקצאת שיעורי בית' : 'Assign New Homework'}</span>
-                </button>
-              </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                {homeworkData?.map((hw: any) => (
-                  <div
-                    key={hw.id}
-                    className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-750 shadow-xs space-y-3 flex flex-col justify-between"
-                  >
-                    <div className="space-y-2.5">
-                      <div className="flex justify-between items-start gap-2">
-                        <div>
-                          <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">{hw.title}</h4>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">
-                            {language === 'he' ? 'תלמיד:' : 'Student:'} {hw.student?.user?.firstName} {hw.student?.user?.lastName}
-                          </span>
-                        </div>
-                        <span
-                          className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
-                            hw.status === 'GRADED'
-                              ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
-                              : hw.status === 'SUBMITTED'
-                              ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                          }`}
-                        >
-                          {language === 'he'
-                            ? hw.status === 'GRADED'
-                              ? 'נבדק'
-                              : hw.status === 'SUBMITTED'
-                              ? 'הוגש לבדיקה'
-                              : 'הוקצה'
-                            : hw.status}
-                        </span>
-                      </div>
-
-                      {hw.description && (
-                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                          {hw.description}
-                        </p>
-                      )}
-
-                      {/* Attached PDF / External resource if present */}
-                      {hw.attachmentUrl && (
-                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 truncate">
-                            <FileText className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 shrink-0" />
-                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
-                              {isGoogleDriveUrl(hw.attachmentUrl)
-                                ? language === 'he'
-                                  ? 'מסמך PDF מ-Google Drive'
-                                  : 'Google Drive PDF Material'
-                                : language === 'he'
-                                ? 'קישור לחומר חיצוני'
-                                : 'External Resource'}
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => {
-                              setViewerUrl(hw.attachmentUrl);
-                              setViewerTitle(hw.title);
-                              setViewerSubtitle(
-                                language === 'he'
-                                  ? `חומר שיעורי בית: ${hw.student?.user?.firstName || ''}`
-                                  : `Homework Resource for ${hw.student?.user?.firstName || 'Student'}`
-                              );
-                            }}
-                            className="px-2.5 py-1 text-[11px] font-bold bg-brand-teal-800 hover:bg-brand-teal-900 text-white rounded-lg transition-colors shrink-0 flex items-center gap-1 shadow-2xs"
-                          >
-                            <Eye className="w-3 h-3" />
-                            <span>{language === 'he' ? 'פתח במערכת' : 'Open In-App'}</span>
-                          </button>
-                        </div>
-                      )}
-
-                      {hw.dueDate && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>
-                            {language === 'he' ? 'מועד הגשה:' : 'Due date:'}{' '}
-                            {new Date(hw.dueDate).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-
-                      {hw.studentNote && (
-                        <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300">
-                          <span className="font-bold block mb-0.5 text-brand-teal-900 dark:text-brand-teal-300">
-                            {language === 'he' ? 'התשובה שהוגשה על ידי התלמיד:' : 'Student Submission Notes:'}
-                          </span>
-                          {hw.studentNote}
-                        </div>
-                      )}
-
-                      {hw.teacherFeedback && (
-                        <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300">
-                          <span className="font-bold block mb-0.5">
-                            {language === 'he' ? 'המשוב שלך:' : 'Your Feedback:'}
-                          </span>
-                          {hw.teacherFeedback}
-                        </div>
-                      )}
+                {/* Sub-view 1: Catalog Search & Filter */}
+                {hwViewMode === 'catalog' && (
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                    <div className="relative flex-1 w-full">
+                      <Search className="w-4 h-4 text-slate-400 absolute top-3 left-3 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={catalogSearch}
+                        onChange={(e) => setCatalogSearch(e.target.value)}
+                        placeholder={
+                          language === 'he'
+                            ? 'חפש לפי נושא, קטע קריאה או מילות מפתח...'
+                            : 'Search homework drills by topic, reading passage, or keyword...'
+                        }
+                        className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-brand-teal-500"
+                      />
                     </div>
 
-                    {hw.status === 'SUBMITTED' && (
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                        {reviewHwId === hw.id ? (
-                          <div className="space-y-2">
-                            <textarea
-                              value={reviewFeedback}
-                              onChange={(e) => setReviewFeedback(e.target.value)}
-                              placeholder={
-                                language === 'he'
-                                  ? 'כתוב משוב, הערות לשיפור או שבחים לתלמיד...'
-                                  : 'Write feedback, corrections, or praise for the student...'
-                              }
-                              rows={2}
-                              className="w-full text-xs p-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:border-brand-teal-600"
-                            />
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => setReviewHwId(null)}
-                                className="px-3 py-1 text-xs text-slate-500 dark:text-slate-400 font-semibold"
-                              >
-                                {language === 'he' ? 'ביטול' : 'Cancel'}
-                              </button>
-                              <button
-                                onClick={() =>
-                                  reviewHomeworkMutation.mutate({
-                                    id: hw.id,
-                                    feedback: reviewFeedback,
-                                  })
-                                }
-                                className="px-4 py-1.5 text-xs bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold rounded-xl shadow-2xs"
-                              >
-                                {language === 'he' ? 'שלח משוב' : 'Send Feedback'}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setReviewHwId(hw.id);
-                              setReviewFeedback('');
-                            }}
-                            className="text-xs font-bold text-brand-teal-700 dark:text-brand-teal-400 hover:text-brand-teal-900 dark:hover:text-brand-teal-300 flex items-center gap-1.5"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>{language === 'he' ? 'בדוק והזן משוב' : 'Review & Provide Feedback'}</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                      {['ALL', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map((lvl) => (
+                        <button
+                          key={lvl}
+                          type="button"
+                          onClick={() => setCatalogLevel(lvl)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                            catalogLevel === lvl
+                              ? 'bg-brand-teal-700 text-white shadow-xs'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                          }`}
+                        >
+                          {lvl}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                ))}
-
-                {(!homeworkData || homeworkData.length === 0) && (
-                  <p className="text-xs text-slate-400 py-12 text-center col-span-2">
-                    {language === 'he' ? 'כל שיעורי הבית נבדקו.' : 'All homework caught up.'}
-                  </p>
                 )}
               </div>
+
+              {/* VIEW 1: HOMEWORK CATALOG (BANK) */}
+              {hwViewMode === 'catalog' && (
+                <div>
+                  {isTeacherCatalogLoading ? (
+                    <div className="p-12 text-center text-slate-400 font-bold animate-pulse">
+                      {language === 'he' ? 'טוען מאגר שיעורי בית...' : 'Loading homework catalog...'}
+                    </div>
+                  ) : teacherCatalog.length === 0 ? (
+                    <div className="p-12 text-center rounded-3xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 space-y-3">
+                      <BookOpen className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto" />
+                      <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300">
+                        {language === 'he' ? 'לא נמצאו שיעורי בית מתאימים לסינון זה' : 'No homework templates found for this filter'}
+                      </h4>
+                      <p className="text-xs text-slate-400">
+                        {language === 'he' ? 'נסה לשנות את רמת הסינון או מילת החיפוש.' : 'Try adjusting the search query or level filters.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                      {teacherCatalog.map((tpl: any) => (
+                        <div
+                          key={tpl.id}
+                          className="p-5 rounded-3xl bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-750 shadow-xs hover:shadow-md hover:border-brand-teal-500/40 transition-all flex flex-col justify-between space-y-4 group"
+                        >
+                          <div className="space-y-3">
+                            {/* Badges */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {(tpl.levelCodes?.length ? tpl.levelCodes : [tpl.levelCode || 'A1']).map((code: string) => (
+                                  <span
+                                    key={code}
+                                    className="px-2.5 py-0.5 rounded-lg bg-brand-teal-100 dark:bg-brand-teal-950/70 text-brand-teal-800 dark:text-brand-teal-300 text-[10px] font-black uppercase tracking-wider"
+                                  >
+                                    {code}
+                                  </span>
+                                ))}
+                                <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold">
+                                  {tpl.targetTrack === 'ALL' ? (language === 'he' ? 'כל המסלולים' : 'All Tracks') : tpl.targetTrack}
+                                </span>
+                              </div>
+
+                              <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-lg border border-amber-200/60">
+                                {tpl.totalPoints || 10} {language === 'he' ? 'נקודות' : 'Pts'}
+                              </span>
+                            </div>
+
+                            {/* Title & Passage Excerpt */}
+                            <div>
+                              <h3 className="font-black text-sm text-slate-900 dark:text-white group-hover:text-brand-teal-700 dark:group-hover:text-brand-teal-400 transition-colors line-clamp-1">
+                                {tpl.title}
+                              </h3>
+                              {tpl.readingPassageTitle && (
+                                <p className="text-[11px] font-bold text-brand-teal-700 dark:text-brand-teal-400 mt-0.5 line-clamp-1">
+                                  📖 {tpl.readingPassageTitle}
+                                </p>
+                              )}
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+                                {tpl.readingPassage}
+                              </p>
+                            </div>
+
+                            {/* Questions count pill */}
+                            <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                              <span>❓ {tpl.questions?.length || 0} {language === 'he' ? 'שאלות אינטראקטיביות' : 'Interactive Questions'}</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">⚡ {language === 'he' ? 'בדיקה אוטומטית' : 'Auto-graded'}</span>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewTemplateTeacher(tpl)}
+                              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1.5 transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-brand-teal-600" />
+                              <span>{language === 'he' ? 'מעאיינה' : 'Preview'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAssignModalTemplate(tpl);
+                                setAssignSelectedStudentId('');
+                                setAssignStudentSearch('');
+                                setAssignCustomNotes('');
+                                setAssignDueDate('');
+                              }}
+                              className="px-4 py-2 rounded-xl bg-brand-teal-700 hover:bg-brand-teal-800 text-white font-black text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1.5"
+                            >
+                              <Plus className="w-4 h-4 text-lime-300" />
+                              <span>{language === 'he' ? 'הקצה לתלמיד' : 'Assign to Student'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* VIEW 2: SUBMISSIONS & ASSIGNED HOMEWORK */}
+              {hwViewMode === 'submissions' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <p className="text-xs text-slate-500">
+                      {language === 'he' ? 'הגשות תלמידים שנענו ונבדקו במערכת:' : 'All homework assignments and interactive quiz submissions:'}
+                    </p>
+                    <button
+                      onClick={() => setIsAssigningHw(true)}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 transition-colors flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{language === 'he' ? 'הקצאת מטלה ידנית (PDF)' : 'Custom / PDF Homework'}</span>
+                    </button>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {homeworkData?.map((hw: any) => {
+                      const isInteractive = Boolean(hw.templateId || hw.template);
+                      const hasSubmitted = hw.status === 'SUBMITTED' || hw.status === 'REVIEWED';
+
+                      return (
+                        <div
+                          key={hw.id}
+                          className="p-5 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/90 dark:border-slate-750 shadow-xs space-y-3 flex flex-col justify-between"
+                        >
+                          <div className="space-y-2.5">
+                            <div className="flex justify-between items-start gap-2">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-extrabold text-slate-900 dark:text-white text-sm">{hw.title}</h4>
+                                  {isInteractive && (
+                                    <span className="px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 text-[9px] font-black uppercase">
+                                      Interactive
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">
+                                  {language === 'he' ? 'תלמיד:' : 'Student:'} {hw.student?.user?.firstName} {hw.student?.user?.lastName}
+                                </span>
+                              </div>
+
+                              {/* Status or Score badge */}
+                              <div className="flex flex-col items-end gap-1">
+                                <span
+                                  className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-lg ${
+                                    hw.status === 'REVIEWED'
+                                      ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                                      : hw.status === 'SUBMITTED'
+                                      ? 'bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300'
+                                      : 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                                  }`}
+                                >
+                                  {hw.status === 'REVIEWED'
+                                    ? (language === 'he' ? 'נבדק' : 'Reviewed')
+                                    : hw.status === 'SUBMITTED'
+                                    ? (language === 'he' ? 'הוגש' : 'Submitted')
+                                    : (language === 'he' ? 'ממתין לפתרון' : 'Pending')}
+                                </span>
+
+                                {hw.percentage !== null && hw.percentage !== undefined && (
+                                  <span className={`text-xs font-black px-2 py-0.5 rounded-md ${
+                                    hw.percentage >= 70
+                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                                  }`}>
+                                    🎯 {hw.percentage}% ({hw.score}/{hw.maxScore} Pts)
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {hw.description && (
+                              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                {hw.description}
+                              </p>
+                            )}
+
+                            {/* Due Date */}
+                            {hw.dueDate && (
+                              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                                <Clock className="w-3.5 h-3.5 text-brand-teal-600" />
+                                <span>
+                                  {language === 'he' ? 'מועד הגשה:' : 'Due date:'}{' '}
+                                  {new Date(hw.dueDate).toLocaleDateString()}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Interactive Submission Quick View */}
+                            {isInteractive && hasSubmitted && (
+                              <button
+                                type="button"
+                                onClick={() => setInspectHwSubmission(hw)}
+                                className="w-full p-2 rounded-xl bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/40 dark:hover:bg-teal-950/60 text-teal-800 dark:text-teal-300 text-xs font-bold flex items-center justify-center gap-2 transition-colors border border-teal-200/60"
+                              >
+                                <Eye className="w-4 h-4" />
+                                <span>{language === 'he' ? 'צפה בתשובות התלמיד בפירוט' : 'Inspect Student Answers & Breakdown'}</span>
+                              </button>
+                            )}
+
+                            {/* Legacy attachment */}
+                            {hw.attachmentUrl && (
+                              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 truncate">
+                                  <FileText className="w-4 h-4 text-brand-teal-700 dark:text-brand-teal-400 shrink-0" />
+                                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                                    {isGoogleDriveUrl(hw.attachmentUrl) ? 'Google Drive PDF' : 'Attached Material'}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setViewerUrl(hw.attachmentUrl);
+                                    setViewerTitle(hw.title);
+                                  }}
+                                  className="px-2.5 py-1 text-[11px] font-bold bg-brand-teal-800 text-white rounded-lg"
+                                >
+                                  {language === 'he' ? 'פתח' : 'View'}
+                                </button>
+                              </div>
+                            )}
+
+                            {hw.teacherFeedback && (
+                              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300">
+                                <span className="font-bold block mb-0.5">
+                                  {language === 'he' ? 'המשוב שלך:' : 'Your Feedback:'}
+                                </span>
+                                {hw.teacherFeedback}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Add/Edit Feedback Section */}
+                          {hasSubmitted && (
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                              {reviewHwId === hw.id ? (
+                                <div className="space-y-2">
+                                  <textarea
+                                    value={reviewFeedback}
+                                    onChange={(e) => setReviewFeedback(e.target.value)}
+                                    placeholder={
+                                      language === 'he'
+                                        ? 'כתוב משוב, הערות לשיפור או שבחים לתלמיד...'
+                                        : 'Write feedback, corrections, or praise for the student...'
+                                    }
+                                    rows={2}
+                                    className="w-full text-xs p-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:border-brand-teal-600"
+                                  />
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      onClick={() => setReviewHwId(null)}
+                                      className="px-3 py-1 text-xs text-slate-500 dark:text-slate-400 font-semibold"
+                                    >
+                                      {language === 'he' ? 'ביטול' : 'Cancel'}
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        reviewHomeworkMutation.mutate({
+                                          id: hw.id,
+                                          feedback: reviewFeedback,
+                                        })
+                                      }
+                                      className="px-4 py-1.5 text-xs bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold rounded-xl shadow-2xs"
+                                    >
+                                      {language === 'he' ? 'שלח משוב' : 'Send Feedback'}
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setReviewHwId(hw.id);
+                                    setReviewFeedback(hw.teacherFeedback || '');
+                                  }}
+                                  className="text-xs font-bold text-brand-teal-700 dark:text-brand-teal-400 hover:text-brand-teal-900 dark:hover:text-brand-teal-300 flex items-center gap-1.5"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>{hw.teacherFeedback ? (language === 'he' ? 'ערוך משוב' : 'Edit Feedback') : (language === 'he' ? 'הוסף משוב לתלמיד' : 'Add Teacher Feedback')}</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {(!homeworkData || homeworkData.length === 0) && (
+                      <p className="text-xs text-slate-400 py-12 text-center col-span-2">
+                        {language === 'he' ? 'אין עדיין שיעורי בית שהוקצו.' : 'No homework assignments yet. Browse the catalog to assign your first drill!'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -3278,6 +3528,349 @@ export const TeacherDashboard: React.FC = () => {
                 {assignHomeworkMutation.isPending
                   ? (language === 'he' ? 'מקצה...' : 'Assigning...')
                   : (language === 'he' ? 'הקצה משימה לתלמיד' : 'Assign Assignment')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================== */}
+      {/* MODAL: ASSIGN CATALOG HOMEWORK TO STUDENT           */}
+      {/* ==================================================== */}
+      {assignModalTemplate && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-xl w-full space-y-4 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-md bg-brand-teal-100 dark:bg-brand-teal-950 text-brand-teal-800 dark:text-brand-teal-300 text-[10px] font-black uppercase">
+                    {assignModalTemplate.levelCode || 'A1'}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {assignModalTemplate.questions?.length || 0} Questions • {assignModalTemplate.totalPoints || 10} Pts
+                  </span>
+                </div>
+                <h3 className="font-black text-slate-900 dark:text-white text-base">
+                  {assignModalTemplate.title}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {language === 'he' ? 'בחר תלמיד להקצאת שיעור בית אינטראקטיבי זה:' : 'Search and select a student to assign this interactive drill:'}
+                </p>
+              </div>
+              <button
+                onClick={() => setAssignModalTemplate(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <div className="overflow-y-auto space-y-4 flex-1 pr-1">
+              {/* Student Search */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  {language === 'he' ? 'חפש תלמיד לפי שם או אימייל:' : 'Search student by name or email:'}
+                </label>
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute top-3 left-3 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={assignStudentSearch}
+                    onChange={(e) => setAssignStudentSearch(e.target.value)}
+                    placeholder={language === 'he' ? 'הקלד שם תלמיד...' : 'Type student name...'}
+                    className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-teal-500"
+                  />
+                </div>
+
+                {/* Filtered Students List */}
+                <div className="mt-2 max-h-48 overflow-y-auto space-y-1.5 p-1 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                  {studentsData
+                    ?.filter((s: any) => {
+                      const student = s.student || s;
+                      const u = student.user || s.user;
+                      const name = `${u?.firstName || ''} ${u?.lastName || ''}`.toLowerCase();
+                      const email = (u?.email || '').toLowerCase();
+                      const q = assignStudentSearch.toLowerCase().trim();
+                      return !q || name.includes(q) || email.includes(q);
+                    })
+                    .map((s: any) => {
+                      const student = s.student || s;
+                      const u = student.user || s.user;
+                      const isSelected = assignSelectedStudentId === student.id;
+
+                      return (
+                        <div
+                          key={student.id}
+                          onClick={() => setAssignSelectedStudentId(student.id)}
+                          className={`p-2.5 rounded-xl cursor-pointer flex items-center justify-between transition-all ${
+                            isSelected
+                              ? 'bg-brand-teal-700 text-white shadow-xs'
+                              : 'bg-white dark:bg-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-150 dark:border-slate-750'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
+                              isSelected ? 'bg-white/20 text-white' : 'bg-brand-teal-100 text-brand-teal-800'
+                            }`}>
+                              {u?.firstName?.charAt(0) || 'S'}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-xs truncate">
+                                {u?.firstName || 'Student'} {u?.lastName || ''}
+                              </p>
+                              <p className={`text-[10px] truncate ${isSelected ? 'text-teal-100' : 'text-slate-400'}`}>
+                                {u?.email}
+                              </p>
+                            </div>
+                          </div>
+                          {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                        </div>
+                      );
+                    })}
+
+                  {(!studentsData || studentsData.length === 0) && (
+                    <p className="text-xs text-slate-400 p-4 text-center">
+                      {language === 'he' ? 'אין תלמידים רשומים כרגע.' : 'No enrolled students found.'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'he' ? 'תאריך יעד להגשה (אופציונלי)' : 'Due Date / Deadline (Optional)'}
+                </label>
+                <input
+                  type="date"
+                  value={assignDueDate}
+                  onChange={(e) => setAssignDueDate(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+                />
+              </div>
+
+              {/* Custom Notes */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {language === 'he' ? 'הערה אישית לתלמיד (אופציונלי)' : 'Teacher Note / Hint for Student (Optional)'}
+                </label>
+                <input
+                  type="text"
+                  value={assignCustomNotes}
+                  onChange={(e) => setAssignCustomNotes(e.target.value)}
+                  placeholder={language === 'he' ? 'לדוגמה: שים לב לפעלים בזמן עבר...' : 'e.g. Focus on past tense verbs...'}
+                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setAssignModalTemplate(null)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              >
+                {language === 'he' ? 'ביטול' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!assignSelectedStudentId) {
+                    toast.warning(language === 'he' ? 'אנא בחר תלמיד מהרשימה' : 'Please select a student');
+                    return;
+                  }
+                  assignTemplateMutation.mutate({
+                    templateId: assignModalTemplate.id,
+                    studentId: assignSelectedStudentId,
+                    dueDate: assignDueDate ? new Date(assignDueDate).toISOString() : undefined,
+                    customNotes: assignCustomNotes.trim() || undefined,
+                  });
+                }}
+                disabled={!assignSelectedStudentId || assignTemplateMutation.isPending}
+                className="px-6 py-2.5 text-xs font-black bg-brand-teal-700 hover:bg-brand-teal-800 text-white rounded-xl shadow-md disabled:opacity-50 transition-all flex items-center gap-2"
+              >
+                <Check className="w-4 h-4 text-lime-300" />
+                <span>
+                  {assignTemplateMutation.isPending
+                    ? (language === 'he' ? 'מקצה...' : 'Assigning...')
+                    : (language === 'he' ? 'הקצה שיעור בית לתלמיד' : 'Confirm & Assign Homework')}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================== */}
+      {/* MODAL: TEACHER TEMPLATE PREVIEW                      */}
+      {/* ==================================================== */}
+      {previewTemplateTeacher && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="font-black text-sm text-slate-900 dark:text-white">
+                  {previewTemplateTeacher.title}
+                </h3>
+                <span className="text-xs text-brand-teal-700 dark:text-brand-teal-400 font-bold">
+                  {previewTemplateTeacher.levelCode} • {previewTemplateTeacher.questions?.length || 0} Questions
+                </span>
+              </div>
+              <button
+                onClick={() => setPreviewTemplateTeacher(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-4 py-4 flex-1">
+              <div className="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/30 border border-teal-200/70 dark:border-teal-900/60 space-y-1.5">
+                <span className="text-xs font-black text-brand-teal-800 dark:text-brand-teal-300 block">
+                  📖 {previewTemplateTeacher.readingPassageTitle || 'Reading Comprehension Passage'}
+                </span>
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-serif">
+                  {previewTemplateTeacher.readingPassage}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  {language === 'he' ? 'שאלות המבחן:' : 'Comprehension Questions:'}
+                </span>
+                {previewTemplateTeacher.questions?.map((q: any, i: number) => (
+                  <div key={i} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+                    <p className="font-bold text-slate-900 dark:text-white">{i + 1}. {q.prompt}</p>
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                      ✓ {language === 'he' ? 'תשובה נכונה:' : 'Correct:'} {q.correctAnswer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+              <button
+                onClick={() => setPreviewTemplateTeacher(null)}
+                className="px-5 py-2 rounded-xl bg-brand-teal-700 text-white font-bold text-xs"
+              >
+                {language === 'he' ? 'סגור' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================== */}
+      {/* MODAL: TEACHER INSPECT STUDENT ANSWERS               */}
+      {/* ==================================================== */}
+      {inspectHwSubmission && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-2xl w-full max-h-[88vh] flex flex-col overflow-hidden">
+            <div className="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-base text-slate-900 dark:text-white">
+                    {inspectHwSubmission.title}
+                  </h3>
+                  <span className={`text-xs font-black px-2 py-0.5 rounded-md ${
+                    (inspectHwSubmission.percentage ?? 0) >= 70
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                  }`}>
+                    🎯 {inspectHwSubmission.percentage}% ({inspectHwSubmission.score}/{inspectHwSubmission.maxScore} Pts)
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {language === 'he' ? 'תלמיד:' : 'Student:'} {inspectHwSubmission.student?.user?.firstName} {inspectHwSubmission.student?.user?.lastName} • {new Date(inspectHwSubmission.submittedAt || inspectHwSubmission.updatedAt).toLocaleString()}
+                </p>
+              </div>
+              <button
+                onClick={() => setInspectHwSubmission(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-4 py-4 flex-1">
+              {/* Reading Passage snippet */}
+              {inspectHwSubmission.template?.readingPassage && (
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+                  <span className="text-xs font-black text-brand-teal-700 dark:text-brand-teal-400 block">
+                    📖 {inspectHwSubmission.template?.readingPassageTitle || 'Reading Comprehension Passage'}
+                  </span>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-serif line-clamp-4">
+                    {inspectHwSubmission.template?.readingPassage}
+                  </p>
+                </div>
+              )}
+
+              {/* Student Answers Breakdown */}
+              <div className="space-y-3">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  {language === 'he' ? 'פירוט תשובות התלמיד:' : 'Student Answers Breakdown:'}
+                </span>
+
+                {(inspectHwSubmission.template?.questions || []).map((q: any, i: number) => {
+                  const studentAns = inspectHwSubmission.submittedAnswers?.[q.id];
+                  const isCorrect = String(studentAns).trim().toLowerCase() === String(q.correctAnswer).trim().toLowerCase();
+
+                  return (
+                    <div
+                      key={q.id || i}
+                      className={`p-3.5 rounded-2xl border text-xs space-y-2 ${
+                        isCorrect
+                          ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60'
+                          : 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/60'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-bold text-slate-900 dark:text-white">
+                          {i + 1}. {q.prompt}
+                        </p>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black shrink-0 ${
+                          isCorrect ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300'
+                        }`}>
+                          {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-slate-500">
+                          {language === 'he' ? 'תשובת התלמיד:' : 'Student answered:'}{' '}
+                          <strong className={isCorrect ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}>
+                            {studentAns !== undefined ? String(studentAns) : '(None)'}
+                          </strong>
+                        </span>
+
+                        {!isCorrect && (
+                          <span className="text-slate-500">
+                            • {language === 'he' ? 'התשובה הנכונה:' : 'Correct:'}{' '}
+                            <strong className="text-emerald-700 dark:text-emerald-400">{q.correctAnswer}</strong>
+                          </span>
+                        )}
+                      </div>
+
+                      {q.explanation && (
+                        <p className="text-[11px] text-slate-500 italic">
+                          💡 {q.explanation}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+              <button
+                onClick={() => setInspectHwSubmission(null)}
+                className="px-5 py-2 rounded-xl bg-brand-teal-700 text-white font-bold text-xs"
+              >
+                {language === 'he' ? 'סגור' : 'Close'}
               </button>
             </div>
           </div>

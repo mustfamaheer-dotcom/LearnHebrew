@@ -194,6 +194,7 @@ model Level {
   games       Game[]
   levelExams  LevelExam[]
   practiceShorts PracticeShort[]
+  homeworkTemplates HomeworkTemplate[]
 
   @@index([sortOrder])
   @@index([isActive])
@@ -290,6 +291,7 @@ model User {
   createdStoreItems      StoreItem[]                 @relation("CreatedStoreItems")
   createdShorts          PracticeShort[]             @relation("CreatedShorts")
   shortInteractions      ShortInteraction[]
+  createdHomeworkTemplates HomeworkTemplate[]        @relation("CreatedHomeworkTemplates")
   notificationPreference UserNotificationPreference?
 
   @@index([email])
@@ -813,29 +815,69 @@ model PointsLedger {
 }
 
 // ----------------------------------------------------
+// Central Homework Bank (Admin Templates)
+// ----------------------------------------------------
+model HomeworkTemplate {
+  id                  String             @id @default(uuid())
+  title               String             // e.g. "Tom's Trip to London"
+  titleAr             String?
+  titleHe             String?
+  description         String?
+  readingPassageTitle String?            // e.g. "Text 1: Tom's Trip to London"
+  readingPassage      String             @db.Text
+  levelId             String?
+  level               Level?             @relation(fields: [levelId], references: [id], onDelete: SetNull)
+  levelCode           String             @default("A1") // "A1", "A2", "B1", "B2", "C1", "C2"
+  levelCodes          String[]           @default([])
+  targetTrack         String             @default("ALL") // "AR_HE" | "HE_EN" | "AR_EN" | "ALL"
+  questions           Json               // Array of Question objects
+  totalPoints         Int                @default(10)
+  passingPercentage   Int                @default(70)
+  isActive            Boolean            @default(true)
+  createdById         String
+  createdBy           User               @relation("CreatedHomeworkTemplates", fields: [createdById], references: [id])
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  assignments         Homework[]
+
+  @@index([levelCode])
+  @@index([targetTrack])
+  @@index([isActive])
+}
+
+// ----------------------------------------------------
 // Homework & Feedback
 // ----------------------------------------------------
 model Homework {
-  id              String         @id @default(uuid())
-  lessonId        String?
-  lesson          Lesson?        @relation(fields: [lessonId], references: [id], onDelete: SetNull)
-  studentId       String
-  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  teacherId       String
-  teacher         Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  title           String
-  description     String?
-  attachmentUrl   String?
-  attachmentType  String?
-  dueDate         DateTime?
-  status          HomeworkStatus @default(PENDING)
-  studentNote     String?
-  teacherFeedback String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id               String            @id @default(uuid())
+  templateId       String?
+  template         HomeworkTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  lessonId         String?
+  lesson           Lesson?           @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  studentId        String
+  student          Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId        String
+  teacher          Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  attachmentUrl    String?
+  attachmentType   String?
+  dueDate          DateTime?
+  status           HomeworkStatus    @default(PENDING)
+  submittedAnswers Json?
+  score            Int?
+  maxScore         Int?
+  percentage       Float?
+  submittedAt      DateTime?
+  studentNote      String?
+  teacherFeedback  String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@index([studentId])
   @@index([teacherId])
+  @@index([templateId])
   @@index([status])
 }
 

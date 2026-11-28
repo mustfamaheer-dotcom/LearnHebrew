@@ -200,3 +200,74 @@ export const teacherActionsApi = {
     return res.data;
   },
 };
+
+export interface HomeworkQuestion {
+  id: string;
+  order: number;
+  type: 'TRUE_FALSE' | 'MULTIPLE_CHOICE' | 'SHORT_ANSWER';
+  prompt: string;
+  options?: string[];
+  correctAnswer?: string;
+  explanation?: string;
+  points?: number;
+}
+
+export interface HomeworkTemplateModel {
+  id: string;
+  title: string;
+  titleAr?: string;
+  titleHe?: string;
+  description?: string;
+  readingPassageTitle?: string;
+  readingPassage: string;
+  levelCode: string;
+  levelCodes: string[];
+  targetTrack: string;
+  questions: HomeworkQuestion[];
+  totalPoints: number;
+  passingPercentage: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: { id: string; firstName: string; lastName: string; email: string };
+  _count?: { assignments: number };
+}
+
+export const homeworkTemplatesApi = {
+  list: async (filters?: { level?: string; track?: string; search?: string; isActive?: boolean }): Promise<HomeworkTemplateModel[]> => {
+    const res = await api.get('/homework/templates', { params: filters });
+    return res.data.templates;
+  },
+  getById: async (id: string): Promise<HomeworkTemplateModel> => {
+    const res = await api.get(`/homework/templates/${id}`);
+    return res.data.template;
+  },
+  create: async (data: Partial<HomeworkTemplateModel>): Promise<HomeworkTemplateModel> => {
+    const res = await api.post('/homework/templates', data);
+    return res.data.template;
+  },
+  update: async (id: string, data: Partial<HomeworkTemplateModel>): Promise<HomeworkTemplateModel> => {
+    const res = await api.put(`/homework/templates/${id}`, data);
+    return res.data.template;
+  },
+  delete: async (id: string): Promise<{ success: boolean; message: string }> => {
+    const res = await api.delete(`/homework/templates/${id}`);
+    return res.data;
+  },
+  catalog: async (filters?: { level?: string; track?: string; search?: string }): Promise<HomeworkTemplateModel[]> => {
+    const res = await api.get('/homework/catalog', { params: filters });
+    return res.data.catalog;
+  },
+  assign: async (data: { templateId: string; studentId: string; lessonId?: string; dueDate?: string; customNotes?: string }) => {
+    const res = await api.post('/homework/assign-template', data);
+    return res.data;
+  },
+  getSolveData: async (homeworkId: string) => {
+    const res = await api.get(`/homework/${homeworkId}/solve`);
+    return res.data;
+  },
+  submitInteractive: async (homeworkId: string, answers: Record<string, any>) => {
+    const res = await api.post(`/homework/${homeworkId}/submit-interactive`, { answers });
+    return res.data;
+  },
+};

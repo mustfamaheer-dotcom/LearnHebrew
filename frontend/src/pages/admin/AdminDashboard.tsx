@@ -32,6 +32,7 @@ import { StudentCrmTable } from '../../components/admin/StudentCrmTable';
 import { PlacementTestAdminTab } from '../../components/admin/PlacementTestAdminTab';
 import { TeacherVideosTab } from '../../components/admin/TeacherVideosTab';
 const ShortsManagementTab = React.lazy(() => import('../../components/admin/ShortsManagementTab'));
+const HomeworkBankTab = React.lazy(() => import('../../components/admin/HomeworkBankTab'));
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { sessionTypesApi, levelsApi, languagesApi, rolesApi, paymentsApi } from '../../lib/enterpriseApi';
@@ -152,6 +153,7 @@ export const AdminDashboard: React.FC = () => {
     | 'point_rules'
     | 'store_management'
     | 'shorts_management'
+    | 'homework_bank'
     | 'languages'
     | 'reminders_hub'
     | 'placement_test'
@@ -180,6 +182,7 @@ export const AdminDashboard: React.FC = () => {
         'point_rules',
         'store_management',
         'shorts_management',
+        'homework_bank',
         'languages',
         'reminders_hub',
         'placement_test',
@@ -215,6 +218,7 @@ export const AdminDashboard: React.FC = () => {
           'point_rules',
           'store_management',
           'shorts_management',
+          'homework_bank',
           'languages',
           'reminders_hub',
           'users',
@@ -249,6 +253,7 @@ export const AdminDashboard: React.FC = () => {
         'point_rules',
         'store_management',
         'shorts_management',
+        'homework_bank',
         'languages',
         'reminders_hub',
         'users',
@@ -1226,6 +1231,15 @@ export const AdminDashboard: React.FC = () => {
       badge: 'New',
       badgeColor: 'bg-emerald-500 text-white',
       permission: 'shorts:manage',
+    },
+    {
+      id: 'homework_bank',
+      label: 'Homework & Reading Bank',
+      labelHe: 'מאגר שיעורי בית וקריאה',
+      labelAr: 'بنك الواجبات والقطع القرائية',
+      icon: BookOpen,
+      badge: 'New',
+      badgeColor: 'bg-teal-500 text-white',
     },
     {
       id: 'teachers_calendar',
@@ -3554,6 +3568,19 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                 )
+              )}
+
+              {/* TAB: HOMEWORK & READING COMPREHENSION BANK */}
+              {activeTab === 'homework_bank' && (
+                <Suspense
+                  fallback={
+                    <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
+                      {language === 'he' ? 'טוען מאגר שיעורי בית...' : language === 'ar' ? 'جاري تحميل بنك الواجبات...' : 'Loading Homework Bank...'}
+                    </div>
+                  }
+                >
+                  <HomeworkBankTab />
+                </Suspense>
               )}
 
               {/* TAB 5: PACKAGES & PRICING */}

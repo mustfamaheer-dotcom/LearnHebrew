@@ -29,6 +29,7 @@ import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
 import { CertificateModal, CertificateData } from '../../components/common/CertificateModal';
 import { StudentBookingFlow } from '../../components/student/StudentBookingFlow';
 import { FamilyProfileSwitcher } from '../../components/student/FamilyProfileSwitcher';
+import { InteractiveHomeworkSolverModal } from '../../components/student/InteractiveHomeworkSolverModal';
 import { isGoogleDriveUrl, getVideoEmbedUrl } from '../../lib/driveUtils';
 import {
   formatSlotRange12Hour,
@@ -294,6 +295,7 @@ export const StudentDashboard: React.FC = () => {
   const [activeGame, setActiveGame] = useState<any | null>(null);
   const [studentGameLevelFilter, setStudentGameLevelFilter] = useState<string>('ALL');
   const [submittingHwId, setSubmittingHwId] = useState<string | null>(null);
+  const [solvingInteractiveHwId, setSolvingInteractiveHwId] = useState<string | null>(null);
   const [hwNote, setHwNote] = useState('');
   // Rate Lesson State
   const [ratingLessonTarget, setRatingLessonTarget] = useState<any | null>(null);
@@ -1604,16 +1606,35 @@ export const StudentDashboard: React.FC = () => {
                                 {hw.description}
                               </p>
 
-                              <div className="pt-1 flex justify-end">
-                                <button
-                                  onClick={() => setSubmittingHwId(hw.id)}
-                                  className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 hover:underline flex items-center gap-1"
-                                >
-                                  {isAr ? 'تسليم الحل ←' : isHe ? 'הגש שיעורים ←' : 'Submit Work →'}
-                                </button>
+                              <div className="pt-1 flex items-center justify-between gap-2">
+                                {(hw.templateId || hw.template) ? (
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
+                                    <Sparkles className="w-2.5 h-2.5 text-purple-600 dark:text-purple-400" />
+                                    {isAr ? 'واجب تفاعلي' : isHe ? 'משימה אינטראקטיבית' : 'Interactive'}
+                                  </span>
+                                ) : <div />}
+
+                                {(hw.templateId || hw.template) ? (
+                                  <button
+                                    onClick={() => setSolvingInteractiveHwId(hw.id)}
+                                    className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 hover:underline flex items-center gap-1"
+                                  >
+                                    <Sparkles className="w-3.5 h-3.5 text-brand-olive-500" />
+                                    {hw.status === 'SUBMITTED' || hw.status === 'GRADED'
+                                      ? (isAr ? 'عرض نتيجتي ←' : isHe ? 'צפה בציון ←' : 'View Score →')
+                                      : (isAr ? 'حل الواجب التفاعلي ←' : isHe ? 'פתור משימה אינטראקטיבית ←' : 'Solve Interactive →')}
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => setSubmittingHwId(hw.id)}
+                                    className="text-xs font-bold text-brand-teal-800 dark:text-brand-teal-400 hover:underline flex items-center gap-1"
+                                  >
+                                    {isAr ? 'تسليم الحل ←' : isHe ? 'הגש שיעורים ←' : 'Submit Work →'}
+                                  </button>
+                                )}
                               </div>
 
-                              {submittingHwId === hw.id && (
+                              {!(hw.templateId || hw.template) && submittingHwId === hw.id && (
                                 <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
                                   <textarea
                                     rows={2}
@@ -2937,10 +2958,23 @@ export const StudentDashboard: React.FC = () => {
                       key={hw.id}
                       className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 space-y-3"
                     >
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-sm text-slate-900 dark:text-white">
-                          {hw.title}
-                        </h3>
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                            {hw.title}
+                          </h3>
+                          {(hw.templateId || hw.template) && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                              {isAr ? 'واجب تفاعلي ذكي' : isHe ? 'משימה אינטראקטיבית' : 'Interactive Drill'}
+                            </span>
+                          )}
+                          {hw.score !== null && hw.score !== undefined && (
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+                              🎯 {hw.percentage ?? Math.round((hw.score / (hw.maxScore || 100)) * 100)}% ({hw.score}/{hw.maxScore || 100} pts)
+                            </span>
+                          )}
+                        </div>
                         <span
                           className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
                             hw.status === 'GRADED'
@@ -3023,7 +3057,21 @@ export const StudentDashboard: React.FC = () => {
                         </div>
                       )}
 
-                      {hw.status === 'ASSIGNED' && (
+                      {(hw.templateId || hw.template) ? (
+                        <div className="pt-2 flex items-center gap-2">
+                          <button
+                            onClick={() => setSolvingInteractiveHwId(hw.id)}
+                            className="px-4 py-2 bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-2 transition-all active:scale-95"
+                          >
+                            <Sparkles className="w-4 h-4 text-brand-olive-300" />
+                            <span>
+                              {hw.status === 'SUBMITTED' || hw.status === 'GRADED'
+                                ? (isAr ? 'مراجعة الإجابات والدرجة' : isHe ? 'עיון בתשובות ובציון' : 'Review Answers & Score')
+                                : (isAr ? 'بدء حل الواجب التفاعلي' : isHe ? 'התחל משימה אינטראקטיבית' : 'Solve Interactive Homework')}
+                            </span>
+                          </button>
+                        </div>
+                      ) : hw.status === 'ASSIGNED' ? (
                         <div className="pt-2">
                           {submittingHwId === hw.id ? (
                             <div className="space-y-2">
@@ -3069,7 +3117,7 @@ export const StudentDashboard: React.FC = () => {
                             </button>
                           )}
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -4726,6 +4774,15 @@ export const StudentDashboard: React.FC = () => {
         data={selectedReceiptData}
         language={language}
       />
+
+      {/* Interactive Homework Reading & Auto-Grading Solver Modal */}
+      {solvingInteractiveHwId && (
+        <InteractiveHomeworkSolverModal
+          homeworkId={solvingInteractiveHwId}
+          isOpen={!!solvingInteractiveHwId}
+          onClose={() => setSolvingInteractiveHwId(null)}
+        />
+      )}
     </div>
   );
 };
