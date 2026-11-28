@@ -99,6 +99,14 @@ export const paymentsApi = {
     });
     return res.data;
   },
+  uploadScreenshotOnly: async (file: File): Promise<{ screenshotUrl: string; originalName: string }> => {
+    const formData = new FormData();
+    formData.append('screenshot', file);
+    const res = await api.post('/payments/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  },
   approve: async (id: string): Promise<any> => {
     const res = await api.post(`/payments/${id}/approve`);
     return res.data;

@@ -34,7 +34,7 @@ import { TeacherVideosTab } from '../../components/admin/TeacherVideosTab';
 const ShortsManagementTab = React.lazy(() => import('../../components/admin/ShortsManagementTab'));
 import { confirmDialog } from '../../store/confirmDialogStore';
 import { PageHeaderBanner } from '../../components/common/PageHeaderBanner';
-import { sessionTypesApi, levelsApi, languagesApi, rolesApi } from '../../lib/enterpriseApi';
+import { sessionTypesApi, levelsApi, languagesApi, rolesApi, paymentsApi } from '../../lib/enterpriseApi';
 import { PriceDisplay } from '../../components/common/PriceDisplay';
 import { haptics } from '../../utils/haptics';
 import {
@@ -112,6 +112,7 @@ import {
   Edit2,
   Phone,
   Baby,
+  Upload,
 } from 'lucide-react';
 
 // Custom outline Home icon with inner circle door matching iOS pill island aesthetic
@@ -339,6 +340,41 @@ export const AdminDashboard: React.FC = () => {
   const [newUserPackageId, setNewUserPackageId] = useState('');
   const [isPackagePickerOpen, setIsPackagePickerOpen] = useState(false);
   const [packagePickerSearch, setPackagePickerSearch] = useState('');
+
+  // Payment Confirmation Screenshot State for New User Account Creation
+  const [newUserPaymentFile, setNewUserPaymentFile] = useState<File | null>(null);
+  const [newUserPaymentPreview, setNewUserPaymentPreview] = useState<string | null>(null);
+  const [newUserPaymentNotes, setNewUserPaymentNotes] = useState('');
+  const [isUploadingPayment, setIsUploadingPayment] = useState(false);
+
+  const handlePaymentFileSelect = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.warning(
+        language === 'ar'
+          ? 'يرجى اختيار ملف صورة صالح (JPG, PNG, WebP)'
+          : language === 'he'
+          ? 'אנא בחר קובץ תמונה תקין'
+          : 'Please select a valid image file (JPG, PNG, WebP)'
+      );
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.warning(
+        language === 'ar'
+          ? 'حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)'
+          : language === 'he'
+          ? 'גודל התמונה גדול מדי (עד 10MB)'
+          : 'File size too large (max 10MB)'
+      );
+      return;
+    }
+    setNewUserPaymentFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setNewUserPaymentPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Family & Parent-Child Account Governance State
   const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
@@ -782,6 +818,7 @@ export const AdminDashboard: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       queryClient.invalidateQueries({ queryKey: ['adminAnalytics'] });
+      queryClient.invalidateQueries({ queryKey: ['adminPayments'] });
       setIsCreatingUser(false);
       setNewUserEmail('');
       setNewUserFirst('');
@@ -790,6 +827,9 @@ export const AdminDashboard: React.FC = () => {
       setNewUserAccountType('INDIVIDUAL');
       setNewUserParentId('');
       setNewUserPackageId('');
+      setNewUserPaymentFile(null);
+      setNewUserPaymentPreview(null);
+      setNewUserPaymentNotes('');
       toast.success(
         language === 'he' ? 'המשתמש נוצר בהצלחה!' : 'User created successfully!'
       );
@@ -4511,7 +4551,8 @@ export const AdminDashboard: React.FC = () => {
                       const price = selectedPkg.price ?? selectedPkg.priceUsd ?? 0;
 
                       return (
-                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-brand-teal-50/80 via-white to-brand-teal-50/40 dark:from-brand-teal-950/60 dark:via-slate-900 dark:to-brand-teal-950/30 border-2 border-brand-teal-400/80 dark:border-brand-teal-600 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-start animate-fade-in">
+                        <>
+                          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-brand-teal-50/80 via-white to-brand-teal-50/40 dark:from-brand-teal-950/60 dark:via-slate-900 dark:to-brand-teal-950/30 border-2 border-brand-teal-400/80 dark:border-brand-teal-600 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-start animate-fade-in">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="w-11 h-11 rounded-xl bg-brand-teal-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                               <Sparkles className="w-5 h-5 text-lime-300" />
@@ -4555,7 +4596,12 @@ export const AdminDashboard: React.FC = () => {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setNewUserPackageId('')}
+                                onClick={() => {
+                                  setNewUserPackageId('');
+                                  setNewUserPaymentFile(null);
+                                  setNewUserPaymentPreview(null);
+                                  setNewUserPaymentNotes('');
+                                }}
                                 className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-950/40 text-slate-500 transition-colors flex items-center justify-center"
                                 title={language === 'he' ? 'הסר בחירה' : 'Remove package'}
                               >
@@ -4564,7 +4610,109 @@ export const AdminDashboard: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      );
+
+                        {/* Mandatory Payment Proof Screenshot Upload Section */}
+                        <div className="mt-3 p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/25 border-2 border-dashed border-amber-400/80 dark:border-amber-600/80 space-y-3 animate-fade-in">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Receipt className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                              <span className="text-xs font-black text-amber-950 dark:text-amber-200">
+                                {language === 'ar' ? 'إيصال / سكرين شوت الدفع (مطلوب)' : language === 'he' ? 'צילום מסך של התשלום (חובה)' : 'Payment Confirmation Screenshot (Required)'}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                              {language === 'ar' ? 'إلزامي لتفعيل الباقة' : language === 'he' ? 'חובה להפעלת החבילה' : 'Required for package'}
+                            </span>
+                          </div>
+
+                          {newUserPaymentPreview ? (
+                            <div className="relative rounded-xl overflow-hidden border border-amber-300/80 dark:border-amber-700/80 bg-white/80 dark:bg-slate-900/80 p-2.5 flex items-center justify-between gap-3 shadow-xs">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <img
+                                  src={newUserPaymentPreview}
+                                  alt="Payment Receipt Preview"
+                                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border border-amber-200 dark:border-amber-800 shadow-xs shrink-0"
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                    {newUserPaymentFile?.name || 'payment_receipt.png'}
+                                  </p>
+                                  {newUserPaymentFile && (
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                      {(newUserPaymentFile.size / 1024).toFixed(1)} KB
+                                    </p>
+                                  )}
+                                  <div className="mt-1 flex items-center gap-2">
+                                    <label className="text-[11px] font-bold text-brand-teal-600 dark:text-brand-teal-400 hover:underline cursor-pointer">
+                                      {language === 'ar' ? 'تغيير الصورة' : language === 'he' ? 'החלף תמונה' : 'Change Image'}
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const f = e.target.files?.[0];
+                                          if (f) handlePaymentFileSelect(f);
+                                        }}
+                                      />
+                                    </label>
+                                    <span className="text-slate-300 dark:text-slate-600">•</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setNewUserPaymentFile(null);
+                                        setNewUserPaymentPreview(null);
+                                      }}
+                                      className="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline"
+                                    >
+                                      {language === 'ar' ? 'إزالة' : language === 'he' ? 'הסר' : 'Remove'}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                              <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                            </div>
+                          ) : (
+                            <label className="group relative flex flex-col items-center justify-center p-5 rounded-xl border border-dashed border-amber-400/80 dark:border-amber-600/80 hover:border-amber-500 bg-white/70 dark:bg-slate-900/60 hover:bg-amber-50/50 dark:hover:bg-amber-950/30 cursor-pointer transition-all text-center">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) handlePaymentFileSelect(f);
+                                }}
+                              />
+                              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/60 flex items-center justify-center text-amber-700 dark:text-amber-300 mb-2 group-hover:scale-110 transition-transform">
+                                <Upload className="w-5 h-5" />
+                              </div>
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                {language === 'ar' ? 'انقر أو اسحب سكرين شوت إيصال الدفع هنا' : language === 'he' ? 'לחץ או גרור צילום מסך של התשלום לכאן' : 'Click or drop payment proof screenshot here'}
+                              </span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                PNG, JPG, WebP (Max 10MB)
+                              </span>
+                            </label>
+                          )}
+
+                          {/* Optional Payment Note */}
+                          <div>
+                            <input
+                              type="text"
+                              value={newUserPaymentNotes}
+                              onChange={(e) => setNewUserPaymentNotes(e.target.value)}
+                              placeholder={
+                                language === 'ar'
+                                  ? 'ملاحظات الدفع (اختياري، مثلاً: تحويل بنكي / فودافون كاش / إنستاباي / كاش...)'
+                                  : language === 'he'
+                                  ? 'הערת תשלום (אופציונלי, למשל: העברה בנקאית, Bit, PayBox...)'
+                                  : 'Payment notes / reference (optional, e.g. Bank transfer, Bit, Cash)'
+                              }
+                              className="w-full px-3.5 py-2 rounded-xl border border-amber-200/90 dark:border-amber-800/80 bg-white dark:bg-slate-900 text-slate-800 dark:text-white text-xs placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    );
                     })()}
                   </div>
                 </div>
@@ -4633,7 +4781,7 @@ export const AdminDashboard: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 const trimmedEmail = newUserEmail.trim();
                 const trimmedFirst = newUserFirst.trim();
                 const trimmedLast = newUserLast.trim();
@@ -4653,6 +4801,45 @@ export const AdminDashboard: React.FC = () => {
                   return;
                 }
 
+                if (isStudent && newUserPackageId && !newUserPaymentFile && !newUserPaymentPreview) {
+                  toast.warning(
+                    language === 'ar'
+                      ? 'يرجى إرفاق سكرين شوت أو إيصال الدفع لتفعيل الباقة للمستخدم'
+                      : language === 'he'
+                      ? 'אנא צרף צילום מסך של התשלום כדי להפעיל את החבילה עבור התלמיד'
+                      : 'Please upload a payment confirmation screenshot to assign this package.'
+                  );
+                  return;
+                }
+
+                let paymentScreenshotUrl: string | undefined = undefined;
+                let paymentScreenshotOriginalName: string | undefined = undefined;
+
+                if (isStudent && newUserPackageId && newUserPaymentFile) {
+                  setIsUploadingPayment(true);
+                  try {
+                    const uploadRes = await paymentsApi.uploadScreenshotOnly(newUserPaymentFile);
+                    if (uploadRes?.screenshotUrl) {
+                      paymentScreenshotUrl = uploadRes.screenshotUrl;
+                      paymentScreenshotOriginalName = uploadRes.originalName || newUserPaymentFile.name;
+                    } else if (newUserPaymentPreview) {
+                      paymentScreenshotUrl = newUserPaymentPreview;
+                      paymentScreenshotOriginalName = newUserPaymentFile.name;
+                    }
+                  } catch (uploadErr) {
+                    console.warn('Screenshot upload endpoint failed, falling back to data URL:', uploadErr);
+                    if (newUserPaymentPreview) {
+                      paymentScreenshotUrl = newUserPaymentPreview;
+                      paymentScreenshotOriginalName = newUserPaymentFile.name;
+                    }
+                  } finally {
+                    setIsUploadingPayment(false);
+                  }
+                } else if (isStudent && newUserPackageId && newUserPaymentPreview) {
+                  paymentScreenshotUrl = newUserPaymentPreview;
+                  paymentScreenshotOriginalName = newUserPaymentFile?.name;
+                }
+
                 createUserMutation.mutate({
                   email: trimmedEmail,
                   phone: newUserPhone || undefined,
@@ -4668,18 +4855,21 @@ export const AdminDashboard: React.FC = () => {
                   learningLanguageId: isStudent ? newUserLearningLangId : undefined,
                   levelId: isStudent ? newUserLevelId : undefined,
                   packageId: isStudent && newUserPackageId ? newUserPackageId : undefined,
+                  paymentScreenshotUrl,
+                  paymentScreenshotOriginalName,
+                  paymentNotes: newUserPaymentNotes.trim() || undefined,
                   specialties: isTeacher ? newUserSpecialties.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
                   bio: isTeacher ? newUserBio : undefined,
                 });
               }}
-              disabled={createUserMutation.isPending}
+              disabled={createUserMutation.isPending || isUploadingPayment}
               className="px-6 py-2.5 rounded-xl bg-brand-olive-500 hover:bg-brand-olive-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50"
             >
               <UserPlus className="w-4 h-4 text-slate-950" />
               <span>
-                {createUserMutation.isPending
-                  ? (language === 'he' ? 'יוצר חשבון...' : 'Creating...')
-                  : (language === 'he' ? 'צור חשבון חדש' : 'Create Account')}
+                {createUserMutation.isPending || isUploadingPayment
+                  ? (language === 'ar' ? 'جارٍ الحفظ...' : language === 'he' ? 'יוצר חשבון...' : 'Creating...')
+                  : (language === 'ar' ? 'إنشاء الحساب' : language === 'he' ? 'צור חשבון חדש' : 'Create Account')}
               </span>
             </button>
           </div>

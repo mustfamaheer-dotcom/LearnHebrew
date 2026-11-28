@@ -1,10 +1,11 @@
 import { prisma } from '../../config/database';
 import { hashPassword } from '../../utils/password';
-import { Role, HebrewLevel, LanguagePref } from '@prisma/client';
+import { Role, HebrewLevel, LanguagePref, PaymentStatus } from '@prisma/client';
 import { logAuditEvent } from '../../utils/audit';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { invalidateRolePermissionCache } from '../../middleware/permission';
 import { assignPackageToStudent } from '../packages/packages.service';
+import { processAndSaveWebP } from '../../utils/imageProcessor';
 import crypto from 'crypto';
 
 export async function listUsers(filters: {
@@ -189,6 +190,9 @@ export async function createUser(data: {
   levelId?: string;
   level?: HebrewLevel;
   packageId?: string;
+  paymentScreenshotUrl?: string;
+  paymentScreenshotOriginalName?: string;
+  paymentNotes?: string;
   bio?: string;
   specialties?: string[];
   createdById: string;
@@ -356,12 +360,42 @@ export async function createUser(data: {
   // Assign initial package if specified for student
   if (data.packageId && user.studentProfile) {
     try {
+      let finalScreenshotUrl = data.paymentScreenshotUrl;
+      // If paymentScreenshotUrl was provided as a base64 data URL, process it into a WebP file
+      if (finalScreenshotUrl && finalScreenshotUrl.startsWith('data:image/')) {
+        try {
+          const base64Data = finalScreenshotUrl.replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Buffer.from(base64Data, 'base64');
+          const { relativePath } = await processAndSaveWebP(buffer, 'payments', 85);
+          finalScreenshotUrl = relativePath;
+        } catch (imgErr) {
+          console.error('Failed to process payment screenshot base64:', imgErr);
+        }
+      }
+
       await assignPackageToStudent({
         packageId: data.packageId,
         studentId: user.studentProfile.id,
         assignedById: data.createdById,
         startDate: new Date(),
       });
+
+      // If a payment screenshot was provided, record the payment proof in Payment table
+      if (finalScreenshotUrl) {
+        await prisma.payment.create({
+          data: {
+            studentId: user.studentProfile.id,
+            packageId: data.packageId,
+            createdById: data.createdById,
+            screenshotUrl: finalScreenshotUrl,
+            screenshotOriginalName: data.paymentScreenshotOriginalName || 'payment_receipt.webp',
+            notes: data.paymentNotes || 'Payment proof attached during account creation',
+            status: PaymentStatus.APPROVED,
+            approvedById: data.createdById,
+            approvedAt: new Date(),
+          },
+        });
+      }
     } catch (err) {
       console.error('Failed to assign initial package to student:', err);
     }

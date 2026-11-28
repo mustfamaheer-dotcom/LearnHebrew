@@ -42,6 +42,13 @@ router.post(
   upload.single('screenshot'),
   controller.createPayment
 );
+router.post(
+  '/upload',
+  authenticate,
+  requireRoles(Role.SUPER_ADMIN, Role.ADMIN, Role.SALES),
+  upload.single('screenshot'),
+  controller.uploadScreenshotOnly
+);
 router.post('/:id/approve', authenticate, requireRoles(Role.SUPER_ADMIN, Role.ADMIN), requirePermission('payments:approve'), controller.approvePayment);
 router.post('/:id/reject', authenticate, requireRoles(Role.SUPER_ADMIN, Role.ADMIN), requirePermission('payments:reject'), controller.rejectPayment);
 

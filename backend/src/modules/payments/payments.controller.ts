@@ -44,6 +44,20 @@ export async function createPayment(req: AuthRequest, res: Response) {
   res.status(201).json(payment);
 }
 
+export async function uploadScreenshotOnly(req: AuthRequest, res: Response) {
+  const file = req.file;
+  if (!file) {
+    return res.status(400).json({ error: 'Screenshot proof is required' });
+  }
+
+  const { relativePath } = await processAndSaveWebP(file.buffer, 'payments', 85);
+
+  res.status(200).json({
+    screenshotUrl: relativePath,
+    originalName: file.originalname,
+  });
+}
+
 export async function approvePayment(req: AuthRequest, res: Response) {
   const result = await service.approvePayment(req.params.id, req.user!.userId);
   res.json(result);
